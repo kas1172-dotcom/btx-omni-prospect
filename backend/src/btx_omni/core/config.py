@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     app_name: str = "BTX Omni Prospect"
     environment: str = "development"
     api_prefix: str = "/api"
+    data_mode: str = "SAMPLE"
 
     database_url: str = (
         "postgresql+psycopg://"
