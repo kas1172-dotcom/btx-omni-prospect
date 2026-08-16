@@ -16,6 +16,11 @@ from btx_omni.domain.commercial import CommercialContext, MonthlyCommercialHisto
 from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.domain.quotes import CommercialQuote, QuoteStatus
 from btx_omni.domain.scores import ExternalIndustryRank
+from btx_omni.modules.intelligence.signals import RawSignal, SignalKind
+from btx_omni.modules.matching.commercial import (
+    CommercialComponent,
+    HistoricalQuoteContext,
+)
 
 ROLE_FAMILIES = ("procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations")
 
@@ -45,6 +50,9 @@ class SampleEnvironment:
     crm_contexts: tuple[SampleCrmContext, ...]
     public_signals: tuple[SamplePublicSignal, ...]
     scoring_inputs: dict[str, dict[str, str]]
+    intelligence_events: tuple[RawSignal, ...]
+    matching_components: tuple[CommercialComponent, ...]
+    matching_quotes: tuple[HistoricalQuoteContext, ...]
 
 
 @dataclass(frozen=True)
@@ -112,4 +120,23 @@ def build_sample_environment() -> SampleEnvironment:
     scenario_accounts = {
         "southwest-trip": ("acct-01-001", "acct-04-001", "acct-03-001", "acct-06-001"), "medical-whitespace": ("acct-05-001", "acct-05-002"), "defense-award-quote": ("acct-02-001",), "semiconductor-expansion": ("acct-04-002",), "dormant-customer": ("acct-01-003",), "quote-follow-up": ("acct-01-004",), "cross-bu-conflict": ("acct-01-005",), "strong-external-weak-internal": ("acct-01-006",), "strong-internal-weak-external": ("acct-01-007",), "missing-conflicting-evidence": ("acct-01-008",), "bookings-decline": ("acct-02-001",), "crm-inactivity": ("acct-04-002",), "intelligence-commercial-context": ("acct-04-002",),
     }
-    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), quotes, identity, scenario_accounts, crm_contexts, public_signals, scoring_inputs)
+    stamp = datetime(2025, 12, 15, tzinfo=UTC)
+    intelligence_events = (
+        RawSignal("award-defense-1", SignalKind.AWARD_CONTRACT, "Defense production award", "https://sample.invalid/award-defense", stamp, "Defense Prime One", "Defense Platform", EvidenceState.CONFIRMED, "Award confirms program activity."),
+        RawSignal("expansion-semi-1", SignalKind.EXPANSION, "Semiconductor capacity expansion", "https://sample.invalid/expansion-semi", stamp, "Silicon Expansion Co", None, EvidenceState.CONFIRMED, "Expansion announcement."),
+        RawSignal("press-ext-1", SignalKind.PRESS_RELEASE, "External target press release", "https://sample.invalid/press", stamp, "External Top Target", None, EvidenceState.INFERRED, "No internal commercial history."),
+        RawSignal("financial-int-1", SignalKind.FINANCIAL_REPORT, "Internal customer financial report", "https://sample.invalid/financial", stamp, "Internal Core Customer", None, EvidenceState.CONFIRMED, "Existing commercial context remains separate."),
+        RawSignal("industry-conflict-1", SignalKind.INDUSTRY_UPDATE, "Conflicting industry update", "https://sample.invalid/industry", stamp, "Conflicted Evidence Labs", None, EvidenceState.CONFLICTING, "Requires human review."),
+    )
+    defense_quote = next(quote for quote in quotes if quote.account_id == "acct-02-001")
+    matching_components = (
+        CommercialComponent("component-defense-exact", "acct-02-001", "program-defense", "DP-100", "enclosure", "Aluminum", "5-axis", "precision-machined", EvidenceState.CONFIRMED, ("evidence-defense-component",), _provenance("component-defense"), ("precision-machining",)),
+        CommercialComponent("component-defense-structured", "acct-02-001", "program-defense", None, "enclosure", "Aluminum", "5-axis", "precision-machined", EvidenceState.INFERRED, ("evidence-defense-structured",), _provenance("component-structured"), ("precision-machining",)),
+        CommercialComponent("component-conflict", "acct-01-008", None, "CONFLICT-1", "bracket", "Titanium", "turning", None, EvidenceState.CONFLICTING, ("evidence-conflict",), _provenance("component-conflict")),
+        CommercialComponent("component-missing", "acct-01-008", None, None, None, None, None, None, EvidenceState.MISSING, ("evidence-missing",), _provenance("component-missing")),
+    )
+    matching_quotes = (
+        HistoricalQuoteContext(defense_quote.id, defense_quote.account_id, defense_quote.business_unit, "DP-100", "enclosure", "Aluminum", "5-axis", defense_quote.part_family, (defense_quote.provenance.source_record_id,), defense_quote.provenance),
+        HistoricalQuoteContext("quote-conflict", "acct-01-008", "Southwest", "OTHER-1", "bracket", "Aluminum", "turning", None, ("quote-conflict-evidence",), _provenance("quote-conflict")),
+    )
+    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), quotes, identity, scenario_accounts, crm_contexts, public_signals, scoring_inputs, intelligence_events, matching_components, matching_quotes)
