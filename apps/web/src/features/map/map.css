@@ -1,0 +1,4 @@
+.map-canvas-wrap { height: clamp(360px, 58vh, 720px); margin: 16px 0; overflow: hidden; border: 1px solid var(--border, #283d56); border-radius: 14px; }
+.map-canvas { width: 100%; height: 100%; }
+.maplibregl-ctrl-attrib { font-size: 10px; }
+@media (max-width: 760px) { .map-canvas-wrap { height: 55dvh; } }

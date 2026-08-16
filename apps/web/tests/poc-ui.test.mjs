@@ -6,6 +6,7 @@ const app = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8')
 const styles = readFileSync(new URL('../src/design/app.css', import.meta.url), 'utf8')
 const client = readFileSync(new URL('../src/api/client.ts', import.meta.url), 'utf8')
 const map = readFileSync(new URL('../src/features/map/Map.tsx', import.meta.url), 'utf8')
+const mapCanvas = readFileSync(new URL('../src/features/map/MapCanvas.tsx', import.meta.url), 'utf8')
 const actions = readFileSync(new URL('../src/features/actions/Actions.tsx', import.meta.url), 'utf8')
 const accounts = readFileSync(new URL('../src/features/accounts/Accounts.tsx', import.meta.url), 'utf8')
 
@@ -39,8 +40,11 @@ test('Account 360 distinguishes public relationship and Contact Research from SA
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
-  assert.match(map, /Layer controls/)
+  assert.match(map, /Map controls/)
   assert.match(map, /Account quick view/)
+  assert.match(mapCanvas, /maplibregl\.Map/)
+  assert.match(mapCanvas, /cluster: true/)
+  assert.match(mapCanvas, /canonical-locations/)
   assert.match(actions, /Confirm CRM execution/)
   assert.match(actions, /Preview & confirm CRM action/)
 })
