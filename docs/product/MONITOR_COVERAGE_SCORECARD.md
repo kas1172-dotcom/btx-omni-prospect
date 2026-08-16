@@ -4,6 +4,11 @@ Checkpoint 15 is a calibration baseline, not a claim of complete live coverage.
 All internal commercial context remains governed `SAMPLE`; public evidence below
 is public-source only and cannot imply a real BTX relationship.
 
+Checkpoint 16 audited the same canonical universe and found 600
+`SYNTHETIC_PLACEHOLDER` accounts with zero verified public identities. The zero
+watch-profile and benchmark counts below are therefore a deliberate
+false-positive safeguard, not missing SAMPLE data.
+
 | Phase 1 industry | Relevant event classes | Configured source path | Working controlled source | Blocked / unavailable | Verified watch profiles | Verified benchmark events | Recent-event result | Known gap |
 |---|---|---|---|---|---:|---:|---|---|
 | Commercial Aerospace | awards, launches, backlog, facilities | SAM, USAspending, NASA, SEC, official company | SAM, USAspending, NASA | SEC fair-access identity; company URL | 0 | 0 | candidate only, unresolved | Canonical accounts are synthetic |

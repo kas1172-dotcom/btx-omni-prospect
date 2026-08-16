@@ -45,6 +45,8 @@ class OmniOrchestrator:
         citations: list[str] = [account.provenance.source_record_id] if account.provenance else []
         missing: list[str] = []
         lines = [f"Canonical account: {account.legal_name} ({account.relationship.value})."]
+        public_identity_state = account.public_identity.verification_state.value if account.public_identity else "UNVERIFIED"
+        lines.append(f"Public identity: {public_identity_state}; BTX commercial context remains SAMPLE synthetic data.")
         if account_alerts:
             lines.append("Alerts: " + ", ".join(item.type.value for item in account_alerts) + ".")
             citations.extend(value for alert in account_alerts for value in alert.evidence_ids)

@@ -20,9 +20,10 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         conflict = await client.post("/api/omni", json={"account_id": "acct-01-008", "question": "What is missing?"})
     assert southwest.status_code == medical.status_code == accounts.status_code == defense.status_code == no_quote.status_code == 200
     assert len(southwest.json()["records"]) == 100 and len(medical.json()["records"]) == 100
-    assert all(item["location"]["country"] == "US" and item["public_research_state"] == "ELIGIBLE" for item in accounts.json()["accounts"])
+    assert all(item["location"]["country"] == "US" and item["public_research_state"] == "ELIGIBLE" and item["public_identity_state"] == "UNVERIFIED" for item in accounts.json()["accounts"])
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"
     assert len(defense.json()["paperless_accounts"]) == 1 and len(defense.json()["paperless_quotes"]) == 2
+    assert defense.json()["public_identity"] is None and defense.json()["public_identity_state"] == "UNVERIFIED"
     assert len(no_quote.json()["paperless_accounts"]) == 1 and not no_quote.json()["paperless_quotes"]
     assert any(item["kind"] == "EXPANSION" for item in semiconductor.json()["signals"])
     assert "CUSTOMER_INACTIVITY" in dormant_omni.json()["content"]
