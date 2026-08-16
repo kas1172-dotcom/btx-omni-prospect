@@ -5,6 +5,8 @@ import test from 'node:test'
 const app = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8')
 const styles = readFileSync(new URL('../src/design/app.css', import.meta.url), 'utf8')
 const client = readFileSync(new URL('../src/api/client.ts', import.meta.url), 'utf8')
+const map = readFileSync(new URL('../src/features/map/Map.tsx', import.meta.url), 'utf8')
+const actions = readFileSync(new URL('../src/features/actions/Actions.tsx', import.meta.url), 'utf8')
 
 test('canonical navigation and mobile core flow are present', () => {
   for (const surface of ['Today', 'Accounts', 'Intelligence', 'Map', 'Actions', 'OmniDrawer']) assert.match(app, new RegExp(surface))
@@ -20,4 +22,11 @@ test('mobile-first layout prevents horizontal overflow and exposes an Omni drawe
   assert.match(styles, /overflow-x: clip/)
   assert.match(styles, /@media\(max-width:760px\)/)
   assert.match(styles, /\.omni-drawer\{width:100%/)
+})
+
+test('map and action interactions remain touch-accessible and confirmation-safe', () => {
+  assert.match(map, /Layer controls/)
+  assert.match(map, /Account quick view/)
+  assert.match(actions, /Confirm CRM execution/)
+  assert.match(actions, /Preview & confirm CRM action/)
 })
