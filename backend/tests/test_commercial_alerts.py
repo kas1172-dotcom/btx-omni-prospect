@@ -13,6 +13,7 @@ def test_sample_scenarios_fire_deterministic_commercial_alerts_with_evidence() -
     kinds = {alert.type for alert in alerts}
     assert {CommercialAlertKind.CUSTOMER_INACTIVITY, CommercialAlertKind.BOOKINGS_DECLINE, CommercialAlertKind.STALE_QUOTE, CommercialAlertKind.QUOTE_FOLLOW_UP, CommercialAlertKind.CRM_INACTIVITY, CommercialAlertKind.CROSS_BU_COORDINATION, CommercialAlertKind.INTELLIGENCE_COMMERCIAL_CONTEXT} <= kinds
     assert all(alert.evidence_ids and alert.synthetic for alert in alerts)
+    assert all(alert.account_id and alert.severity and alert.trigger_reason and alert.actual_value is not None and alert.threshold is not None and alert.observed_at == NOW and alert.recommended_action and alert.status for alert in alerts)
     assert alerts == CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes, observed_at=NOW)
 
 

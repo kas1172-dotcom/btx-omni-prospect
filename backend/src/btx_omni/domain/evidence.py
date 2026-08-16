@@ -8,6 +8,16 @@ from btx_omni.domain.common import EvidenceState, require_aware
 
 
 @dataclass(frozen=True)
+class SourceIdentity:
+    """A source-system identity mapped to one canonical account."""
+
+    source_system: str
+    source_key: str
+    canonical_account_id: str
+    provenance: Provenance
+
+
+@dataclass(frozen=True)
 class Evidence:
     id: str
     subject_id: str

@@ -15,6 +15,16 @@ class QuoteStatus(StrEnum):
 
 
 @dataclass(frozen=True)
+class PaperlessAccount:
+    """Paperless account identity, distinct from its quotes and canonical account."""
+
+    id: str
+    canonical_account_id: str
+    name: str
+    provenance: Provenance
+
+
+@dataclass(frozen=True)
 class CommercialQuote:
     id: str
     account_id: str

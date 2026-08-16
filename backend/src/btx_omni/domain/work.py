@@ -24,6 +24,18 @@ class ActionType(StrEnum):
 
 
 @dataclass(frozen=True)
+class WorkItem:
+    """Backend work queue item; it does not imply a top-level POC surface."""
+
+    id: str
+    account_id: str
+    summary: str
+    state: ActionState
+    evidence_ids: tuple[str, ...]
+    owner_id: str | None = None
+
+
+@dataclass(frozen=True)
 class GovernedAction:
     id: str
     account_id: str

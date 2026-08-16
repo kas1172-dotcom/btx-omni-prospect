@@ -15,6 +15,36 @@ class ScoreStatus(StrEnum):
 
 
 @dataclass(frozen=True)
+class ScoreConfiguration:
+    id: str
+    version: str
+    hypothesis: bool
+    interpretation_note: str
+    created_at: datetime
+
+    def __post_init__(self) -> None:
+        require_aware(self.created_at, "created_at")
+
+
+@dataclass(frozen=True)
+class ScoreAssessment:
+    id: str
+    account_id: str
+    configuration_id: str
+    status: ScoreStatus
+    score: Decimal | None
+    coverage: Decimal
+    evidence_ids: tuple[str, ...]
+    missing_fields: tuple[str, ...]
+    calculated_at: datetime
+
+    def __post_init__(self) -> None:
+        require_aware(self.calculated_at, "calculated_at")
+        if self.status is ScoreStatus.AVAILABLE and self.score is None:
+            raise ValueError("available scores require a value")
+
+
+@dataclass(frozen=True)
 class AccountAttractiveness:
     account_id: str
     status: ScoreStatus
