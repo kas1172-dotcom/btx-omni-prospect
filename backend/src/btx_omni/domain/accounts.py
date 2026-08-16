@@ -9,6 +9,7 @@ from btx_omni.core.provenance import Provenance
 
 class AccountRelationship(StrEnum):
     CURRENT_CUSTOMER = "CURRENT_CUSTOMER"
+    FORMER_CUSTOMER = "FORMER_CUSTOMER"
     PROSPECT = "PROSPECT"
     TARGET = "TARGET"
 
@@ -24,6 +25,7 @@ class CanonicalAccount:
     parent_account_id: str | None = None
     contact_role_families: tuple[str, ...] = ()
     provenance: Provenance | None = None
+    public_research_state: str = "ELIGIBLE"
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,7 @@ class AccountFacility:
     region: str
     latitude: Decimal
     longitude: Decimal
+    country: str = "US"
 
 
 @dataclass(frozen=True)
