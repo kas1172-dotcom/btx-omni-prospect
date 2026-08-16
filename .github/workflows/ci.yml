@@ -34,6 +34,11 @@ jobs:
       - run: uv run pytest
       - run: uv run alembic upgrade head
       - run: uv run alembic current
+      - run: >-
+          uv run python -c "from btx_omni.app import app;
+          schema = app.openapi();
+          assert '/api/health' in schema['paths'];
+          print('OpenAPI health route verified')"
   frontend:
     runs-on: ubuntu-latest
     defaults:

@@ -1,7 +1,10 @@
 # Local environments and dependencies
 .venv/
+**/.venv/
 node_modules/
+**/node_modules/
 __pycache__/
+**/__pycache__/
 *.py[cod]
 
 # Local configuration and data
@@ -11,6 +14,7 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+.DS_Store
 
 # Build and test output
 dist/
@@ -18,6 +22,11 @@ build/
 coverage/
 .pytest_cache/
 .ruff_cache/
+**/dist/
+**/coverage/
+**/.pytest_cache/
+**/.ruff_cache/
 
 # Editor-local state
 .vscode/
+.idea/
