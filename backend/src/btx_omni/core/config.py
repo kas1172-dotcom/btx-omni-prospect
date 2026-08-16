@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     frontend_origins: str = "http://localhost:5173"
     monitor_mode: str = "disabled"
     ai_provider: str = "anthropic"
-    anthropic_api_key: str | None = None
+    anthropic_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("BTX_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
+    )
     anthropic_model: str = "claude-sonnet-4-20250514"
     sam_api_key: str | None = None
 
