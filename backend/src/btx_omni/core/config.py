@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("BTX_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
     )
-    anthropic_model: str = "claude-sonnet-4-20250514"
+    anthropic_model: str = "claude-sonnet-5"
     sam_api_key: str | None = None
 
     database_url: str = Field(

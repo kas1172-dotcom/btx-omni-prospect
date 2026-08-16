@@ -44,6 +44,7 @@ def test_settings_accepts_standard_anthropic_api_key_alias(monkeypatch) -> None:
     settings = Settings(_env_file=None)
 
     assert settings.anthropic_api_key == "test-anthropic-key"
+    assert settings.anthropic_model == "claude-sonnet-5"
 
 
 def test_database_factory_uses_settings_url_without_connecting() -> None:

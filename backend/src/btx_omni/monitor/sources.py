@@ -178,10 +178,12 @@ class NasaAdapter(LiveSourceAdapter):
 
 class DodAdapter(LiveSourceAdapter):
     definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("defense", "space", "commercial_aerospace"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present")
+    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official DoD machine-readable feed is not configured; web page collection is disabled"
 
 
 class CommerceAdapter(LiveSourceAdapter):
     definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers")
+    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official Commerce machine-readable feed is not configured; web page collection is disabled"
 
 
 class FdaAdapter(LiveSourceAdapter):

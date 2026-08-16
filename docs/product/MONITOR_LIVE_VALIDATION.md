@@ -29,10 +29,27 @@ retrieval times, canonical references, and raw evidence references are retained
 by `SourceObservation`.
 
 The provider-neutral registry selected the Anthropic adapter and consumed the
-configured key only within that adapter. A minimal public-title request was
-made through `extract_structured_event`; the configured model returned HTTP 404.
-This is an explicit AI-provider configuration/model availability failure, not a
-source failure and not canonical truth. No BTX SAMPLE commercial data was sent.
+configured key only within that adapter. The Models endpoint returned HTTP 200
+and listed `claude-sonnet-5`; the former configured model was unavailable to
+this API account and returned HTTP 404. A minimal public-text extraction through
+the adapter using `claude-sonnet-5` returned nonempty JSON-shaped content with
+its evidence ID. The default configuration now uses that discovered model; no
+BTX SAMPLE commercial data was sent.
+
+## Checkpoint 15 source decisions
+
+SEC remains a keyless authoritative structured source, but controlled access
+from this environment returned HTTP 403 under its declared user agent. The
+adapter therefore remains blocked until BTX supplies an SEC-compliant declared
+organization/contact user agent and verified public CIK watch-profile evidence.
+No CIK was inferred from a synthetic account.
+
+The DoD Contracts and Commerce news pages returned HTTP 403 in the controlled
+validation. Their adapters are now explicitly unavailable rather than attempting
+to parse or bypass publisher web pages. Defense/space/commercial-aerospace
+coverage remains through SAM.gov, USAspending, Federal Register, and NASA;
+semiconductor coverage remains through SEC and approved official company/state
+feeds once configured.
 
 ## Industry and downstream outcome
 
