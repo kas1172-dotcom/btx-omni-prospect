@@ -4,7 +4,6 @@ Revision ID: 0005_monitor_live
 Revises: 0004_workflow
 """
 from alembic import op
-
 from btx_omni.persistence.models import (
     monitor_collection_runs,
     monitor_event_clusters,
