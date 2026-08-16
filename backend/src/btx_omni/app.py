@@ -6,6 +6,7 @@ from btx_omni.api.actions import router as actions_router
 from btx_omni.api.health import router as health_router
 from btx_omni.api.intelligence import router as intelligence_router
 from btx_omni.api.map import router as map_router
+from btx_omni.api.monitor import router as monitor_router
 from btx_omni.api.omni import router as omni_router
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.today import router as today_router
@@ -29,7 +30,7 @@ def create_app() -> FastAPI:
 
     global runtime
     runtime = PocRuntime(settings)
-    for router in (health_router, today_router, accounts_router, intelligence_router, map_router, actions_router, omni_router):
+    for router in (health_router, today_router, accounts_router, intelligence_router, map_router, actions_router, omni_router, monitor_router):
         app.include_router(router, prefix=settings.api_prefix)
 
     return app

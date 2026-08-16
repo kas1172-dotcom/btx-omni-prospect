@@ -62,6 +62,9 @@ class SourceObservation:
     raw_evidence: RawEvidenceReference
     source_published_at: datetime | None = None
     raw_payload_locator: str | None = None
+    source_tier: str = "TIER_1_AUTHORITATIVE_STRUCTURED"
+    collection_run_id: str | None = None
+    structured_payload: str | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.observed_at, "observed_at")
@@ -192,4 +195,3 @@ class RejectedObservation:
     reason: str
     evidence_id: str
     rejected_at: datetime
-

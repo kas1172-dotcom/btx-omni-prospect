@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from btx_omni.core.config import Settings
 from btx_omni.modules.work.service import WorkService
+from btx_omni.monitor.service import MonitorService
 from btx_omni.providers.sample.environment import (
     SampleEnvironment,
     build_sample_environment,
@@ -19,6 +20,10 @@ class PocRuntime:
     settings: Settings
     sample: SampleEnvironment = field(default_factory=build_sample_environment)
     work: WorkService = field(default_factory=WorkService)
+    monitor: MonitorService = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.monitor = MonitorService(self.settings)
 
     def environment(self) -> SampleEnvironment:
         if self.settings.data_mode.upper() != "SAMPLE":

@@ -17,6 +17,8 @@ Monitor and Omni research are intentionally distinct. Monitor is proactive, sche
 
 No persistence migration is included in this checkpoint. The foundation contracts define a future persistence boundary without duplicating current canonical Intelligence, Evidence, Account, Program, Matching, alert, Omni or Action domain records.
 
+Checkpoint 12 adds narrow Monitor operational persistence: source observations hold source record/version/hash, canonical URL and a payload reference (not source-specific columns); collection runs, health state, and cluster membership are persisted separately. Canonical account, Intelligence, Evidence and commercial tables remain source-neutral.
+
 ## Deduplication, lifecycle and audit
 
 Every observation has `source_record_id`, `SourceVersion.version_id`, `content_hash`, `first_seen_at`, `last_seen_at`, and optional `changed_at`. The source-record key recognizes the same record; the hash recognizes changed content. Event clustering uses event type, resolved subject (or normalized unresolved mention), program and event-date window to propose a cluster, then retains every observation and evidence record. A source update can revise an event; a materially changed fact can supersede it through `supersedes_event_id`. Related events and `InitiativeLink` express a multi-event initiative lifecycle without collapsing distinct events. Ambiguity is first-class and blocks automatic resolution.
