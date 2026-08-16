@@ -1,0 +1,23 @@
+# Local environments and dependencies
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+
+# Local configuration and data
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+
+# Build and test output
+dist/
+build/
+coverage/
+.pytest_cache/
+.ruff_cache/
+
+# Editor-local state
+.vscode/
