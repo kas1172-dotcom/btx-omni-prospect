@@ -11,6 +11,7 @@ from btx_omni.monitor.clustering import cluster_event, cluster_key, observation_
 from btx_omni.monitor.contracts import (
     CollectionRun,
     EventCluster,
+    IntelligenceEvent,
     RejectedObservation,
     SourceHealth,
     SourceObservation,
@@ -28,6 +29,8 @@ class MonitorService:
     health: dict[str, SourceHealth] = field(default_factory=dict)
     runs: list[CollectionRun] = field(default_factory=list)
     clusters: dict[str, EventCluster] = field(default_factory=dict)
+    events: dict[str, IntelligenceEvent] = field(default_factory=dict)
+    observations: dict[str, SourceObservation] = field(default_factory=dict)
     rejected: list[RejectedObservation] = field(default_factory=list)
     source_versions: dict[tuple[str, str], SourceObservation] = field(default_factory=dict)
 
@@ -41,6 +44,8 @@ class MonitorService:
             created = changed = new = 0
             for observation in observations:
                 candidate = normalize_structured_observation(observation)
+                self.observations[observation.id] = observation
+                self.events[candidate.event.id] = candidate.event
                 version_key = (observation.source_identity.source_system, observation.source_identity.source_record_id)
                 previous = self.source_versions.get(version_key)
                 changed += int(observation_changed(previous, observation))

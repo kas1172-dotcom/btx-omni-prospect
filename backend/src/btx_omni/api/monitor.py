@@ -18,6 +18,7 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         "sources": runtime.monitor.health,
         "last_runs": runtime.monitor.runs[-20:],
         "clusters": tuple(runtime.monitor.clusters.values()),
+        "events": tuple(runtime.monitor.events.values()),
         "rejected_observations": tuple(runtime.monitor.rejected[-20:]),
     }
 

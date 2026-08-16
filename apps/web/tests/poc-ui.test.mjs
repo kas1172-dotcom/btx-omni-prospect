@@ -19,9 +19,15 @@ test('frontend uses only canonical Omni Prospect API routes', () => {
 })
 
 test('mobile-first layout prevents horizontal overflow and exposes an Omni drawer', () => {
-  assert.match(styles, /overflow-x: clip/)
+  assert.match(styles, /overflow-x:\s*clip/)
   assert.match(styles, /@media\(max-width:760px\)/)
   assert.match(styles, /\.omni-drawer\{width:100%/)
+})
+
+test('live Monitor observations use the canonical intelligence and map surfaces', () => {
+  assert.match(app, /intelligence_signals/)
+  assert.match(map, /LIVE_PUBLIC/)
+  assert.match(map, /No linked signals have map coordinates/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {

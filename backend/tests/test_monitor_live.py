@@ -7,6 +7,8 @@ from btx_omni.ai.anthropic import AnthropicProvider
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import AiRequest
 from btx_omni.ai.registry import get_ai_provider
+from btx_omni.api.intelligence_projection import intelligence_signals
+from btx_omni.api.runtime import PocRuntime
 from btx_omni.app import create_app
 from btx_omni.core.config import Settings
 from btx_omni.monitor.packs import PACKS
@@ -100,3 +102,16 @@ def test_monitor_registry_endpoint_is_internal_observability() -> None:
     assert {item["source_id"] for item in response.json()} >= {"sam_gov", "fda_openfda", "sec_edgar"}
     health = client.get("/api/monitor/health")
     assert health.status_code == 200 and {"sources", "last_runs", "clusters", "rejected_observations"} <= set(health.json())
+
+
+def test_live_monitor_event_projects_through_canonical_intelligence_contract() -> None:
+    runtime = PocRuntime(Settings(_env_file=None, monitor_mode="live"))
+    runtime.monitor = MonitorService(runtime.settings, {"fda": FdaAdapter(fake_get({"results": [{"id": "live-1", "title": "Device approval"}]}))})
+    runtime.monitor.collect("fda", limit=1)
+
+    live = [item for item in intelligence_signals(runtime) if item.get("data_mode") == "CONNECTED"]
+
+    assert len(live) == 1
+    assert live[0]["data_mode"].value == "CONNECTED"
+    assert live[0]["resolution_state"].value == "UNRESOLVED"
+    assert live[0]["account_id"] is None

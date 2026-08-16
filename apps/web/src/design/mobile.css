@@ -1,0 +1,14 @@
+@media (max-width: 760px) {
+  .topbar {
+    flex-wrap: wrap;
+    padding: 8px 0;
+  }
+
+  .topbar nav {
+    width: 100%;
+    max-width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+    overflow: visible;
+  }
+}

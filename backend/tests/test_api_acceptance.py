@@ -21,6 +21,8 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     assert southwest.status_code == medical.status_code == accounts.status_code == defense.status_code == no_quote.status_code == 200
     assert len(southwest.json()["records"]) == 100 and len(medical.json()["records"]) == 100
     assert all(item["location"]["country"] == "US" and item["public_research_state"] == "ELIGIBLE" and item["public_identity_state"] == "UNVERIFIED" for item in accounts.json()["accounts"])
+    assert all("external_rank" in item and "attractiveness" in item and "commercial_context_state" in item for item in accounts.json()["accounts"])
+    assert "intelligence_signals" in southwest.json()
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"
     assert len(defense.json()["paperless_accounts"]) == 1 and len(defense.json()["paperless_quotes"]) == 2
     assert defense.json()["public_identity"] is None and defense.json()["public_identity_state"] == "UNVERIFIED"
