@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     data_mode: str = "SAMPLE"
     frontend_origins: str = "http://localhost:5173"
+    monitor_mode: str = "disabled"
+    ai_provider: str = "anthropic"
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-4-20250514"
+    sam_api_key: str | None = None
 
     database_url: str = Field(
         default=(
