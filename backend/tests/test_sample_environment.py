@@ -16,6 +16,6 @@ def test_market_universe_is_complete_and_mappable() -> None:
 
 def test_deep_scenario_accounts_have_safe_context() -> None:
     environment = build_sample_environment()
-    assert len(environment.commercial_contexts) == 17
+    assert len(environment.commercial_contexts) == 18
     assert len(environment.quotes) == 17
     assert all("drawing" not in field.lower() for quote in environment.quotes for field in quote.__dict__)

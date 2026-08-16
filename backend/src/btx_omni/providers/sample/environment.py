@@ -21,7 +21,8 @@ INDUSTRIES = ("Commercial Aerospace", "Defense", "Space", "Semiconductor", "Medi
 SCENARIOS = (
     "southwest-trip", "medical-whitespace", "defense-award-quote", "semiconductor-expansion",
     "dormant-customer", "quote-follow-up", "cross-bu-conflict", "strong-external-weak-internal",
-    "strong-internal-weak-external", "missing-conflicting-evidence",
+    "strong-internal-weak-external", "missing-conflicting-evidence", "bookings-decline",
+    "crm-inactivity", "intelligence-commercial-context",
 )
 
 
@@ -57,8 +58,26 @@ def build_sample_environment() -> SampleEnvironment:
             facilities.append(AccountFacility(f"fac-{account_id}", account_id, f"{name} site", "Phoenix", "AZ", Decimal("33.4484") + Decimal(rank) / 10000, Decimal("-112.0740") + Decimal(rank) / 10000))
             ranks.append(ExternalIndustryRank(account_id, industry, rank, "SAMPLE Top-100 methodology", "Synthetic deterministic market-universe rank; never an attractiveness input."))
             identity.update({f"prism:{account_id}": account_id, f"paperless:{account_id}": account_id, f"hubspot:{account_id}": account_id, f"public:{name.lower()}": account_id})
-    contexts = tuple(CommercialContext(account_id=a.id, business_unit="Southwest", currency="USD", ttm_revenue_minor=1_000_000 if a.relationship is AccountRelationship.CURRENT_CUSTOMER else None, ttm_bookings_minor=900_000 if a.relationship is AccountRelationship.CURRENT_CUSTOMER else None, customer_segment="SAMPLE", end_market=a.industries[0], platform_program=None, part_number=None, last_booking_date=date(2025, 11, 1), last_order_date=date(2025, 10, 1), monthly_history=(MonthlyCommercialHistory(date(2025, 12, 1), 80_000, 75_000, _provenance(a.id)),), provenance=_provenance(a.id), jamie_validation_required=("monthly_history", "last_order_date")) for a in accounts[:17])
-    quotes = tuple(CommercialQuote(f"quote-{a.id}", a.id, "Southwest", QuoteStatus.OPEN if index in {5, 9} else QuoteStatus.WON, date(2025, 8, 1), 250_000, "USD", None, f"fac-{a.id}", "precision-machined", _provenance(a.id)) for index, a in enumerate(accounts[:17], 1))
+    contexts = []
+    for index, account in enumerate(accounts[:17], 1):
+        last_booking = date(2025, 11, 1)
+        history = (MonthlyCommercialHistory(date(2025, 12, 1), 80_000, 75_000, _provenance(account.id)),)
+        crm = date(2025, 12, 20)
+        intelligence: tuple[str, ...] = ()
+        if account.legal_name == "Dormant Precision":
+            last_booking = date(2025, 8, 1)
+        if account.legal_name == "Defense Prime One":
+            history = (MonthlyCommercialHistory(date(2025, 11, 1), 100_000, 200_000, _provenance(account.id)), MonthlyCommercialHistory(date(2025, 12, 1), 100_000, 100_000, _provenance(account.id)))
+        if account.legal_name == "Silicon Expansion Co":
+            crm = date(2025, 11, 1)
+            intelligence = ("intel-silicon-expansion",)
+        active = account.relationship is AccountRelationship.CURRENT_CUSTOMER or account.legal_name == "Silicon Expansion Co"
+        contexts.append(CommercialContext(account.id, "Southwest", "USD", 1_000_000 if active else None, 900_000 if active else None, "SAMPLE", account.industries[0], None, None, last_booking, date(2025, 10, 1), history, _provenance(account.id), crm, intelligence, ("monthly_history", "last_order_date")))
+    # The same canonical account is intentionally represented in two BUs.
+    shared = next(item for item in contexts if item.account_id == accounts[9].id)
+    contexts.append(CommercialContext(shared.account_id, "Defense", shared.currency, shared.ttm_revenue_minor, shared.ttm_bookings_minor, shared.customer_segment, shared.end_market, None, None, shared.last_booking_date, shared.last_order_date, shared.monthly_history, shared.provenance, shared.last_crm_activity_date, (), shared.jamie_validation_required))
+    quotes = tuple(CommercialQuote(f"quote-{a.id}", a.id, "Southwest", QuoteStatus.OPEN if a.legal_name in {"Quote Risk Manufacturing", "Defense Prime One"} else QuoteStatus.WON, date(2025, 8, 1), 50_000 if a.legal_name == "Defense Prime One" else 250_000, "USD", None, f"fac-{a.id}", "precision-machined", _provenance(a.id)) for a in accounts[:17])
     scenario_accounts = {scenario: (accounts[index].id,) for index, scenario in enumerate(SCENARIOS)}
     scenario_accounts["southwest-trip"] = tuple(account.id for account in accounts[:4])
-    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), contexts, quotes, identity, scenario_accounts)
+    scenario_accounts.update({"bookings-decline": (accounts[5].id,), "crm-inactivity": (accounts[6].id,), "intelligence-commercial-context": (accounts[6].id,)})
+    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), quotes, identity, scenario_accounts)

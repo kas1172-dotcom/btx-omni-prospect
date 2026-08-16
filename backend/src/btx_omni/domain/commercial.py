@@ -29,4 +29,6 @@ class CommercialContext:
     last_order_date: date | None
     monthly_history: tuple[MonthlyCommercialHistory, ...]
     provenance: Provenance
+    last_crm_activity_date: date | None = None
+    intelligence_evidence_ids: tuple[str, ...] = ()
     jamie_validation_required: tuple[str, ...] = ()
