@@ -8,6 +8,7 @@ from btx_omni.persistence.database import (
 
 def test_settings_reads_database_url_from_environment(monkeypatch) -> None:
     database_url = "postgresql+psycopg://test_user:test_password@db:5432/test_db"
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("BTX_DATABASE_URL", database_url)
 
     settings = Settings(_env_file=None)
@@ -17,11 +18,23 @@ def test_settings_reads_database_url_from_environment(monkeypatch) -> None:
 
 def test_settings_accepts_platform_database_url_alias(monkeypatch) -> None:
     database_url = "postgresql+psycopg://platform_user:password@db:5432/platform"
+    monkeypatch.delenv("BTX_DATABASE_URL", raising=False)
     monkeypatch.setenv("DATABASE_URL", database_url)
 
     settings = Settings(_env_file=None)
 
     assert settings.database_url == database_url
+
+
+def test_settings_prefers_btx_database_url_when_both_aliases_are_present(monkeypatch) -> None:
+    btx_database_url = "postgresql+psycopg://btx_user:password@db:5432/btx"
+    platform_database_url = "postgresql+psycopg://platform_user:password@db:5432/platform"
+    monkeypatch.setenv("BTX_DATABASE_URL", btx_database_url)
+    monkeypatch.setenv("DATABASE_URL", platform_database_url)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.database_url == btx_database_url
 
 
 def test_database_factory_uses_settings_url_without_connecting() -> None:
