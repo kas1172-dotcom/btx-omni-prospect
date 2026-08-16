@@ -7,6 +7,7 @@ const styles = readFileSync(new URL('../src/design/app.css', import.meta.url), '
 const client = readFileSync(new URL('../src/api/client.ts', import.meta.url), 'utf8')
 const map = readFileSync(new URL('../src/features/map/Map.tsx', import.meta.url), 'utf8')
 const actions = readFileSync(new URL('../src/features/actions/Actions.tsx', import.meta.url), 'utf8')
+const accounts = readFileSync(new URL('../src/features/accounts/Accounts.tsx', import.meta.url), 'utf8')
 
 test('canonical navigation and mobile core flow are present', () => {
   for (const surface of ['Today', 'Accounts', 'Intelligence', 'Map', 'Actions', 'OmniDrawer']) assert.match(app, new RegExp(surface))
@@ -28,6 +29,13 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(app, /intelligence_signals/)
   assert.match(map, /LIVE_PUBLIC/)
   assert.match(map, /No linked signals have map coordinates/)
+})
+
+test('Account 360 distinguishes public relationship and Contact Research from SAMPLE CRM', () => {
+  assert.match(accounts, /Public relationship/)
+  assert.match(accounts, /RESEARCH ONLY/)
+  assert.match(accounts, /not SAMPLE CRM or future HubSpot contact data/)
+  assert.match(accounts, /research priority is not a score/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {

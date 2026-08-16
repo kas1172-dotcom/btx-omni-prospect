@@ -15,7 +15,8 @@ def test_market_universe_is_complete_and_mappable() -> None:
     assert all(item.latitude is not None and item.longitude is not None for item in environment.facilities)
     assert {industry: sum(industry in account.industries for account in environment.accounts) for industry in INDUSTRIES} == {industry: 100 for industry in INDUSTRIES}
     assert all(account.id and account.legal_name and account.domain and account.relationship and account.contact_role_families and account.provenance for account in environment.accounts)
-    assert all(account.contact_role_families == ROLE_FAMILIES and account.public_research_state == "ELIGIBLE" for account in environment.accounts)
+    assert all(account.contact_role_families == ROLE_FAMILIES for account in environment.accounts)
+    assert sum(account.public_research_state == "RESEARCHED_PUBLIC" for account in environment.accounts) == 78
     assert all(facility.city and facility.region and facility.country == "US" and facility.latitude and facility.longitude for facility in environment.facilities)
     assert {(rank.account_id, rank.industry, rank.rank) for rank in environment.ranks}
     assert all("never an attractiveness input" in rank.methodology.lower() for rank in environment.ranks)

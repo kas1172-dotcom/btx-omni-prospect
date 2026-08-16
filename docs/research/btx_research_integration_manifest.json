@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "account_universe_file": "btx_researched_account_universe_v2.json",
+  "contact_research_file": "btx_researched_contacts_v2.json",
+  "join_key": "research_account_id",
+  "assessment": {
+    "account_schema_sufficient_for_current_product_vision": true,
+    "contact_schema_sufficient_for_current_product_vision": true,
+    "data_complete_for_final_600_real_account_universe": false,
+    "reason": "The schema supports verified public identity, inferred/public relationship evidence, Monitor watch profiles, Contact Research, SAMPLE internal commercial context, provenance, and later BTX-confirmed overrides. The remaining gap is research coverage, not architecture."
+  },
+  "required_truth_boundaries": [
+    "public identity != BTX confirmed relationship",
+    "public contact != HubSpot contact",
+    "research prospect priority != Account Attractiveness",
+    "public relationship inference is replaceable by BTX internal evidence",
+    "SAMPLE PRISM/Paperless/CRM remains explicitly synthetic",
+    "named public contacts require provenance and reverification before outreach"
+  ],
+  "future_data_enrichment": [
+    "expand real-company universe toward defensible 100 per industry",
+    "confirm external ranking methodology with Jamie/BTX",
+    "fill CIK/ticker/source-native identifiers where verified",
+    "verify facilities/geocodes/newsroom/IR feeds",
+    "continue named contact research across remaining accounts and role families",
+    "replace public relationship evidence with BTX internal truth when available"
+  ]
+}

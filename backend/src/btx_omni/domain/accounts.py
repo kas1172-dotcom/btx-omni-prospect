@@ -25,6 +25,47 @@ class PublicIdentityVerificationState(StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
+class PublicRelationshipState(StrEnum):
+    BTX_CONFIRMED = "BTX_CONFIRMED"
+    PUBLICLY_EVIDENCED_RELATIONSHIP = "PUBLICLY_EVIDENCED_RELATIONSHIP"
+    PUBLIC_INTERACTION_INFERENCE = "PUBLIC_INTERACTION_INFERENCE"
+    NO_RELATIONSHIP_EVIDENCE = "NO_RELATIONSHIP_EVIDENCE"
+
+
+@dataclass(frozen=True)
+class ResearchProvenance:
+    source_ids: tuple[str, ...]
+    source_urls: tuple[str, ...]
+    verification_state: str
+    last_verified_at: datetime | None = None
+    research_only: bool = True
+
+
+@dataclass(frozen=True)
+class PublicRelationshipEvidence:
+    state: PublicRelationshipState
+    confidence: str
+    basis: str
+    replaceable_by_internal: bool
+    provenance: ResearchProvenance
+
+
+@dataclass(frozen=True)
+class PublicContactResearch:
+    contact_type: str
+    role_family: str
+    verification_state: str
+    source_type: str | None
+    source_url: str | None
+    provenance: ResearchProvenance
+    name: str | None = None
+    title_or_function: str | None = None
+    division: str | None = None
+    location: str | None = None
+    public_email: str | None = None
+    public_phone: str | None = None
+
+
 @dataclass(frozen=True)
 class PublicIdentityField:
     value: str
@@ -72,6 +113,11 @@ class CanonicalAccount:
     provenance: Provenance | None = None
     public_research_state: str = "ELIGIBLE"
     public_identity: PublicCompanyIdentity | None = None
+    research_account_id: str | None = None
+    public_relationship: PublicRelationshipEvidence | None = None
+    prospect_research_priority: str | None = None
+    prospect_rationale: str | None = None
+    public_contacts: tuple[PublicContactResearch, ...] = ()
 
 
 @dataclass(frozen=True)
