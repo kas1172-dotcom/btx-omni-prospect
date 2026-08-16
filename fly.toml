@@ -13,7 +13,7 @@ primary_region = "iad"
   BTX_API_PREFIX = "/api"
   BTX_MONITOR_MODE = "live"
   BTX_AI_PROVIDER = "anthropic"
-  BTX_ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
+  BTX_ANTHROPIC_MODEL = "claude-sonnet-5"
   PORT = "8080"
 
 [http_service]
