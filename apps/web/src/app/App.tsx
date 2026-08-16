@@ -1,0 +1,15 @@
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
+import { OmniDrawer } from '../components/OmniDrawer'
+import { Actions } from '../features/actions/Actions'
+import { Accounts } from '../features/accounts/Accounts'
+import { Intelligence } from '../features/intelligence/Intelligence'
+import { Map } from '../features/map/Map'
+import { Today } from '../features/today/Today'
+import type { Account, Account360, Alert, MapRecord, Signal, WorkItem } from '../types/api'
+import '../design/tokens.css'
+import '../design/app.css'
+
+type Surface = 'today' | 'accounts' | 'intelligence' | 'map' | 'actions'
+const nav: Array<[Surface, string]> = [['today', 'Today'], ['accounts', 'Accounts'], ['intelligence', 'Intelligence'], ['map', 'Map'], ['actions', 'Actions']]
+export default function App() { const [surface, setSurface] = useState<Surface>('today'); const [accounts, setAccounts] = useState<Account[]>([]); const [alerts, setAlerts] = useState<Alert[]>([]); const [signals, setSignals] = useState<Signal[]>([]); const [records, setRecords] = useState<MapRecord[]>([]); const [layers, setLayers] = useState<string[]>([]); const [detail, setDetail] = useState<Account360>(); const [items, setItems] = useState<WorkItem[]>([]); const [error, setError] = useState(''); const select = async (id: string) => { try { setDetail(await api.account(id)); setSurface('accounts') } catch (e) { setError(e instanceof Error ? e.message : 'Account context unavailable.') } }; useEffect(() => { void Promise.all([api.accounts(), api.today(), api.intelligence(), api.map()]).then(([a, t, i, m]) => { setAccounts(a.accounts); setAlerts(t.commercial_alerts); setSignals(i.signals); setRecords(m.records); setLayers(m.layers) }).catch(e => setError(e instanceof Error ? e.message : 'Canonical API unavailable.')) }, []); const render = () => { if (surface === 'accounts') return <Accounts accounts={accounts} detail={detail} onSelect={id => void select(id)} />; if (surface === 'intelligence') return <Intelligence signals={signals} onAccount={id => void select(id)} />; if (surface === 'map') return <Map records={records} layers={layers} onAccount={id => void select(id)} />; if (surface === 'actions') return <Actions items={items} onItem={item => setItems(old => [...old.filter(value => value.id !== item.id), item])} alerts={alerts} />; return <Today alerts={alerts} signals={signals} onAccount={id => void select(id)} onAction={alert => { setSurface('actions'); setError(`Ready to create action for ${alert.account_id}.`) }} /> }; return <main className="app-shell"><header className="topbar"><button className="wordmark" onClick={() => setSurface('today')}>BTX <span>OMNI</span></button><span className="mode">SAMPLE · GOVERNED</span><nav aria-label="Primary navigation">{nav.map(([id, label]) => <button key={id} className={surface === id ? 'active' : ''} onClick={() => setSurface(id)}>{label}</button>)}</nav></header>{error && <div className="api-notice">{error}</div>}{render()}<OmniDrawer accountId={detail?.account.id} /></main> }
