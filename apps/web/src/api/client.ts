@@ -1,7 +1,8 @@
 import type { Account, Account360, Alert, MapRecord, OmniResponse, Signal, WorkItem } from '../types/api'
 
+const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`/api${path}`, { headers: { 'content-type': 'application/json' }, ...init })
+  const response = await fetch(`${apiBase}${path}`, { headers: { 'content-type': 'application/json' }, ...init })
   if (!response.ok) throw new Error((await response.text()) || `Request failed: ${response.status}`)
   return response.json() as Promise<T>
 }

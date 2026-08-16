@@ -15,6 +15,15 @@ def test_settings_reads_database_url_from_environment(monkeypatch) -> None:
     assert settings.database_url == database_url
 
 
+def test_settings_accepts_platform_database_url_alias(monkeypatch) -> None:
+    database_url = "postgresql+psycopg://platform_user:password@db:5432/platform"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.database_url == database_url
+
+
 def test_database_factory_uses_settings_url_without_connecting() -> None:
     settings = Settings(
         _env_file=None,

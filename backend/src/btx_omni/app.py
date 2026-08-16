@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from btx_omni.api.accounts import router as accounts_router
 from btx_omni.api.actions import router as actions_router
@@ -17,6 +18,13 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         version="0.1.0",
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[origin.strip() for origin in settings.frontend_origins.split(",") if origin.strip()],
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["content-type"],
     )
 
     global runtime
