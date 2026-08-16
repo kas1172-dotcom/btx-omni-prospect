@@ -24,6 +24,7 @@ from btx_omni.modules.matching.commercial import (
 from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.providers.research.ingestion import (
     ResearchAccount,
+    apply_facility_feed_enrichment,
     apply_research_overlay,
 )
 
@@ -62,6 +63,7 @@ class SampleEnvironment:
     research_mappings: dict[str, str]
     researched_accounts: tuple[ResearchAccount, ...]
     watch_profiles: tuple[AccountWatchProfile, ...]
+    public_facilities: tuple[AccountFacility, ...]
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,7 @@ def build_sample_environment() -> SampleEnvironment:
             ranks.append(ExternalIndustryRank(account_id, industry, rank, "SAMPLE Top-100 methodology", "Synthetic deterministic market-universe rank; never an attractiveness input."))
             identity.update({f"prism:{account_id}": account_id, f"paperless:{account_id}": account_id, f"hubspot:{account_id}": account_id, f"public:{name.lower()}": account_id})
     accounts, research_mappings, researched_accounts = apply_research_overlay(tuple(accounts))
+    accounts, public_facilities = apply_facility_feed_enrichment(accounts, research_mappings)
     by_id = {account.id: account for account in accounts}
     deep_accounts = tuple(by_id[account_id] for account_id in deep_names)
     contexts = []
@@ -163,5 +166,8 @@ def build_sample_environment() -> SampleEnvironment:
         HistoricalQuoteContext(defense_quote.id, defense_quote.account_id, defense_quote.business_unit, "DP-100", "enclosure", "Aluminum", "5-axis", defense_quote.part_family, (defense_quote.provenance.source_record_id,), defense_quote.provenance),
         HistoricalQuoteContext("quote-conflict", "acct-01-008", "Southwest", "OTHER-1", "bracket", "Aluminum", "turning", None, ("quote-conflict-evidence",), _provenance("quote-conflict")),
     )
-    watch_profiles = tuple(AccountWatchProfile(account.id, account.legal_name, aliases=tuple(field.value for field in account.public_identity.aliases) if account.public_identity else (), domain=account.domain, industries=account.industries) for account in accounts if account.research_account_id)
-    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), paperless_accounts, tuple(quotes), identity, scenario_accounts, crm_contexts, public_signals, scoring_inputs, intelligence_events, matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles)
+    public_facilities_by_account: dict[str, list[str]] = {}
+    for facility in public_facilities:
+        public_facilities_by_account.setdefault(facility.account_id, []).append(facility.id)
+    watch_profiles = tuple(AccountWatchProfile(account.id, account.legal_name, aliases=tuple(field.value for field in account.public_identity.aliases) if account.public_identity else (), domain=account.domain, newsroom_url=account.public_identity.newsroom_url.value if account.public_identity and account.public_identity.newsroom_url else None, investor_relations_url=account.public_identity.investor_relations_url.value if account.public_identity and account.public_identity.investor_relations_url else None, official_feed_urls=tuple(field.value for field in account.public_identity.official_feed_urls) if account.public_identity else (), facilities=tuple(public_facilities_by_account.get(account.id, ())), industries=account.industries) for account in accounts if account.research_account_id)
+    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), paperless_accounts, tuple(quotes), identity, scenario_accounts, crm_contexts, public_signals, scoring_inputs, intelligence_events, matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities)

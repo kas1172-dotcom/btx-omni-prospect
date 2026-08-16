@@ -94,6 +94,7 @@ class PublicCompanyIdentity:
     official_website: PublicIdentityField | None = None
     newsroom_url: PublicIdentityField | None = None
     investor_relations_url: PublicIdentityField | None = None
+    official_feed_urls: tuple[PublicIdentityField, ...] = ()
     sec_cik: PublicIdentityField | None = None
     ticker: PublicIdentityField | None = None
     exchange: PublicIdentityField | None = None
@@ -130,6 +131,12 @@ class AccountFacility:
     latitude: Decimal
     longitude: Decimal
     country: str = "US"
+    facility_type: str = "SAMPLE_INTERNAL_LOCATION"
+    verification_state: str = "SAMPLE_INTERNAL_LOCATION"
+    source_url: str | None = None
+    source_type: str | None = None
+    last_verified_at: datetime | None = None
+    provenance: ResearchProvenance | None = None
 
 
 @dataclass(frozen=True)

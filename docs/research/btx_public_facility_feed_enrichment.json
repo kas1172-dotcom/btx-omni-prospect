@@ -1,0 +1,2910 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-16",
+  "research_methodology": {
+    "authoritative_sources": [
+      "SEC EDGAR submissions API for reported business addresses",
+      "official account domains for newsroom/IR/feed endpoints"
+    ],
+    "coordinate_rule": "Coordinates are populated only when the U.S. Census Bureau Geocoder resolves an exact SEC-reported U.S. business address; otherwise null.",
+    "facility_rule": "No non-HQ facility was emitted without a location-specific authoritative source.",
+    "missing_data_rule": "Unavailable information is explicit null, [] or MISSING_LOCATION; it is never guessed."
+  },
+  "summary": {
+    "accounts_total": 78,
+    "hq_coverage": {
+      "verified_public_hq": 28,
+      "total": 78
+    },
+    "facility_coverage": {
+      "accounts_with_verified_facility": 0,
+      "total": 78
+    },
+    "coordinate_coverage": {
+      "accounts_with_verified_hq_coordinates": 28,
+      "total": 78
+    },
+    "newsroom_coverage": {
+      "accounts_with_verified_official_newsroom": 40,
+      "total": 78
+    },
+    "ir_coverage": {
+      "accounts_with_verified_investor_relations": 16,
+      "total": 78
+    },
+    "feed_coverage": {
+      "accounts_with_verified_official_feed": 13,
+      "total": 78
+    }
+  },
+  "accounts": [
+    {
+      "research_account_id": "boeing",
+      "display_name": "Boeing",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": "https://investors.boeing.com/investors/overview/default.aspx",
+      "official_feed_urls": [],
+      "source_ids": [
+        "BTX_DEFENSE_CHANDLER",
+        "DOD_2025",
+        "FAA_BOEING",
+        "OFFICIAL_IR_BOEING"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "BTX_DEFENSE_CHANDLER",
+          "DOD_2025",
+          "FAA_BOEING"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "display_name": "GE Aerospace",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.geaerospace.com/news/",
+      "investor_relations_url": "https://www.geaerospace.com/investor-relations",
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_PROPULSION",
+        "OFFICIAL_NEWSROOM_GE-AEROSPACE",
+        "OFFICIAL_IR_GE-AEROSPACE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_PROPULSION"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "rtx",
+      "display_name": "RTX",
+      "headquarters": {
+        "city": "ARLINGTON",
+        "state_region": "VA",
+        "country": "United States",
+        "latitude": 38.893878275529,
+        "longitude": -77.068405772769,
+        "source_url": "https://data.sec.gov/submissions/CIK0000101829.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000101829",
+          "official_address": "1000 WILSON BLVD, ARLINGTON, VA, 22209",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.rtx.com/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025",
+        "NASA_PROPULSION",
+        "SEC_EDGAR_0000101829",
+        "OFFICIAL_NEWSROOM_RTX"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025",
+          "NASA_PROPULSION"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "honeywell-international",
+      "display_name": "Honeywell International",
+      "headquarters": {
+        "city": "CHARLOTTE",
+        "state_region": "NC",
+        "country": "United States",
+        "latitude": 35.224196318418,
+        "longitude": -80.852567488784,
+        "source_url": "https://data.sec.gov/submissions/CIK0000773840.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000773840",
+          "official_address": "855 S. MINT STREET, CHARLOTTE, NC, 28202",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.honeywell.com/us/en",
+      "investor_relations_url": "https://investor.honeywell.com/",
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHANDLER_BLAINE",
+        "NASA_PROPULSION",
+        "SEC_EDGAR_0000773840",
+        "OFFICIAL_NEWSROOM_HONEYWELL-INTERNATIONAL",
+        "OFFICIAL_IR_HONEYWELL-INTERNATIONAL"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHANDLER_BLAINE",
+          "NASA_PROPULSION"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "gulfstream-aerospace",
+      "display_name": "Gulfstream Aerospace",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "textron-aviation",
+      "display_name": "Textron Aviation",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://media.txtav.com/",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "FAA_ASOC",
+        "OFFICIAL_NEWSROOM_TEXTRON-AVIATION"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "bombardier",
+      "display_name": "Bombardier",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "embraer",
+      "display_name": "Embraer",
+      "headquarters": {
+        "city": "SAO JOSE DOS CAMPOS",
+        "state_region": "D5",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0001355444.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001355444",
+          "official_address": "AV. BRIGADEIRO FARIA LIMA 2170, SAO JOSE DOS CAMPOS, D5, 12227901",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "FAA_ASOC",
+        "SEC_EDGAR_0001355444"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "dassault-falcon-jet",
+      "display_name": "Dassault Falcon Jet",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.dassaultfalcon.com/news-and-media/news-press-releases/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://www.dassaultfalcon.com/feed/"
+      ],
+      "source_ids": [
+        "FAA_ASOC",
+        "OFFICIAL_NEWSROOM_DASSAULT-FALCON-JET"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.dassaultfalcon.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "cirrus-aircraft",
+      "display_name": "Cirrus Aircraft",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://cirrusaircraft.com/stories/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://cirrusaircraft.com/feed/"
+      ],
+      "source_ids": [
+        "FAA_ASOC",
+        "OFFICIAL_NEWSROOM_CIRRUS-AIRCRAFT"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://cirrusaircraft.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "honda-aircraft-company",
+      "display_name": "Honda Aircraft Company",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "FAA_ASOC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "rolls-royce-north-america",
+      "display_name": "Rolls-Royce North America",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": "https://www.rolls-royce.com/investors",
+      "official_feed_urls": [
+        "https://www.rolls-royce.com/rss/financial-calendar.aspx"
+      ],
+      "source_ids": [
+        "NASA_PROPULSION",
+        "OFFICIAL_IR_ROLLS-ROYCE-NORTH-AMERICA"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_PROPULSION"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.rolls-royce.com/rss/financial-calendar.aspx",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "display_name": "Lockheed Martin",
+      "headquarters": {
+        "city": "BETHESDA",
+        "state_region": "MD",
+        "country": "United States",
+        "latitude": 39.030248168939,
+        "longitude": -77.137313015039,
+        "source_url": "https://data.sec.gov/submissions/CIK0000936468.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000936468",
+          "official_address": "6801 ROCKLEDGE DR, BETHESDA, MD, 20817",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://news.lockheedmartin.com/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://news.lockheedmartin.com/rss"
+      ],
+      "source_ids": [
+        "BTX_DEFENSE_CHANDLER",
+        "CHANDLER_BLAINE",
+        "DOD_2025",
+        "NASA_CLPS",
+        "SEC_EDGAR_0000936468",
+        "OFFICIAL_NEWSROOM_LOCKHEED-MARTIN"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "BTX_DEFENSE_CHANDLER",
+          "CHANDLER_BLAINE",
+          "DOD_2025",
+          "NASA_CLPS"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://news.lockheedmartin.com/rss",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "display_name": "Northrop Grumman",
+      "headquarters": {
+        "city": "FALLS CHURCH",
+        "state_region": "VA",
+        "country": "United States",
+        "latitude": 38.87348538264,
+        "longitude": -77.215794276347,
+        "source_url": "https://data.sec.gov/submissions/CIK0001133421.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001133421",
+          "official_address": "2980 FAIRVIEW PARK DRIVE, C/O NORTHROP GRUMMAN CORP, FALLS CHURCH, VA, 22042",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://news.northropgrumman.com/",
+      "investor_relations_url": "https://www.northropgrumman.com/investor-relations",
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025",
+        "NASA_VADR",
+        "SEC_EDGAR_0001133421",
+        "OFFICIAL_NEWSROOM_NORTHROP-GRUMMAN",
+        "OFFICIAL_IR_NORTHROP-GRUMMAN"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025",
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "general-dynamics",
+      "display_name": "General Dynamics",
+      "headquarters": {
+        "city": "RESTON",
+        "state_region": "VA",
+        "country": "United States",
+        "latitude": 38.947083919775,
+        "longitude": -77.32612394129,
+        "source_url": "https://data.sec.gov/submissions/CIK0000040533.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000040533",
+          "official_address": "11011 SUNSET HILLS RD, RESTON, VA, 20190",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025",
+        "SEC_EDGAR_0000040533"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "l3harris-technologies",
+      "display_name": "L3Harris Technologies",
+      "headquarters": {
+        "city": "MELBOURNE",
+        "state_region": "FL",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0000202058.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000202058",
+          "official_address": "1025 W NASA BLVD, MELBOURNE, FL, 32919",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.l3harris.com/newsroom",
+      "investor_relations_url": "https://investors.l3harris.com/overview/default.aspx?rid=15254",
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025",
+        "SEC_EDGAR_0000202058",
+        "OFFICIAL_NEWSROOM_L3HARRIS-TECHNOLOGIES",
+        "OFFICIAL_IR_L3HARRIS-TECHNOLOGIES"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "bae-systems-inc",
+      "display_name": "BAE Systems, Inc.",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "DOD_MICRO"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "DOD_MICRO"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "huntington-ingalls-industries",
+      "display_name": "Huntington Ingalls Industries",
+      "headquarters": {
+        "city": "NEWPORT NEWS",
+        "state_region": "VA",
+        "country": "United States",
+        "latitude": 36.986328523633,
+        "longitude": -76.435738169157,
+        "source_url": "https://data.sec.gov/submissions/CIK0001501585.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001501585",
+          "official_address": "4101 WASHINGTON AVENUE, 909-7, 7J2, NEWPORT NEWS, VA, 23607",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.hii.com/newsroom",
+      "investor_relations_url": "https://ir.hii.com/overview/default.aspx",
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025",
+        "SEC_EDGAR_0001501585",
+        "OFFICIAL_NEWSROOM_HUNTINGTON-INGALLS-INDUSTRIES",
+        "OFFICIAL_IR_HUNTINGTON-INGALLS-INDUSTRIES"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "general-atomics-aeronautical-systems",
+      "display_name": "General Atomics Aeronautical Systems",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.ga-asi.com/404.php",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_MICRO",
+        "OFFICIAL_NEWSROOM_GENERAL-ATOMICS-AERONAUTICAL-SYSTEMS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_MICRO"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "aerovironment",
+      "display_name": "AeroVironment",
+      "headquarters": {
+        "city": "ARLINGTON",
+        "state_region": "VA",
+        "country": "United States",
+        "latitude": 38.857634187865,
+        "longitude": -77.050001674251,
+        "source_url": "https://data.sec.gov/submissions/CIK0001368622.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001368622",
+          "official_address": "241 18TH STREET SOUTH, SUITE 650, ARLINGTON, VA, 22202",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.avinc.com/news/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://www.avinc.com/feed/"
+      ],
+      "source_ids": [
+        "NASA_STRIDE",
+        "SEC_EDGAR_0001368622",
+        "OFFICIAL_NEWSROOM_AEROVIRONMENT"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_STRIDE"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.avinc.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "anduril-industries",
+      "display_name": "Anduril Industries",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_MICRO"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_MICRO"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "textron-systems",
+      "display_name": "Textron Systems",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.textronsystems.com/our-company/news-events",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025",
+        "OFFICIAL_NEWSROOM_TEXTRON-SYSTEMS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "sierra-nevada-corporation",
+      "display_name": "Sierra Nevada Corporation",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.sncorp.com/news-innovation/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://www.sncorp.com/rss"
+      ],
+      "source_ids": [
+        "NASA_CLPS",
+        "OFFICIAL_NEWSROOM_SIERRA-NEVADA-CORPORATION"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.sncorp.com/rss",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "blue-origin",
+      "display_name": "Blue Origin",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_VADR"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS",
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "spacex",
+      "display_name": "SpaceX",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.spacex.com/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_VADR",
+        "OFFICIAL_NEWSROOM_SPACEX"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS",
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "display_name": "Rocket Lab USA",
+      "headquarters": {
+        "city": "LONG BEACH",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0001819994.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001819994",
+          "official_address": "3881 MCGOWEN STREET, LONG BEACH, CA, 90808",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "NASA_VADR",
+        "SEC_EDGAR_0001819994"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "firefly-aerospace",
+      "display_name": "Firefly Aerospace",
+      "headquarters": {
+        "city": "LEANDER",
+        "state_region": "TX",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0001860160.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001860160",
+          "official_address": "2203 SCOTTSDALE DRIVE, LEANDER, TX, 786416332",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://fireflyspace.com/news/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://fireflyspace.com/feed/"
+      ],
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_VADR",
+        "SEC_EDGAR_0001860160",
+        "OFFICIAL_NEWSROOM_FIREFLY-AEROSPACE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS",
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://fireflyspace.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "united-launch-alliance",
+      "display_name": "United Launch Alliance",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.ulalaunch.com/about/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_VADR",
+        "OFFICIAL_NEWSROOM_UNITED-LAUNCH-ALLIANCE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "relativity-space",
+      "display_name": "Relativity Space",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.relativityspace.com/updates",
+      "investor_relations_url": "https://www.relativityspace.com/about",
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_VADR",
+        "OFFICIAL_NEWSROOM_RELATIVITY-SPACE",
+        "OFFICIAL_IR_RELATIVITY-SPACE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "intuitive-machines",
+      "display_name": "Intuitive Machines",
+      "headquarters": {
+        "city": "HOUSTON",
+        "state_region": "TX",
+        "country": "United States",
+        "latitude": 29.604142292534,
+        "longitude": -95.147222624181,
+        "source_url": "https://data.sec.gov/submissions/CIK0001844452.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001844452",
+          "official_address": "13467 COLUMBIA SHUTTLE STREET, HOUSTON, TX, 77059",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_STRIDE",
+        "SEC_EDGAR_0001844452"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS",
+          "NASA_STRIDE"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "astrobotic",
+      "display_name": "Astrobotic",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://www.astrobotic.com/feed/"
+      ],
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_STRIDE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS",
+          "NASA_STRIDE"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.astrobotic.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "sierra-space",
+      "display_name": "Sierra Space",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "DOD_2025"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "DOD_2025"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "redwire",
+      "display_name": "Redwire",
+      "headquarters": {
+        "city": "JACKSONVILLE",
+        "state_region": "FL",
+        "country": "United States",
+        "latitude": 30.218895475956,
+        "longitude": -81.58475979856,
+        "source_url": "https://data.sec.gov/submissions/CIK0001819810.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001819810",
+          "official_address": "8226 PHILIPS HIGHWAY, SUITE 101, JACKSONVILLE, FL, 32256",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_CLPS",
+        "SEC_EDGAR_0001819810"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_CLPS"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "impulse-space",
+      "display_name": "Impulse Space",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_VADR"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_VADR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "honeybee-robotics",
+      "display_name": "Honeybee Robotics",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "NASA_STRIDE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "NASA_STRIDE"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "intel",
+      "display_name": "Intel",
+      "headquarters": {
+        "city": "SANTA CLARA",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 37.388658539275,
+        "longitude": -121.964939755485,
+        "source_url": "https://data.sec.gov/submissions/CIK0000050863.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000050863",
+          "official_address": "2200 MISSION COLLEGE BLVD, RNB-4-151, SANTA CLARA, CA, 95054",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_INTEL",
+        "SEC_EDGAR_0000050863"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "CHIPS_INTEL"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "display_name": "TSMC Arizona",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_TSMC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "CHIPS_TSMC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "samsung-semiconductor",
+      "display_name": "Samsung Semiconductor",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://semiconductor.samsung.com/news-events/news/",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_SAMSUNG",
+        "OFFICIAL_NEWSROOM_SAMSUNG-SEMICONDUCTOR"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_SAMSUNG"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "micron-technology",
+      "display_name": "Micron Technology",
+      "headquarters": {
+        "city": "BOISE",
+        "state_region": "ID",
+        "country": "United States",
+        "latitude": 43.530014229656,
+        "longitude": -116.150824365357,
+        "source_url": "https://data.sec.gov/submissions/CIK0000723125.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000723125",
+          "official_address": "8000 S FEDERAL WAY, PO BOX 6, BOISE, ID, 83716-9632",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.micron.com/about/press/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_MICRON",
+        "SEC_EDGAR_0000723125",
+        "OFFICIAL_NEWSROOM_MICRON-TECHNOLOGY"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "CHIPS_MICRON"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "display_name": "GlobalFoundries",
+      "headquarters": {
+        "city": "MALTA",
+        "state_region": "NY",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0001709048.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001709048",
+          "official_address": "400 STONEBREAK ROAD EXTENSION, MALTA, NY, 12020",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://gf.com/news-and-events/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://gf.com/feed/"
+      ],
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_GF",
+        "SEC_EDGAR_0001709048",
+        "OFFICIAL_NEWSROOM_GLOBALFOUNDRIES"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "CHIPS_GF"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://gf.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "texas-instruments",
+      "display_name": "Texas Instruments",
+      "headquarters": {
+        "city": "DALLAS",
+        "state_region": "TX",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0000097476.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000097476",
+          "official_address": "P.O. BOX 660199, DALLAS, TX, 75266",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.ti.com/about-ti/newsroom/news-releases.html",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_TI",
+        "SEC_EDGAR_0000097476",
+        "OFFICIAL_NEWSROOM_TEXAS-INSTRUMENTS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "CHIPS_TI"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "amkor-technology",
+      "display_name": "Amkor Technology",
+      "headquarters": {
+        "city": "TEMPE",
+        "state_region": "AZ",
+        "country": "United States",
+        "latitude": 33.336036670832,
+        "longitude": -111.899701533396,
+        "source_url": "https://data.sec.gov/submissions/CIK0001047127.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001047127",
+          "official_address": "2045 EAST INNOVATION CIRCLE, TEMPE, AZ, 85284",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://amkor.com/news/",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_AMKOR",
+        "SEC_EDGAR_0001047127",
+        "OFFICIAL_NEWSROOM_AMKOR-TECHNOLOGY"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026",
+          "CHIPS_AMKOR"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "applied-materials",
+      "display_name": "Applied Materials",
+      "headquarters": {
+        "city": "SANTA CLARA",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 37.37676147355,
+        "longitude": -121.977852799748,
+        "source_url": "https://data.sec.gov/submissions/CIK0000006951.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000006951",
+          "official_address": "3050 BOWERS AVE, SANTA CLARA, CA, 95054-3299",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_APPLIED",
+        "SEC_EDGAR_0000006951"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_APPLIED"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "lam-research",
+      "display_name": "Lam Research",
+      "headquarters": {
+        "city": "FREMONT",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 37.483841706834,
+        "longitude": -121.964505356503,
+        "source_url": "https://data.sec.gov/submissions/CIK0000707549.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000707549",
+          "official_address": "4650 CUSHING BLVD, FREMONT, CA, 94538",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.lamresearch.com/zh-hans/news/",
+      "investor_relations_url": "https://www.lamresearch.com/zh-hans/investors/",
+      "official_feed_urls": [
+        "https://www.lamresearch.com/feed/"
+      ],
+      "source_ids": [
+        "CHIPS_2026",
+        "SEC_EDGAR_0000707549",
+        "OFFICIAL_NEWSROOM_LAM-RESEARCH",
+        "OFFICIAL_IR_LAM-RESEARCH"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.lamresearch.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "kla",
+      "display_name": "KLA",
+      "headquarters": {
+        "city": "MILPITAS",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 37.420978019464,
+        "longitude": -121.922084107886,
+        "source_url": "https://data.sec.gov/submissions/CIK0000319201.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000319201",
+          "official_address": "ONE TECHNOLOGY DRIVE, MILPITAS, CA, 95035",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.kla.com/newsroom",
+      "investor_relations_url": "https://ir.kla.com/",
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "SEC_EDGAR_0000319201",
+        "OFFICIAL_NEWSROOM_KLA",
+        "OFFICIAL_IR_KLA"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "analog-devices",
+      "display_name": "Analog Devices",
+      "headquarters": {
+        "city": "WILMINGTON",
+        "state_region": "MA",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0000006281.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000006281",
+          "official_address": "ONE ANALOG WAY, WILMINGTON, MA, 01887",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_ADI",
+        "SEC_EDGAR_0000006281"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_ADI"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "coherent",
+      "display_name": "Coherent",
+      "headquarters": {
+        "city": "SAXONBURG",
+        "state_region": "PA",
+        "country": "United States",
+        "latitude": 40.733905734735,
+        "longitude": -79.819936194793,
+        "source_url": "https://data.sec.gov/submissions/CIK0000820318.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000820318",
+          "official_address": "375 SAXONBURG BLVD, SAXONBURG, PA, 16056",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.coherent.com/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_ADI",
+        "SEC_EDGAR_0000820318",
+        "OFFICIAL_NEWSROOM_COHERENT"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_ADI"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "edwards-vacuum",
+      "display_name": "Edwards Vacuum",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_SUPPLIERS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_SUPPLIERS"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "entegris",
+      "display_name": "Entegris",
+      "headquarters": {
+        "city": "BILLERICA",
+        "state_region": "MA",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0001101302.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001101302",
+          "official_address": "129 CONCORD ROAD, BILLERICA, MA, 01821",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_2026",
+        "SEC_EDGAR_0001101302"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_2026"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "corning",
+      "display_name": "Corning",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "CHIPS_SUPPLIERS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "CHIPS_SUPPLIERS"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "medtronic",
+      "display_name": "Medtronic",
+      "headquarters": {
+        "city": "GALWAY",
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0001613103.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001613103",
+          "official_address": "BUILDING TWO PARKMORE BUSINESS PARK WEST, GALWAY, H91 4K49",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://news.medtronic.com/",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_MDT",
+        "SEC_EDGAR_0001613103",
+        "OFFICIAL_NEWSROOM_MEDTRONIC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "SEC_MDT"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "stryker",
+      "display_name": "Stryker",
+      "headquarters": {
+        "city": "PORTAGE",
+        "state_region": "MI",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0000310764.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000310764",
+          "official_address": "1941 STRYKER WAY, PORTAGE, MI, 49002",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.stryker.com/us/en/about/news/index.html",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_STRYKER",
+        "SEC_EDGAR_0000310764",
+        "OFFICIAL_NEWSROOM_STRYKER"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "SEC_STRYKER"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "display_name": "Boston Scientific",
+      "headquarters": {
+        "city": "MARLBOROUGH",
+        "state_region": "MA",
+        "country": "United States",
+        "latitude": 42.362685831304,
+        "longitude": -71.560861113938,
+        "source_url": "https://data.sec.gov/submissions/CIK0000885725.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000885725",
+          "official_address": "300 BOSTON SCIENTIFIC WAY, MARLBOROUGH, MA, 01752-1234",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": "https://investors.bostonscientific.com/",
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_BSX",
+        "SEC_EDGAR_0000885725",
+        "OFFICIAL_IR_BOSTON-SCIENTIFIC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "SEC_BSX"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "abbott",
+      "display_name": "Abbott",
+      "headquarters": {
+        "city": "ABBOTT PARK",
+        "state_region": "IL",
+        "country": "United States",
+        "latitude": null,
+        "longitude": null,
+        "source_url": "https://data.sec.gov/submissions/CIK0000001800.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "UNVERIFIED_PUBLIC_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000001800",
+          "official_address": "100 ABBOTT PARK ROAD, ABBOTT PARK, IL, 60064-3500",
+          "geocoder": null
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.abbott.com/en-us/corpnewsroom",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0000001800",
+        "OFFICIAL_NEWSROOM_ABBOTT"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "display_name": "Intuitive Surgical",
+      "headquarters": {
+        "city": "SUNNYVALE",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 37.373861832252,
+        "longitude": -122.003635540844,
+        "source_url": "https://data.sec.gov/submissions/CIK0001035267.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001035267",
+          "official_address": "1020 KIFER ROAD, SUNNYVALE, CA, 94086",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001035267"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "edwards-lifesciences",
+      "display_name": "Edwards Lifesciences",
+      "headquarters": {
+        "city": "IRVINE",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 33.698132806643,
+        "longitude": -117.85269917412,
+        "source_url": "https://data.sec.gov/submissions/CIK0001099800.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001099800",
+          "official_address": "ONE EDWARDS WAY, IRVINE, CA, 92614",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.edwards.com/newsroom/press-releases",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001099800",
+        "OFFICIAL_NEWSROOM_EDWARDS-LIFESCIENCES"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "display_name": "Zimmer Biomet",
+      "headquarters": {
+        "city": "WARSAW",
+        "state_region": "IN",
+        "country": "United States",
+        "latitude": 41.239143359101,
+        "longitude": -85.854758624366,
+        "source_url": "https://data.sec.gov/submissions/CIK0001136869.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001136869",
+          "official_address": "345 EAST MAIN STREET, WARSAW, IN, 46580",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001136869"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "becton-dickinson",
+      "display_name": "Becton Dickinson",
+      "headquarters": {
+        "city": "FRANKLIN LAKES",
+        "state_region": "NJ",
+        "country": "United States",
+        "latitude": 41.015645536645,
+        "longitude": -74.207756682382,
+        "source_url": "https://data.sec.gov/submissions/CIK0000010795.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000010795",
+          "official_address": "ONE BECTON DR, FRANKLIN LAKES, NJ, 07417-1880",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": "https://investors.bd.com/",
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0000010795",
+        "OFFICIAL_IR_BECTON-DICKINSON"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "baxter-international",
+      "display_name": "Baxter International",
+      "headquarters": {
+        "city": "DEERFIELD",
+        "state_region": "IL",
+        "country": "United States",
+        "latitude": 42.160180408207,
+        "longitude": -87.883674853197,
+        "source_url": "https://data.sec.gov/submissions/CIK0000010456.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000010456",
+          "official_address": "ONE BAXTER PARKWAY, DEERFIELD, IL, 60015",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0000010456"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "ge-healthcare",
+      "display_name": "GE HealthCare",
+      "headquarters": {
+        "city": "CHICAGO",
+        "state_region": "IL",
+        "country": "United States",
+        "latitude": 41.880647100888,
+        "longitude": -87.639725222838,
+        "source_url": "https://data.sec.gov/submissions/CIK0001932393.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001932393",
+          "official_address": "500 WEST MONROE STREET, CHICAGO, IL, 60661",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001932393"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "siemens-healthineers",
+      "display_name": "Siemens Healthineers",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.siemens-healthineers.com/perspectives",
+      "investor_relations_url": "https://www.siemens-healthineers.com/investor-relations",
+      "official_feed_urls": [],
+      "source_ids": [
+        "OFFICIAL_NEWSROOM_SIEMENS-HEALTHINEERS",
+        "OFFICIAL_IR_SIEMENS-HEALTHINEERS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "philips",
+      "display_name": "Philips",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "resmed",
+      "display_name": "ResMed",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "dexcom",
+      "display_name": "Dexcom",
+      "headquarters": {
+        "city": "SAN DIEGO",
+        "state_region": "CA",
+        "country": "United States",
+        "latitude": 32.907289565165,
+        "longitude": -117.185335808983,
+        "source_url": "https://data.sec.gov/submissions/CIK0001093557.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001093557",
+          "official_address": "6340 SEQUENCE DRIVE, SAN DIEGO, CA, 92121",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://investors.dexcom.com/news/",
+      "investor_relations_url": "https://investors.dexcom.com/overview/default.aspx",
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001093557",
+        "OFFICIAL_NEWSROOM_DEXCOM",
+        "OFFICIAL_IR_DEXCOM"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "alcon",
+      "display_name": "Alcon",
+      "headquarters": {
+        "city": "FORT WORTH",
+        "state_region": "TX",
+        "country": "United States",
+        "latitude": 32.660373066044,
+        "longitude": -97.320586180264,
+        "source_url": "https://data.sec.gov/submissions/CIK0001167379.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001167379",
+          "official_address": "6201 SOUTH FREEWAY, FORT WORTH, TX, 76134",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.alcon.com/newsroom/",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001167379",
+        "OFFICIAL_NEWSROOM_ALCON"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "symbotic",
+      "display_name": "Symbotic",
+      "headquarters": {
+        "city": "WILMINGTON",
+        "state_region": "MA",
+        "country": "United States",
+        "latitude": 42.60335660271,
+        "longitude": -71.157882214581,
+        "source_url": "https://data.sec.gov/submissions/CIK0001837240.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001837240",
+          "official_address": "200 RESEARCH DRIVE, WILMINGTON, MA, 01887",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.symbotic.com/news-and-events/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://www.symbotic.com/feed/"
+      ],
+      "source_ids": [
+        "SEC_SYMBOTIC",
+        "SEC_EDGAR_0001837240",
+        "OFFICIAL_NEWSROOM_SYMBOTIC"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [
+          "SEC_SYMBOTIC"
+        ],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.symbotic.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "abb-robotics",
+      "display_name": "ABB Robotics",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "display_name": "FANUC America",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.fanucamerica.com/press-releases",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "OFFICIAL_NEWSROOM_FANUC-AMERICA"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "yaskawa-motoman",
+      "display_name": "Yaskawa Motoman",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "universal-robots",
+      "display_name": "Universal Robots",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "kuka-robotics",
+      "display_name": "KUKA Robotics",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.kuka.com/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "OFFICIAL_NEWSROOM_KUKA-ROBOTICS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "display_name": "Boston Dynamics",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://bostondynamics.com/news/",
+      "investor_relations_url": null,
+      "official_feed_urls": [
+        "https://bostondynamics.com/feed/"
+      ],
+      "source_ids": [
+        "OFFICIAL_NEWSROOM_BOSTON-DYNAMICS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://bostondynamics.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    },
+    {
+      "research_account_id": "agility-robotics",
+      "display_name": "Agility Robotics",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.agilityrobotics.com/press-releases",
+      "investor_relations_url": "https://www.agilityrobotics.com/investors",
+      "official_feed_urls": [],
+      "source_ids": [
+        "OFFICIAL_NEWSROOM_AGILITY-ROBOTICS",
+        "OFFICIAL_IR_AGILITY-ROBOTICS"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "figure-ai",
+      "display_name": "Figure AI",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.figure.ai/news",
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "OFFICIAL_NEWSROOM_FIGURE-AI"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "apptronik",
+      "display_name": "Apptronik",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "amazon-robotics",
+      "display_name": "Amazon Robotics",
+      "headquarters": {
+        "city": null,
+        "state_region": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "source_url": null,
+        "source_type": null,
+        "verification_state": "MISSING_LOCATION",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "rockwell-automation",
+      "display_name": "Rockwell Automation",
+      "headquarters": {
+        "city": "MILWAUKEE",
+        "state_region": "WI",
+        "country": "United States",
+        "latitude": 43.019025211005,
+        "longitude": -87.912724275407,
+        "source_url": "https://data.sec.gov/submissions/CIK0001024478.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0001024478",
+          "official_address": "1201 SOUTH 2ND STREET, MILWAUKEE, WI, 53204",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": null,
+      "investor_relations_url": null,
+      "official_feed_urls": [],
+      "source_ids": [
+        "SEC_EDGAR_0001024478"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": []
+    },
+    {
+      "research_account_id": "teradyne",
+      "display_name": "Teradyne",
+      "headquarters": {
+        "city": "NORTH READING",
+        "state_region": "MA",
+        "country": "United States",
+        "latitude": 42.556467126649,
+        "longitude": -71.133749152537,
+        "source_url": "https://data.sec.gov/submissions/CIK0000097210.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
+        "last_verified_at": "2026-08-16",
+        "provenance": {
+          "source_id": "SEC_EDGAR_0000097210",
+          "official_address": "600 RIVERPARK DRIVE, NORTH READING, MA, 01864",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
+        }
+      },
+      "facilities": [],
+      "official_newsroom_url": "https://www.teradyne.com/company/newsroom/",
+      "investor_relations_url": "https://investors.teradyne.com/",
+      "official_feed_urls": [
+        "https://www.teradyne.com/feed/"
+      ],
+      "source_ids": [
+        "SEC_EDGAR_0000097210",
+        "OFFICIAL_NEWSROOM_TERADYNE",
+        "OFFICIAL_IR_TERADYNE"
+      ],
+      "provenance": {
+        "account_universe_source_ids": [],
+        "method": "SEC business-address extraction + official-domain URL verification; no inferred facilities or coordinates."
+      },
+      "last_verified_at": "2026-08-16",
+      "official_feed_provenance": [
+        {
+          "url": "https://www.teradyne.com/feed/",
+          "feed_type": "RSS_OR_ATOM",
+          "source_type": "OFFICIAL_PUBLISHER_FEED",
+          "verification_state": "VERIFIED_OFFICIAL",
+          "last_verified_at": "2026-08-16"
+        }
+      ]
+    }
+  ]
+}
