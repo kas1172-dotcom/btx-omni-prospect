@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
 
+from btx_omni.core.provenance import Provenance
+
 
 class AccountRelationship(StrEnum):
     CURRENT_CUSTOMER = "CURRENT_CUSTOMER"
@@ -20,6 +22,8 @@ class CanonicalAccount:
     industries: tuple[str, ...]
     business_units: tuple[str, ...] = ()
     parent_account_id: str | None = None
+    contact_role_families: tuple[str, ...] = ()
+    provenance: Provenance | None = None
 
 
 @dataclass(frozen=True)
