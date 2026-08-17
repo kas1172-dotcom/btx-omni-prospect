@@ -3,6 +3,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends
 
 from btx_omni.api.accounts import get_runtime
+from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 
 router = APIRouter(prefix="/map", tags=["map"])
@@ -20,5 +21,8 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
         facility = next(item for item in sample.facilities if item.account_id == account.id)
         rank = ranks[(account.id, account.industries[0])]
         distance_input = abs(facility.latitude - BTX_FACILITY["latitude"]) + abs(facility.longitude - BTX_FACILITY["longitude"])
-        records.append({"account_id": account.id, "industry": account.industries[0], "relationship": account.relationship, "latitude": facility.latitude, "longitude": facility.longitude, "external_rank": rank.rank, "commercial_state": account.relationship, "nearest_btx_facility": BTX_FACILITY, "proximity_input": str(distance_input), "deep_account": account.id in {item.account_id for item in sample.commercial_contexts}})
-    return {"layers": sorted({item.industries[0] for item in sample.accounts}), "records": records, "proximity_note": "Seller planning input only; never an attractiveness input."}
+        records.append({"account_id": account.id, "industry": account.industries[0], "relationship": account.relationship, "latitude": facility.latitude, "longitude": facility.longitude, "external_rank": rank.rank, "commercial_state": account.relationship, "location_truth_state": "SAMPLE_INTERNAL_LOCATION", "nearest_btx_facility": BTX_FACILITY, "proximity_input": str(distance_input), "deep_account": account.id in {item.account_id for item in sample.commercial_contexts}})
+    account_coordinates = {item["account_id"]: {"latitude": item["latitude"], "longitude": item["longitude"]} for item in records}
+    signals = [{**signal, "coordinates": account_coordinates.get(signal["account_id"])} for signal in intelligence_signals(runtime)]
+    public_locations = [{"account_id": item.account_id, "location_id": item.id, "location_name": item.name, "location_type": item.facility_type, "truth_state": item.verification_state, "city": item.city, "region": item.region, "country": item.country, "latitude": item.latitude, "longitude": item.longitude, "provenance": item.provenance, "source_url": item.source_url} for item in sample.public_facilities]
+    return {"layers": sorted({item.industries[0] for item in sample.accounts}), "records": records, "public_locations": public_locations, "intelligence_signals": signals, "proximity_note": "Seller planning input only; never an attractiveness input."}

@@ -1,0 +1,4810 @@
+{
+  "schema_version": "2.0",
+  "generated_date": "2026-08-16",
+  "purpose": "Codex ingestion input for a real-company Monitor/account universe while preserving SAMPLE BTX internal truth boundaries.",
+  "truth_rules": {
+    "public_identity": "May be real and verified.",
+    "btx_internal_relationship": "Must remain SAMPLE or public-inference until BTX internal evidence confirms it.",
+    "external_priority": "Research priority only; never Account Attractiveness or external Top-100 rank.",
+    "override": "BTX-provided PRISM/HubSpot/Paperless/customer-master evidence supersedes public inference."
+  },
+  "relationship_states": {
+    "BTX_CONFIRMED": "Reserved for later BTX internal evidence. None asserted here.",
+    "PUBLICLY_EVIDENCED_RELATIONSHIP": "Official BTX/BTX-business-unit source names the company in supplier/customer-specific context.",
+    "PUBLIC_INTERACTION_INFERENCE": "Lower-confidence public interaction; none asserted in this first high-confidence pass.",
+    "NO_RELATIONSHIP_EVIDENCE": "No BTX-specific public relationship evidence found."
+  },
+  "codex_guardrails": [
+    "Do not invent missing CIKs, tickers, aliases, facilities, newsroom URLs, IR URLs, or source-native IDs.",
+    "Do not convert public relationship evidence into BTX_CONFIRMED.",
+    "Do not create special-case code for Lockheed, Blue Origin, or any named account.",
+    "Do not modify Account Attractiveness based on research priority.",
+    "Map existing SAMPLE commercial scenarios to real accounts only through explicit deterministic mapping.",
+    "Retire synthetic identity placeholders only when an explicit real-account replacement mapping exists.",
+    "Keep public identity, public intelligence, and SAMPLE BTX commercial context separately labeled."
+  ],
+  "sources": {
+    "BTX_DEFENSE_CHANDLER": {
+      "title": "Chandler Industries \u2014 Defense",
+      "url": "https://www.chandlerindustries.com/industries/defense/",
+      "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"
+    },
+    "CHANDLER_BLAINE": {
+      "title": "Chandler Industries \u2014 Blaine Division",
+      "url": "https://www.chandlerindustries.com/about-us/our-facilities/blaine/",
+      "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"
+    },
+    "NASA_VADR": {
+      "title": "NASA \u2014 VADR Launch Services",
+      "url": "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/",
+      "source_type": "US_GOVERNMENT"
+    },
+    "NASA_CLPS": {
+      "title": "NASA \u2014 CLPS Providers",
+      "url": "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/",
+      "source_type": "US_GOVERNMENT"
+    },
+    "NASA_STRIDE": {
+      "title": "NASA \u2014 Mars STRIDE Robotics Awards",
+      "url": "https://science.nasa.gov/directorates/smd/planetary-science-division/mars-exploration-program/nasa-awards-contracts-for-mars-advanced-surface-mobility-technology/",
+      "source_type": "US_GOVERNMENT"
+    },
+    "NASA_PROPULSION": {
+      "title": "NASA \u2014 Aerospace Propulsion Research Contractors",
+      "url": "https://www.nasa.gov/news-release/nasa-awards-propulsion-research-contracts-to-five-firms/",
+      "source_type": "US_GOVERNMENT"
+    },
+    "FAA_ASOC": {
+      "title": "FAA \u2014 Aircraft Manufacturer Contacts",
+      "url": "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability",
+      "source_type": "US_GOVERNMENT"
+    },
+    "FAA_BOEING": {
+      "title": "FAA \u2014 Boeing Production Oversight Update",
+      "url": "https://www.faa.gov/newsroom/after-months-safety-review-faa-allows-boeing-resume-issuing-certificates-new-airplanes",
+      "source_type": "US_GOVERNMENT"
+    },
+    "DOD_2025": {
+      "title": "DoD \u2014 Contracts for March 28, 2025",
+      "url": "https://www.defense.gov/News/Contracts/Contract/Article/4138718/",
+      "source_type": "US_GOVERNMENT"
+    },
+    "DOD_MICRO": {
+      "title": "DoD \u2014 Microelectronics Commons Remarks",
+      "url": "https://www.defense.gov/News/Speeches/Speech/Article/3948717/remarks-by-deputy-secretary-of-defense-kathleen-hicks-at-the-2024-microelectr/",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_2026": {
+      "title": "Commerce \u2014 2026 Semiconductor Investment Summary",
+      "url": "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_INTEL": {
+      "title": "Commerce \u2014 Intel CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_TSMC": {
+      "title": "Commerce \u2014 TSMC Arizona CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-tsmc",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_SAMSUNG": {
+      "title": "Commerce \u2014 Samsung CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-samsung",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_MICRON": {
+      "title": "Commerce \u2014 Micron CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/12/department-commerce-awards-chips-incentives-micron-idaho-and-new-york",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_GF": {
+      "title": "Commerce \u2014 GlobalFoundries CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_TI": {
+      "title": "Commerce \u2014 Texas Instruments CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-texas",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_AMKOR": {
+      "title": "Commerce \u2014 Amkor CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-amkor",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_SUPPLIERS": {
+      "title": "Commerce \u2014 Corning/Edwards/Infinera CHIPS Awards",
+      "url": "https://www.commerce.gov/news/press-releases/2025/01/us-department-commerce-announces-chips-incentives-awards-corning",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_ADI": {
+      "title": "Commerce \u2014 Analog Devices/Coherent CHIPS Terms",
+      "url": "https://www.commerce.gov/news/press-releases/2025/01/department-commerce-announces-preliminary-terms-analog-devices-coherent",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_APPLIED": {
+      "title": "Commerce \u2014 Advanced Packaging Awards",
+      "url": "https://www.commerce.gov/node/7087",
+      "source_type": "US_GOVERNMENT"
+    },
+    "SEC_SYMBOTIC": {
+      "title": "SEC \u2014 Symbotic 2025 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm",
+      "source_type": "SEC_FILING"
+    },
+    "SEC_STRYKER": {
+      "title": "SEC \u2014 Stryker 2025 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/310764/000031076426000010/syk-20251231.htm",
+      "source_type": "SEC_FILING"
+    },
+    "SEC_BSX": {
+      "title": "SEC \u2014 Boston Scientific 2025 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/885725/000088572526000010/bsx-20251231.htm",
+      "source_type": "SEC_FILING"
+    },
+    "SEC_MDT": {
+      "title": "SEC \u2014 Medtronic 2025 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/1613103/000161310325000091/mdt-20250425.htm",
+      "source_type": "SEC_FILING"
+    }
+  },
+  "accounts": [
+    {
+      "research_account_id": "boeing",
+      "display_name": "Boeing",
+      "official_domain": "boeing.com",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP",
+      "relationship_confidence": "HIGH",
+      "relationship_basis": "Chandler states it is a Tier I supplier to Boeing.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major aircraft/defense OEM; large U.S. production and direct public BTX-family supplier evidence.",
+      "source_ids": [
+        "BTX_DEFENSE_CHANDLER",
+        "DOD_2025",
+        "FAA_BOEING"
+      ],
+      "source_urls": [
+        "https://www.chandlerindustries.com/industries/defense/",
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/",
+        "https://www.faa.gov/newsroom/after-months-safety-review-faa-allows-boeing-resume-issuing-certificates-new-airplanes"
+      ],
+      "watch_profile": {
+        "official_domain": "boeing.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "boeing"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "BTX_DEFENSE_CHANDLER",
+          "DOD_2025",
+          "FAA_BOEING"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "display_name": "GE Aerospace",
+      "official_domain": "geaerospace.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major propulsion OEM with complex high-performance hardware and active NASA propulsion work.",
+      "source_ids": [
+        "NASA_PROPULSION"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/news-release/nasa-awards-propulsion-research-contracts-to-five-firms/"
+      ],
+      "watch_profile": {
+        "official_domain": "geaerospace.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "ge-aerospace"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_PROPULSION"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "rtx",
+      "display_name": "RTX",
+      "official_domain": "rtx.com",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Parent of Pratt & Whitney and Collins Aerospace; large precision-intensive aerospace/defense portfolio.",
+      "source_ids": [
+        "DOD_2025",
+        "NASA_PROPULSION"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/",
+        "https://www.nasa.gov/news-release/nasa-awards-propulsion-research-contracts-to-five-firms/"
+      ],
+      "watch_profile": {
+        "official_domain": "rtx.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "rtx"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025",
+          "NASA_PROPULSION"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "honeywell-international",
+      "display_name": "Honeywell International",
+      "official_domain": "honeywell.com",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP",
+      "relationship_confidence": "MEDIUM_HIGH",
+      "relationship_basis": "Chandler Blaine lists Honeywell under customer-unique process qualifications; treated as public evidence, not BTX internal confirmation.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major aerospace systems manufacturer with public BTX-family process-qualification evidence.",
+      "source_ids": [
+        "CHANDLER_BLAINE",
+        "NASA_PROPULSION"
+      ],
+      "source_urls": [
+        "https://www.chandlerindustries.com/about-us/our-facilities/blaine/",
+        "https://www.nasa.gov/news-release/nasa-awards-propulsion-research-contracts-to-five-firms/"
+      ],
+      "watch_profile": {
+        "official_domain": "honeywell.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "honeywell-international"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHANDLER_BLAINE",
+          "NASA_PROPULSION"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "gulfstream-aerospace",
+      "display_name": "Gulfstream Aerospace",
+      "official_domain": "gulfstream.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "U.S. business-jet OEM with high-value precision component demand.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "gulfstream.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "gulfstream-aerospace"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "textron-aviation",
+      "display_name": "Textron Aviation",
+      "official_domain": "txtav.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "U.S. aircraft OEM spanning Cessna/Beechcraft platforms.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "txtav.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "textron-aviation"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "bombardier",
+      "display_name": "Bombardier",
+      "official_domain": "bombardier.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Business-aircraft OEM with complex aerospace supply-chain needs.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "bombardier.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "bombardier"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "embraer",
+      "display_name": "Embraer",
+      "official_domain": "embraer.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Commercial/executive aircraft OEM with U.S. operations.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "embraer.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "embraer"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "dassault-falcon-jet",
+      "display_name": "Dassault Falcon Jet",
+      "official_domain": "dassaultfalcon.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Business-aircraft OEM with precision aerospace hardware needs.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "dassaultfalcon.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "dassault-falcon-jet"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "cirrus-aircraft",
+      "display_name": "Cirrus Aircraft",
+      "official_domain": "cirrusaircraft.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "U.S. aircraft manufacturer; relevant lower-scale aerospace target.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "cirrusaircraft.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "cirrus-aircraft"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "honda-aircraft-company",
+      "display_name": "Honda Aircraft Company",
+      "official_domain": "hondajet.com",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "U.S.-based business-aircraft OEM.",
+      "source_ids": [
+        "FAA_ASOC"
+      ],
+      "source_urls": [
+        "https://www.faa.gov/about/office_org/headquarters_offices/avs/offices/afx/afs/afs400/afs410/aircraft-statement-of-capability"
+      ],
+      "watch_profile": {
+        "official_domain": "hondajet.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "honda-aircraft-company"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "FAA_ASOC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "rolls-royce-north-america",
+      "display_name": "Rolls-Royce North America",
+      "official_domain": "rolls-royce.com",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major propulsion manufacturer with high-performance component demand.",
+      "source_ids": [
+        "NASA_PROPULSION"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/news-release/nasa-awards-propulsion-research-contracts-to-five-firms/"
+      ],
+      "watch_profile": {
+        "official_domain": "rolls-royce.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "rolls-royce-north-america"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_PROPULSION"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "display_name": "Lockheed Martin",
+      "official_domain": "lockheedmartin.com",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP",
+      "relationship_confidence": "HIGH",
+      "relationship_basis": "Chandler states it is a Tier I supplier to Lockheed Martin; Blaine also lists Lockheed Martin under customer-unique process qualifications.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major defense/space prime with direct public BTX-family supplier evidence.",
+      "source_ids": [
+        "BTX_DEFENSE_CHANDLER",
+        "CHANDLER_BLAINE",
+        "DOD_2025",
+        "NASA_CLPS"
+      ],
+      "source_urls": [
+        "https://www.chandlerindustries.com/industries/defense/",
+        "https://www.chandlerindustries.com/about-us/our-facilities/blaine/",
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/",
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/"
+      ],
+      "watch_profile": {
+        "official_domain": "lockheedmartin.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "NAMED_CONTACTS_VERIFIED",
+        "named_public_contact_count": 4,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "lockheed-martin"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "BTX_DEFENSE_CHANDLER",
+          "CHANDLER_BLAINE",
+          "DOD_2025",
+          "NASA_CLPS"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "display_name": "Northrop Grumman",
+      "official_domain": "northropgrumman.com",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major defense/space prime with current government program activity.",
+      "source_ids": [
+        "DOD_2025",
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/",
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "northropgrumman.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "northrop-grumman"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025",
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "general-dynamics",
+      "display_name": "General Dynamics",
+      "official_domain": "gd.com",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major land, marine and mission-systems OEM.",
+      "source_ids": [
+        "DOD_2025"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/"
+      ],
+      "watch_profile": {
+        "official_domain": "gd.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "general-dynamics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "l3harris-technologies",
+      "display_name": "L3Harris Technologies",
+      "official_domain": "l3harris.com",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large defense electronics and space contractor.",
+      "source_ids": [
+        "DOD_2025"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/"
+      ],
+      "watch_profile": {
+        "official_domain": "l3harris.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "l3harris-technologies"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "bae-systems-inc",
+      "display_name": "BAE Systems, Inc.",
+      "official_domain": "baesystems.com",
+      "industries": [
+        "Defense",
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major U.S. defense supplier with microelectronics manufacturing exposure.",
+      "source_ids": [
+        "CHIPS_2026",
+        "DOD_MICRO"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.defense.gov/News/Speeches/Speech/Article/3948717/remarks-by-deputy-secretary-of-defense-kathleen-hicks-at-the-2024-microelectr/"
+      ],
+      "watch_profile": {
+        "official_domain": "baesystems.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "bae-systems-inc"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "DOD_MICRO"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "huntington-ingalls-industries",
+      "display_name": "Huntington Ingalls Industries",
+      "official_domain": "hii.com",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large U.S. naval/defense manufacturer.",
+      "source_ids": [
+        "DOD_2025"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/"
+      ],
+      "watch_profile": {
+        "official_domain": "hii.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "huntington-ingalls-industries"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "general-atomics-aeronautical-systems",
+      "display_name": "General Atomics Aeronautical Systems",
+      "official_domain": "ga-asi.com",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major unmanned-aircraft manufacturer.",
+      "source_ids": [
+        "DOD_MICRO"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Speeches/Speech/Article/3948717/remarks-by-deputy-secretary-of-defense-kathleen-hicks-at-the-2024-microelectr/"
+      ],
+      "watch_profile": {
+        "official_domain": "ga-asi.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "general-atomics-aeronautical-systems"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_MICRO"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "aerovironment",
+      "display_name": "AeroVironment",
+      "official_domain": "avinc.com",
+      "industries": [
+        "Defense",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Defense autonomy/UAS company and NASA robotics-mobility awardee.",
+      "source_ids": [
+        "NASA_STRIDE"
+      ],
+      "source_urls": [
+        "https://science.nasa.gov/directorates/smd/planetary-science-division/mars-exploration-program/nasa-awards-contracts-for-mars-advanced-surface-mobility-technology/"
+      ],
+      "watch_profile": {
+        "official_domain": "avinc.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "aerovironment"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_STRIDE"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "anduril-industries",
+      "display_name": "Anduril Industries",
+      "official_domain": "anduril.com",
+      "industries": [
+        "Defense",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Fast-growing defense technology manufacturer highlighted by DoD.",
+      "source_ids": [
+        "DOD_MICRO"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Speeches/Speech/Article/3948717/remarks-by-deputy-secretary-of-defense-kathleen-hicks-at-the-2024-microelectr/"
+      ],
+      "watch_profile": {
+        "official_domain": "anduril.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "anduril-industries"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_MICRO"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "textron-systems",
+      "display_name": "Textron Systems",
+      "official_domain": "textronsystems.com",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Defense systems and unmanned platforms adjacent to BTX capabilities.",
+      "source_ids": [
+        "DOD_2025"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/"
+      ],
+      "watch_profile": {
+        "official_domain": "textronsystems.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "textron-systems"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "sierra-nevada-corporation",
+      "display_name": "Sierra Nevada Corporation",
+      "official_domain": "sncorp.com",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Aerospace/defense and space systems manufacturer.",
+      "source_ids": [
+        "NASA_CLPS"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/"
+      ],
+      "watch_profile": {
+        "official_domain": "sncorp.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "sierra-nevada-corporation"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "display_name": "Blue Origin",
+      "official_domain": "blueorigin.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "NASA launch/lunar provider with major precision, additive and assembly demand.",
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/",
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "blueorigin.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "blue-origin"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS",
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "display_name": "SpaceX",
+      "official_domain": "spacex.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "High-cadence launch/spacecraft manufacturer.",
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/",
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "spacex.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "spacex"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS",
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "display_name": "Rocket Lab USA",
+      "official_domain": "rocketlabusa.com",
+      "industries": [
+        "Space",
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Launch/spacecraft manufacturer with U.S. space-power semiconductor capacity.",
+      "source_ids": [
+        "CHIPS_2026",
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "rocketlabusa.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "rocket-lab-usa"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "firefly-aerospace",
+      "display_name": "Firefly Aerospace",
+      "official_domain": "fireflyspace.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Launch and lunar-delivery provider with active manufacturing programs.",
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/",
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "fireflyspace.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "firefly-aerospace"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS",
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "united-launch-alliance",
+      "display_name": "United Launch Alliance",
+      "official_domain": "ulalaunch.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major U.S. launch-vehicle manufacturer.",
+      "source_ids": [
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "ulalaunch.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "united-launch-alliance"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "relativity-space",
+      "display_name": "Relativity Space",
+      "official_domain": "relativityspace.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Advanced launch manufacturer with additive-intensive production.",
+      "source_ids": [
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "relativityspace.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "relativity-space"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "intuitive-machines",
+      "display_name": "Intuitive Machines",
+      "official_domain": "intuitivemachines.com",
+      "industries": [
+        "Space",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Lunar systems manufacturer and NASA robotics awardee.",
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_STRIDE"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/",
+        "https://science.nasa.gov/directorates/smd/planetary-science-division/mars-exploration-program/nasa-awards-contracts-for-mars-advanced-surface-mobility-technology/"
+      ],
+      "watch_profile": {
+        "official_domain": "intuitivemachines.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "intuitive-machines"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS",
+          "NASA_STRIDE"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "astrobotic",
+      "display_name": "Astrobotic",
+      "official_domain": "astrobotic.com",
+      "industries": [
+        "Space",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Lunar systems and planetary robotics manufacturer.",
+      "source_ids": [
+        "NASA_CLPS",
+        "NASA_STRIDE"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/",
+        "https://science.nasa.gov/directorates/smd/planetary-science-division/mars-exploration-program/nasa-awards-contracts-for-mars-advanced-surface-mobility-technology/"
+      ],
+      "watch_profile": {
+        "official_domain": "astrobotic.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "astrobotic"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS",
+          "NASA_STRIDE"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "sierra-space",
+      "display_name": "Sierra Space",
+      "official_domain": "sierraspace.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Space systems manufacturer with complex propulsion/spacecraft hardware.",
+      "source_ids": [
+        "DOD_2025"
+      ],
+      "source_urls": [
+        "https://www.defense.gov/News/Contracts/Contract/Article/4138718/"
+      ],
+      "watch_profile": {
+        "official_domain": "sierraspace.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "sierra-space"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "DOD_2025"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "redwire",
+      "display_name": "Redwire",
+      "official_domain": "redwirespace.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Space infrastructure/components company.",
+      "source_ids": [
+        "NASA_CLPS"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/commercial-lunar-payload-services/clps-providers/"
+      ],
+      "watch_profile": {
+        "official_domain": "redwirespace.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "redwire"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_CLPS"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "impulse-space",
+      "display_name": "Impulse Space",
+      "official_domain": "impulsespace.com",
+      "industries": [
+        "Space"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Commercial in-space transportation manufacturer.",
+      "source_ids": [
+        "NASA_VADR"
+      ],
+      "source_urls": [
+        "https://www.nasa.gov/vadr-venture-class-acquisition-of-dedicated-and-rideshare-launch-services/"
+      ],
+      "watch_profile": {
+        "official_domain": "impulsespace.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "impulse-space"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_VADR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "honeybee-robotics",
+      "display_name": "Honeybee Robotics",
+      "official_domain": "honeybeerobotics.com",
+      "industries": [
+        "Space",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Space mechanisms/robotics manufacturer and NASA STRIDE awardee.",
+      "source_ids": [
+        "NASA_STRIDE"
+      ],
+      "source_urls": [
+        "https://science.nasa.gov/directorates/smd/planetary-science-division/mars-exploration-program/nasa-awards-contracts-for-mars-advanced-surface-mobility-technology/"
+      ],
+      "watch_profile": {
+        "official_domain": "honeybeerobotics.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "honeybee-robotics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "NASA_STRIDE"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "intel",
+      "display_name": "Intel",
+      "official_domain": "intel.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major U.S. semiconductor manufacturer with large fab expansion.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_INTEL"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel"
+      ],
+      "watch_profile": {
+        "official_domain": "intel.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "intel"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_INTEL"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "display_name": "TSMC Arizona",
+      "official_domain": "tsmc.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Leading-edge Phoenix fab expansion.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_TSMC"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-tsmc"
+      ],
+      "watch_profile": {
+        "official_domain": "tsmc.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "NAMED_CONTACTS_VERIFIED",
+        "named_public_contact_count": 4,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "tsmc-arizona"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_TSMC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "samsung-semiconductor",
+      "display_name": "Samsung Semiconductor",
+      "official_domain": "semiconductor.samsung.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Leading-edge Texas fab/R&D expansion.",
+      "source_ids": [
+        "CHIPS_SAMSUNG"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-samsung"
+      ],
+      "watch_profile": {
+        "official_domain": "semiconductor.samsung.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "samsung-semiconductor"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_SAMSUNG"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "micron-technology",
+      "display_name": "Micron Technology",
+      "official_domain": "micron.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major U.S. memory manufacturer with large expansion plans.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_MICRON"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/12/department-commerce-awards-chips-incentives-micron-idaho-and-new-york"
+      ],
+      "watch_profile": {
+        "official_domain": "micron.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "micron-technology"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_MICRON"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "display_name": "GlobalFoundries",
+      "official_domain": "gf.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large U.S. foundry and advanced-packaging manufacturer.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_GF"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award"
+      ],
+      "watch_profile": {
+        "official_domain": "gf.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "globalfoundries"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_GF"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "texas-instruments",
+      "display_name": "Texas Instruments",
+      "official_domain": "ti.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Analog/embedded semiconductor manufacturer building multiple U.S. fabs.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_TI"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-texas"
+      ],
+      "watch_profile": {
+        "official_domain": "ti.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "texas-instruments"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_TI"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "amkor-technology",
+      "display_name": "Amkor Technology",
+      "official_domain": "amkor.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major U.S. outsourced semiconductor assembly/test and packaging company.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_AMKOR"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-amkor"
+      ],
+      "watch_profile": {
+        "official_domain": "amkor.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "amkor-technology"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_AMKOR"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "display_name": "Applied Materials",
+      "official_domain": "appliedmaterials.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major semiconductor-equipment OEM; direct fit for precision/vacuum hardware.",
+      "source_ids": [
+        "CHIPS_APPLIED"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/node/7087"
+      ],
+      "watch_profile": {
+        "official_domain": "appliedmaterials.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "applied-materials"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_APPLIED"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "display_name": "Lam Research",
+      "official_domain": "lamresearch.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major wafer-fabrication equipment OEM.",
+      "source_ids": [
+        "CHIPS_2026"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick"
+      ],
+      "watch_profile": {
+        "official_domain": "lamresearch.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "lam-research"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "kla",
+      "display_name": "KLA",
+      "official_domain": "kla.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major process-control/metrology equipment OEM.",
+      "source_ids": [
+        "CHIPS_2026"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick"
+      ],
+      "watch_profile": {
+        "official_domain": "kla.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "kla"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "analog-devices",
+      "display_name": "Analog Devices",
+      "official_domain": "analog.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "U.S. semiconductor manufacturer with CHIPS expansion activity.",
+      "source_ids": [
+        "CHIPS_ADI"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2025/01/department-commerce-announces-preliminary-terms-analog-devices-coherent"
+      ],
+      "watch_profile": {
+        "official_domain": "analog.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "analog-devices"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_ADI"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "coherent",
+      "display_name": "Coherent",
+      "official_domain": "coherent.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "Photonics/materials manufacturer with semiconductor expansion activity.",
+      "source_ids": [
+        "CHIPS_ADI"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2025/01/department-commerce-announces-preliminary-terms-analog-devices-coherent"
+      ],
+      "watch_profile": {
+        "official_domain": "coherent.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "coherent"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_ADI"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "edwards-vacuum",
+      "display_name": "Edwards Vacuum",
+      "official_domain": "edwardsvacuum.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Critical semiconductor vacuum-equipment supplier.",
+      "source_ids": [
+        "CHIPS_SUPPLIERS"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2025/01/us-department-commerce-announces-chips-incentives-awards-corning"
+      ],
+      "watch_profile": {
+        "official_domain": "edwardsvacuum.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "edwards-vacuum"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_SUPPLIERS"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "entegris",
+      "display_name": "Entegris",
+      "official_domain": "entegris.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Semiconductor materials/contamination-control supplier.",
+      "source_ids": [
+        "CHIPS_2026"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick"
+      ],
+      "watch_profile": {
+        "official_domain": "entegris.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "entegris"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "corning",
+      "display_name": "Corning",
+      "official_domain": "corning.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "Advanced materials supplier with CHIPS-supported semiconductor capacity.",
+      "source_ids": [
+        "CHIPS_SUPPLIERS"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2025/01/us-department-commerce-announces-chips-incentives-awards-corning"
+      ],
+      "watch_profile": {
+        "official_domain": "corning.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "corning"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_SUPPLIERS"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "display_name": "Medtronic",
+      "official_domain": "medtronic.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large diversified medical-device manufacturer; implants, instruments and regulated hardware.",
+      "source_ids": [
+        "SEC_MDT"
+      ],
+      "source_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1613103/000161310325000091/mdt-20250425.htm"
+      ],
+      "watch_profile": {
+        "official_domain": "medtronic.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "medtronic"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "SEC_MDT"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "display_name": "Stryker",
+      "official_domain": "stryker.com",
+      "industries": [
+        "Medical Device",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large medtech manufacturer with implants, instruments and Mako robotic-arm systems.",
+      "source_ids": [
+        "SEC_STRYKER"
+      ],
+      "source_urls": [
+        "https://www.sec.gov/Archives/edgar/data/310764/000031076426000010/syk-20251231.htm"
+      ],
+      "watch_profile": {
+        "official_domain": "stryker.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "NAMED_CONTACTS_VERIFIED",
+        "named_public_contact_count": 1,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "stryker"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "SEC_STRYKER"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "display_name": "Boston Scientific",
+      "official_domain": "bostonscientific.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large precision-intensive medical-device manufacturer.",
+      "source_ids": [
+        "SEC_BSX"
+      ],
+      "source_urls": [
+        "https://www.sec.gov/Archives/edgar/data/885725/000088572526000010/bsx-20251231.htm"
+      ],
+      "watch_profile": {
+        "official_domain": "bostonscientific.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "boston-scientific"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "SEC_BSX"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "abbott",
+      "display_name": "Abbott",
+      "official_domain": "abbott.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large cardiovascular/diabetes/diagnostic device manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "abbott.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "abbott"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "display_name": "Intuitive Surgical",
+      "official_domain": "intuitive.com",
+      "industries": [
+        "Medical Device",
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Leading surgical-robotics manufacturer with precision mechanisms/instruments.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "intuitive.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "intuitive-surgical"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "edwards-lifesciences",
+      "display_name": "Edwards Lifesciences",
+      "official_domain": "edwards.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Structural-heart devices with precision implant/delivery-system requirements.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "edwards.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "edwards-lifesciences"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "display_name": "Zimmer Biomet",
+      "official_domain": "zimmerbiomet.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Orthopaedic implants and surgical technologies.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "zimmerbiomet.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "zimmer-biomet"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "becton-dickinson",
+      "display_name": "Becton Dickinson",
+      "official_domain": "bd.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large device/diagnostics/instrument manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "bd.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "becton-dickinson"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "baxter-international",
+      "display_name": "Baxter International",
+      "official_domain": "baxter.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "Hospital technology and medical-device manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "baxter.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "baxter-international"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "ge-healthcare",
+      "display_name": "GE HealthCare",
+      "official_domain": "gehealthcare.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Diagnostic imaging and complex electromechanical medical equipment OEM.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "gehealthcare.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "ge-healthcare"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "siemens-healthineers",
+      "display_name": "Siemens Healthineers",
+      "official_domain": "siemens-healthineers.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Imaging/diagnostics OEM with complex precision hardware.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "siemens-healthineers.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "siemens-healthineers"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "philips",
+      "display_name": "Philips",
+      "official_domain": "philips.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "Imaging, monitoring and interventional systems manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "philips.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "philips"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "resmed",
+      "display_name": "ResMed",
+      "official_domain": "resmed.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Respiratory/sleep-therapy device manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "resmed.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "resmed"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "dexcom",
+      "display_name": "Dexcom",
+      "official_domain": "dexcom.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Scaled diabetes sensor/device manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "dexcom.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "dexcom"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "alcon",
+      "display_name": "Alcon",
+      "official_domain": "alcon.com",
+      "industries": [
+        "Medical Device"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "Eye-care devices, surgical equipment and precision optical/mechanical systems.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "alcon.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "alcon"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "symbotic",
+      "display_name": "Symbotic",
+      "official_domain": "symbotic.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large robotic warehouse-automation systems company.",
+      "source_ids": [
+        "SEC_SYMBOTIC"
+      ],
+      "source_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm"
+      ],
+      "watch_profile": {
+        "official_domain": "symbotic.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "symbotic"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "SEC_SYMBOTIC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "abb-robotics",
+      "display_name": "ABB Robotics",
+      "official_domain": "abb.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major industrial robot OEM.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "abb.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "abb-robotics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "display_name": "FANUC America",
+      "official_domain": "fanucamerica.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major industrial robot/CNC automation supplier.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "fanucamerica.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "fanuc-america"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "yaskawa-motoman",
+      "display_name": "Yaskawa Motoman",
+      "official_domain": "motoman.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major industrial robot OEM.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "motoman.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "yaskawa-motoman"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "universal-robots",
+      "display_name": "Universal Robots",
+      "official_domain": "universal-robots.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Leading collaborative robot manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "universal-robots.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "universal-robots"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "kuka-robotics",
+      "display_name": "KUKA Robotics",
+      "official_domain": "kuka.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major industrial robotics manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "kuka.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "kuka-robotics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "display_name": "Boston Dynamics",
+      "official_domain": "bostondynamics.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Advanced mobile robotics manufacturer.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "bostondynamics.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "boston-dynamics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "agility-robotics",
+      "display_name": "Agility Robotics",
+      "official_domain": "agilityrobotics.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "U.S. humanoid/mobile robotics manufacturer scaling production.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "agilityrobotics.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "agility-robotics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "figure-ai",
+      "display_name": "Figure AI",
+      "official_domain": "figure.ai",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Humanoid robotics manufacturer pursuing scaled production.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "figure.ai",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "figure-ai"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "apptronik",
+      "display_name": "Apptronik",
+      "official_domain": "apptronik.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "U.S. humanoid robotics developer moving toward industrial scale.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "apptronik.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "apptronik"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "amazon-robotics",
+      "display_name": "Amazon Robotics",
+      "official_domain": "amazonrobotics.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large-scale warehouse robotics organization.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "amazonrobotics.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "amazon-robotics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "rockwell-automation",
+      "display_name": "Rockwell Automation",
+      "official_domain": "rockwellautomation.com",
+      "industries": [
+        "Robotics"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM_HIGH",
+      "prospect_rationale": "Industrial automation company with robotics/motion systems exposure.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "rockwellautomation.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "rockwell-automation"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "teradyne",
+      "display_name": "Teradyne",
+      "official_domain": "teradyne.com",
+      "industries": [
+        "Robotics",
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Owns robotics businesses and has major semiconductor-test equipment adjacency.",
+      "source_ids": [],
+      "source_urls": [],
+      "watch_profile": {
+        "official_domain": "teradyne.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "CANDIDATE_IDENTITY_REQUIRES_SOURCE_ENRICHMENT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "teradyne"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    }
+  ],
+  "summary": {
+    "unique_accounts": 78,
+    "industry_memberships": {
+      "Commercial Aerospace": 12,
+      "Defense": 15,
+      "Space": 16,
+      "Semiconductor": 18,
+      "Medical Device": 15,
+      "Robotics": 20
+    },
+    "publicly_evidenced_relationships": [
+      "Boeing",
+      "Honeywell International",
+      "Lockheed Martin"
+    ],
+    "relationship_inferences": [],
+    "notes": "This is a researched first-pass universe, not the final 100-per-industry ranking and not a BTX customer master."
+  },
+  "vision_readiness": {
+    "schema_sufficient_for_current_omni_prospect_integration": true,
+    "data_complete_for_final_100_per_industry_universe": false,
+    "current_gap": "The schema now supports the target vision, but the researched company set is still a first-pass 78-company universe rather than the final externally ranked 100-per-industry universe.",
+    "required_future_enrichment": [
+      "expand to a defensible 100 real companies per Phase 1 industry",
+      "verify external ranking methodology/source with Jamie/BTX",
+      "fill SEC CIK/ticker where applicable",
+      "verify aliases, parent/subsidiary relationships, facilities and coordinates",
+      "verify official newsroom/IR feeds",
+      "continue named Contact Research",
+      "replace public relationship inference with BTX internal evidence when available"
+    ]
+  },
+  "contact_research_companion": {
+    "filename": "btx_researched_contacts.json",
+    "join_key": "research_account_id",
+    "feature_name": "Contact Research",
+    "public_contact_truth_is_separate_from_hubspot": true
+  }
+}

@@ -9,16 +9,25 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
         southwest = await client.get("/api/map", params={"industry": "Semiconductor"})
         medical = await client.get("/api/map", params={"industry": "Medical Device"})
+        accounts = await client.get("/api/accounts")
         defense = await client.get("/api/accounts/acct-02-001")
+        no_quote = await client.get("/api/accounts/acct-06-002")
         semiconductor = await client.get("/api/intelligence")
         dormant_omni = await client.post("/api/omni", json={"account_id": "acct-01-003", "question": "Why is it dormant?"})
         stale_omni = await client.post("/api/omni", json={"account_id": "acct-01-004", "question": "Explain quote."})
         cross_bu = await client.post("/api/omni", json={"account_id": "acct-01-005", "question": "Coordinate?"})
         external = await client.post("/api/omni", json={"account_id": "acct-01-006", "question": "What do we know?"})
         conflict = await client.post("/api/omni", json={"account_id": "acct-01-008", "question": "What is missing?"})
-    assert southwest.status_code == medical.status_code == defense.status_code == 200
+    assert southwest.status_code == medical.status_code == accounts.status_code == defense.status_code == no_quote.status_code == 200
     assert len(southwest.json()["records"]) == 100 and len(medical.json()["records"]) == 100
+    assert all(item["location"]["country"] == "US" for item in accounts.json()["accounts"])
+    assert sum(item["public_identity_state"] != "UNVERIFIED" for item in accounts.json()["accounts"]) == 78
+    assert all("external_rank" in item and "attractiveness" in item and "commercial_context_state" in item for item in accounts.json()["accounts"])
+    assert "intelligence_signals" in southwest.json()
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"
+    assert len(defense.json()["paperless_accounts"]) == 1 and len(defense.json()["paperless_quotes"]) == 2
+    assert defense.json()["public_identity"] is None and defense.json()["public_identity_state"] == "UNVERIFIED"
+    assert len(no_quote.json()["paperless_accounts"]) == 1 and not no_quote.json()["paperless_quotes"]
     assert any(item["kind"] == "EXPANSION" for item in semiconductor.json()["signals"])
     assert "CUSTOMER_INACTIVITY" in dormant_omni.json()["content"]
     assert "STALE_QUOTE" in stale_omni.json()["content"]

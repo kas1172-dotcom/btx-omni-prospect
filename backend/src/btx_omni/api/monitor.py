@@ -14,7 +14,13 @@ def sources() -> list[dict]:
 
 @router.get("/health")
 def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
-    return {"sources": runtime.monitor.health, "last_runs": runtime.monitor.runs[-20:]}
+    return {
+        "sources": runtime.monitor.health,
+        "last_runs": runtime.monitor.runs[-20:],
+        "clusters": tuple(runtime.monitor.clusters.values()),
+        "events": tuple(runtime.monitor.events.values()),
+        "rejected_observations": tuple(runtime.monitor.rejected[-20:]),
+    }
 
 
 @router.post("/collect/{source_id}")

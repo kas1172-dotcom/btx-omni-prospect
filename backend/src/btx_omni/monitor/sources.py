@@ -6,7 +6,8 @@ import json
 import xml.etree.ElementTree as element_tree
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from email.utils import parsedate_to_datetime
 from enum import StrEnum
 from typing import Any
 from urllib.error import HTTPError
@@ -75,7 +76,7 @@ class LiveSourceAdapter:
             raise RuntimeError("RATE_LIMITED")
         if status >= 400:
             raise RuntimeError(f"HTTP_{status}")
-        return self.parse(payload, run_id=run_id)
+        return self.parse(payload, run_id=run_id)[:limit]
 
     def headers(self, settings: Any) -> dict[str, str]:
         return {"User-Agent": "OmniProspectMonitor/2.0 contact=monitor@localhost"}
@@ -91,22 +92,25 @@ class LiveSourceAdapter:
         return decoded if isinstance(decoded, list) else []
 
     def record_id(self, item: dict[str, Any]) -> str:
-        return str(item.get("id") or item.get("noticeId") or item.get("accessionNumber") or item.get("document_number") or item.get("url") or hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest())
+        return str(item.get("id") or item.get("noticeId") or item.get("accessionNumber") or item.get("document_number") or item.get("Award ID") or item.get("k_number") or item.get("url") or hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest())
 
     def title(self, item: dict[str, Any]) -> str:
-        return str(item.get("title") or item.get("description") or item.get("name") or self.record_id(item))
+        return str(item.get("title") or item.get("description") or item.get("Description") or item.get("device_name") or item.get("name") or self.record_id(item))
 
     def url(self, item: dict[str, Any]) -> str:
-        return str(item.get("url") or item.get("link") or self.definition.api_base)
+        return str(item.get("url") or item.get("link") or item.get("uiLink") or item.get("html_url") or self.definition.api_base)
 
     def published(self, item: dict[str, Any]) -> datetime | None:
-        for key in ("publication_date", "publish_date", "postedDate", "date", "filingDate"):
+        for key in ("publication_date", "publish_date", "postedDate", "date", "filingDate", "Action Date"):
             value = item.get(key)
             if value:
                 try:
                     return datetime.fromisoformat(str(value)).astimezone(UTC)
                 except ValueError:
-                    return None
+                    try:
+                        return parsedate_to_datetime(str(value)).astimezone(UTC)
+                    except (TypeError, ValueError):
+                        return None
         return None
 
     def _observation(self, item: dict[str, Any], run_id: str) -> SourceObservation:
@@ -124,7 +128,10 @@ class LiveSourceAdapter:
 class SamAdapter(LiveSourceAdapter):
     definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("defense", "space", "commercial_aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published")
     def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.sam_api_key), "SAM_API_KEY is not configured"
-    def request_url(self, limit: int) -> str: return f"{self.definition.api_base}?{urlencode({'limit': limit})}"
+    def request_url(self, limit: int) -> str:
+        today = datetime.now(UTC).date()
+        window_start = today - timedelta(days=14)
+        return f"{self.definition.api_base}?{urlencode({'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')})}"
     def headers(self, settings: Any) -> dict[str, str]: return {"X-Api-Key": settings.sam_api_key, **super().headers(settings)}
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("opportunitiesData", [])
 
@@ -171,10 +178,12 @@ class NasaAdapter(LiveSourceAdapter):
 
 class DodAdapter(LiveSourceAdapter):
     definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("defense", "space", "commercial_aerospace"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present")
+    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official DoD machine-readable feed is not configured; web page collection is disabled"
 
 
 class CommerceAdapter(LiveSourceAdapter):
     definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers")
+    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official Commerce machine-readable feed is not configured; web page collection is disabled"
 
 
 class FdaAdapter(LiveSourceAdapter):

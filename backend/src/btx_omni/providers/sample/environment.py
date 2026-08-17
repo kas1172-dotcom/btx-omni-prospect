@@ -14,12 +14,18 @@ from btx_omni.domain.accounts import (
 )
 from btx_omni.domain.commercial import CommercialContext, MonthlyCommercialHistory
 from btx_omni.domain.common import DataMode, EvidenceState
-from btx_omni.domain.quotes import CommercialQuote, QuoteStatus
+from btx_omni.domain.quotes import CommercialQuote, PaperlessAccount, QuoteStatus
 from btx_omni.domain.scores import ExternalIndustryRank
 from btx_omni.modules.intelligence.signals import RawSignal, SignalKind
 from btx_omni.modules.matching.commercial import (
     CommercialComponent,
     HistoricalQuoteContext,
+)
+from btx_omni.monitor.resolution import AccountWatchProfile
+from btx_omni.providers.research.ingestion import (
+    ResearchAccount,
+    apply_facility_feed_enrichment,
+    apply_research_overlay,
 )
 
 ROLE_FAMILIES = ("procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations")
@@ -44,6 +50,7 @@ class SampleEnvironment:
     facilities: tuple[AccountFacility, ...]
     ranks: tuple[ExternalIndustryRank, ...]
     commercial_contexts: tuple[CommercialContext, ...]
+    paperless_accounts: tuple[PaperlessAccount, ...]
     quotes: tuple[CommercialQuote, ...]
     identity_map: dict[str, str]
     scenario_accounts: dict[str, tuple[str, ...]]
@@ -53,6 +60,10 @@ class SampleEnvironment:
     intelligence_events: tuple[RawSignal, ...]
     matching_components: tuple[CommercialComponent, ...]
     matching_quotes: tuple[HistoricalQuoteContext, ...]
+    research_mappings: dict[str, str]
+    researched_accounts: tuple[ResearchAccount, ...]
+    watch_profiles: tuple[AccountWatchProfile, ...]
+    public_facilities: tuple[AccountFacility, ...]
 
 
 @dataclass(frozen=True)
@@ -89,15 +100,19 @@ def build_sample_environment() -> SampleEnvironment:
             account_id = f"acct-{industry_index + 1:02d}-{rank:03d}"
             name = deep_names.get(account_id, f"{industry} Market Target {rank:03d}")
             relationship = AccountRelationship.CURRENT_CUSTOMER if account_id in {"acct-01-001", "acct-01-003", "acct-01-004", "acct-01-005", "acct-01-007", "acct-05-001"} else AccountRelationship.TARGET
+            if account_id == "acct-06-002":
+                relationship = AccountRelationship.FORMER_CUSTOMER
             accounts.append(CanonicalAccount(account_id, name, relationship, f"{account_id}.sample.invalid", (industry,), ("Southwest",) if account_id in {"acct-01-001", "acct-04-001", "acct-03-001", "acct-06-001", "acct-01-005"} else (), None, ROLE_FAMILIES, _provenance(account_id)))
             facilities.append(AccountFacility(f"fac-{account_id}", account_id, f"{name} site", "Phoenix", "AZ", Decimal("33.4484") + Decimal(rank) / 10000, Decimal("-112.0740") + Decimal(rank) / 10000))
             ranks.append(ExternalIndustryRank(account_id, industry, rank, "SAMPLE Top-100 methodology", "Synthetic deterministic market-universe rank; never an attractiveness input."))
             identity.update({f"prism:{account_id}": account_id, f"paperless:{account_id}": account_id, f"hubspot:{account_id}": account_id, f"public:{name.lower()}": account_id})
+    accounts, research_mappings, researched_accounts = apply_research_overlay(tuple(accounts))
+    accounts, public_facilities = apply_facility_feed_enrichment(accounts, research_mappings)
     by_id = {account.id: account for account in accounts}
     deep_accounts = tuple(by_id[account_id] for account_id in deep_names)
     contexts = []
     for account in deep_accounts:
-        last_booking = date(2025, 11, 1)
+        last_booking = date(2025, 11, 1) if account.relationship is AccountRelationship.CURRENT_CUSTOMER else None
         history = (MonthlyCommercialHistory(date(2025, 12, 1), 80_000, 75_000, _provenance(account.id)),)
         crm = date(2025, 12, 20)
         intelligence: tuple[str, ...] = ()
@@ -109,11 +124,23 @@ def build_sample_environment() -> SampleEnvironment:
             crm = date(2025, 11, 1)
             intelligence = ("intel-silicon-expansion",)
         active = account.relationship is AccountRelationship.CURRENT_CUSTOMER or account.legal_name == "Silicon Expansion Co"
-        contexts.append(CommercialContext(account.id, "Southwest", "USD", 1_000_000 if active else None, 900_000 if active else None, "SAMPLE", account.industries[0], None, None, last_booking, date(2025, 10, 1), history, _provenance(account.id), crm, intelligence, ("monthly_history", "last_order_date")))
+        contexts.append(CommercialContext(account.id, "Southwest", "USD", 1_000_000 if active else None, 900_000 if active else None, "SAMPLE", account.industries[0], "Defense Platform" if account.legal_name == "Defense Prime One" else None, "DP-100" if account.legal_name == "Defense Prime One" else None, last_booking, date(2025, 10, 1) if active else None, history, _provenance(account.id), crm, intelligence, ("POC synthetic assumption / pending PRISM confirmation: monthly revenue and bookings history", "POC synthetic assumption / pending PRISM confirmation: program, part, and last order fields")))
     # The same canonical account is intentionally represented in two BUs.
     shared = next(item for item in contexts if item.account_id == "acct-01-005")
     contexts.append(CommercialContext(shared.account_id, "Defense", shared.currency, shared.ttm_revenue_minor, shared.ttm_bookings_minor, shared.customer_segment, shared.end_market, None, None, shared.last_booking_date, shared.last_order_date, shared.monthly_history, shared.provenance, shared.last_crm_activity_date, (), shared.jamie_validation_required))
-    quotes = tuple(CommercialQuote(f"quote-{a.id}", a.id, "Southwest", QuoteStatus.OPEN if a.legal_name in {"Quote Risk Manufacturing", "Defense Prime One"} else QuoteStatus.WON, date(2025, 8, 1), 50_000 if a.legal_name == "Defense Prime One" else 250_000, "USD", f"contact-{a.id}", f"fac-{a.id}", "precision-machined", _provenance(a.id)) for a in deep_accounts)
+    paperless_accounts = tuple(PaperlessAccount(f"paperless-{account.id}", account.id, account.legal_name, _provenance(f"paperless-{account.id}")) for account in deep_accounts)
+    quotes: list[CommercialQuote] = []
+    for account in deep_accounts:
+        if account.id == "acct-06-002":
+            continue
+        status = QuoteStatus.OPEN if account.id in {"acct-01-002", "acct-01-004", "acct-01-005", "acct-02-001", "acct-03-001"} else QuoteStatus.WON
+        if account.id == "acct-02-002":
+            status = QuoteStatus.LOST
+        quoted_at = date(2025, 12, 25) if account.id == "acct-01-002" else date(2025, 8, 1)
+        value = 250_000 if account.id in {"acct-01-004", "acct-02-001", "acct-03-001"} else 50_000
+        quotes.append(CommercialQuote(f"quote-{account.id}", account.id, "Southwest", status, quoted_at, value, "USD", f"contact-{account.id}", f"fac-{account.id}", "precision-machined", _provenance(f"quote-{account.id}"), ("award-defense-1",) if account.id == "acct-02-001" else ()))
+    quotes.append(CommercialQuote("quote-acct-01-005-defense", "acct-01-005", "Defense", QuoteStatus.OPEN, date(2025, 12, 20), 75_000, "USD", "contact-acct-01-005", "fac-acct-01-005", "precision-machined", _provenance("quote-acct-01-005-defense")))
+    quotes.append(CommercialQuote("quote-acct-02-001-won", "acct-02-001", "Southwest", QuoteStatus.WON, date(2025, 10, 1), 300_000, "USD", "contact-acct-02-001", "fac-acct-02-001", "precision-machined", _provenance("quote-acct-02-001-won"), ("award-defense-1",)))
     crm_contexts = tuple(SampleCrmContext(account.id, f"company-{account.id}", f"owner-{account.id}", ROLE_FAMILIES, (f"deal-{account.id}",), (f"activity-{account.id}",), _provenance(f"crm-{account.id}")) for account in deep_accounts)
     public_signals = tuple(SamplePublicSignal(f"signal-{account.id}", account.id, f"https://sample.invalid/signals/{account.id}", account.industries[0], _provenance(f"public-{account.id}")) for account in deep_accounts)
     scoring_inputs = {account.id: {"program_durability.expected_production_horizon": "FIVE_TO_NINE_YEARS", "strategic_target_fit": "STRONG_TARGET_ARCHETYPE", "btx_commercial_adjacency": "EXISTING_ONE_BU_ACTIVE" if account.relationship is AccountRelationship.CURRENT_CUSTOMER else "COLD_PROSPECT"} for account in deep_accounts}
@@ -128,7 +155,7 @@ def build_sample_environment() -> SampleEnvironment:
         RawSignal("financial-int-1", SignalKind.FINANCIAL_REPORT, "Internal customer financial report", "https://sample.invalid/financial", stamp, "Internal Core Customer", None, EvidenceState.CONFIRMED, "Existing commercial context remains separate."),
         RawSignal("industry-conflict-1", SignalKind.INDUSTRY_UPDATE, "Conflicting industry update", "https://sample.invalid/industry", stamp, "Conflicted Evidence Labs", None, EvidenceState.CONFLICTING, "Requires human review."),
     )
-    defense_quote = next(quote for quote in quotes if quote.account_id == "acct-02-001")
+    defense_quote = next(quote for quote in quotes if quote.id == "quote-acct-02-001")
     matching_components = (
         CommercialComponent("component-defense-exact", "acct-02-001", "program-defense", "DP-100", "enclosure", "Aluminum", "5-axis", "precision-machined", EvidenceState.CONFIRMED, ("evidence-defense-component",), _provenance("component-defense"), ("precision-machining",)),
         CommercialComponent("component-defense-structured", "acct-02-001", "program-defense", None, "enclosure", "Aluminum", "5-axis", "precision-machined", EvidenceState.INFERRED, ("evidence-defense-structured",), _provenance("component-structured"), ("precision-machining",)),
@@ -139,4 +166,8 @@ def build_sample_environment() -> SampleEnvironment:
         HistoricalQuoteContext(defense_quote.id, defense_quote.account_id, defense_quote.business_unit, "DP-100", "enclosure", "Aluminum", "5-axis", defense_quote.part_family, (defense_quote.provenance.source_record_id,), defense_quote.provenance),
         HistoricalQuoteContext("quote-conflict", "acct-01-008", "Southwest", "OTHER-1", "bracket", "Aluminum", "turning", None, ("quote-conflict-evidence",), _provenance("quote-conflict")),
     )
-    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), quotes, identity, scenario_accounts, crm_contexts, public_signals, scoring_inputs, intelligence_events, matching_components, matching_quotes)
+    public_facilities_by_account: dict[str, list[str]] = {}
+    for facility in public_facilities:
+        public_facilities_by_account.setdefault(facility.account_id, []).append(facility.id)
+    watch_profiles = tuple(AccountWatchProfile(account.id, account.legal_name, aliases=tuple(field.value for field in account.public_identity.aliases) if account.public_identity else (), domain=account.domain, newsroom_url=account.public_identity.newsroom_url.value if account.public_identity and account.public_identity.newsroom_url else None, investor_relations_url=account.public_identity.investor_relations_url.value if account.public_identity and account.public_identity.investor_relations_url else None, official_feed_urls=tuple(field.value for field in account.public_identity.official_feed_urls) if account.public_identity else (), facilities=tuple(public_facilities_by_account.get(account.id, ())), industries=account.industries) for account in accounts if account.research_account_id)
+    return SampleEnvironment(tuple(accounts), tuple(facilities), tuple(ranks), tuple(contexts), paperless_accounts, tuple(quotes), identity, scenario_accounts, crm_contexts, public_signals, scoring_inputs, intelligence_events, matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities)

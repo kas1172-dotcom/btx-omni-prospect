@@ -23,6 +23,7 @@ class AccountWatchProfile:
     facilities: tuple[str, ...] = ()
     programs: tuple[str, ...] = ()
     industries: tuple[str, ...] = ()
+    official_feed_urls: tuple[str, ...] = ()
 
 
 def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, source_identifiers: tuple[tuple[str, str], ...] = ()) -> EntityResolution:

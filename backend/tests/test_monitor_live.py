@@ -7,6 +7,8 @@ from btx_omni.ai.anthropic import AnthropicProvider
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import AiRequest
 from btx_omni.ai.registry import get_ai_provider
+from btx_omni.api.intelligence_projection import intelligence_signals
+from btx_omni.api.runtime import PocRuntime
 from btx_omni.app import create_app
 from btx_omni.core.config import Settings
 from btx_omni.monitor.packs import PACKS
@@ -27,8 +29,18 @@ def test_structured_adapters_emit_canonical_observations() -> None:
     fda = FdaAdapter(fake_get({"results": [{"k_number": "K123", "device_name": "Device approval"}]}))
     settings = Settings(_env_file=None, sam_api_key="test-key", monitor_mode="live")
     assert sam.collect(run_id="r1", settings=settings)[0].source_identity.source_record_id == "N-1"
-    assert usa.parse(json.dumps({"results": [{"Award ID": "A-1", "description": "Contract award"}]}).encode(), run_id="r1")[0].source_tier.startswith("TIER_1")
-    assert fda.collect(run_id="r1", settings=settings)[0].raw_evidence.media_type == "application/json"
+    usa_observation = usa.parse(json.dumps({"results": [{"Award ID": "A-1", "description": "Contract award"}]}).encode(), run_id="r1")[0]
+    fda_observation = fda.collect(run_id="r1", settings=settings)[0]
+    assert usa_observation.source_tier.startswith("TIER_1") and usa_observation.source_identity.source_record_id == "A-1"
+    assert fda_observation.raw_evidence.media_type == "application/json" and fda_observation.source_identity.source_record_id == "K123"
+
+
+def test_live_adapter_caps_generic_results_before_normalization() -> None:
+    adapter = FdaAdapter(fake_get({"results": [{"k_number": "K1"}, {"k_number": "K2"}]}))
+
+    observations = adapter.collect(run_id="r1", settings=Settings(_env_file=None, monitor_mode="live"), limit=1)
+
+    assert len(observations) == 1 and observations[0].source_identity.source_record_id == "K1"
 
 
 def test_unavailable_auth_malformed_rate_limit_and_empty_are_health_states() -> None:
@@ -80,6 +92,7 @@ def test_monitor_observations_cluster_with_multiple_evidence_and_source_update()
     service.registry["fda"] = second
     service.collect("fda")
     assert len(service.runs) == 2 and service.health["fda"].last_success_at is not None
+    assert service.runs[0].records_new == 1 and service.runs[1].records_changed == 1
 
 
 def test_monitor_registry_endpoint_is_internal_observability() -> None:
@@ -87,3 +100,18 @@ def test_monitor_registry_endpoint_is_internal_observability() -> None:
     response = client.get("/api/monitor/sources")
     assert response.status_code == 200
     assert {item["source_id"] for item in response.json()} >= {"sam_gov", "fda_openfda", "sec_edgar"}
+    health = client.get("/api/monitor/health")
+    assert health.status_code == 200 and {"sources", "last_runs", "clusters", "rejected_observations"} <= set(health.json())
+
+
+def test_live_monitor_event_projects_through_canonical_intelligence_contract() -> None:
+    runtime = PocRuntime(Settings(_env_file=None, monitor_mode="live"))
+    runtime.monitor = MonitorService(runtime.settings, {"fda": FdaAdapter(fake_get({"results": [{"id": "live-1", "title": "Device approval"}]}))})
+    runtime.monitor.collect("fda", limit=1)
+
+    live = [item for item in intelligence_signals(runtime) if item.get("data_mode") == "CONNECTED"]
+
+    assert len(live) == 1
+    assert live[0]["data_mode"].value == "CONNECTED"
+    assert live[0]["resolution_state"].value == "UNRESOLVED"
+    assert live[0]["account_id"] is None

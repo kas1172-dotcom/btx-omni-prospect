@@ -45,16 +45,25 @@ class OmniOrchestrator:
         citations: list[str] = [account.provenance.source_record_id] if account.provenance else []
         missing: list[str] = []
         lines = [f"Canonical account: {account.legal_name} ({account.relationship.value})."]
+        public_identity_state = account.public_identity.verification_state.value if account.public_identity else "UNVERIFIED"
+        lines.append(f"Public identity: {public_identity_state}; BTX commercial context remains SAMPLE synthetic data.")
+        if account.public_relationship:
+            lines.append(f"Public relationship evidence: {account.public_relationship.state.value} ({account.public_relationship.confidence}); it is not BTX internal confirmation.")
+            citations.extend(account.public_relationship.provenance.source_ids)
+        if account.public_contacts:
+            lines.append(f"Contact Research: {len(account.public_contacts)} public research record(s), not CRM contacts.")
         if account_alerts:
             lines.append("Alerts: " + ", ".join(item.type.value for item in account_alerts) + ".")
             citations.extend(value for alert in account_alerts for value in alert.evidence_ids)
         context = [item for item in environment.commercial_contexts if item.account_id == account_id]
         if not context:
             missing.append("PRISM commercial context unavailable.")
-        if "score" in question.casefold() or "attractive" in question.casefold():
+        if ("score" in question.casefold() or "attractive" in question.casefold()) and account_id in environment.scoring_inputs:
             score = calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account_id]), evidence_ids=tuple(citations), calculated_at=observed_at)
             lines.append(f"Account Attractiveness: {score.score if score.score is not None else 'insufficient data'} with coverage {score.coverage}.")
             missing.extend(score.missingness)
+        elif "score" in question.casefold() or "attractive" in question.casefold():
+            missing.append("Account Attractiveness is unavailable: no SAMPLE scoring input is mapped to this researched identity.")
         events = [item for item in environment.intelligence_events if item.account_name == account.legal_name]
         if events:
             normalized = normalize_signal(events[0], account_name_to_id={item.legal_name: item.id for item in environment.accounts}, provenance=account.provenance)

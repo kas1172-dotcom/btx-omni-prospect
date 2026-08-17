@@ -1,0 +1,3785 @@
+{
+  "schema_version": "2.0",
+  "generated_date": "2026-08-16",
+  "purpose": "Deeper public Contact Research for BTX Omni Prospect using official public company sources plus publicly indexed professional-profile information. This is research evidence, not BTX CRM truth.",
+  "methodology": {
+    "official_sources_first": true,
+    "public_search_used": true,
+    "publicly_indexed_linkedin_used": true,
+    "linkedin_authenticated_scraping_used": false,
+    "restricted_or_private_data_used": false,
+    "personal_email_inference_used": false,
+    "named_contact_rule": "Include a named person only when a public search result or official source clearly connects the person to the company and a relevant function.",
+    "reverification_rule": "PUBLIC_PROFILE_VERIFIED contacts must be re-verified before outreach because public professional roles can change."
+  },
+  "truth_rules": {
+    "named_public_contact": "Public professional contact verified on an official source. Not a BTX CRM contact.",
+    "public_contact_channel": "Official supplier/procurement/partnership/contact channel. Not a named buyer.",
+    "role_target": "Desired role family for research when no named public contact is verified.",
+    "hubspot_boundary": "Later HubSpot contacts remain a separate BTX-internal truth source and may be matched to, but must not be conflated with, public research contacts.",
+    "no_linkedin_scraping": true,
+    "no_fabricated_people": true,
+    "no_personal_email_inference": true
+  },
+  "role_families": [
+    "procurement",
+    "supply_chain",
+    "supplier_management",
+    "engineering",
+    "manufacturing",
+    "operations"
+  ],
+  "official_contact_sources": {
+    "LOCKHEED_RMS_PROCUREMENT": {
+      "title": "Lockheed Martin \u2014 RMS Procurement",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers/business-area-procurement/rms.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "LOCKHEED_SPACE_PROCUREMENT": {
+      "title": "Lockheed Martin \u2014 Space Procurement",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers/business-area-procurement/space.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "LOCKHEED_SUPPLIERS": {
+      "title": "Lockheed Martin \u2014 Supplier Information",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers/information.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "RTX_SUPPLIERS": {
+      "title": "RTX \u2014 Suppliers",
+      "url": "https://www.rtx.com/suppliers",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "RAYTHEON_SUPPLIERS": {
+      "title": "Raytheon \u2014 Suppliers",
+      "url": "https://www.rtx.com/raytheon/suppliers",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "BOEING_CONTACT": {
+      "title": "Boeing \u2014 Contact Us / Supplier Information",
+      "url": "https://www.boeing.com/contact-us",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "HONEYWELL_SUPPLIER": {
+      "title": "Honeywell \u2014 Supplier Information Hub",
+      "url": "https://www.honeywell.com/us/en/legal/supplier",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "SPACEX_SUPPLIER": {
+      "title": "SpaceX \u2014 Suppliers",
+      "url": "https://www.spacex.com/supplier",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "SPACEX_MISSION": {
+      "title": "SpaceX \u2014 Mission / Supplier Contact",
+      "url": "https://www.spacex.com/mission",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "SPACEX_JOBS_STARSHIP": {
+      "title": "SpaceX \u2014 Starship Sourcing & Planning Roles",
+      "url": "https://www.spacex.com/careers/jobs?programs=Starship",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "TSMC_CONTACT": {
+      "title": "TSMC \u2014 Contact Us / Procurement Contacts",
+      "url": "https://www.tsmc.com/english/contact-us",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "TSMC_ARIZONA": {
+      "title": "TSMC Arizona \u2014 Contact / Supplier Diversity",
+      "url": "https://www.tsmc.com/static/abouttsmcaz/index.htm",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "INTEL_SUPPLIER_CONTACT": {
+      "title": "Intel \u2014 Supplier Support Contact",
+      "url": "https://www.intel.com/content/www/us/en/supplier/contact-us.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "INTEL_SUPPLIER_OVERVIEW": {
+      "title": "Intel \u2014 Supplier Overview",
+      "url": "https://www.intel.com/content/www/us/en/supplier/overview.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "GF_SUPPLIER": {
+      "title": "GlobalFoundries \u2014 Supplier Inquiries",
+      "url": "https://gf.com/about-gf/contact-us/supplier-inquiries/",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "MEDTRONIC_BECOMING_SUPPLIER": {
+      "title": "Medtronic \u2014 Becoming a Supplier",
+      "url": "https://www.medtronic.com/en-us/our-company/governance/suppliers/becoming-suppliers.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "MEDTRONIC_SUPPLIER_RESOURCES": {
+      "title": "Medtronic \u2014 Supplier Resources",
+      "url": "https://www.medtronic.com/en-us/our-company/governance/suppliers/supplier-resources.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "STRYKER_SUPPLIER_INCLUSION": {
+      "title": "Stryker \u2014 Global Supplier Inclusion",
+      "url": "https://www.stryker.com/us/en/about/corporate-responsibility/responsible-supply-chains/supplier-inclusion.html",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "SYMBOTIC_CONTACT": {
+      "title": "Symbotic \u2014 Contact Us",
+      "url": "https://www.symbotic.com/contact-us/",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "ABB_SUPPLYING": {
+      "title": "ABB \u2014 Supplying to ABB",
+      "url": "https://www.abb.com/global/en/company/about/supplying",
+      "authority": "OFFICIAL_COMPANY"
+    },
+    "FANUC_CONTACT": {
+      "title": "FANUC America \u2014 Contact",
+      "url": "https://www.fanucamerica.com/contact",
+      "authority": "OFFICIAL_COMPANY"
+    }
+  },
+  "named_public_contacts": [
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Alex Drickey",
+      "title": "Procurement \u2014 Electrical Items",
+      "role_family": "procurement",
+      "division": "Rotary and Mission Systems",
+      "location": "Moorestown, NJ",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_RMS_PROCUREMENT"
+      ]
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Leanne Suserud",
+      "title": "Procurement \u2014 Mechanical Items",
+      "role_family": "procurement",
+      "division": "Rotary and Mission Systems",
+      "location": "Moorestown, NJ",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_RMS_PROCUREMENT"
+      ]
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Lindsay Moore",
+      "title": "Procurement \u2014 Mechanical Build to Print",
+      "role_family": "procurement",
+      "division": "Space",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_SPACE_PROCUREMENT"
+      ]
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Derek King",
+      "title": "Procurement \u2014 Mechanical Non-Build-to-Print",
+      "role_family": "procurement",
+      "division": "Space",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_SPACE_PROCUREMENT"
+      ]
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "name": "Michael Yu",
+      "title": "Director, Production Equipment Procurement Division",
+      "role_family": "procurement",
+      "division": "Production Equipment Procurement",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": "tsmc_pepd@tsmc.com",
+      "public_phone": null,
+      "source_ids": [
+        "TSMC_CONTACT"
+      ]
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "name": "Gary Chen",
+      "title": "Director, Material Supply Chain Management Division",
+      "role_family": "supply_chain",
+      "division": "Material Supply Chain Management",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": "tsmc_mscm@tsmc.com",
+      "public_phone": null,
+      "source_ids": [
+        "TSMC_CONTACT"
+      ]
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "name": "Daniel K.T. Kuo",
+      "title": "Deputy Director, Facility Supply Chain Management Division",
+      "role_family": "supply_chain",
+      "division": "Facility Supply Chain Management",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": "tsmc_fscm@tsmc.com",
+      "public_phone": null,
+      "source_ids": [
+        "TSMC_CONTACT"
+      ]
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "name": "Patrick Hung",
+      "title": "Deputy Director, Material Management Strategic Sourcing Division",
+      "role_family": "supplier_management",
+      "division": "Material Management Strategic Sourcing",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": "tsmc_mmss@tsmc.com",
+      "public_phone": null,
+      "source_ids": [
+        "TSMC_CONTACT"
+      ]
+    },
+    {
+      "research_account_id": "stryker",
+      "name": "Kathleen Ward",
+      "title": "Vice President, Division Sourcing",
+      "role_family": "supplier_management",
+      "division": null,
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "STRYKER_SUPPLIER_INCLUSION"
+      ]
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Mark Wilkinson",
+      "title_or_function": "Senior supply chain leader; procurement background",
+      "role_family": "supply_chain",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/mark-wilkinson-79634821",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Christopher Senerote",
+      "title_or_function": "Procurement / Buyer team",
+      "role_family": "procurement",
+      "division": "Blue Origin",
+      "location": "Merritt Island / Florida",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/csenerote",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Alan Ekland",
+      "title_or_function": "Corporate procurement / supply chain",
+      "role_family": "procurement",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/alanekland",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Mike Eckert",
+      "title_or_function": "Buyer III, Engines Group",
+      "role_family": "procurement",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/eckertmike",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Lisa Datkuliak",
+      "title_or_function": "Strategic procurement; New Glenn supply chain",
+      "role_family": "supply_chain",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/lisa-datkuliak-48388611b",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Phillipa Cochran",
+      "title_or_function": "Buyer / supply-chain function",
+      "role_family": "procurement",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/phillipa-cochran-56834156",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Dannisty Binford",
+      "title_or_function": "Procurement specialist / buyer",
+      "role_family": "procurement",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/dannisty-binford-a889b5147",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "blue-origin",
+      "name": "Samantha Kittikhoun",
+      "title_or_function": "Senior buyer / supply-chain operations",
+      "role_family": "procurement",
+      "division": "Blue Origin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/samantha-kittikhoun-992b51181",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "spacex",
+      "name": "Terran Hasselbach",
+      "title_or_function": "Supply-chain hiring across procurement, planning and materials",
+      "role_family": "supply_chain",
+      "division": "SpaceX",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/terranhasselbach",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "spacex",
+      "name": "Jinson John",
+      "title_or_function": "Supply chain / mechanical-parts sourcing",
+      "role_family": "supply_chain",
+      "division": "SpaceX",
+      "location": "Starlink",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/jinsonp",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "spacex",
+      "name": "Eric Goodrich",
+      "title_or_function": "Procurement and supply-chain leader",
+      "role_family": "procurement",
+      "division": "SpaceX",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/ericmgoodrich",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "spacex",
+      "name": "Grayson Sutcliffe",
+      "title_or_function": "Starship supply chain / sourcing",
+      "role_family": "supply_chain",
+      "division": "SpaceX",
+      "location": "Starbase, TX",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/graysonsutcliffe",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "spacex",
+      "name": "Craig Shelley",
+      "title_or_function": "Procurement / sourcing; PCB supply chain",
+      "role_family": "procurement",
+      "division": "SpaceX",
+      "location": "Hawthorne / Austin",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/craigshelley100",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "April Wilson",
+      "title_or_function": "Supplier management / procurement",
+      "role_family": "supplier_management",
+      "division": "Lockheed Martin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/april-wilson-a5931852",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Darrell Hoyle",
+      "title_or_function": "Procurement engineering / supply chain",
+      "role_family": "procurement",
+      "division": "Lockheed Martin Aeronautics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/darrell-hoyle-99428113",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Jay Bayliss",
+      "title_or_function": "Procurement lead, New Ventures",
+      "role_family": "procurement",
+      "division": "Lockheed Martin Space",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/jay-bayliss-076b657b",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Christi Lewis",
+      "title_or_function": "Global supply chain / subcontracts leadership",
+      "role_family": "supplier_management",
+      "division": "Lockheed Martin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/christi-lewis-80794554",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Justin Roach",
+      "title_or_function": "Operations support to Global Procurement & Subcontracts",
+      "role_family": "operations",
+      "division": "Lockheed Martin",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/justin-roach-299b2a171",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Karen Scheidt",
+      "title_or_function": "Procurement and subcontracts",
+      "role_family": "procurement",
+      "division": "Lockheed Martin MFC",
+      "location": "Grand Prairie, TX",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/karen-scheidt-82120434",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boeing",
+      "name": "Angie Kasem",
+      "title_or_function": "Supply chain / procurement leadership and hiring",
+      "role_family": "procurement",
+      "division": "Boeing",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/angiekasem",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boeing",
+      "name": "Tamson Ing",
+      "title_or_function": "Supplier management / procurement",
+      "role_family": "supplier_management",
+      "division": "Boeing",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/tamsoning",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boeing",
+      "name": "David Bowen",
+      "title_or_function": "Procurement / supply chain",
+      "role_family": "procurement",
+      "division": "Boeing",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/david-bowen-mba-56458938",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boeing",
+      "name": "Jennifer Jordan",
+      "title_or_function": "Procurement management",
+      "role_family": "procurement",
+      "division": "Boeing",
+      "location": "Dallas, TX",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/jennifer-jordan-869b6b196",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boeing",
+      "name": "Tim Ho",
+      "title_or_function": "Procurement agent / supply-chain professional",
+      "role_family": "procurement",
+      "division": "Boeing",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/tim-ho-514b355b",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boeing",
+      "name": "Beth L. Taylor",
+      "title_or_function": "Supplier management / supply chain",
+      "role_family": "supplier_management",
+      "division": "Boeing",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/btaylor-999",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intel",
+      "name": "Greg Friel",
+      "title_or_function": "Global purchasing and sourcing leader",
+      "role_family": "procurement",
+      "division": "Intel",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/greg-friel",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intel",
+      "name": "Chris Geil",
+      "title_or_function": "Strategic sourcing / commodity management",
+      "role_family": "supplier_management",
+      "division": "Intel",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/chris-geil",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intel",
+      "name": "Brian Higgins",
+      "title_or_function": "Operations and supply-chain executive; procurement background",
+      "role_family": "supply_chain",
+      "division": "Intel",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/brian-higgins2021",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intel",
+      "name": "Sean Dowd",
+      "title_or_function": "Global supply-chain / strategic sourcing leader",
+      "role_family": "supply_chain",
+      "division": "Intel",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/seanmorgandowd",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "name": "Joel Mintun",
+      "title_or_function": "Global indirect procurement leader",
+      "role_family": "procurement",
+      "division": "GlobalFoundries",
+      "location": "Indianapolis, IN",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/joelmintun",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "name": "Diane Captein",
+      "title_or_function": "Procurement and supply-chain leader",
+      "role_family": "procurement",
+      "division": "GlobalFoundries",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/diane-captein-50462483",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "name": "Mary Pham",
+      "title_or_function": "Indirect procurement analyst",
+      "role_family": "procurement",
+      "division": "GlobalFoundries",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/maryphamuark",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "name": "Thomas Bruno",
+      "title_or_function": "Supply chain / global commodity leadership, MRO",
+      "role_family": "supplier_management",
+      "division": "GlobalFoundries",
+      "location": "Austin, TX",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/thomas-bruno-2712251b5",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "applied-materials",
+      "name": "Ali Fadel",
+      "title_or_function": "Global procurement / strategic sourcing leadership",
+      "role_family": "procurement",
+      "division": "Applied Materials",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/alifadel",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "applied-materials",
+      "name": "Hagar Bagim",
+      "title_or_function": "Strategic procurement and supply-chain leader",
+      "role_family": "procurement",
+      "division": "Applied Materials",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/hagarbagim",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "applied-materials",
+      "name": "Hollie Hempel",
+      "title_or_function": "Global procurement leadership",
+      "role_family": "procurement",
+      "division": "Applied Materials",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/holliehempel",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "applied-materials",
+      "name": "Min Zhao",
+      "title_or_function": "Supply-chain and procurement leader",
+      "role_family": "supply_chain",
+      "division": "Applied Materials",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/min-zhao-6819b1a6",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "applied-materials",
+      "name": "Brent Graham",
+      "title_or_function": "Procurement / supplier negotiation / supply chain",
+      "role_family": "procurement",
+      "division": "Applied Materials",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/brent-graham-5a7924b",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lam-research",
+      "name": "Rob Rule",
+      "title_or_function": "Supply-chain business / operations leadership",
+      "role_family": "supply_chain",
+      "division": "Lam Research",
+      "location": "California",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/robjrule",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lam-research",
+      "name": "Peter Holland",
+      "title_or_function": "Supply-chain management / procurement / sourcing strategy",
+      "role_family": "supply_chain",
+      "division": "Lam Research",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/peter-holland-778b51",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lam-research",
+      "name": "Susan Lasky",
+      "title_or_function": "Supply-chain, procurement and operations executive",
+      "role_family": "supply_chain",
+      "division": "Lam Research",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/susan-lasky-57301412",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "lam-research",
+      "name": "Ramon Cardona",
+      "title_or_function": "Strategic sourcing / procurement professional",
+      "role_family": "procurement",
+      "division": "Lam Research",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/ramon-cardona-86522121",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "medtronic",
+      "name": "Cody Hobson",
+      "title_or_function": "Strategic procurement manager",
+      "role_family": "procurement",
+      "division": "Medtronic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/cody-hobson-97835830",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "medtronic",
+      "name": "Garrett S. Grejdus",
+      "title_or_function": "Global category management / procurement leadership",
+      "role_family": "supplier_management",
+      "division": "Medtronic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/garrett-s-grejdus-0340359",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "medtronic",
+      "name": "Brian Smith",
+      "title_or_function": "Supply-chain and sourcing leader",
+      "role_family": "supply_chain",
+      "division": "Medtronic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/brian-smith-4018819",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "medtronic",
+      "name": "Brandon Seppelt",
+      "title_or_function": "Strategic sourcing and procurement leader",
+      "role_family": "procurement",
+      "division": "Medtronic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/brandon-seppelt",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "medtronic",
+      "name": "Philip Rupp",
+      "title_or_function": "Procurement / supply-chain leadership",
+      "role_family": "procurement",
+      "division": "Medtronic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/philiprupp",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "stryker",
+      "name": "Ryan Slivkoff",
+      "title_or_function": "Sourcing / supplier-network management",
+      "role_family": "supplier_management",
+      "division": "Stryker",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/ryan-slivkoff-23082b113",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "stryker",
+      "name": "Sean Wiegand",
+      "title_or_function": "Strategic sourcing / procurement transformation",
+      "role_family": "procurement",
+      "division": "Stryker",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/sean-wiegand-89696319",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "stryker",
+      "name": "Mark Bray",
+      "title_or_function": "Global supply chain / sourcing leader",
+      "role_family": "supply_chain",
+      "division": "Stryker",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/mark-bray-84475a6",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "stryker",
+      "name": "Thomas Vandersloot",
+      "title_or_function": "Procurement / supply management",
+      "role_family": "procurement",
+      "division": "Stryker",
+      "location": "Kalamazoo, MI",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/thomas-vandersloot-57b460a5",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "stryker",
+      "name": "Chris Brenner",
+      "title_or_function": "Strategic sourcing / procurement / supply chain",
+      "role_family": "procurement",
+      "division": "Stryker",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/christopherbrenner",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "name": "Turner Swanson",
+      "title_or_function": "External Operations commercial sourcing",
+      "role_family": "supplier_management",
+      "division": "Boston Scientific",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/turner-swanson-27ba70146",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "name": "Tim Dolan",
+      "title_or_function": "Director, Indirect Sourcing / Global Sourcing",
+      "role_family": "procurement",
+      "division": "Boston Scientific",
+      "location": "Boston, MA",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/timjdolan",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "name": "Paul Magnan",
+      "title_or_function": "Global sourcing / strategic sourcing",
+      "role_family": "procurement",
+      "division": "Boston Scientific",
+      "location": "Arden Hills, MN",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/paul-magnan-15b9078",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "name": "Kasey C.",
+      "title_or_function": "Procurement / sourcing / supply-chain leader",
+      "role_family": "procurement",
+      "division": "Boston Scientific",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/kaseycaomn",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "name": "Bob Gill",
+      "title_or_function": "Senior Manager, Supply Chain Operations",
+      "role_family": "supply_chain",
+      "division": "Intuitive Surgical",
+      "location": "Sunnyvale, CA",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/bob-gill-4b17972",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "name": "Cara Lima",
+      "title_or_function": "Sourcing program leadership",
+      "role_family": "supplier_management",
+      "division": "Intuitive Surgical",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/cara-lima-39958b5",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "name": "Curt Imokawa",
+      "title_or_function": "Supply-chain / strategic sourcing",
+      "role_family": "supply_chain",
+      "division": "Intuitive Surgical",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/curt-imokawa-cpim-cscp-cltd-a9b8414",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "symbotic",
+      "name": "Nick Shevnock",
+      "title_or_function": "Supply-chain leader",
+      "role_family": "supply_chain",
+      "division": "Symbotic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/nickshevnock",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "symbotic",
+      "name": "Vincent Marquez",
+      "title_or_function": "Supply-chain / procurement",
+      "role_family": "supply_chain",
+      "division": "Symbotic",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/vincent-marquez",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "name": "Neal Mulligan",
+      "title_or_function": "Strategic sourcing / commodity management",
+      "role_family": "supplier_management",
+      "division": "Boston Dynamics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/neal-mulligan-20531a13",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "name": "Chris Peters",
+      "title_or_function": "Commodity management / strategic sourcing / supply chain",
+      "role_family": "supplier_management",
+      "division": "Boston Dynamics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/chriswpeters",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "name": "Minwoo Kim",
+      "title_or_function": "NPI Sourcing Director",
+      "role_family": "supplier_management",
+      "division": "Boston Dynamics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/limomin",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "name": "Jake Arwe",
+      "title_or_function": "Supply-chain management / production operations",
+      "role_family": "supply_chain",
+      "division": "Boston Dynamics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/jake-arwe",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "name": "Steven Coulombe",
+      "title_or_function": "Quality and procurement leadership",
+      "role_family": "procurement",
+      "division": "Boston Dynamics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/stevencoulombe",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "name": "Chris Hunt",
+      "title_or_function": "Supply chain / purchasing",
+      "role_family": "supply_chain",
+      "division": "FANUC America",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/chris-hunt-13367a7",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "name": "Jeff Bianchi",
+      "title_or_function": "Buyer / supply-chain management",
+      "role_family": "procurement",
+      "division": "FANUC America",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/jeff-bianchi-b1768918",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "name": "Luke McLaughlin",
+      "title_or_function": "Supply Chain Analyst",
+      "role_family": "supply_chain",
+      "division": "FANUC America",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://www.linkedin.com/in/luke-mclaughlin-236892206",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "abb-robotics",
+      "name": "Karthikeyan Thiyagarajan",
+      "title_or_function": "Category Manager / strategic sourcing",
+      "role_family": "supplier_management",
+      "division": "ABB",
+      "location": "Pinetops, NC",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://in.linkedin.com/in/karthikeyan-thiyagarajan-089b8639",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    },
+    {
+      "research_account_id": "abb-robotics",
+      "name": "Vinay BN",
+      "title_or_function": "Regional supply chain / sourcing leadership",
+      "role_family": "supply_chain",
+      "division": "ABB Robotics",
+      "location": null,
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "PUBLIC_PROFILE_VERIFIED",
+      "source_type": "PUBLICLY_INDEXED_PROFESSIONAL_PROFILE",
+      "source_url": "https://sg.linkedin.com/in/vinay-bn-2b8b7915",
+      "public_email": null,
+      "public_phone": null,
+      "contactability": "RESEARCH_ONLY",
+      "last_verified_at": "2026-08-16",
+      "notes": "Publicly indexed professional-profile information; re-verify before outreach."
+    }
+  ],
+  "public_contact_channels": [
+    {
+      "research_account_id": "lockheed-martin",
+      "channel_name": "Lockheed Martin Supplier Marketing Portal / Business Area Procurement",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": "inquiries.supplier@lmco.com",
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_SUPPLIERS"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "boeing",
+      "channel_name": "Boeing Supplier Information",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "BOEING_CONTACT"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "rtx",
+      "channel_name": "RTX Potential Supplier Registration",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "RTX_SUPPLIERS"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "honeywell-international",
+      "channel_name": "Honeywell Supplier Inquiry Form",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "HONEYWELL_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "spacex",
+      "channel_name": "SpaceX Become a Supplier",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": "becomeasupplier@spacex.com",
+      "public_phone": null,
+      "source_ids": [
+        "SPACEX_SUPPLIER",
+        "SPACEX_MISSION"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "channel_name": "TSMC Arizona Supplier Diversity / Procurement Intake",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": "tsmc_azinfo@tsmc.com",
+      "public_phone": "+1-602-567-1688",
+      "source_ids": [
+        "TSMC_ARIZONA",
+        "TSMC_CONTACT"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "intel",
+      "channel_name": "Intel Supplier e-Business Support",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": "+1-877-811-2574",
+      "source_ids": [
+        "INTEL_SUPPLIER_CONTACT",
+        "INTEL_SUPPLIER_OVERVIEW"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "channel_name": "GlobalFoundries Supplier Inquiries",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "GF_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "medtronic",
+      "channel_name": "Medtronic Global Supply Management",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": "rs.globalsupplymanagement@medtronic.com",
+      "public_phone": null,
+      "source_ids": [
+        "MEDTRONIC_BECOMING_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "symbotic",
+      "channel_name": "Symbotic Partnerships / Contact Intake",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": "+1-978-284-2800",
+      "source_ids": [
+        "SYMBOTIC_CONTACT"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "abb-robotics",
+      "channel_name": "ABB Supplier Central",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "ABB_SUPPLYING"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "channel_name": "FANUC America Contact Intake",
+      "role_family": "operations",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": "888-FANUC-US",
+      "source_ids": [
+        "FANUC_CONTACT"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    }
+  ],
+  "account_contact_research": [
+    {
+      "research_account_id": "boeing",
+      "display_name": "Boeing",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 6,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supply_chain",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "display_name": "GE Aerospace",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "rtx",
+      "display_name": "RTX",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "honeywell-international",
+      "display_name": "Honeywell International",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "gulfstream-aerospace",
+      "display_name": "Gulfstream Aerospace",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "textron-aviation",
+      "display_name": "Textron Aviation",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "bombardier",
+      "display_name": "Bombardier",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "embraer",
+      "display_name": "Embraer",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "dassault-falcon-jet",
+      "display_name": "Dassault Falcon Jet",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "cirrus-aircraft",
+      "display_name": "Cirrus Aircraft",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "honda-aircraft-company",
+      "display_name": "Honda Aircraft Company",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "rolls-royce-north-america",
+      "display_name": "Rolls-Royce North America",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "display_name": "Lockheed Martin",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 10,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "operations",
+        "procurement",
+        "supplier_management"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ]
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "display_name": "Northrop Grumman",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "general-dynamics",
+      "display_name": "General Dynamics",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "l3harris-technologies",
+      "display_name": "L3Harris Technologies",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "bae-systems-inc",
+      "display_name": "BAE Systems, Inc.",
+      "industries": [
+        "Defense",
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "huntington-ingalls-industries",
+      "display_name": "Huntington Ingalls Industries",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "general-atomics-aeronautical-systems",
+      "display_name": "General Atomics Aeronautical Systems",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "aerovironment",
+      "display_name": "AeroVironment",
+      "industries": [
+        "Defense",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "anduril-industries",
+      "display_name": "Anduril Industries",
+      "industries": [
+        "Defense",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "textron-systems",
+      "display_name": "Textron Systems",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "sierra-nevada-corporation",
+      "display_name": "Sierra Nevada Corporation",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "blue-origin",
+      "display_name": "Blue Origin",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 8,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "procurement",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "spacex",
+      "display_name": "SpaceX",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 5,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "display_name": "Rocket Lab USA",
+      "industries": [
+        "Space",
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "firefly-aerospace",
+      "display_name": "Firefly Aerospace",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "united-launch-alliance",
+      "display_name": "United Launch Alliance",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "relativity-space",
+      "display_name": "Relativity Space",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "intuitive-machines",
+      "display_name": "Intuitive Machines",
+      "industries": [
+        "Space",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "astrobotic",
+      "display_name": "Astrobotic",
+      "industries": [
+        "Space",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "sierra-space",
+      "display_name": "Sierra Space",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "redwire",
+      "display_name": "Redwire",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "impulse-space",
+      "display_name": "Impulse Space",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "honeybee-robotics",
+      "display_name": "Honeybee Robotics",
+      "industries": [
+        "Space",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "intel",
+      "display_name": "Intel",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 4,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "display_name": "TSMC Arizona",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 4,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "samsung-semiconductor",
+      "display_name": "Samsung Semiconductor",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "micron-technology",
+      "display_name": "Micron Technology",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "globalfoundries",
+      "display_name": "GlobalFoundries",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 4,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supply_chain",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "texas-instruments",
+      "display_name": "Texas Instruments",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "amkor-technology",
+      "display_name": "Amkor Technology",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "applied-materials",
+      "display_name": "Applied Materials",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 5,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "procurement",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "lam-research",
+      "display_name": "Lam Research",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 4,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "procurement",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "kla",
+      "display_name": "KLA",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "analog-devices",
+      "display_name": "Analog Devices",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "coherent",
+      "display_name": "Coherent",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "edwards-vacuum",
+      "display_name": "Edwards Vacuum",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "entegris",
+      "display_name": "Entegris",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "corning",
+      "display_name": "Corning",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "medtronic",
+      "display_name": "Medtronic",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 5,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "stryker",
+      "display_name": "Stryker",
+      "industries": [
+        "Medical Device",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 6,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "display_name": "Boston Scientific",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 4,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supply_chain",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "abbott",
+      "display_name": "Abbott",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "display_name": "Intuitive Surgical",
+      "industries": [
+        "Medical Device",
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 3,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "procurement",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "edwards-lifesciences",
+      "display_name": "Edwards Lifesciences",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "display_name": "Zimmer Biomet",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "becton-dickinson",
+      "display_name": "Becton Dickinson",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "baxter-international",
+      "display_name": "Baxter International",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "ge-healthcare",
+      "display_name": "GE HealthCare",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "siemens-healthineers",
+      "display_name": "Siemens Healthineers",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "philips",
+      "display_name": "Philips",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "resmed",
+      "display_name": "ResMed",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "dexcom",
+      "display_name": "Dexcom",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "alcon",
+      "display_name": "Alcon",
+      "industries": [
+        "Medical Device"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "symbotic",
+      "display_name": "Symbotic",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 2,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "procurement",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "abb-robotics",
+      "display_name": "ABB Robotics",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 2,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "procurement",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "fanuc-america",
+      "display_name": "FANUC America",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 3,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "yaskawa-motoman",
+      "display_name": "Yaskawa Motoman",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "universal-robots",
+      "display_name": "Universal Robots",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "kuka-robotics",
+      "display_name": "KUKA Robotics",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "boston-dynamics",
+      "display_name": "Boston Dynamics",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 5,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "procurement",
+        "supplier_management",
+        "supply_chain"
+      ],
+      "research_state": "NAMED_CONTACTS_VERIFIED",
+      "gaps": [
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "agility-robotics",
+      "display_name": "Agility Robotics",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "figure-ai",
+      "display_name": "Figure AI",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "apptronik",
+      "display_name": "Apptronik",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "amazon-robotics",
+      "display_name": "Amazon Robotics",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "rockwell-automation",
+      "display_name": "Rockwell Automation",
+      "industries": [
+        "Robotics"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "teradyne",
+      "display_name": "Teradyne",
+      "industries": [
+        "Robotics",
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    }
+  ],
+  "summary": {
+    "accounts_covered": 78,
+    "named_public_contacts": 80,
+    "officially_verified_named_contacts": 9,
+    "public_profile_verified_named_contacts": 71,
+    "public_contact_channels": 12,
+    "accounts_with_named_contacts": 17,
+    "accounts_with_public_channels": 12,
+    "accounts_with_role_targets": 78
+  }
+}

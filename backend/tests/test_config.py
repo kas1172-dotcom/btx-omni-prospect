@@ -1,9 +1,23 @@
+from pathlib import Path
+
 from btx_omni.core.config import Settings
 from btx_omni.persistence.database import (
     Base,
     create_database_engine,
     create_session_factory,
 )
+
+
+def test_settings_normalizes_platform_postgres_url() -> None:
+    settings = Settings(_env_file=None, database_url="postgres://user:password@db:5432/platform")
+
+    assert settings.database_url == "postgresql+psycopg://user:password@db:5432/platform"
+
+
+def test_settings_normalizes_generic_postgresql_url() -> None:
+    settings = Settings(_env_file=None, database_url="postgresql://user:password@db:5432/platform")
+
+    assert settings.database_url == "postgresql+psycopg://user:password@db:5432/platform"
 
 
 def test_settings_reads_database_url_from_environment(monkeypatch) -> None:
@@ -37,6 +51,16 @@ def test_settings_prefers_btx_database_url_when_both_aliases_are_present(monkeyp
     assert settings.database_url == btx_database_url
 
 
+def test_settings_accepts_standard_anthropic_api_key_alias(monkeypatch) -> None:
+    monkeypatch.delenv("BTX_ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic-key")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.anthropic_api_key == "test-anthropic-key"
+    assert settings.anthropic_model == "claude-sonnet-5"
+
+
 def test_database_factory_uses_settings_url_without_connecting() -> None:
     settings = Settings(
         _env_file=None,
@@ -50,5 +74,12 @@ def test_database_factory_uses_settings_url_without_connecting() -> None:
     assert engine.url.password == "test_password"
     assert engine.url.host == "db"
     assert engine.url.database == "test_db"
+    assert engine.url.drivername == "postgresql+psycopg"
     assert session_factory.kw["bind"].url == engine.url
     assert Base.metadata.tables == {}
+
+
+def test_alembic_uses_normalized_settings_url() -> None:
+    env_source = (Path(__file__).parents[1] / "alembic" / "env.py").read_text(encoding="utf-8")
+
+    assert 'config.set_main_option("sqlalchemy.url", get_settings().database_url)' in env_source
