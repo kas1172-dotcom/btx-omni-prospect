@@ -1,5 +1,9 @@
 # BTX Omni Prospect — POC Capability Manifest
 
+> Historical planning document: references to a synthetic Top-100 market
+> universe describe a future production feed, not the current POC. The current
+> POC has only researched public companies and verified public locations.
+
 ## Product boundary
 
 Phase 1 has five top-level surfaces: **Today**, **Accounts**, **Intelligence**, **Map**, and **Actions**. **Omni** is the persistent governed assistant across every surface. Opportunities and Operations remain backend capabilities and contextual views, not Phase 1 tabs.
@@ -9,7 +13,7 @@ The POC supports two truthful modes. **SAMPLE** uses the governed synthetic envi
 | Capability | Surface | Backend owner/module | Data source | SAMPLE support | CONNECTED dependency | POC | Acceptance criteria | Jamie validation required |
 |---|---|---|---|---|---|---|---|---|
 | Commercial briefing and alerts | Today | Alert and commercial-context service | PRISM, Paperless, CRM, public monitor | Yes | Authorized source adapters | Required | Ranked explainable cards show evidence, state, owner context, and a safe next action. | Alert thresholds and production data availability |
-| Canonical account profile | Accounts | Identity/account read model | Canonical identity plus all governed sources | Yes, 17 deep accounts plus market targets | Identity resolution, PRISM, Paperless, CRM | Required | One canonical account ID, relationship state, evidence, missingness, and cross-BU context. | Account hierarchy and BU grain |
+| Canonical account profile | Accounts | Identity/account read model | Canonical identity plus all governed sources | Yes, researched public-company universe with curated scenarios | Identity resolution, PRISM, Paperless, CRM | Required | One canonical account ID, relationship state, evidence, missingness, and cross-BU context. | Account hierarchy and BU grain |
 | Account Attractiveness | Accounts, Map, Today, Omni | Backend scoring service | Governed commercial context and evidence | Yes | Authorized commercial facts | Required | Deterministic, evidence-linked score with configuration/version, coverage, and missing-data state. | Production score inputs and rubric approval |
 | External market rank | Map, Accounts, Omni | Market-universe service | Approved Top-100 methodology | Yes | Approved ranked-source feed | Required | Rank is visibly separate from Account Attractiveness and never treated as internal commercial history. | Exact Top-100 source/methodology |
 | PRISM commercial context | Accounts, Today, Alerts, Omni | PRISM commercial-context adapter | PRISM | Shaped sample history | PRISM read access | Required | Governed TTM revenue and bookings/orders support BU, segment, end market, platform/program, part number, monthly history, and last booking/order when available. Detail/monthly fields are marked SAMPLE assumptions until confirmed. | Actual grain, monthly availability, program/part/end-market fields, last booking/order availability |

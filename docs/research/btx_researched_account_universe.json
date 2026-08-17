@@ -166,7 +166,7 @@
       "replaceable_by_internal": true,
       "do_not_treat_as_btx_confirmed_customer": true,
       "prospect_priority": "HIGH",
-      "prospect_rationale": "Major aircraft/defense OEM; large U.S. production and direct public BTX-family supplier evidence.",
+      "prospect_rationale": "Major aircraft/defense OEM with large U.S. production and publicly documented aerospace and defense program context.",
       "source_ids": [
         "BTX_DEFENSE_CHANDLER",
         "DOD_2025",
@@ -357,7 +357,7 @@
       "replaceable_by_internal": true,
       "do_not_treat_as_btx_confirmed_customer": true,
       "prospect_priority": "HIGH",
-      "prospect_rationale": "Major aerospace systems manufacturer with public BTX-family process-qualification evidence.",
+      "prospect_rationale": "Major aerospace systems manufacturer with publicly documented process-qualification and manufacturing context.",
       "source_ids": [
         "CHANDLER_BLAINE",
         "NASA_PROPULSION"
@@ -902,7 +902,7 @@
       "replaceable_by_internal": true,
       "do_not_treat_as_btx_confirmed_customer": true,
       "prospect_priority": "HIGH",
-      "prospect_rationale": "Major defense/space prime with direct public BTX-family supplier evidence.",
+      "prospect_rationale": "Major defense/space prime with publicly documented defense and space program context.",
       "source_ids": [
         "BTX_DEFENSE_CHANDLER",
         "CHANDLER_BLAINE",
@@ -1462,7 +1462,7 @@
       "replaceable_by_internal": true,
       "do_not_treat_as_btx_confirmed_customer": true,
       "prospect_priority": "MEDIUM",
-      "prospect_rationale": "Defense systems and unmanned platforms adjacent to BTX capabilities.",
+      "prospect_rationale": "Defense systems and unmanned platforms with relevant public manufacturing context.",
       "source_ids": [
         "DOD_2025"
       ],

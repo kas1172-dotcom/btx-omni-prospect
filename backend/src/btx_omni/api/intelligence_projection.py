@@ -14,12 +14,15 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
     stored = [
         normalize_signal(item, account_name_to_id=names, provenance=accounts[names[item.account_name]].provenance)
         for item in sample.intelligence_events
+        if item.account_name in names and names[item.account_name] in sample.rich_scenarios
     ]
     live: list[dict] = []
     for event in runtime.monitor.events.values():
+        subject = event.subject_entities[0] if event.subject_entities else None
+        if event.seller_relevance_state.value != "RESOLVED_ELIGIBLE" or event.resolution_state.value != "RESOLVED" or not subject or not subject.canonical_account_id:
+            continue
         evidence_ids = {evidence.evidence_id for evidence in event.evidence}
         observation = next((item for item in runtime.monitor.observations.values() if item.raw_evidence.id in evidence_ids), None)
-        subject = event.subject_entities[0] if event.subject_entities else None
         live.append({
             "id": event.id,
             "kind": event.event_type.value,
@@ -36,4 +39,4 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
             "source_tier": event.source_confidence_basis,
             "provenance": event.provenance,
         })
-    return [*(jsonable_encoder(item) for item in stored), *live]
+    return [*({**jsonable_encoder(item), "observed_at": item.occurred_at, "data_mode": "CURATED_PUBLIC", "source_tier": "CURATED_POC_PUBLIC"} for item in stored), *live]

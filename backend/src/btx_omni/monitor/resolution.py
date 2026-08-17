@@ -24,6 +24,8 @@ class AccountWatchProfile:
     programs: tuple[str, ...] = ()
     industries: tuple[str, ...] = ()
     official_feed_urls: tuple[str, ...] = ()
+    usaspending_recipient_names: tuple[str, ...] = ()
+    usaspending_recipient_sources: tuple[tuple[str, str], ...] = ()
 
 
 def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, source_identifiers: tuple[tuple[str, str], ...] = ()) -> EntityResolution:

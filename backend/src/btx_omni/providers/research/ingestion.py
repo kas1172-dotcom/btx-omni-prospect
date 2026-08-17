@@ -11,6 +11,7 @@ from btx_omni.core.classification import Classification
 from btx_omni.core.provenance import Provenance
 from btx_omni.domain.accounts import (
     AccountFacility,
+    AccountRelationship,
     CanonicalAccount,
     PublicCompanyIdentity,
     PublicContactResearch,
@@ -27,6 +28,7 @@ ACCOUNT_FILE = RESEARCH_DIR / "btx_researched_account_universe.json"
 CONTACT_FILE = RESEARCH_DIR / "btx_researched_contacts.json"
 MANIFEST_FILE = RESEARCH_DIR / "btx_research_integration_manifest.json"
 FACILITY_FILE = RESEARCH_DIR / "btx_public_facility_feed_enrichment.json"
+USASPENDING_RECIPIENT_FILE = RESEARCH_DIR / "btx_usaspending_recipient_identities.json"
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,15 @@ class FacilityFeedEnrichment:
     last_verified_at: str | None
 
 
+@dataclass(frozen=True)
+class UsaSpendingRecipientIdentity:
+    research_account_id: str
+    recipient_legal_name: str
+    source_url: str
+    source_type: str
+    verified_at: str
+
+
 def _read(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -80,14 +91,51 @@ def load_research_accounts() -> tuple[ResearchAccount, ...]:
                 raise ValueError(f"contact references unknown research account: {account_id}")
             source_ids = tuple(raw.get("source_ids", ()))
             source_urls = tuple(sources[source_id]["url"] for source_id in source_ids if source_id in sources)
-            contacts_by_account[account_id].append(PublicContactResearch(contact_type, raw.get("role_family", ""), raw.get("verification_state", "UNVERIFIED"), raw.get("source_type"), raw.get("source_url") or (source_urls[0] if source_urls else None), ResearchProvenance(source_ids, source_urls, raw.get("verification_state", "UNVERIFIED"), research_only=True), raw.get("name") or raw.get("channel_name"), raw.get("title") or raw.get("title_or_function"), raw.get("division"), raw.get("location"), raw.get("public_email"), raw.get("public_phone")))
+            source_url = raw.get("source_url") or (source_urls[0] if source_urls else None)
+            if source_url and "linkedin.com" in source_url.casefold():
+                continue
+            contacts_by_account[account_id].append(PublicContactResearch(contact_type, raw.get("role_family", ""), raw.get("verification_state", "UNVERIFIED"), raw.get("source_type"), source_url, ResearchProvenance(source_ids, source_urls, raw.get("verification_state", "UNVERIFIED"), research_only=True), raw.get("name") or raw.get("channel_name"), raw.get("title") or raw.get("title_or_function"), raw.get("division"), raw.get("location"), raw.get("public_email"), raw.get("public_phone")))
     result: list[ResearchAccount] = []
     for raw in raw_accounts:
         source_ids = tuple(raw.get("source_ids", ()))
         source_urls = tuple(raw.get("source_urls", ()))
-        relationship = PublicRelationshipEvidence(PublicRelationshipState(raw["relationship_state"]), raw["relationship_confidence"], raw["relationship_basis"], bool(raw["replaceable_by_internal"]), ResearchProvenance(source_ids, source_urls, raw["public_identity_state"], research_only=True))
+        relationship = PublicRelationshipEvidence(
+            PublicRelationshipState.NO_RELATIONSHIP_EVIDENCE,
+            "NONE",
+            "BTX commercial relationship is unavailable without an approved connected BTX source.",
+            True,
+            ResearchProvenance(source_ids, source_urls, raw["public_identity_state"], research_only=True),
+        )
         result.append(ResearchAccount(raw["research_account_id"], raw["display_name"], raw.get("official_domain"), tuple(raw["industries"]), relationship, raw["prospect_priority"], raw["prospect_rationale"], source_ids, source_urls, tuple(raw.get("watch_profile", {}).get("aliases", ())), raw.get("watch_profile", {}), tuple(contacts_by_account[raw["research_account_id"]])))
     return tuple(result)
+
+
+def build_researched_canonical_accounts() -> tuple[tuple[CanonicalAccount, ...], dict[str, str], tuple[ResearchAccount, ...]]:
+    """Build canonical records directly from research, without synthetic placeholders."""
+    researched = load_research_accounts()
+    verified_at = datetime(2026, 8, 16, tzinfo=UTC)
+    accounts: list[CanonicalAccount] = []
+    for item in researched:
+        source_id = item.source_ids[0] if item.source_ids else item.research_account_id
+        source_url = item.source_urls[0] if item.source_urls else None
+        provenance = Provenance("research-input", source_id, source_url, verified_at, verified_at, Classification.PUBLIC, EvidenceState.CONFIRMED, DataMode.CONNECTED, False)
+
+        def field(value: str, item_provenance: Provenance = provenance) -> PublicIdentityField:
+            return PublicIdentityField(value, PublicIdentityVerificationState.VERIFIED_OFFICIAL_PUBLISHER, item_provenance, verified_at)
+
+        identity = PublicCompanyIdentity(
+            PublicIdentityVerificationState.VERIFIED_OFFICIAL_PUBLISHER,
+            legal_name=field(item.display_name), display_name=field(item.display_name),
+            aliases=tuple(field(value) for value in item.aliases),
+            official_domain=field(item.official_domain) if item.official_domain else None,
+        )
+        accounts.append(CanonicalAccount(
+            item.research_account_id, item.display_name, AccountRelationship.PUBLIC_MARKET, item.official_domain,
+            item.industries, (), None, ("procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"),
+            provenance, "RESEARCHED_PUBLIC", identity, item.research_account_id, item.relationship,
+            item.prospect_priority, item.prospect_rationale, item.contacts,
+        ))
+    return tuple(accounts), {item.research_account_id: item.research_account_id for item in researched}, researched
 
 
 def load_facility_feed_enrichment() -> dict[str, FacilityFeedEnrichment]:
@@ -112,30 +160,25 @@ def load_facility_feed_enrichment() -> dict[str, FacilityFeedEnrichment]:
     return result
 
 
-def apply_research_overlay(accounts: tuple[CanonicalAccount, ...]) -> tuple[tuple[CanonicalAccount, ...], dict[str, str], tuple[ResearchAccount, ...]]:
-    """Maps supplied identities only onto lightweight synthetic targets, in input order."""
-    researched = load_research_accounts()
-    available: dict[str, list[CanonicalAccount]] = {}
-    for account in accounts:
-        if account.legal_name.endswith("Market Target " + account.id[-3:]):
-            available.setdefault(account.industries[0], []).append(account)
-    mappings: dict[str, str] = {}
-    replacements: dict[str, CanonicalAccount] = {}
-    verified_at = datetime(2026, 8, 16, tzinfo=UTC)
-    for item in researched:
-        industry = next((value for value in item.industries if available.get(value)), None)
-        if industry is None:
-            continue
-        placeholder = available[industry].pop(0)
-        source_id = item.source_ids[0] if item.source_ids else item.research_account_id
-        source_url = item.source_urls[0] if item.source_urls else None
-        provenance = Provenance("research-input", source_id, source_url, verified_at, verified_at, Classification.PUBLIC, EvidenceState.CONFIRMED, DataMode.CONNECTED, False)
-        def field(value: str, item_provenance: Provenance = provenance) -> PublicIdentityField:
-            return PublicIdentityField(value, PublicIdentityVerificationState.VERIFIED_OFFICIAL_PUBLISHER, item_provenance, verified_at)
-        identity = PublicCompanyIdentity(PublicIdentityVerificationState.VERIFIED_OFFICIAL_PUBLISHER, legal_name=field(item.display_name), display_name=field(item.display_name), aliases=tuple(field(value) for value in item.aliases), official_domain=field(item.official_domain) if item.official_domain else None)
-        replacements[placeholder.id] = replace(placeholder, legal_name=item.display_name, domain=item.official_domain, public_identity=identity, research_account_id=item.research_account_id, public_relationship=item.relationship, prospect_research_priority=item.prospect_priority, prospect_rationale=item.prospect_rationale, public_contacts=item.contacts, public_research_state="RESEARCHED_PUBLIC")
-        mappings[item.research_account_id] = placeholder.id
-    return tuple(replacements.get(item.id, item) for item in accounts), mappings, researched
+def load_usaspending_recipient_identities() -> dict[str, tuple[UsaSpendingRecipientIdentity, ...]]:
+    """Load only public, source-backed legal recipient mappings for USAspending."""
+    document = _read(USASPENDING_RECIPIENT_FILE)
+    if document.get("schema_version") != "1.0" or not isinstance(document.get("mappings"), list):
+        raise ValueError("USAspending recipient identity schema is not supported")
+    known_ids = {account.research_account_id for account in load_research_accounts()}
+    result: dict[str, list[UsaSpendingRecipientIdentity]] = {}
+    seen_names: dict[str, str] = {}
+    for raw in document["mappings"]:
+        account_id = raw.get("research_account_id")
+        name, source_url, source_type, verified_at = (raw.get("recipient_legal_name"), raw.get("source_url"), raw.get("source_type"), raw.get("verified_at"))
+        if account_id not in known_ids or not all(isinstance(item, str) and item for item in (name, source_url, source_type, verified_at)) or not source_url.startswith("https://"):
+            raise ValueError("USAspending recipient mapping is incomplete or has an unknown account")
+        normalized = "".join(char for char in name.casefold() if char.isalnum())
+        if normalized in seen_names and seen_names[normalized] != account_id:
+            raise ValueError("USAspending recipient legal name maps to multiple accounts")
+        seen_names[normalized] = account_id
+        result.setdefault(account_id, []).append(UsaSpendingRecipientIdentity(account_id, name, source_url, source_type, verified_at))
+    return {account_id: tuple(items) for account_id, items in result.items()}
 
 
 def apply_facility_feed_enrichment(accounts: tuple[CanonicalAccount, ...], mappings: dict[str, str]) -> tuple[tuple[CanonicalAccount, ...], tuple[AccountFacility, ...]]:

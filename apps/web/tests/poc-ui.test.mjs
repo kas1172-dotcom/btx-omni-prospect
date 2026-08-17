@@ -9,6 +9,9 @@ const map = readFileSync(new URL('../src/features/map/Map.tsx', import.meta.url)
 const mapCanvas = readFileSync(new URL('../src/features/map/MapCanvas.tsx', import.meta.url), 'utf8')
 const actions = readFileSync(new URL('../src/features/actions/Actions.tsx', import.meta.url), 'utf8')
 const accounts = readFileSync(new URL('../src/features/accounts/Accounts.tsx', import.meta.url), 'utf8')
+const intelligence = readFileSync(new URL('../src/features/intelligence/Intelligence.tsx', import.meta.url), 'utf8')
+const today = readFileSync(new URL('../src/features/today/Today.tsx', import.meta.url), 'utf8')
+const monitor = readFileSync(new URL('../src/features/monitor/Monitor.tsx', import.meta.url), 'utf8')
 
 test('canonical navigation and mobile core flow are present', () => {
   for (const surface of ['Today', 'Accounts', 'Intelligence', 'Map', 'Actions', 'OmniDrawer']) assert.match(app, new RegExp(surface))
@@ -32,11 +35,25 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(map, /No linked signals have map coordinates/)
 })
 
-test('Account 360 distinguishes public relationship and Contact Research from SAMPLE CRM', () => {
-  assert.match(accounts, /Public relationship/)
-  assert.match(accounts, /RESEARCH ONLY/)
-  assert.match(accounts, /not SAMPLE CRM or future HubSpot contact data/)
-  assert.match(accounts, /research priority is not a score/)
+test('Account 360 distinguishes public evidence from simulated BTX context', () => {
+  assert.match(accounts, /Public professional contact research/)
+  assert.match(accounts, /Simulated BTX commercial context/)
+  assert.match(accounts, /Account Attractiveness · POC simulation/)
+  assert.match(accounts, /Coverage/)
+  assert.match(accounts, /Curated scenarios/)
+})
+
+test('Omni provides session-only deterministic chat with optional context and safe keyboard behavior', () => {
+  const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
+  assert.match(drawer, /No account selected/)
+  assert.match(drawer, /Clear/)
+  assert.match(drawer, /What should I review today\?/)
+  assert.match(drawer, /Shift\+Enter for a new line/)
+  assert.match(drawer, /session_account_id/)
+  assert.match(drawer, /citation_links/)
+  assert.match(drawer, /Deterministic fallback—not model-generated advice/)
+  assert.match(drawer, /cannot write to CRM/)
+  assert.match(drawer, /aria-modal="true"/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
@@ -45,6 +62,50 @@ test('map and action interactions remain touch-accessible and confirmation-safe'
   assert.match(mapCanvas, /maplibregl\.Map/)
   assert.match(mapCanvas, /cluster: true/)
   assert.match(mapCanvas, /canonical-locations/)
-  assert.match(actions, /Confirm CRM execution/)
-  assert.match(actions, /Preview & confirm CRM action/)
+  assert.match(actions, /Confirm demo CRM execution/)
+  assert.match(actions, /Preview demo CRM action/)
+  assert.match(mapCanvas, /Map unavailable/)
+  assert.match(mapCanvas, /VITE_MAP_API_KEY is missing/)
+  assert.match(mapCanvas, /do not paste a key into the application/)
+  assert.match(map, /onSelect=\{onAccount\}/)
+  assert.match(map, /signal\.account_id \?\? 'unresolved'/)
+  assert.match(actions, /Development-only user identity/)
+})
+
+test('Actions workbench prioritizes, filters, and keeps evidence and demo CRM confirmation separate', () => {
+  assert.match(actions, /Priority inbox/)
+  assert.match(actions, /Filter by priority/)
+  assert.match(actions, /Filter by industry/)
+  assert.match(actions, /Filter by status/)
+  assert.match(actions, /Evidence and provenance/)
+  assert.match(actions, /href=\{signal\.source_url\}/)
+  assert.match(actions, /Public event:/)
+  assert.match(actions, /Preview demo CRM action/)
+  assert.match(actions, /Continue to explicit confirmation/)
+  assert.match(actions, /SIMULATED BTX WORKFLOW/)
+  assert.match(actions, /priorityRank/)
+})
+
+test('Intelligence distinguishes browser validation from publisher-blocked source checks', () => {
+  assert.match(intelligence, /AUTOMATION_BLOCKED/)
+  assert.match(intelligence, /Publisher controls blocked automated validation/)
+  assert.match(intelligence, /BROWSER_VERIFIED/)
+  assert.match(intelligence, /source_validation_state/)
+  assert.match(intelligence, /timeZone: 'UTC'/)
+})
+
+test('curated public evidence is never labeled as synthetic demo', () => {
+  assert.match(today, /CURATED PUBLIC/)
+  assert.match(map, /CURATED PUBLIC/)
+})
+
+test('Monitor keeps inactive collection separate from curated public preview signals', () => {
+  assert.match(monitor, /INACTIVE/)
+  assert.match(monitor, /Curated POC signal preview/)
+  assert.match(monitor, /CURATED PUBLIC · NOT LIVE INGESTION/)
+  assert.match(monitor, /no scheduler or live collector is running/)
+  assert.match(monitor, /Open Account 360/)
+  assert.match(monitor, /Source freshness/)
+  assert.match(monitor, /Last successful check/)
+  assert.match(monitor, /No resolved, evidence-backed live events are seller-visible/)
 })

@@ -44,15 +44,27 @@ def test_crm_preview_requires_explicit_confirmation_and_unavailability_is_truthf
 def test_omni_explains_alerts_coordination_matching_and_truthful_missingness() -> None:
     sample = build_sample_environment()
     omni = OmniOrchestrator()
-    dormant = omni.answer(sample, account_id="acct-01-003", question="Why is this dormant account at risk?", observed_at=NOW)
-    stale = omni.answer(sample, account_id="acct-01-004", question="What should we do about the quote?", observed_at=NOW)
-    cross_bu = omni.answer(sample, account_id="acct-01-005", question="Who needs coordination?", observed_at=NOW)
-    defense = omni.answer(sample, account_id="acct-02-001", question="Explain the award match and score", observed_at=NOW)
-    external = omni.answer(sample, account_id="acct-01-006", question="What do we know?", observed_at=NOW)
+    dormant = omni.answer(sample, account_id="applied-materials", question="Why is this dormant account at risk?", observed_at=NOW)
+    stale = omni.answer(sample, account_id="lockheed-martin", question="What should we do about the quote?", observed_at=NOW)
+    cross_bu = omni.answer(sample, account_id="boeing", question="Who needs coordination?", observed_at=NOW)
+    defense = omni.answer(sample, account_id="lockheed-martin", question="Explain the award match and score", observed_at=NOW)
+    external = omni.answer(sample, account_id="rocket-lab-usa", question="What do we know?", observed_at=NOW)
     assert "CUSTOMER_INACTIVITY" in dormant.content and dormant.recommended_action
     assert "STALE_QUOTE" in stale.content and stale.citations
     assert "CROSS_BU_COORDINATION" in cross_bu.content
     assert "AWARD_CONTRACT" in defense.content and "EXACT_PART" in defense.content
-    assert "INFERRED" in external.missingness[0]
+    assert external.citations
     assert not defense.source_of_record and "cannot perform CRM writes" in defense.content
     assert omni.reactive_public_research_contract(permitted=False) == "UNAVAILABLE"
+
+
+def test_omni_supports_grounded_unscoped_and_session_follow_up_context() -> None:
+    sample = build_sample_environment()
+    omni = OmniOrchestrator()
+    overview = omni.answer(sample, account_id=None, question="What should I review today?", observed_at=NOW)
+    follow_up = omni.answer(sample, account_id=None, question="Explain this score and its gaps", observed_at=NOW, context={"session_account_id": "boeing"})
+    assert "curated public-company universe" in overview.content
+    assert overview.citation_links and overview.recommended_action
+    assert follow_up.account_id == "boeing" and follow_up.account_name == "Boeing"
+    assert "Account Attractiveness" in follow_up.content and "CROSS_BU_COORDINATION" in follow_up.content
+    assert "cannot perform CRM writes" in follow_up.content

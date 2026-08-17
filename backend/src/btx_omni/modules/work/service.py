@@ -84,3 +84,7 @@ class WorkService:
 
     def audit(self, item_id: str) -> tuple[WorkAuditEvent, ...]:
         return tuple(item for item in self._audit if item.work_item_id == item_id)
+
+    def list(self) -> tuple[GovernedWorkItem, ...]:
+        priority = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+        return tuple(sorted(self._items.values(), key=lambda item: (priority.get(item.priority, 9), item.created_at), reverse=False))

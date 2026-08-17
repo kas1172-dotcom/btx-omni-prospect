@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     data_mode: str = "SAMPLE"
     frontend_origins: str = "http://localhost:5173"
     monitor_mode: str = "disabled"
+    monitor_durable_state_enabled: bool = False
+    monitor_operator_token: str | None = None
+    monitor_stale_after_hours: int = 48
     ai_provider: str = "anthropic"
     anthropic_api_key: str | None = Field(
         default=None,

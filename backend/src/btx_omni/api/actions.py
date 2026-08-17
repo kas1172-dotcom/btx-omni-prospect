@@ -30,6 +30,12 @@ class TransitionAction(BaseModel):
     note: str | None = None
 
 
+@router.get("")
+def list_actions(runtime: PocRuntime = Depends(get_runtime)) -> dict:
+    """The POC work service is process-memory only; expose that limitation to clients."""
+    return {"items": runtime.work.list(), "persistence": "SESSION_MEMORY_ONLY", "warning": "Actions and audit history reset when the API process restarts."}
+
+
 @router.post("")
 def create(body: CreateAction, runtime: PocRuntime = Depends(get_runtime)):
     runtime.environment()

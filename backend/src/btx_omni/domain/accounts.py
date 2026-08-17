@@ -10,6 +10,7 @@ from btx_omni.domain.common import DataMode
 
 
 class AccountRelationship(StrEnum):
+    PUBLIC_MARKET = "PUBLIC_MARKET"
     CURRENT_CUSTOMER = "CURRENT_CUSTOMER"
     FORMER_CUSTOMER = "FORMER_CUSTOMER"
     PROSPECT = "PROSPECT"

@@ -9,10 +9,11 @@ router = APIRouter(prefix="/omni", tags=["omni"])
 
 
 class OmniQuestion(BaseModel):
-    account_id: str
+    account_id: str | None = None
     question: str
+    context: dict[str, str] | None = None
 
 
 @router.post("")
 def omni(body: OmniQuestion, runtime: PocRuntime = Depends(get_runtime)):
-    return OmniOrchestrator().answer(runtime.environment(), account_id=body.account_id, question=body.question, observed_at=runtime.observed_at())
+    return OmniOrchestrator().answer(runtime.environment(), account_id=body.account_id, question=body.question, observed_at=runtime.observed_at(), context=body.context or {})

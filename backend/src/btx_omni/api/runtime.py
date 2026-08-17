@@ -8,7 +8,11 @@ from fastapi import HTTPException
 
 from btx_omni.core.config import Settings
 from btx_omni.modules.work.service import WorkService
+from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.service import MonitorService
+from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
+from btx_omni.monitor.usaspending import recipient_query_names, targeted_profiles
+from btx_omni.persistence.database import create_database_engine
 from btx_omni.providers.sample.environment import (
     SampleEnvironment,
     build_sample_environment,
@@ -23,7 +27,11 @@ class PocRuntime:
     monitor: MonitorService = field(init=False)
 
     def __post_init__(self) -> None:
-        self.monitor = MonitorService(self.settings)
+        repository = MonitorRepository(create_database_engine(self.settings)) if self.settings.monitor_durable_state_enabled else None
+        usa_profiles = targeted_profiles(self.sample.watch_profiles, rich_account_ids=set(self.sample.rich_scenarios))
+        registry = dict(REGISTRY)
+        registry["usaspending"] = UsaSpendingAdapter(recipient_names=recipient_query_names(usa_profiles))
+        self.monitor = MonitorService(self.settings, registry=registry, repository=repository, watch_profiles=usa_profiles)
 
     def environment(self) -> SampleEnvironment:
         if self.settings.data_mode.upper() != "SAMPLE":

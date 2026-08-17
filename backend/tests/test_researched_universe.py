@@ -1,30 +1,33 @@
 from pathlib import Path
 
 from btx_omni.monitor.resolution import resolve_entity
-from btx_omni.providers.research.ingestion import load_research_accounts
+from btx_omni.providers.research.ingestion import (
+    load_research_accounts,
+    load_usaspending_recipient_identities,
+)
 from btx_omni.providers.sample.environment import build_sample_environment
 
 
-def test_researched_identities_are_mapped_without_replacing_sample_commercial_scenarios() -> None:
+def test_researched_identities_are_the_canonical_universe_and_support_simulated_scenarios() -> None:
     environment = build_sample_environment()
 
     assert len(environment.researched_accounts) == len(environment.research_mappings) == 78
-    assert all(account.id not in environment.scenario_accounts["defense-award-quote"] for account in environment.accounts if account.research_account_id)
-    assert all(account.provenance and account.provenance.synthetic for account in environment.accounts)
-    assert all(account.prospect_research_priority is None or account.id not in environment.scoring_inputs for account in environment.accounts)
+    assert all(account.id in environment.research_mappings for account in environment.accounts)
+    assert all(account.provenance and not account.provenance.synthetic for account in environment.accounts)
+    assert len(environment.rich_scenarios) == 12
+    assert all(account.id in environment.scoring_inputs for account in environment.accounts if account.id in environment.rich_scenarios and environment.rich_scenarios[account.id].simulated_score_inputs)
 
 
-def test_public_relationship_and_contacts_remain_research_truth_not_crm() -> None:
+def test_public_relationship_and_contacts_do_not_imply_btx_relationships_or_include_linkedin() -> None:
     environment = build_sample_environment()
     researched = [account for account in environment.accounts if account.research_account_id]
-    public_relationships = [account for account in researched if account.public_relationship and account.public_relationship.state.value == "PUBLICLY_EVIDENCED_RELATIONSHIP"]
     named = [contact for account in researched for contact in account.public_contacts if contact.contact_type == "NAMED_PUBLIC_CONTACT"]
 
-    assert len(public_relationships) == 3
-    assert all(account.public_relationship and account.public_relationship.state.value != "BTX_CONFIRMED" and account.public_relationship.replaceable_by_internal for account in researched)
+    assert all(account.public_relationship and account.public_relationship.state.value == "NO_RELATIONSHIP_EVIDENCE" and account.public_relationship.replaceable_by_internal for account in researched)
+    assert all("btx" not in account.prospect_rationale.casefold() for account in researched)
     assert any(contact.verification_state == "VERIFIED_OFFICIAL" for contact in named)
-    assert any(contact.verification_state == "PUBLIC_PROFILE_VERIFIED" and contact.provenance.research_only for contact in named)
     assert all(contact.provenance.research_only for contact in named)
+    assert all(not (contact.source_url and "linkedin.com" in contact.source_url.casefold()) for contact in named)
 
 
 def test_role_targets_missing_identifiers_and_watch_profile_resolution_are_preserved() -> None:
@@ -37,6 +40,18 @@ def test_role_targets_missing_identifiers_and_watch_profile_resolution_are_prese
     resolved = resolve_entity("Boeing", environment.watch_profiles)
     assert resolved.canonical_account_id == environment.research_mappings["boeing"]
     assert resolve_entity("unrelated entity", environment.watch_profiles).state.value == "UNRESOLVED"
+
+
+def test_usaspending_recipient_legal_names_are_sourced_and_separate_from_marketing_aliases() -> None:
+    environment = build_sample_environment()
+    mappings = load_usaspending_recipient_identities()
+    rich_ids = set(environment.rich_scenarios)
+    profiles = {profile.canonical_account_id: profile for profile in environment.watch_profiles}
+
+    assert set(mappings) == rich_ids - {"medtronic"}
+    assert all(len(items) == 1 and items[0].source_url.startswith("https://") for items in mappings.values())
+    assert all(profiles[account_id].usaspending_recipient_names == (items[0].recipient_legal_name,) for account_id, items in mappings.items())
+    assert all(not profile.source_native_identifiers for profile in profiles.values())
 
 
 def test_research_ingestion_has_no_named_company_application_special_case() -> None:

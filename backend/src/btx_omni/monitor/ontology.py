@@ -33,6 +33,19 @@ class ResolutionState(StrEnum):
     REJECTED = "REJECTED"
 
 
+class SellerRelevanceState(StrEnum):
+    """Whether a collected observation can be shown as seller intelligence.
+
+    This deliberately carries more policy information than entity resolution alone.
+    """
+
+    RESOLVED_ELIGIBLE = "RESOLVED_ELIGIBLE"
+    RESOLVED_NEEDS_REVIEW = "RESOLVED_NEEDS_REVIEW"
+    AMBIGUOUS = "AMBIGUOUS"
+    UNRESOLVED = "UNRESOLVED"
+    REJECTED = "REJECTED"
+
+
 class RejectionState(StrEnum):
     NOT_RELEVANT = "NOT_RELEVANT"
     NO_ENTITY_MATCH = "NO_ENTITY_MATCH"

@@ -36,7 +36,7 @@ def test_canonical_poc_domain_contracts_are_instantiable_and_source_governed() -
     assert (identity.canonical_account_id, paperless.canonical_account_id, contact.company_id, deal.business_unit, activity.occurred_at, assessment.score, work.owner_id) == ("acct-1", "acct-1", "company-1", "southwest", NOW, Decimal(80), "owner-1")
 
 
-def test_sample_and_connected_modes_share_provider_shapes_and_external_rank_is_separate() -> None:
+def test_public_identity_and_simulated_commercial_context_keep_separate_provenance() -> None:
     sample = build_sample_environment()
-    assert all(account.provenance and account.provenance.data_mode.value == "SAMPLE" for account in sample.accounts)
-    assert all(rank.methodology and "attractiveness input" in rank.methodology.lower() for rank in sample.ranks)
+    assert all(account.provenance and account.provenance.data_mode.value == "CONNECTED" and not account.provenance.synthetic for account in sample.accounts)
+    assert all(context.provenance.data_mode.value == "SAMPLE" and context.provenance.synthetic for context in sample.commercial_contexts)

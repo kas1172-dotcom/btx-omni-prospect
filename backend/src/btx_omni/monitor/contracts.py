@@ -11,6 +11,7 @@ from btx_omni.monitor.ontology import (
     EventType,
     RejectionState,
     ResolutionState,
+    SellerRelevanceState,
     SourceHealthState,
 )
 
@@ -128,6 +129,7 @@ class IntelligenceEvent:
     resolution_state: ResolutionState
     initiative_id: str | None = None
     supersedes_event_id: str | None = None
+    seller_relevance_state: SellerRelevanceState = SellerRelevanceState.UNRESOLVED
 
     def __post_init__(self) -> None:
         if self.event_date is not None:

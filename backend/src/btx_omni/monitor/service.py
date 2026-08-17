@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from uuid import uuid4
 
@@ -19,7 +19,10 @@ from btx_omni.monitor.contracts import (
 from btx_omni.monitor.health import SOURCE_HEALTH_WARNING
 from btx_omni.monitor.normalization import normalize_structured_observation
 from btx_omni.monitor.ontology import SourceHealthState
+from btx_omni.monitor.repository import MonitorRepository
+from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.monitor.sources import REGISTRY, LiveSourceAdapter
+from btx_omni.monitor.usaspending import normalize_usaspending_observation
 
 
 @dataclass
@@ -33,6 +36,8 @@ class MonitorService:
     observations: dict[str, SourceObservation] = field(default_factory=dict)
     rejected: list[RejectedObservation] = field(default_factory=list)
     source_versions: dict[tuple[str, str], SourceObservation] = field(default_factory=dict)
+    repository: MonitorRepository | None = None
+    watch_profiles: tuple[AccountWatchProfile, ...] = ()
 
     def collect(self, source_id: str, limit: int = 10) -> CollectionRun:
         if self.settings.monitor_mode.lower() != "live":
@@ -41,11 +46,20 @@ class MonitorService:
         started, clock, run_id = datetime.now(UTC), perf_counter(), str(uuid4())
         try:
             observations = adapter.collect(run_id=run_id, settings=self.settings, limit=limit)
-            created = changed = new = 0
+            created = changed = new = rejected_count = 0
+            persisted_events: list[IntelligenceEvent] = []
             for observation in observations:
-                candidate = normalize_structured_observation(observation)
+                if source_id == "usaspending":
+                    usa_decision = normalize_usaspending_observation(observation, profiles=self.watch_profiles)
+                    candidate = usa_decision
+                    if usa_decision.rejected:
+                        self.rejected.append(usa_decision.rejected)
+                        rejected_count += 1
+                else:
+                    candidate = normalize_structured_observation(observation)
                 self.observations[observation.id] = observation
                 self.events[candidate.event.id] = candidate.event
+                persisted_events.append(candidate.event)
                 version_key = (observation.source_identity.source_system, observation.source_identity.source_record_id)
                 previous = self.source_versions.get(version_key)
                 changed += int(observation_changed(previous, observation))
@@ -55,7 +69,7 @@ class MonitorService:
                 decision = cluster_event(candidate.event, observation, self.clusters.get(cluster_id))
                 self.clusters[cluster_id] = decision.cluster
                 created += int(decision.created)
-            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, records_seen=len(observations), records_new=new, records_changed=changed, events_created=created, events_matched=len(observations) - created, latency_ms=round((perf_counter() - clock) * 1000))
+            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, records_seen=len(observations), records_new=new, records_changed=changed, records_rejected=rejected_count, events_created=created, events_matched=len(observations) - created, latency_ms=round((perf_counter() - clock) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.HEALTHY, started, run.completed_at)
         except PermissionError as exc:
             run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(str(exc),), latency_ms=round((perf_counter() - clock) * 1000))
@@ -64,4 +78,20 @@ class MonitorService:
             run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(str(exc),), latency_ms=round((perf_counter() - clock) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.FAILED, started, None, SOURCE_HEALTH_WARNING, str(exc))
         self.runs.append(run)
+        if self.repository:
+            self.repository.persist_snapshot(run=run, health=self.health[source_id], observations=tuple(observations) if 'observations' in locals() else (), events=tuple(persisted_events) if 'persisted_events' in locals() else (), clusters=tuple(self.clusters.values()), rejected=tuple(self.rejected))
         return run
+
+    def durable_snapshot(self) -> dict[str, tuple[dict, ...]] | None:
+        if not self.repository:
+            return None
+        return self.repository.snapshot()
+
+    def source_state(self, *, source_id: str, last_success_at: datetime | None, now: datetime) -> str:
+        if last_success_at is None:
+            return "UNAVAILABLE"
+        cadence = self.registry.get(source_id).definition.cadence.casefold() if source_id in self.registry else ""
+        expected_hours = 2 if "hour" in cadence else 26 if "daily" in cadence else 192 if "week" in cadence else self.settings.monitor_stale_after_hours
+        if now - last_success_at > timedelta(hours=min(expected_hours, self.settings.monitor_stale_after_hours)):
+            return "STALE"
+        return "HEALTHY"

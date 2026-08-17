@@ -21,16 +21,18 @@ def get_runtime() -> PocRuntime:
 def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     sample = runtime.environment()
     facilities = {item.account_id: item for item in sample.facilities}
-    ranks = {(item.account_id, item.industry): item.rank for item in sample.ranks}
     contexts = {item.account_id: item for item in sample.commercial_contexts}
-    return {"data_mode": "SAMPLE", "accounts": [{
+    return {"poc_mode": "REAL_PUBLIC_MARKET_DATA_SIMULATED_BTX_CONTEXT", "accounts": [{
         "id": item.id, "name": item.legal_name, "relationship": item.relationship, "industries": item.industries,
         "domain": item.domain, "contact_role_families": item.contact_role_families, "public_research_state": item.public_research_state,
         "public_identity_state": item.public_identity.verification_state if item.public_identity else "UNVERIFIED",
         "research_account_id": item.research_account_id,
         "public_relationship_state": item.public_relationship.state if item.public_relationship else "NO_RESEARCH",
         "prospect_research_priority": item.prospect_research_priority,
-        "location": facilities[item.id], "external_rank": ranks[(item.id, item.industries[0])],
+        "prospect_rationale": item.prospect_rationale,
+        "is_rich_scenario": item.id in sample.rich_scenarios,
+        "truth_state": "PUBLICLY_VERIFIED" if item.id in sample.rich_scenarios else "RESEARCHED_PUBLIC",
+        "location": facilities.get(item.id),
         "attractiveness": calculate_account_attractiveness(AccountAttractivenessInputs(sample.scoring_inputs[item.id]), evidence_ids=(item.provenance.source_record_id,), calculated_at=runtime.observed_at()).score if item.id in sample.scoring_inputs else None,
         "business_unit": contexts[item.id].business_unit if item.id in contexts else None,
         "commercial_context_state": "SAMPLE" if item.id in contexts else "UNAVAILABLE",
@@ -52,6 +54,10 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     crm = next((item for item in sample.crm_contexts if item.account_id == account_id), None)
     signals = [item for item in intelligence_signals(runtime) if item["account_id"] == account.id]
     matches = [match_component_to_quote(component, quote) for component in sample.matching_components for quote in sample.matching_quotes if component.account_id == account_id and quote.account_id == account_id]
-    score = calculate_account_attractiveness(AccountAttractivenessInputs(sample.scoring_inputs[account_id]), evidence_ids=(account.provenance.source_record_id,), calculated_at=observed)
+    scenario = sample.rich_scenarios.get(account_id)
+    selections = sample.scoring_inputs.get(account_id, {})
+    score = calculate_account_attractiveness(AccountAttractivenessInputs(selections), evidence_ids=(account.provenance.source_record_id,), calculated_at=observed)
     alerts = [item for item in CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes, observed_at=observed) if item.account_id == account_id]
-    return {"account": account, "public_identity": account.public_identity, "public_identity_state": account.public_identity.verification_state if account.public_identity else "UNVERIFIED", "public_relationship": account.public_relationship, "prospect_research_priority": account.prospect_research_priority, "prospect_rationale": account.prospect_rationale, "public_contacts": account.public_contacts, "public_facilities": public_facilities, "prism_commercial_context": contexts, "paperless_accounts": paperless_accounts, "paperless_quotes": quotes, "crm": crm, "account_attractiveness": score, "alerts": alerts, "intelligence": signals, "matching": matches, "provenance": account.provenance, "missingness": list(score.missingness) + (["CRM context unavailable"] if crm is None else [])}
+    presentation_status = "UNAVAILABLE" if scenario and scenario.exclusion_reason else ("NEEDS_RESEARCH" if score.coverage < 0.5 else "SIMULATED_BTX_CONTEXT")
+    factors = [{"name": item.key, "score": item.factor_score, "contribution": item.contribution, "missing": item.missing, "gaps": item.missing_subfactors} for item in score.factors]
+    return {"account": account, "public_identity": account.public_identity, "public_identity_state": account.public_identity.verification_state if account.public_identity else "UNVERIFIED", "public_relationship": account.public_relationship, "prospect_research_priority": account.prospect_research_priority, "prospect_rationale": account.prospect_rationale, "reason_for_attention": scenario.reason_for_attention if scenario else account.prospect_rationale, "recommended_next_step": scenario.recommended_next_step if scenario else "Research public evidence before recommending outreach.", "truth_categories": {"public": "PUBLICLY_VERIFIED" if account.research_account_id else "UNAVAILABLE", "btx": "SIMULATED_BTX_CONTEXT" if scenario or contexts else "UNAVAILABLE"}, "public_contacts": account.public_contacts, "public_facilities": public_facilities, "prism_commercial_context": contexts, "paperless_accounts": paperless_accounts, "paperless_quotes": quotes, "crm": crm, "account_attractiveness": {"score": score.score if presentation_status == "SIMULATED_BTX_CONTEXT" else None, "coverage": score.coverage, "status": presentation_status, "factors": factors, "missingness": score.missingness, "simulation": True, "exclusion_reason": scenario.exclusion_reason if scenario else None}, "alerts": alerts, "intelligence": signals, "matching": matches, "provenance": account.provenance, "missingness": list(score.missingness) + (["CRM context unavailable"] if crm is None else [])}

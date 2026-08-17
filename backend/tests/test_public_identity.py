@@ -63,13 +63,11 @@ def test_verified_public_identity_rejects_synthetic_provenance() -> None:
         PublicIdentityField("0000000001", PublicIdentityVerificationState.VERIFIED_AUTHORITATIVE, synthetic, NOW)
 
 
-def test_unmapped_synthetic_universe_cannot_masquerade_as_verified_public_identity() -> None:
+def test_researched_universe_uses_connected_public_identity_provenance() -> None:
     environment = build_sample_environment()
 
-    assert len(environment.accounts) == 600
-    assert sum(account.public_identity is not None for account in environment.accounts) == 78
-    assert all(account.public_identity is None and account.provenance and account.provenance.synthetic for account in environment.accounts if account.research_account_id is None)
-    assert all(account.provenance and account.provenance.data_mode is DataMode.SAMPLE and account.provenance.synthetic for account in environment.accounts)
+    assert len(environment.accounts) == 78
+    assert all(account.public_identity is not None and account.provenance and account.provenance.data_mode is DataMode.CONNECTED and not account.provenance.synthetic for account in environment.accounts)
 
 
 def test_alias_subsidiary_and_ambiguous_public_resolution_remain_exact_only() -> None:

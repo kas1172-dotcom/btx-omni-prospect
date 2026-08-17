@@ -11,7 +11,7 @@ from email.utils import parsedate_to_datetime
 from enum import StrEnum
 from typing import Any
 from urllib.error import HTTPError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 from btx_omni.monitor.contracts import (
@@ -47,11 +47,18 @@ class SourceDefinition:
 
 
 HttpGet = Callable[[str, dict[str, str]], tuple[int, bytes, dict[str, str]]]
+HttpPost = Callable[[str, bytes, dict[str, str]], tuple[int, bytes, dict[str, str]]]
 
 
 def default_get(url: str, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
     request = Request(url, headers=headers)
     with urlopen(request, timeout=20) as response:  # nosec B310: source bases are registry-owned
+        return response.status, response.read(), dict(response.headers.items())
+
+
+def default_post(url: str, body: bytes, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
+    request = Request(url, data=body, headers=headers, method="POST")
+    with urlopen(request, timeout=20) as response:  # nosec B310: source base is registry-owned
         return response.status, response.read(), dict(response.headers.items())
 
 
@@ -105,7 +112,8 @@ class LiveSourceAdapter:
             value = item.get(key)
             if value:
                 try:
-                    return datetime.fromisoformat(str(value)).astimezone(UTC)
+                    parsed = datetime.fromisoformat(str(value))
+                    return (parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)).astimezone(UTC)
                 except ValueError:
                     try:
                         return parsedate_to_datetime(str(value)).astimezone(UTC)
@@ -137,18 +145,72 @@ class SamAdapter(LiveSourceAdapter):
 
 
 class UsaSpendingAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("defense", "space", "commercial_aerospace", "semiconductor"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded queries", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "award_id; recipient UEI when available")
+    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("defense", "space", "commercial_aerospace", "semiconductor"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name")
+    def __init__(self, get: HttpGet = default_get, *, recipient_names: tuple[str, ...] = (), post: HttpPost = default_post) -> None:
+        super().__init__(get)
+        self.recipient_names = recipient_names
+        self.post = post
+
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
+    def record_id(self, item: dict[str, Any]) -> str:
+        generated_id = item.get("generated_internal_id")
+        if generated_id:
+            return str(generated_id)
+        if item.get("Award ID"):
+            return str(item["Award ID"])
+        return "missing-generated-award-id-" + hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest()[:24]
+    def url(self, item: dict[str, Any]) -> str:
+        award_id = item.get("generated_internal_id")
+        return f"https://api.usaspending.gov/api/v2/awards/{quote(str(award_id), safe='')}/" if award_id else self.definition.api_base
     def collect(self, *, run_id: str, settings: Any, limit: int = 10) -> list[SourceObservation]:
-        body = json.dumps({"filters": {"time_period": [{"start_date": "2025-01-01", "end_date": "2026-12-31"}], "award_type_codes": ["A", "B", "C", "D"]}, "fields": ["Award ID", "Description", "Award Amount", "Recipient Name", "Action Date"], "limit": limit, "page": 1, "subawards": False}).encode()
-        request = Request(self.definition.api_base, data=body, headers={"content-type": "application/json", **self.headers(settings)}, method="POST")
-        try:
-            with urlopen(request, timeout=20) as response:  # nosec B310: fixed registry endpoint
-                return self.parse(response.read(), run_id=run_id)
-        except HTTPError as exc:
-            if exc.code == 429:
-                raise RuntimeError("RATE_LIMITED") from exc
-            raise RuntimeError(f"HTTP_{exc.code}") from exc
+        if not self.recipient_names:
+            raise PermissionError("USASPENDING_TARGET_RECIPIENTS_REQUIRED")
+        today = datetime.now(UTC).date()
+        start = today - timedelta(days=90)
+        per_target = max(1, limit // len(self.recipient_names))
+        observations: list[SourceObservation] = []
+        for recipient_name in self.recipient_names:
+            body = json.dumps({"filters": {"time_period": [{"start_date": start.isoformat(), "end_date": today.isoformat()}], "award_type_codes": ["A", "B", "C", "D"], "recipient_search_text": [recipient_name]}, "fields": ["Award ID", "Description", "Award Amount", "Recipient Name", "Awarding Agency", "Awarding Sub Agency", "Award Type"], "limit": per_target, "page": 1, "subawards": False}).encode()
+            try:
+                status, payload, _headers = self.post(self.definition.api_base, body, {"content-type": "application/json", **self.headers(settings)})
+                if status == 429:
+                    raise RuntimeError("RATE_LIMITED")
+                if status >= 400:
+                    raise RuntimeError(f"HTTP_{status}")
+                award_rows = self.items(json.loads(payload))
+                for award in award_rows:
+                    generated_id = award.get("generated_internal_id")
+                    transaction = self._latest_transaction(generated_id, settings)
+                    observations.append(self._observation(self._combine_award_and_transaction(award, transaction), run_id))
+            except HTTPError as exc:
+                if exc.code == 429:
+                    raise RuntimeError("RATE_LIMITED") from exc
+                raise RuntimeError(f"HTTP_{exc.code}") from exc
+        # `limit` is apportioned per targeted recipient. Do not silently omit a
+        # researched target merely because the roster is larger than one page.
+        return observations
+
+    def _latest_transaction(self, generated_id: object, settings: Any) -> dict[str, Any] | None:
+        if not generated_id:
+            return None
+        body = json.dumps({"award_id": str(generated_id), "page": 1, "limit": 1, "sort": "action_date", "order": "desc"}).encode()
+        status, payload, _headers = self.post("https://api.usaspending.gov/api/v2/transactions/", body, {"content-type": "application/json", **self.headers(settings)})
+        if status == 429:
+            raise RuntimeError("RATE_LIMITED")
+        if status >= 400:
+            raise RuntimeError(f"HTTP_{status}")
+        rows = json.loads(payload).get("results", [])
+        return rows[0] if rows else None
+
+    @staticmethod
+    def _combine_award_and_transaction(award: dict[str, Any], transaction: dict[str, Any] | None) -> dict[str, Any]:
+        combined = dict(award)
+        if transaction:
+            combined["Action Date"] = transaction.get("action_date")
+            combined["Description"] = transaction.get("description") or combined.get("Description")
+            combined["Award Type Code"] = transaction.get("type") or combined.get("Award Type")
+            combined["Transaction Amount"] = transaction.get("federal_action_obligation")
+        return combined
 
 
 class FederalRegisterAdapter(LiveSourceAdapter):

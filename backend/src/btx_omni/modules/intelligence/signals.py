@@ -18,6 +18,15 @@ class SignalKind(StrEnum):
     INDUSTRY_UPDATE = "INDUSTRY_UPDATE"
 
 
+class SourceValidationState(StrEnum):
+    """Result of reviewing a publisher URL without bypassing publisher controls."""
+
+    BROWSER_VERIFIED = "BROWSER_VERIFIED"
+    AUTOMATION_BLOCKED = "AUTOMATION_BLOCKED"
+    REPLACED_WITH_EQUIVALENT_OFFICIAL_SOURCE = "REPLACED_WITH_EQUIVALENT_OFFICIAL_SOURCE"
+    NEEDS_RESEARCH = "NEEDS_RESEARCH"
+
+
 @dataclass(frozen=True)
 class RawSignal:
     source_id: str
@@ -29,6 +38,7 @@ class RawSignal:
     program_name: str | None
     evidence_state: EvidenceState
     summary: str
+    source_validation_state: SourceValidationState = SourceValidationState.NEEDS_RESEARCH
 
 
 @dataclass(frozen=True)
@@ -44,6 +54,7 @@ class IntelligenceSignal:
     evidence_ids: tuple[str, ...]
     occurred_at: datetime
     provenance: Provenance
+    source_validation_state: SourceValidationState = SourceValidationState.NEEDS_RESEARCH
 
     def __post_init__(self) -> None:
         require_aware(self.occurred_at, "occurred_at")
@@ -55,4 +66,8 @@ def normalize_signal(raw: RawSignal, *, account_name_to_id: dict[str, str], prov
     evidence_id = f"evidence-signal-{digest}"
     relationship = "a canonical account" if account_id else "no canonical account"
     relevance = f"{raw.kind.value} names {relationship}" + (f" and program {raw.program_name}" if raw.program_name else "") + "; review only the supplied source evidence."
-    return IntelligenceSignal(f"signal-{digest}", raw.kind, raw.title, raw.source_url, account_id, raw.program_name, raw.evidence_state, relevance, (evidence_id,), raw.occurred_at, provenance)
+    return IntelligenceSignal(
+        f"signal-{digest}", raw.kind, raw.title, raw.source_url, account_id,
+        raw.program_name, raw.evidence_state, relevance, (evidence_id,), raw.occurred_at,
+        provenance, raw.source_validation_state,
+    )

@@ -8,19 +8,14 @@ The ingestion loader rejects unsupported schemas, absent or duplicate research I
 
 ## Canonical mapping
 
-The existing 600-account canonical universe is retained. The loader maps the 78 researched identities, in input order, only to lightweight synthetic `Market Target` placeholders in their first available Phase 1 industry. It never maps a deep SAMPLE scenario account, so PRISM, Paperless, CRM, matching, alerts, actions, and scoring scenarios remain synthetic and unchanged.
+The 78 researched identities are the canonical POC universe. Each canonical ID
+is its `research_account_id`; no generated `Market Target` records, synthetic
+public identities, synthetic coordinates, or simulated external ranks remain.
+Curated scenarios attach simulated PRISM, Paperless, CRM, matching, alerts, and
+scoring context to a subset of those real companies.
 
-| Industry | researched public identities mapped | remaining synthetic identities |
-| --- | ---: | ---: |
-| Commercial Aerospace | 12 | 88 |
-| Defense | 11 | 89 |
-| Space | 12 | 88 |
-| Semiconductor | 15 | 85 |
-| Medical Device | 15 | 85 |
-| Robotics | 13 | 87 |
-| Total | 78 | 522 |
-
-The research input is not asserted as the final Top-100 universe. External rank remains the pre-existing, separately labeled SAMPLE Top-100 methodology pending BTX/Jamie confirmation.
+The research input is not asserted as a production market universe. A future
+approved market-ranking methodology may be added as a separately governed feed.
 
 ## Truth and provenance
 

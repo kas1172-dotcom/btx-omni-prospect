@@ -13,7 +13,7 @@
   "summary": {
     "accounts_total": 78,
     "hq_coverage": {
-      "verified_public_hq": 28,
+      "verified_public_hq": 29,
       "total": 78
     },
     "facility_coverage": {
@@ -21,7 +21,7 @@
       "total": 78
     },
     "coordinate_coverage": {
-      "accounts_with_verified_hq_coordinates": 28,
+      "accounts_with_verified_hq_coordinates": 29,
       "total": 78
     },
     "newsroom_coverage": {
@@ -80,17 +80,20 @@
       "research_account_id": "ge-aerospace",
       "display_name": "GE Aerospace",
       "headquarters": {
-        "city": null,
-        "state_region": null,
-        "country": null,
-        "latitude": null,
-        "longitude": null,
-        "source_url": null,
-        "source_type": null,
-        "verification_state": "MISSING_LOCATION",
+        "city": "EVENDALE",
+        "state_region": "OH",
+        "country": "United States",
+        "latitude": 39.246714488666,
+        "longitude": -84.446368704484,
+        "source_url": "https://data.sec.gov/submissions/CIK0000040545.json",
+        "source_type": "SEC_EDGAR_SUBMISSIONS_API",
+        "verification_state": "VERIFIED_PUBLIC_HQ",
         "last_verified_at": "2026-08-16",
         "provenance": {
-          "missing_reason": "No unambiguous official SEC business-address match was available in this pass."
+          "source_id": "SEC_EDGAR_0000040545",
+          "official_address": "1 NEUMANN WAY, EVENDALE, OH, 45215",
+          "geocoder": "U.S. Census Bureau Geocoder",
+          "geocoder_url": "https://geocoding.geo.census.gov/geocoder/"
         }
       },
       "facilities": [],
@@ -99,6 +102,7 @@
       "official_feed_urls": [],
       "source_ids": [
         "NASA_PROPULSION",
+        "SEC_EDGAR_0000040545",
         "OFFICIAL_NEWSROOM_GE-AEROSPACE",
         "OFFICIAL_IR_GE-AEROSPACE"
       ],

@@ -1,20 +1,26 @@
 import json
+from datetime import UTC, datetime, timedelta
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
 
 from btx_omni.ai.anthropic import AnthropicProvider
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import AiRequest
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.intelligence_projection import intelligence_signals
+from btx_omni.api.monitor import operational_collect
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.app import create_app
 from btx_omni.core.config import Settings
 from btx_omni.monitor.packs import PACKS
+from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
 from btx_omni.monitor.service import MonitorService
 from btx_omni.monitor.sources import FdaAdapter, SamAdapter, UsaSpendingAdapter
+from btx_omni.persistence.models import metadata
 
 
 def fake_get(payload: object, status: int = 200):
@@ -95,6 +101,26 @@ def test_monitor_observations_cluster_with_multiple_evidence_and_source_update()
     assert service.runs[0].records_new == 1 and service.runs[1].records_changed == 1
 
 
+def test_durable_monitor_persists_runs_versions_events_and_failures() -> None:
+    engine = create_engine("sqlite://")
+    metadata.create_all(engine)
+    repository = MonitorRepository(engine)
+    settings = Settings(_env_file=None, monitor_mode="live")
+    service = MonitorService(settings, {"fda": FdaAdapter(fake_get({"results": [{"id": "same", "title": "Device approval"}]}))}, repository=repository)
+    service.collect("fda")
+    service.registry["fda"] = FdaAdapter(fake_get({"results": [{"id": "same", "title": "Device approval amended"}]}))
+    service.collect("fda")
+    service.registry["fda"] = FdaAdapter(lambda _url, _headers: (500, b"{}", {}))
+    service.collect("fda")
+    snapshot = repository.snapshot()
+    assert len(snapshot["runs"]) == 3 and snapshot["runs"][0]["failures"]
+    assert snapshot["events"][0]["data_mode"] == "LIVE_PUBLIC"
+    assert snapshot["events"][0]["publication_date"] is None or snapshot["events"][0]["collected_at"]
+    assert snapshot["health"][0]["state"] == "FAILED"
+    assert service.source_state(source_id="fda", last_success_at=None, now=service.runs[-1].started_at) == "UNAVAILABLE"
+    assert service.source_state(source_id="fda", last_success_at=datetime.now(UTC) - timedelta(hours=49), now=datetime.now(UTC)) == "STALE"
+
+
 def test_monitor_registry_endpoint_is_internal_observability() -> None:
     client = TestClient(create_app())
     response = client.get("/api/monitor/sources")
@@ -102,6 +128,15 @@ def test_monitor_registry_endpoint_is_internal_observability() -> None:
     assert {item["source_id"] for item in response.json()} >= {"sam_gov", "fda_openfda", "sec_edgar"}
     health = client.get("/api/monitor/health")
     assert health.status_code == 200 and {"sources", "last_runs", "clusters", "rejected_observations"} <= set(health.json())
+    assert client.post("/api/monitor/collect/fda_openfda").status_code == 403
+    assert client.post("/api/monitor/internal/collect/fda_openfda").status_code == 403
+    assert all(item["data_mode"] == "CURATED_PUBLIC" for item in health.json()["curated_preview"])
+
+
+def test_operational_collection_rejects_an_invalid_operator_token() -> None:
+    runtime = PocRuntime(Settings(_env_file=None, monitor_operator_token="configured-but-private"))
+    with pytest.raises(HTTPException, match="authorization failed"):
+        operational_collect("fda_openfda", runtime, "wrong-token")
 
 
 def test_live_monitor_event_projects_through_canonical_intelligence_contract() -> None:
@@ -111,7 +146,4 @@ def test_live_monitor_event_projects_through_canonical_intelligence_contract() -
 
     live = [item for item in intelligence_signals(runtime) if item.get("data_mode") == "CONNECTED"]
 
-    assert len(live) == 1
-    assert live[0]["data_mode"].value == "CONNECTED"
-    assert live[0]["resolution_state"].value == "UNRESOLVED"
-    assert live[0]["account_id"] is None
+    assert not live

@@ -11,17 +11,23 @@ source, provenance, evidence state, or an explicit missing/unavailable state.
 
 ## POC surfaces
 
+The current product posture is **POC mode · Real public market data with
+simulated BTX commercial context**. The account universe contains only
+researched public companies; curated scenarios are the default experience. See the [rich public scenario
+matrix](docs/product/RICH_PUBLIC_SCENARIO_MATRIX.md) for field-level truth
+rules, sources, and score-teaching scenarios.
+
 - **Today** — prioritized intelligence, commercial alerts, and recommended work.
 - **Accounts** — market accounts and Account 360 commercial context.
 - **Intelligence** — resolved public signals with source lineage and relevance.
-- **Map** — industry Top-100 layers, customer/target state, facilities, and proximity context.
+- **Map** — verified public locations, customer/target state, facilities, and proximity context.
 - **Actions** — reviewable, assignable, human-approved seller workflows.
 - **Omni** — a persistent, grounded assistant for the active commercial context.
 
 ## Core capabilities
 
 - Canonical account identity, customer/target state, geography, facilities, and contact-research roles.
-- Deterministic Account Attractiveness assessment, separate from external industry rank.
+- Deterministic Account Attractiveness assessment with explicit simulated-input coverage.
 - Paperless account and quote context, PRISM commercial context, and CRM ownership/deal/activity context.
 - Evidence-linked intelligence, exact and structured commercial matching, and explicit ambiguity/conflict handling.
 - Explainable commercial alerts and human-confirmed actions with audit and idempotency support.
@@ -29,9 +35,9 @@ source, provenance, evidence state, or an explicit missing/unavailable state.
 
 ## Data modes and governance
 
-`SAMPLE` is the default POC mode. It uses the governed synthetic environment
-described in [the scenario matrix](docs/migration/SAMPLE_SCENARIO_MATRIX.md),
-including 600 market-universe accounts and 17 enriched scenario accounts.
+`SAMPLE` describes only the BTX commercial context in this POC. Account identity,
+contacts, locations, and intelligence use the researched public-company universe;
+commercial, CRM, quote, workflow, and scoring selections remain simulated.
 
 `CONNECTED` is intentionally not a fallback mode. It requires authorized,
 configured source adapters; unavailable inputs remain unavailable rather than
