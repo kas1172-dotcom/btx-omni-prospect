@@ -56,7 +56,7 @@ class OmniOrchestrator:
             account = next((item for item in accounts if item.research_account_id and item.legal_name.casefold() in query), None)
         if account is None:
             return self._unscoped_answer(environment, observed_at=observed_at, question=query)
-        alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at)
+        alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)
         account_alerts = tuple(item for item in alerts if item.account_id == account.id)
         citations: list[str] = [account.provenance.source_record_id] if account.provenance else []
         citation_links: list[OmniCitation] = []
@@ -96,12 +96,14 @@ class OmniOrchestrator:
             match = match_component_to_quote(*pairs[0])
             lines.append(f"Commercial matching: {match.method.value} ({match.review_state.value}).")
             citations.extend(match.evidence_ids)
-        crm = next((item for item in environment.crm_contexts if item.account_id == account_id), None)
-        if crm is None:
+        companies = [item for item in environment.crm_companies if item.account_id == account.id]
+        if not companies:
             missing.append("CRM provider/account context unavailable.")
         else:
-            lines.append(f"CRM owner: {crm.owner_id}; shared role families: {', '.join(crm.contact_role_families)}.")
-            citations.append(crm.provenance.source_record_id)
+            company_ids = {item.id for item in companies}
+            contacts = [item for item in environment.crm_contacts if item.company_id in company_ids]
+            lines.append(f"CRM owner: {companies[0].owner_id}; shared role families: {', '.join(sorted({item.role_family for item in contacts}))}.")
+            citations.extend(item.provenance.source_record_id for item in companies)
         action = account_alerts[0].recommended_action if account_alerts else "Review governed commercial context before taking action."
         if "compare" in query:
             peers = [item.legal_name for item in accounts if item.research_account_id and item.id != account.id and item.industries == account.industries][:3]
@@ -113,7 +115,7 @@ class OmniOrchestrator:
     def _unscoped_answer(environment: SampleEnvironment, *, observed_at, question: str) -> OmniResponse:
         """Ground a general seller question in the loaded curated universe, not a generic refusal."""
         researched = [item for item in environment.accounts if item.research_account_id]
-        alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at)
+        alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)
         account_by_id = {item.id: item for item in researched}
         priority_items = [
             f"{account_by_id[alert.account_id].legal_name}: {alert.recommended_action}"

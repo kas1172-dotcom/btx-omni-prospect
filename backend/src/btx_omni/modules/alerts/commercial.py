@@ -6,6 +6,7 @@ from datetime import datetime
 from btx_omni.domain.alerts import CommercialAlert, CommercialAlertKind
 from btx_omni.domain.commercial import CommercialContext
 from btx_omni.domain.quotes import CommercialQuote, QuoteStatus
+from btx_omni.domain.orders import Order
 
 
 class CommercialAlertEngine:
@@ -16,7 +17,7 @@ class CommercialAlertEngine:
     high_value_quote_minor = 100_000
     bookings_decline_ratio = 0.25
 
-    def evaluate(self, contexts: tuple[CommercialContext, ...], quotes: tuple[CommercialQuote, ...], *, observed_at: datetime) -> tuple[CommercialAlert, ...]:
+    def evaluate(self, contexts: tuple[CommercialContext, ...], quotes: tuple[CommercialQuote, ...], *, observed_at: datetime, orders: tuple[Order, ...] = ()) -> tuple[CommercialAlert, ...]:
         today = observed_at.date()
         alerts: list[CommercialAlert] = []
         for context in contexts:
@@ -77,9 +78,11 @@ class CommercialAlertEngine:
             if len({item.business_unit for item in items}) > 1:
                 evidence = tuple(item.provenance.source_record_id for item in items)
                 alerts.append(CommercialAlert(f"alert-cross_bu_coordination-{account_id}", account_id, CommercialAlertKind.CROSS_BU_COORDINATION, None, "MEDIUM", "Multiple business units have active commercial context", tuple(sorted(item.business_unit for item in items)), 1, evidence, observed_at, "Coordinate account strategy across business units.", synthetic=all(item.provenance.synthetic for item in items), provenance_state="CONFIRMED"))
+        for order in orders:
+            if order.promised_date and order.actual_ship_date is None and order.promised_date < today and order.status not in {"CANCELLED", "SHIPPED"}:
+                alerts.append(CommercialAlert(f"alert-overdue_order-{order.id}", order.account_id, CommercialAlertKind.OVERDUE_ORDER, order.business_unit_id, "HIGH", "Order is past its promised ship date", (today - order.promised_date).days, 0, (order.provenance.source_record_id,), observed_at, "Confirm fulfillment status and customer recovery plan.", synthetic=order.provenance.synthetic, provenance_state=order.provenance.evidence_state.value))
         return tuple(sorted(alerts, key=lambda item: item.id))
 
     @staticmethod
-    def overdue_order_available(context: CommercialContext) -> bool:
-        """Order-level promised-date and fulfillment state are absent in SAMPLE."""
-        return False
+    def overdue_order_available(context: CommercialContext, orders: tuple[Order, ...] = ()) -> bool:
+        return any(order.account_id == context.account_id and order.business_unit_id == context.business_unit and order.promised_date is not None for order in orders)

@@ -1,3 +1,4 @@
+"""Governed account relationship edges; traversal remains intentionally deferred."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,21 +8,15 @@ from btx_omni.domain.common import EvidenceState
 
 
 @dataclass(frozen=True)
-class Program:
+class AccountRelationshipEdge:
     id: str
-    account_id: str | None
-    name: str
-    system: str | None
+    from_account_id: str
+    to_account_id: str
+    edge_type: str
+    direction: str
+    strength: str
     evidence_state: EvidenceState
-    provenance: Provenance
-
-
-@dataclass(frozen=True)
-class ComponentClass:
-    id: str
+    source_ids: tuple[str, ...]
+    narrative: str | None
     program_id: str | None
-    name: str
-    evidence_state: EvidenceState
     provenance: Provenance
-    industry: str | None = None
-    business_unit_ids: tuple[str, ...] = ()

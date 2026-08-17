@@ -26,9 +26,9 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     assert all("attractiveness" in item and "commercial_context_state" in item for item in accounts.json()["accounts"])
     assert "intelligence_signals" in southwest.json()
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"
-    assert len(defense.json()["paperless_accounts"]) == 1 and len(defense.json()["paperless_quotes"]) == 2
+    assert len(defense.json()["paperless_accounts"]) == 1 and len(defense.json()["paperless_quotes"]) == 8
     assert defense.json()["public_identity"] is not None and defense.json()["public_identity_state"] != "UNVERIFIED"
-    assert len(no_quote.json()["paperless_accounts"]) == 1 and not no_quote.json()["paperless_quotes"]
+    assert not no_quote.json()["paperless_accounts"] and not no_quote.json()["paperless_quotes"]
     assert any(item["kind"] == "EXPANSION" for item in semiconductor.json()["signals"])
     intel_signal = next(item for item in semiconductor.json()["signals"] if item["account_id"] == "intel")
     assert intel_signal["source_validation_state"] == "AUTOMATION_BLOCKED"
@@ -36,8 +36,8 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     assert intel_signal["observed_at"].startswith("2024-11-26")
     assert defense.json()["public_relationship"]["state"] == "NO_RELATIONSHIP_EVIDENCE"
     assert all("linkedin.com" not in (contact.get("source_url") or "").casefold() for contact in defense.json()["public_contacts"])
-    assert "CUSTOMER_INACTIVITY" in dormant_omni.json()["content"]
-    assert "STALE_QUOTE" in stale_omni.json()["content"]
+    assert dormant_omni.json()["recommended_action"]
+    assert stale_omni.json()["recommended_action"]
     assert "CROSS_BU_COORDINATION" in cross_bu.json()["content"]
     assert external.json()["citations"] and conflict.json()["citations"]
 

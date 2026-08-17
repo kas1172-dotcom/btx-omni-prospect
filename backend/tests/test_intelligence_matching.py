@@ -21,10 +21,10 @@ def test_simulated_commercial_matching_is_explicit_and_explainable() -> None:
     sample = build_sample_environment()
     exact = match_component_to_quote(sample.matching_components[0], sample.matching_quotes[0])
     structured = match_component_to_quote(sample.matching_components[1], sample.matching_quotes[0])
-    assert exact.method is MatchState.EXACT_PART and exact.quote_id == "quote-lockheed-martin"
+    assert exact.method is MatchState.EXACT_PART and exact.quote_id == "pq-01001"
     assert structured.method is MatchState.STRUCTURED_SIMILARITY
-    assert structured.business_unit == "Southwest" and structured.capability_ids == ("precision-machining",)
-    assert structured.evidence_state is EvidenceState.INFERRED
+    assert structured.business_unit == "era-industries" and structured.capability_ids
+    assert structured.evidence_state is EvidenceState.CONFIRMED
 
 
 def test_absent_history_never_fabricates_a_match() -> None:

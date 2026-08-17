@@ -12,6 +12,7 @@ class QuoteStatus(StrEnum):
     WON = "WON"
     LOST = "LOST"
     EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
 
 
 @dataclass(frozen=True)
@@ -38,3 +39,19 @@ class CommercialQuote:
     part_family: str | None
     provenance: Provenance
     quote_to_book_evidence_ids: tuple[str, ...] = ()
+    program_id: str | None = None
+    component_class_ids: tuple[str, ...] = ()
+    paperless_account_id: str | None = None
+    paperless_contact_id: str | None = None
+    line_items: tuple["CommercialQuoteLineItem", ...] = ()
+
+
+@dataclass(frozen=True)
+class CommercialQuoteLineItem:
+    id: str
+    part_number: str
+    component_class_id: str
+    quantity: int
+    unit_price_minor: int
+    lead_time_days: int | None
+    provenance: Provenance

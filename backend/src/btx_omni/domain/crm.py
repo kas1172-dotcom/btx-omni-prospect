@@ -14,6 +14,8 @@ class CrmCompany:
     account_id: str
     owner_id: str | None
     provenance: Provenance
+    name: str | None = None
+    properties: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,8 @@ class CrmContact:
     company_id: str
     role_family: str
     provenance: Provenance
+    account_id: str | None = None
+    properties: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -30,6 +34,9 @@ class CrmDeal:
     company_id: str
     business_unit: str | None
     provenance: Provenance
+    account_id: str | None = None
+    program_id: str | None = None
+    properties: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -38,6 +45,8 @@ class CrmActivity:
     company_id: str
     occurred_at: datetime
     provenance: Provenance
+    account_id: str | None = None
+    properties: dict[str, object] | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.occurred_at, "occurred_at")

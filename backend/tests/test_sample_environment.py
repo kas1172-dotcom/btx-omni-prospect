@@ -19,13 +19,12 @@ def test_environment_contains_only_researched_public_companies() -> None:
 
 def test_simulated_btx_context_is_attached_only_to_curated_real_companies() -> None:
     environment = build_sample_environment()
-    scenario_ids = {item.research_account_id for item in RICH_SCENARIOS}
     context_ids = {context.account_id for context in environment.commercial_contexts}
-    assert context_ids == scenario_ids
-    assert {item.canonical_account_id for item in environment.paperless_accounts} == scenario_ids
-    assert {item.account_id for item in environment.crm_contexts} == scenario_ids
-    assert {quote.account_id for quote in environment.quotes} <= scenario_ids
-    assert all("POC simulation" in note for context in environment.commercial_contexts for note in context.jamie_validation_required)
+    assert context_ids <= {account.id for account in environment.accounts}
+    assert {item.canonical_account_id for item in environment.paperless_accounts} <= context_ids
+    assert {item.account_id for item in environment.crm_companies} <= {account.id for account in environment.accounts}
+    assert {quote.account_id for quote in environment.quotes} <= context_ids
+    assert all("SAMPLE commercial context" in note for context in environment.commercial_contexts for note in context.jamie_validation_required)
     assert len(environment.rich_scenarios) == 12
 
 

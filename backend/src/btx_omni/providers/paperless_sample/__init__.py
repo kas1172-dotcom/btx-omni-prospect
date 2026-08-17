@@ -1,0 +1,1 @@
+"""SAMPLE Paperless-shaped providers."""

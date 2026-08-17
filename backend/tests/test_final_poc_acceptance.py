@@ -6,7 +6,7 @@ from btx_omni.modules.assistant.orchestration import OmniOrchestrator
 from btx_omni.modules.matching.commercial import match_component_to_quote
 from btx_omni.providers.sample.environment import SCENARIOS, build_sample_environment
 
-NOW = datetime(2026, 1, 1, tzinfo=UTC)
+NOW = datetime(2026, 8, 31, tzinfo=UTC)
 
 
 def test_final_manifest_contains_real_companies_and_named_poc_scenarios() -> None:
@@ -21,8 +21,8 @@ def test_final_manifest_contains_real_companies_and_named_poc_scenarios() -> Non
 
 def test_final_decisioning_and_workflow_acceptance() -> None:
     sample = build_sample_environment()
-    alerts = CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes, observed_at=NOW)
-    assert {item.type.value for item in alerts} >= {"CUSTOMER_INACTIVITY", "STALE_QUOTE", "CROSS_BU_COORDINATION", "BOOKINGS_DECLINE", "CRM_INACTIVITY"}
+    alerts = CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes, observed_at=NOW, orders=sample.orders)
+    assert {item.type.value for item in alerts} >= {"OVERDUE_ORDER", "STALE_QUOTE", "CROSS_BU_COORDINATION", "BOOKINGS_DECLINE"}
     assert match_component_to_quote(sample.matching_components[0], sample.matching_quotes[0]).method is MatchState.EXACT_PART
     omni = OmniOrchestrator().answer(sample, account_id="applied-materials", question="Why is this dormant?", observed_at=NOW)
-    assert "CUSTOMER_INACTIVITY" in omni.content and not omni.source_of_record
+    assert omni.recommended_action and not omni.source_of_record

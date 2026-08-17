@@ -1,0 +1,1 @@
+"""SAMPLE HubSpot-shaped providers."""
