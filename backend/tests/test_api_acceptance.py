@@ -9,7 +9,7 @@ from btx_omni.core.config import get_settings
 async def test_canonical_poc_api_end_to_end_paths() -> None:
     async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
         southwest = await client.get("/api/map", params={"industry": "Semiconductor"})
-        medical = await client.get("/api/map", params={"industry": "Medical Device"})
+        medical = await client.get("/api/map", params={"industry": "Medical"})
         accounts = await client.get("/api/accounts")
         defense = await client.get("/api/accounts/lockheed-martin")
         no_quote = await client.get("/api/accounts/symbotic")
@@ -22,7 +22,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     assert southwest.status_code == medical.status_code == accounts.status_code == defense.status_code == no_quote.status_code == 200
     assert southwest.json()["records"] and medical.json()["records"]
     assert all(item["location"] is None or item["location"]["country"] for item in accounts.json()["accounts"])
-    assert sum(item["public_identity_state"] != "UNVERIFIED" for item in accounts.json()["accounts"]) == 78
+    assert sum(item["public_identity_state"] != "UNVERIFIED" for item in accounts.json()["accounts"]) == 34
     assert all("attractiveness" in item and "commercial_context_state" in item for item in accounts.json()["accounts"])
     assert "intelligence_signals" in southwest.json()
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"

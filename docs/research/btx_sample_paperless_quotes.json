@@ -1,0 +1,3519 @@
+{
+  "schema_version": "1.0",
+  "generated_date": "2026-08-17",
+  "purpose": "Simulated Paperless Parts quote records shape-faithful to the public Paperless Parts REST API v3 quote/quote-item model. Feeds the console's matching engine, quote-follow-up alerts, and quote-history component of scoring. When BTX Paperless is authorized, swap providers/paperless_sample/quotes.py for the real adapter; the domain-facing shape is unchanged.",
+  "truth_rules": {
+    "shape_faithful": "Fields (paperless_quote_id, number, paperless_account_id, paperless_contact_id, status, sent_at, converted_at, expired_at, total_price, sales_person_user_id, estimator_user_id, parent_quote_id, line items with part_number/process_display/material_display/quantity/unit_price/lead_time_days) match the public Paperless Parts API v3 quote object.",
+    "no_customer_confidential": "No customer part numbers or drawings. Part numbers are constructed pattern P-<ACCT>-<CLASS>-<seq>.",
+    "provenance": "Every record is synthetic and marked data_mode=SAMPLE, synthetic=true. No real BTX customer commercial data is asserted.",
+    "quote_status_values": "OUTSTANDING, CONVERTED, LOST, EXPIRED, CANCELLED \u2014 aligned to Paperless Parts public API status vocabulary."
+  },
+  "quotes": [
+    {
+      "paperless_quote_id": "pq-01001",
+      "number": "Q001001",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "EXPIRED",
+      "sent_at": "2025-11-18",
+      "converted_at": null,
+      "expired_at": "2026-07-09",
+      "total_price_cents": 14903170,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-2",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01001-1",
+          "part_number": "P-LOCK-AIR-6022",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "B",
+          "process_display": "DMLS-additive",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 10,
+          "unit_price_cents": 1490317,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "jassm-lrasm",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01001",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01002",
+      "number": "Q001002",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "EXPIRED",
+      "sent_at": "2025-05-05",
+      "converted_at": null,
+      "expired_at": "2026-05-31",
+      "total_price_cents": 4281250,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01002-1",
+          "part_number": "P-LOCK-C5I-0454",
+          "part_name": "C5Isr Hardware",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-c5isr-hardware",
+          "quantity": 10,
+          "unit_price_cents": 428125,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01002",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01003",
+      "number": "Q001003",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "LOST",
+      "sent_at": "2026-01-19",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 3682350,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01003-1",
+          "part_number": "P-LOCK-AIR-2977",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "A",
+          "process_display": "cleanroom-assembly",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 10,
+          "unit_price_cents": 368235,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "jassm-lrasm",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01003",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01004",
+      "number": "Q001004",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-08-02",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 2511345,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01004-1",
+          "part_number": "P-LOCK-TAC-6943",
+          "part_name": "Tactical Vehicle Hardware",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-tactical-vehicle-hardware",
+          "quantity": 3,
+          "unit_price_cents": 837115,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "thaad",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01004",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01005",
+      "number": "Q001005",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-17",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1717093000,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01005-1",
+          "part_number": "P-LOCK-AIR-0643",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 500,
+          "unit_price_cents": 3434186,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "clps",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01005",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01006",
+      "number": "Q001006",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-10-07",
+      "converted_at": "2025-10-24",
+      "expired_at": null,
+      "total_price_cents": 43127940,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-2",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01006-1",
+          "part_number": "P-LOCK-AIR-5104",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "C",
+          "process_display": "grinding",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 10,
+          "unit_price_cents": 4312794,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "thaad",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01006",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01007",
+      "number": "Q001007",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-08-08",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 3208630,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01007-1",
+          "part_number": "P-LOCK-MIS-3815",
+          "part_name": "Missile Body Section",
+          "revision": "A",
+          "process_display": "DMLS-additive",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-missile-body-section",
+          "quantity": 1,
+          "unit_price_cents": 3208630,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01007",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01008",
+      "number": "Q001008",
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-lockheed-martin-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-01-10",
+      "converted_at": "2026-02-10",
+      "expired_at": null,
+      "total_price_cents": 8063895,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01008-1",
+          "part_number": "P-LOCK-AIR-5427",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "B",
+          "process_display": "vacuum-brazing",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 3,
+          "unit_price_cents": 2687965,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "clps",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01008",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01009",
+      "number": "Q001009",
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-02",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 693116250,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-8",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01009-1",
+          "part_number": "P-BOEI-ENG-4393",
+          "part_name": "Engine Nacelle",
+          "revision": "C",
+          "process_display": "Swiss-turning",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-engine-nacelle",
+          "quantity": 250,
+          "unit_price_cents": 2772465,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01009",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01010",
+      "number": "Q001010",
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-16",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 40914700,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-6",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01010-1",
+          "part_number": "P-BOEI-ACT-5612",
+          "part_name": "Actuator",
+          "revision": "A",
+          "process_display": "cleanroom-assembly",
+          "material_display": "Al-6061",
+          "component_class_id": "cc-actuator",
+          "quantity": 10,
+          "unit_price_cents": 4091470,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "787-dreamliner",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01010",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01011",
+      "number": "Q001011",
+      "research_account_id": "boeing",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-03-09",
+      "converted_at": "2026-04-11",
+      "expired_at": null,
+      "total_price_cents": 10268950,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01011-1",
+          "part_number": "P-BOEI-SEN-6992",
+          "part_name": "Sensor Housing",
+          "revision": "C",
+          "process_display": "DMLS-additive",
+          "material_display": "Al-6061",
+          "component_class_id": "cc-sensor-housing",
+          "quantity": 5,
+          "unit_price_cents": 2053790,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "777x",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01011",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01012",
+      "number": "Q001012",
+      "research_account_id": "boeing",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "LOST",
+      "sent_at": "2026-04-15",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 3367313,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01012-1",
+          "part_number": "P-BOEI-ACT-5020",
+          "part_name": "Actuator",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-actuator",
+          "quantity": 1,
+          "unit_price_cents": 3367313,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01012",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01013",
+      "number": "Q001013",
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "EXPIRED",
+      "sent_at": "2025-07-18",
+      "converted_at": null,
+      "expired_at": "2026-06-23",
+      "total_price_cents": 41373770,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-8",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01013-1",
+          "part_number": "P-BOEI-ACT-3416",
+          "part_name": "Actuator",
+          "revision": "B",
+          "process_display": "vacuum-brazing",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-actuator",
+          "quantity": 10,
+          "unit_price_cents": 4137377,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01013",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01014",
+      "number": "Q001014",
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-10-24",
+      "converted_at": "2025-11-24",
+      "expired_at": null,
+      "total_price_cents": 1289469500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-6",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01014-1",
+          "part_number": "P-BOEI-CUS-0845",
+          "part_name": "Custom Fastener",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-custom-fastener",
+          "quantity": 500,
+          "unit_price_cents": 2578939,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "737-max",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01014",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01015",
+      "number": "Q001015",
+      "research_account_id": "boeing",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-02-14",
+      "converted_at": "2026-03-03",
+      "expired_at": null,
+      "total_price_cents": 45087750,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01015-1",
+          "part_number": "P-BOEI-CUS-8599",
+          "part_name": "Custom Fastener",
+          "revision": "A",
+          "process_display": "DMLS-additive",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-custom-fastener",
+          "quantity": 50,
+          "unit_price_cents": 901755,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01015",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01016",
+      "number": "Q001016",
+      "research_account_id": "boeing",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-boeing-primary",
+      "status": "LOST",
+      "sent_at": "2025-12-29",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1913057,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01016-1",
+          "part_number": "P-BOEI-ACT-2630",
+          "part_name": "Actuator",
+          "revision": "B",
+          "process_display": "DMLS-additive",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-actuator",
+          "quantity": 1,
+          "unit_price_cents": 1913057,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01016",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01017",
+      "number": "Q001017",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-07-13",
+      "converted_at": "2026-07-20",
+      "expired_at": null,
+      "total_price_cents": 423493400,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01017-1",
+          "part_number": "P-NORT-AIR-5026",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "A",
+          "process_display": "vacuum-brazing",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 100,
+          "unit_price_cents": 4234934,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "vadr",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01017",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01018",
+      "number": "Q001018",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "LOST",
+      "sent_at": "2026-01-24",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 61614075,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-0",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01018-1",
+          "part_number": "P-NORT-TAC-7233",
+          "part_name": "Tactical Vehicle Hardware",
+          "revision": "C",
+          "process_display": "Swiss-turning",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-tactical-vehicle-hardware",
+          "quantity": 25,
+          "unit_price_cents": 2464563,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01018",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01019",
+      "number": "Q001019",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-01-14",
+      "converted_at": "2026-02-06",
+      "expired_at": null,
+      "total_price_cents": 34180770,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01019-1",
+          "part_number": "P-NORT-MIS-1292",
+          "part_name": "Missile Body Section",
+          "revision": "B",
+          "process_display": "grinding",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-missile-body-section",
+          "quantity": 10,
+          "unit_price_cents": 3418077,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01019",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01020",
+      "number": "Q001020",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-15",
+      "converted_at": "2026-07-02",
+      "expired_at": null,
+      "total_price_cents": 11402550,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01020-1",
+          "part_number": "P-NORT-AIR-3669",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "A",
+          "process_display": "vacuum-brazing",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 50,
+          "unit_price_cents": 228051,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01020",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01021",
+      "number": "Q001021",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "LOST",
+      "sent_at": "2025-11-29",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1714428,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01021-1",
+          "part_number": "P-NORT-WAR-5194",
+          "part_name": "Warhead Body",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-warhead-body",
+          "quantity": 3,
+          "unit_price_cents": 571476,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01021",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01022",
+      "number": "Q001022",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "LOST",
+      "sent_at": "2026-01-08",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 17844175,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-0",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01022-1",
+          "part_number": "P-NORT-MIS-0588",
+          "part_name": "Missile Body Section",
+          "revision": "A",
+          "process_display": "DMLS-additive",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-missile-body-section",
+          "quantity": 5,
+          "unit_price_cents": 3568835,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01022",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01023",
+      "number": "Q001023",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "LOST",
+      "sent_at": "2026-06-03",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 84506700,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01023-1",
+          "part_number": "P-NORT-AIR-0639",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "A",
+          "process_display": "cleanroom-assembly",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 50,
+          "unit_price_cents": 1690134,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01023",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01024",
+      "number": "Q001024",
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-northrop-grumman-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-11-05",
+      "converted_at": "2025-12-04",
+      "expired_at": null,
+      "total_price_cents": 39741200,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01024-1",
+          "part_number": "P-NORT-AIR-0289",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "A",
+          "process_display": "EDM",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 100,
+          "unit_price_cents": 397412,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "vadr",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01024",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01025",
+      "number": "Q001025",
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-rtx-collins-aerospace-primary",
+      "status": "LOST",
+      "sent_at": "2026-06-14",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 17921715,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01025-1",
+          "part_number": "P-RTX--SEN-5033",
+          "part_name": "Sensor Housing",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-sensor-housing",
+          "quantity": 5,
+          "unit_price_cents": 3584343,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "lrso",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01025",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01026",
+      "number": "Q001026",
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-rtx-collins-aerospace-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-09",
+      "converted_at": "2026-06-16",
+      "expired_at": null,
+      "total_price_cents": 117318300,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01026-1",
+          "part_number": "P-RTX--ENG-8455",
+          "part_name": "Engine Nacelle",
+          "revision": "A",
+          "process_display": "EDM",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-engine-nacelle",
+          "quantity": 100,
+          "unit_price_cents": 1173183,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "lrso",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01026",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01027",
+      "number": "Q001027",
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-rtx-collins-aerospace-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-03",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 979820750,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01027-1",
+          "part_number": "P-RTX--ENG-8899",
+          "part_name": "Engine Nacelle",
+          "revision": "C",
+          "process_display": "vacuum-brazing",
+          "material_display": "Al-6061",
+          "component_class_id": "cc-engine-nacelle",
+          "quantity": 250,
+          "unit_price_cents": 3919283,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "787-dreamliner",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01027",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01028",
+      "number": "Q001028",
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-rtx-collins-aerospace-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-10",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 42804170,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01028-1",
+          "part_number": "P-RTX--STR-7224",
+          "part_name": "Structural Airframe",
+          "revision": "B",
+          "process_display": "EDM",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 10,
+          "unit_price_cents": 4280417,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "patriot-air-defense",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01028",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01029",
+      "number": "Q001029",
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-pratt-whitney-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-04",
+      "converted_at": "2025-12-27",
+      "expired_at": null,
+      "total_price_cents": 127532100,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01029-1",
+          "part_number": "P-PRAT-SEN-2127",
+          "part_name": "Sensor Housing",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-sensor-housing",
+          "quantity": 50,
+          "unit_price_cents": 2550642,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "787-dreamliner",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01029",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01030",
+      "number": "Q001030",
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-pratt-whitney-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-30",
+      "converted_at": "2026-07-19",
+      "expired_at": null,
+      "total_price_cents": 135521700,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01030-1",
+          "part_number": "P-PRAT-SEN-8567",
+          "part_name": "Sensor Housing",
+          "revision": "C",
+          "process_display": "turning",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-sensor-housing",
+          "quantity": 50,
+          "unit_price_cents": 2710434,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01030",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01031",
+      "number": "Q001031",
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-pratt-whitney-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-01-24",
+      "converted_at": "2026-02-06",
+      "expired_at": null,
+      "total_price_cents": 17028185,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01031-1",
+          "part_number": "P-PRAT-STR-4355",
+          "part_name": "Structural Airframe",
+          "revision": "A",
+          "process_display": "EDM",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 5,
+          "unit_price_cents": 3405637,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01031",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01032",
+      "number": "Q001032",
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-pratt-whitney-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-03",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 27345725,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01032-1",
+          "part_number": "P-PRAT-STR-7339",
+          "part_name": "Structural Airframe",
+          "revision": "C",
+          "process_display": "Swiss-turning",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 25,
+          "unit_price_cents": 1093829,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "f-35-lightning-ii",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01032",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01033",
+      "number": "Q001033",
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-ge-aerospace-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-05-11",
+      "converted_at": "2026-05-22",
+      "expired_at": null,
+      "total_price_cents": 111099600,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01033-1",
+          "part_number": "P-GE-A-SEN-7105",
+          "part_name": "Sensor Housing",
+          "revision": "C",
+          "process_display": "Swiss-turning",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-sensor-housing",
+          "quantity": 25,
+          "unit_price_cents": 4443984,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "737-max",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01033",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01034",
+      "number": "Q001034",
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-ge-aerospace-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-04-09",
+      "converted_at": "2026-04-15",
+      "expired_at": null,
+      "total_price_cents": 16110005,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01034-1",
+          "part_number": "P-GE-A-ENG-9719",
+          "part_name": "Engine Nacelle",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-engine-nacelle",
+          "quantity": 5,
+          "unit_price_cents": 3222001,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "737-max",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01034",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01035",
+      "number": "Q001035",
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-ge-aerospace-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-12",
+      "converted_at": "2025-12-21",
+      "expired_at": null,
+      "total_price_cents": 4103055,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01035-1",
+          "part_number": "P-GE-A-ACT-5991",
+          "part_name": "Actuator",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-actuator",
+          "quantity": 1,
+          "unit_price_cents": 4103055,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "787-dreamliner",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01035",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01036",
+      "number": "Q001036",
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-ge-aerospace-primary",
+      "status": "LOST",
+      "sent_at": "2026-03-21",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1214289500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01036-1",
+          "part_number": "P-GE-A-CUS-1150",
+          "part_name": "Custom Fastener",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-custom-fastener",
+          "quantity": 500,
+          "unit_price_cents": 2428579,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "737-max",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01036",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01037",
+      "number": "Q001037",
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-spirit-aerosystems-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-08-02",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 62019100,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01037-1",
+          "part_number": "P-SPIR-SEN-6744",
+          "part_name": "Sensor Housing",
+          "revision": "B",
+          "process_display": "turning",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-sensor-housing",
+          "quantity": 100,
+          "unit_price_cents": 620191,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "787-dreamliner",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01037",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01038",
+      "number": "Q001038",
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-spirit-aerosystems-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-08-03",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 342642500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01038-1",
+          "part_number": "P-SPIR-CUS-7272",
+          "part_name": "Custom Fastener",
+          "revision": "A",
+          "process_display": "EDM",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-custom-fastener",
+          "quantity": 250,
+          "unit_price_cents": 1370570,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "737-max",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01038",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01039",
+      "number": "Q001039",
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-spirit-aerosystems-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-06-19",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1807045500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01039-1",
+          "part_number": "P-SPIR-CUS-5839",
+          "part_name": "Custom Fastener",
+          "revision": "A",
+          "process_display": "vacuum-brazing",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-custom-fastener",
+          "quantity": 500,
+          "unit_price_cents": 3614091,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "777x",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01039",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01040",
+      "number": "Q001040",
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-spirit-aerosystems-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-24",
+      "converted_at": "2026-01-04",
+      "expired_at": null,
+      "total_price_cents": 34235000,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01040-1",
+          "part_number": "P-SPIR-ENG-3761",
+          "part_name": "Engine Nacelle",
+          "revision": "A",
+          "process_display": "DMLS-additive",
+          "material_display": "Al-6061",
+          "component_class_id": "cc-engine-nacelle",
+          "quantity": 500,
+          "unit_price_cents": 68470,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "737-max",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01040",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01041",
+      "number": "Q001041",
+      "research_account_id": "l3harris",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-l3harris-primary",
+      "status": "LOST",
+      "sent_at": "2025-12-28",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 405145,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01041-1",
+          "part_number": "P-L3HA-AIR-7409",
+          "part_name": "Aircraft Wing Optimized",
+          "revision": "B",
+          "process_display": "vacuum-brazing",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-aircraft-wing-optimized",
+          "quantity": 1,
+          "unit_price_cents": 405145,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01041",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01042",
+      "number": "Q001042",
+      "research_account_id": "l3harris",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-l3harris-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-06-14",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 11696980,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01042-1",
+          "part_number": "P-L3HA-WAR-5697",
+          "part_name": "Warhead Body",
+          "revision": "C",
+          "process_display": "5-axis-milling",
+          "material_display": "4340-steel",
+          "component_class_id": "cc-warhead-body",
+          "quantity": 5,
+          "unit_price_cents": 2339396,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01042",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01043",
+      "number": "Q001043",
+      "research_account_id": "general-atomics",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-general-atomics-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-11-20",
+      "converted_at": "2025-12-22",
+      "expired_at": null,
+      "total_price_cents": 424789500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01043-1",
+          "part_number": "P-GENE-WAR-1443",
+          "part_name": "Warhead Body",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "300M-steel",
+          "component_class_id": "cc-warhead-body",
+          "quantity": 250,
+          "unit_price_cents": 1699158,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "mq-9-reaper",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01043",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01044",
+      "number": "Q001044",
+      "research_account_id": "general-atomics",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-general-atomics-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-31",
+      "converted_at": "2026-01-11",
+      "expired_at": null,
+      "total_price_cents": 1892757000,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01044-1",
+          "part_number": "P-GENE-C5I-4215",
+          "part_name": "C5Isr Hardware",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-c5isr-hardware",
+          "quantity": 500,
+          "unit_price_cents": 3785514,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "mq-9-reaper",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01044",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01045",
+      "number": "Q001045",
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-spacex-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-08",
+      "converted_at": "2026-01-03",
+      "expired_at": null,
+      "total_price_cents": 372811200,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01045-1",
+          "part_number": "P-SPAC-THR-9875",
+          "part_name": "Thruster Nozzle",
+          "revision": "C",
+          "process_display": "DMLS-additive",
+          "material_display": "GRCop-84",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 100,
+          "unit_price_cents": 3728112,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "starship",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01045",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01046",
+      "number": "Q001046",
+      "research_account_id": "spacex",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-spacex-primary",
+      "status": "LOST",
+      "sent_at": "2025-10-07",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 30208290,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01046-1",
+          "part_number": "P-SPAC-THR-7683",
+          "part_name": "Thruster Nozzle",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 10,
+          "unit_price_cents": 3020829,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "falcon-9-heavy",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01046",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01047",
+      "number": "Q001047",
+      "research_account_id": "spacex",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-spacex-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-05-16",
+      "converted_at": "2026-05-26",
+      "expired_at": null,
+      "total_price_cents": 6766566,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01047-1",
+          "part_number": "P-SPAC-SAT-4082",
+          "part_name": "Satellite Mount",
+          "revision": "C",
+          "process_display": "vacuum-brazing",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-satellite-mount",
+          "quantity": 3,
+          "unit_price_cents": 2255522,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "falcon-9-heavy",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01047",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01048",
+      "number": "Q001048",
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-spacex-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-16",
+      "converted_at": "2026-06-26",
+      "expired_at": null,
+      "total_price_cents": 53573300,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01048-1",
+          "part_number": "P-SPAC-THR-3197",
+          "part_name": "Thruster Nozzle",
+          "revision": "B",
+          "process_display": "EDM",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 100,
+          "unit_price_cents": 535733,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "falcon-9-heavy",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01048",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01049",
+      "number": "Q001049",
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-blue-origin-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-29",
+      "converted_at": "2026-01-14",
+      "expired_at": null,
+      "total_price_cents": 7930488,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01049-1",
+          "part_number": "P-BLUE-THR-1524",
+          "part_name": "Thruster Nozzle",
+          "revision": "B",
+          "process_display": "DMLS-additive",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 3,
+          "unit_price_cents": 2643496,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01049",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01050",
+      "number": "Q001050",
+      "research_account_id": "blue-origin",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-blue-origin-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-05-29",
+      "converted_at": "2026-06-04",
+      "expired_at": null,
+      "total_price_cents": 15568110,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01050-1",
+          "part_number": "P-BLUE-STR-8617",
+          "part_name": "Structural Airframe",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 10,
+          "unit_price_cents": 1556811,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01050",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01051",
+      "number": "Q001051",
+      "research_account_id": "blue-origin",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-blue-origin-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-26",
+      "converted_at": "2026-01-12",
+      "expired_at": null,
+      "total_price_cents": 13273410,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-8",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01051-1",
+          "part_number": "P-BLUE-STR-9133",
+          "part_name": "Structural Airframe",
+          "revision": "A",
+          "process_display": "vacuum-brazing",
+          "material_display": "GRCop-84",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 10,
+          "unit_price_cents": 1327341,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "artemis",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01051",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01052",
+      "number": "Q001052",
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-blue-origin-primary",
+      "status": "LOST",
+      "sent_at": "2026-04-28",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1490070,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01052-1",
+          "part_number": "P-BLUE-THR-4264",
+          "part_name": "Thruster Nozzle",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "Hastelloy-X",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 5,
+          "unit_price_cents": 298014,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "new-glenn",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01052",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01053",
+      "number": "Q001053",
+      "research_account_id": "rocket-lab-usa",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-rocket-lab-usa-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-12-11",
+      "converted_at": "2026-01-08",
+      "expired_at": null,
+      "total_price_cents": 3677025,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01053-1",
+          "part_number": "P-ROCK-THR-2508",
+          "part_name": "Thruster Nozzle",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 25,
+          "unit_price_cents": 147081,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "neutron",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01053",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01054",
+      "number": "Q001054",
+      "research_account_id": "rocket-lab-usa",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-rocket-lab-usa-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-06-19",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 40279450,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01054-1",
+          "part_number": "P-ROCK-SAT-6305",
+          "part_name": "Satellite Mount",
+          "revision": "A",
+          "process_display": "EDM",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-satellite-mount",
+          "quantity": 25,
+          "unit_price_cents": 1611178,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "neutron",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01054",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01055",
+      "number": "Q001055",
+      "research_account_id": "ula-united-launch-alliance",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-ula-united-launch-alliance-primary",
+      "status": "EXPIRED",
+      "sent_at": "2025-06-16",
+      "converted_at": null,
+      "expired_at": "2026-05-28",
+      "total_price_cents": 77080650,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01055-1",
+          "part_number": "P-ULA--SAT-6535",
+          "part_name": "Satellite Mount",
+          "revision": "B",
+          "process_display": "EDM",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-satellite-mount",
+          "quantity": 25,
+          "unit_price_cents": 3083226,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "vulcan-centaur",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01055",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01056",
+      "number": "Q001056",
+      "research_account_id": "ula-united-launch-alliance",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-ula-united-launch-alliance-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-01-15",
+      "converted_at": "2026-01-29",
+      "expired_at": null,
+      "total_price_cents": 2430652,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01056-1",
+          "part_number": "P-ULA--THR-0462",
+          "part_name": "Thruster Nozzle",
+          "revision": "B",
+          "process_display": "grinding",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-thruster-nozzle",
+          "quantity": 1,
+          "unit_price_cents": 2430652,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "vulcan-centaur",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01056",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01057",
+      "number": "Q001057",
+      "research_account_id": "sierra-space",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-sierra-space-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-07-13",
+      "converted_at": "2026-07-22",
+      "expired_at": null,
+      "total_price_cents": 125927250,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01057-1",
+          "part_number": "P-SIER-SAT-9995",
+          "part_name": "Satellite Mount",
+          "revision": "C",
+          "process_display": "Swiss-turning",
+          "material_display": "Hastelloy-X",
+          "component_class_id": "cc-satellite-mount",
+          "quantity": 50,
+          "unit_price_cents": 2518545,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "dream-chaser",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01057",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01058",
+      "number": "Q001058",
+      "research_account_id": "sierra-space",
+      "business_unit_id": "i3d-mfg",
+      "paperless_contact_id": "pc-sierra-space-primary",
+      "status": "EXPIRED",
+      "sent_at": "2025-07-26",
+      "converted_at": null,
+      "expired_at": "2026-06-09",
+      "total_price_cents": 73238600,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-6",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01058-1",
+          "part_number": "P-SIER-STR-9566",
+          "part_name": "Structural Airframe",
+          "revision": "A",
+          "process_display": "5-axis-milling",
+          "material_display": "Ti-6Al-4V",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 100,
+          "unit_price_cents": 732386,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "dream-chaser",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01058",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01059",
+      "number": "Q001059",
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-applied-materials-primary",
+      "status": "EXPIRED",
+      "sent_at": "2026-02-09",
+      "converted_at": null,
+      "expired_at": "2026-07-05",
+      "total_price_cents": 33242600,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01059-1",
+          "part_number": "P-APPL-VAC-0680",
+          "part_name": "Vacuum Chamber",
+          "revision": "A",
+          "process_display": "DMLS-additive",
+          "material_display": "316L-stainless",
+          "component_class_id": "cc-vacuum-chamber",
+          "quantity": 100,
+          "unit_price_cents": 332426,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "amat-sym3-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01059",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01060",
+      "number": "Q001060",
+      "research_account_id": "applied-materials",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-applied-materials-primary",
+      "status": "LOST",
+      "sent_at": "2026-06-30",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 38320120,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-6",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01060-1",
+          "part_number": "P-APPL-OPT-5695",
+          "part_name": "Optical Mount",
+          "revision": "B",
+          "process_display": "EDM",
+          "material_display": "PEEK",
+          "component_class_id": "cc-optical-mount",
+          "quantity": 10,
+          "unit_price_cents": 3832012,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "amat-sym3-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01060",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01061",
+      "number": "Q001061",
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-applied-materials-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-12",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 12458631,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01061-1",
+          "part_number": "P-APPL-OPT-6587",
+          "part_name": "Optical Mount",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "Hastelloy-C22",
+          "component_class_id": "cc-optical-mount",
+          "quantity": 3,
+          "unit_price_cents": 4152877,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "amat-sym3-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01061",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01062",
+      "number": "Q001062",
+      "research_account_id": "applied-materials",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-applied-materials-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-25",
+      "converted_at": "2026-07-02",
+      "expired_at": null,
+      "total_price_cents": 2379399,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-6",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01062-1",
+          "part_number": "P-APPL-WAF-4017",
+          "part_name": "Wafer Handling",
+          "revision": "C",
+          "process_display": "cleanroom-assembly",
+          "material_display": "316L-stainless",
+          "component_class_id": "cc-wafer-handling",
+          "quantity": 1,
+          "unit_price_cents": 2379399,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "amat-sym3-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01062",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01063",
+      "number": "Q001063",
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-lam-research-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-01",
+      "converted_at": "2026-06-12",
+      "expired_at": null,
+      "total_price_cents": 59089625,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01063-1",
+          "part_number": "P-LAM--VAC-4643",
+          "part_name": "Vacuum Chamber",
+          "revision": "A",
+          "process_display": "Swiss-turning",
+          "material_display": "Invar-36",
+          "component_class_id": "cc-vacuum-chamber",
+          "quantity": 25,
+          "unit_price_cents": 2363585,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "lam-kiyo-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01063",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01064",
+      "number": "Q001064",
+      "research_account_id": "lam-research",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-lam-research-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-01-22",
+      "converted_at": "2026-02-20",
+      "expired_at": null,
+      "total_price_cents": 13237962,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01064-1",
+          "part_number": "P-LAM--INV-0127",
+          "part_name": "Invar Housing Semi",
+          "revision": "C",
+          "process_display": "cleanroom-assembly",
+          "material_display": "Invar-36",
+          "component_class_id": "cc-invar-housing-semi",
+          "quantity": 3,
+          "unit_price_cents": 4412654,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "lam-kiyo-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01064",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01065",
+      "number": "Q001065",
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-lam-research-primary",
+      "status": "LOST",
+      "sent_at": "2026-07-17",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 19102040,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01065-1",
+          "part_number": "P-LAM--GAS-6582",
+          "part_name": "Gas Manifold",
+          "revision": "B",
+          "process_display": "EDM",
+          "material_display": "Invar-36",
+          "component_class_id": "cc-gas-manifold",
+          "quantity": 5,
+          "unit_price_cents": 3820408,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "lam-kiyo-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01065",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01066",
+      "number": "Q001066",
+      "research_account_id": "lam-research",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-lam-research-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-06-13",
+      "converted_at": "2026-07-15",
+      "expired_at": null,
+      "total_price_cents": 1086534,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01066-1",
+          "part_number": "P-LAM--WAF-1203",
+          "part_name": "Wafer Handling",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "Al-6061-T6",
+          "component_class_id": "cc-wafer-handling",
+          "quantity": 3,
+          "unit_price_cents": 362178,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "lam-kiyo-etch",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01066",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01067",
+      "number": "Q001067",
+      "research_account_id": "kla",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-kla-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-19",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 11345250,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01067-1",
+          "part_number": "P-KLA-THE-3231",
+          "part_name": "Thermal Cooling Plate",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "316L-stainless",
+          "component_class_id": "cc-thermal-cooling-plate",
+          "quantity": 10,
+          "unit_price_cents": 1134525,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01067",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01068",
+      "number": "Q001068",
+      "research_account_id": "kla",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-kla-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-05-23",
+      "converted_at": "2026-05-31",
+      "expired_at": null,
+      "total_price_cents": 314942500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-0",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01068-1",
+          "part_number": "P-KLA-INV-5344",
+          "part_name": "Invar Housing Semi",
+          "revision": "B",
+          "process_display": "cleanroom-assembly",
+          "material_display": "Hastelloy-C22",
+          "component_class_id": "cc-invar-housing-semi",
+          "quantity": 250,
+          "unit_price_cents": 1259770,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01068",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01069",
+      "number": "Q001069",
+      "research_account_id": "asml",
+      "business_unit_id": "addison-precision",
+      "paperless_contact_id": "pc-asml-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-09",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 251575800,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01069-1",
+          "part_number": "P-ASML-WAF-0391",
+          "part_name": "Wafer Handling",
+          "revision": "C",
+          "process_display": "5-axis-milling",
+          "material_display": "Al-6061-T6",
+          "component_class_id": "cc-wafer-handling",
+          "quantity": 100,
+          "unit_price_cents": 2515758,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "asml-nxe-3800",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01069",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01070",
+      "number": "Q001070",
+      "research_account_id": "asml",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-asml-primary",
+      "status": "LOST",
+      "sent_at": "2026-06-15",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 56250100,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-1",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01070-1",
+          "part_number": "P-ASML-INV-4856",
+          "part_name": "Invar Housing Semi",
+          "revision": "C",
+          "process_display": "turning",
+          "material_display": "Al-6061-T6",
+          "component_class_id": "cc-invar-housing-semi",
+          "quantity": 100,
+          "unit_price_cents": 562501,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "asml-nxe-3800",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01070",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01071",
+      "number": "Q001071",
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-medtronic-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-10-16",
+      "converted_at": "2025-10-29",
+      "expired_at": null,
+      "total_price_cents": 1904654500,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-8",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01071-1",
+          "part_number": "P-MEDT-ELE-1497",
+          "part_name": "Electrosurgical Part",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "PEEK",
+          "component_class_id": "cc-electrosurgical-part",
+          "quantity": 500,
+          "unit_price_cents": 3809309,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "medtronic-hugo",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01071",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01072",
+      "number": "Q001072",
+      "research_account_id": "medtronic",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-medtronic-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-06-18",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 159716900,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01072-1",
+          "part_number": "P-MEDT-ELE-1061",
+          "part_name": "Electrosurgical Part",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "Tantalum",
+          "component_class_id": "cc-electrosurgical-part",
+          "quantity": 100,
+          "unit_price_cents": 1597169,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "medtronic-hugo",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01072",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01073",
+      "number": "Q001073",
+      "research_account_id": "medtronic",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-medtronic-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-10-22",
+      "converted_at": "2025-11-02",
+      "expired_at": null,
+      "total_price_cents": 367759250,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-4",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01073-1",
+          "part_number": "P-MEDT-INF-3886",
+          "part_name": "Infusion Pump Component",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "316L-stainless",
+          "component_class_id": "cc-infusion-pump-component",
+          "quantity": 250,
+          "unit_price_cents": 1471037,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "medtronic-hugo",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01073",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01074",
+      "number": "Q001074",
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-medtronic-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-01",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 424604750,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-8",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01074-1",
+          "part_number": "P-MEDT-ORT-8131",
+          "part_name": "Orthopedic Implant",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "Ti-6Al-4V-ELI",
+          "component_class_id": "cc-orthopedic-implant",
+          "quantity": 250,
+          "unit_price_cents": 1698419,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "medtronic-hugo",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01074",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01075",
+      "number": "Q001075",
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-zimmer-biomet-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-03-14",
+      "converted_at": "2026-04-14",
+      "expired_at": null,
+      "total_price_cents": 96946550,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-2",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01075-1",
+          "part_number": "P-ZIMM-ORT-3735",
+          "part_name": "Orthopedic Implant",
+          "revision": "B",
+          "process_display": "turning",
+          "material_display": "Co-Cr",
+          "component_class_id": "cc-orthopedic-implant",
+          "quantity": 50,
+          "unit_price_cents": 1938931,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "zimmer-rosa",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01075",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01076",
+      "number": "Q001076",
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-zimmer-biomet-primary",
+      "status": "LOST",
+      "sent_at": "2026-03-09",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 11390577,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01076-1",
+          "part_number": "P-ZIMM-INF-1699",
+          "part_name": "Infusion Pump Component",
+          "revision": "C",
+          "process_display": "cleanroom-assembly",
+          "material_display": "316L-stainless",
+          "component_class_id": "cc-infusion-pump-component",
+          "quantity": 3,
+          "unit_price_cents": 3796859,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "zimmer-rosa",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01076",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01077",
+      "number": "Q001077",
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-zimmer-biomet-primary",
+      "status": "LOST",
+      "sent_at": "2025-12-27",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 7134945,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-5",
+      "estimator_user_id": "paperless-user-estimator-2",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01077-1",
+          "part_number": "P-ZIMM-IMP-5657",
+          "part_name": "Implantable Subassembly",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "17-4PH",
+          "component_class_id": "cc-implantable-subassembly",
+          "quantity": 3,
+          "unit_price_cents": 2378315,
+          "lead_time_days": 45
+        }
+      ],
+      "program_id": "zimmer-rosa",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01077",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01078",
+      "number": "Q001078",
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-zimmer-biomet-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-01-13",
+      "converted_at": "2026-02-09",
+      "expired_at": null,
+      "total_price_cents": 355093800,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-4",
+      "estimator_user_id": "paperless-user-estimator-6",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01078-1",
+          "part_number": "P-ZIMM-INF-5452",
+          "part_name": "Infusion Pump Component",
+          "revision": "B",
+          "process_display": "vacuum-brazing",
+          "material_display": "Ti-6Al-4V-ELI",
+          "component_class_id": "cc-infusion-pump-component",
+          "quantity": 100,
+          "unit_price_cents": 3550938,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "zimmer-rosa",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01078",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01079",
+      "number": "Q001079",
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-stryker-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-06-18",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 398827000,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01079-1",
+          "part_number": "P-STRY-INF-9690",
+          "part_name": "Infusion Pump Component",
+          "revision": "A",
+          "process_display": "5-axis-milling",
+          "material_display": "Ti-6Al-4V-ELI",
+          "component_class_id": "cc-infusion-pump-component",
+          "quantity": 500,
+          "unit_price_cents": 797654,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "stryker-mako",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01079",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01080",
+      "number": "Q001080",
+      "research_account_id": "stryker",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-stryker-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-21",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 29260250,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01080-1",
+          "part_number": "P-STRY-ORT-9869",
+          "part_name": "Orthopedic Implant",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "Ti-6Al-4V-ELI",
+          "component_class_id": "cc-orthopedic-implant",
+          "quantity": 25,
+          "unit_price_cents": 1170410,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "stryker-mako",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01080",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01081",
+      "number": "Q001081",
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-stryker-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-03-11",
+      "converted_at": "2026-04-02",
+      "expired_at": null,
+      "total_price_cents": 12265938,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01081-1",
+          "part_number": "P-STRY-DIA-2568",
+          "part_name": "Diagnostic Imaging",
+          "revision": "B",
+          "process_display": "EDM",
+          "material_display": "Co-Cr",
+          "component_class_id": "cc-diagnostic-imaging",
+          "quantity": 3,
+          "unit_price_cents": 4088646,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "stryker-mako",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01081",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01082",
+      "number": "Q001082",
+      "research_account_id": "stryker",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-stryker-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-06-20",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 6564912,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-9",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01082-1",
+          "part_number": "P-STRY-ELE-3280",
+          "part_name": "Electrosurgical Part",
+          "revision": "C",
+          "process_display": "grinding",
+          "material_display": "Tantalum",
+          "component_class_id": "cc-electrosurgical-part",
+          "quantity": 3,
+          "unit_price_cents": 2188304,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "stryker-mako",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01082",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01083",
+      "number": "Q001083",
+      "research_account_id": "boston-scientific",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-boston-scientific-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-02-05",
+      "converted_at": "2026-02-27",
+      "expired_at": null,
+      "total_price_cents": 15349625,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01083-1",
+          "part_number": "P-BOST-ELE-8805",
+          "part_name": "Electrosurgical Part",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "316L-stainless",
+          "component_class_id": "cc-electrosurgical-part",
+          "quantity": 5,
+          "unit_price_cents": 3069925,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01083",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01084",
+      "number": "Q001084",
+      "research_account_id": "boston-scientific",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-boston-scientific-primary",
+      "status": "LOST",
+      "sent_at": "2026-03-09",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1887289,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-2",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01084-1",
+          "part_number": "P-BOST-IMP-4330",
+          "part_name": "Implantable Subassembly",
+          "revision": "C",
+          "process_display": "cleanroom-assembly",
+          "material_display": "PEEK",
+          "component_class_id": "cc-implantable-subassembly",
+          "quantity": 1,
+          "unit_price_cents": 1887289,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01084",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01085",
+      "number": "Q001085",
+      "research_account_id": "intuitive-surgical",
+      "business_unit_id": "a1j-technologies",
+      "paperless_contact_id": "pc-intuitive-surgical-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-02-25",
+      "converted_at": "2026-03-20",
+      "expired_at": null,
+      "total_price_cents": 183467450,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-7",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01085-1",
+          "part_number": "P-INTU-ORT-7339",
+          "part_name": "Orthopedic Implant",
+          "revision": "B",
+          "process_display": "5-axis-milling",
+          "material_display": "MP35N",
+          "component_class_id": "cc-orthopedic-implant",
+          "quantity": 50,
+          "unit_price_cents": 3669349,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "davinci-sp",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01085",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01086",
+      "number": "Q001086",
+      "research_account_id": "intuitive-surgical",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-intuitive-surgical-primary",
+      "status": "OUTSTANDING",
+      "sent_at": "2026-07-26",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 1357532000,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-7",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01086-1",
+          "part_number": "P-INTU-ELE-9454",
+          "part_name": "Electrosurgical Part",
+          "revision": "A",
+          "process_display": "5-axis-milling",
+          "material_display": "MP35N",
+          "component_class_id": "cc-electrosurgical-part",
+          "quantity": 500,
+          "unit_price_cents": 2715064,
+          "lead_time_days": 30
+        }
+      ],
+      "program_id": "davinci-sp",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01086",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01087",
+      "number": "Q001087",
+      "research_account_id": "johnson-johnson-medtech",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-johnson-johnson-medtech-primary",
+      "status": "EXPIRED",
+      "sent_at": "2025-10-20",
+      "converted_at": null,
+      "expired_at": "2026-06-10",
+      "total_price_cents": 44193370,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01087-1",
+          "part_number": "P-JOHN-INF-6020",
+          "part_name": "Infusion Pump Component",
+          "revision": "A",
+          "process_display": "turning",
+          "material_display": "Tantalum",
+          "component_class_id": "cc-infusion-pump-component",
+          "quantity": 10,
+          "unit_price_cents": 4419337,
+          "lead_time_days": 90
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01087",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01088",
+      "number": "Q001088",
+      "research_account_id": "johnson-johnson-medtech",
+      "business_unit_id": "maitland-engineering",
+      "paperless_contact_id": "pc-johnson-johnson-medtech-primary",
+      "status": "LOST",
+      "sent_at": "2026-06-22",
+      "converted_at": null,
+      "expired_at": null,
+      "total_price_cents": 686820000,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-3",
+      "estimator_user_id": "paperless-user-estimator-0",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01088-1",
+          "part_number": "P-JOHN-INF-0501",
+          "part_name": "Infusion Pump Component",
+          "revision": "B",
+          "process_display": "DMLS-additive",
+          "material_display": "Tantalum",
+          "component_class_id": "cc-infusion-pump-component",
+          "quantity": 250,
+          "unit_price_cents": 2747280,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01088",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01089",
+      "number": "Q001089",
+      "research_account_id": "ge-vernova",
+      "business_unit_id": "era-industries",
+      "paperless_contact_id": "pc-ge-vernova-primary",
+      "status": "CONVERTED",
+      "sent_at": "2025-10-06",
+      "converted_at": "2025-11-09",
+      "expired_at": null,
+      "total_price_cents": 139549050,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-9",
+      "estimator_user_id": "paperless-user-estimator-5",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01089-1",
+          "part_number": "P-GE-V-GEA-9020",
+          "part_name": "Gearbox Drivetrain",
+          "revision": "A",
+          "process_display": "grinding",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-gearbox-drivetrain",
+          "quantity": 50,
+          "unit_price_cents": 2790981,
+          "lead_time_days": 14
+        }
+      ],
+      "program_id": "gev-9ha-turbine",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01089",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01090",
+      "number": "Q001090",
+      "research_account_id": "ge-vernova",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-ge-vernova-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-04-19",
+      "converted_at": "2026-04-30",
+      "expired_at": null,
+      "total_price_cents": 10224939,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-8",
+      "estimator_user_id": "paperless-user-estimator-8",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01090-1",
+          "part_number": "P-GE-V-NUC-8881",
+          "part_name": "Nuclear Bracket",
+          "revision": "C",
+          "process_display": "vacuum-brazing",
+          "material_display": "Hastelloy-C22",
+          "component_class_id": "cc-nuclear-bracket",
+          "quantity": 3,
+          "unit_price_cents": 3408313,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "gev-9ha-turbine",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01090",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01091",
+      "number": "Q001091",
+      "research_account_id": "textron",
+      "business_unit_id": "high-tech-solutions",
+      "paperless_contact_id": "pc-textron-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-04-01",
+      "converted_at": "2026-05-02",
+      "expired_at": null,
+      "total_price_cents": 89522650,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-0",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01091-1",
+          "part_number": "P-TEXT-STR-5812",
+          "part_name": "Structural Airframe",
+          "revision": "C",
+          "process_display": "EDM",
+          "material_display": "Inconel-718",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 25,
+          "unit_price_cents": 3580906,
+          "lead_time_days": 21
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01091",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "paperless_quote_id": "pq-01092",
+      "number": "Q001092",
+      "research_account_id": "textron",
+      "business_unit_id": "chandler-industries",
+      "paperless_contact_id": "pc-textron-primary",
+      "status": "CONVERTED",
+      "sent_at": "2026-07-08",
+      "converted_at": "2026-07-21",
+      "expired_at": null,
+      "total_price_cents": 449200,
+      "currency": "USD",
+      "sales_person_user_id": "paperless-user-sales-1",
+      "estimator_user_id": "paperless-user-estimator-3",
+      "parent_quote_id": null,
+      "line_items": [
+        {
+          "paperless_quote_item_id": "pqi-01092-1",
+          "part_number": "P-TEXT-STR-1462",
+          "part_name": "Structural Airframe",
+          "revision": "B",
+          "process_display": "cleanroom-assembly",
+          "material_display": "Al-7075",
+          "component_class_id": "cc-structural-airframe",
+          "quantity": 5,
+          "unit_price_cents": 89840,
+          "lead_time_days": 60
+        }
+      ],
+      "program_id": "general-account-work",
+      "provenance": {
+        "source_system": "paperless-parts-sample",
+        "source_record_id": "pq-01092",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "summary": {
+    "total_quotes": 92,
+    "by_status": {
+      "OUTSTANDING": 22,
+      "CONVERTED": 44,
+      "LOST": 19,
+      "EXPIRED": 7,
+      "CANCELLED": 0
+    }
+  }
+}

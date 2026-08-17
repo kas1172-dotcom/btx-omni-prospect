@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "generated_date": "2026-08-17",
+  "purpose": "Per-BU capability catalog. Feeds the addressability check in the workflow (given a customer's part needs, which BUs can serve?), the Actions surface (route the work to the right BU), and the proposed BU-decomposed scoring revision (audit section 14 + workflow challenge to rubric).",
+  "truth_rules": {
+    "public_only": "Every capability is from BU public websites, BTX Precision industry pages, or press releases. No inferred capacity ranges.",
+    "certification_authoritative": "Certifications match the BU-listed set exactly. No inference of coverage under CMMC or FedRAMP beyond what the BU publicly claims.",
+    "no_capacity_numbers": "Volume ranges are directional (prototype / low-rate / high-rate) rather than numeric until Prism production-history data is available."
+  },
+  "bu_capabilities": [
+    {
+      "bu_id": "era-industries",
+      "process_families": [
+        {"process": "5-axis milling", "envelope_directional": "medium-to-large parts, multi-pallet lights-out", "materials_supported": ["Al alloys 6061/7075/7050", "titanium Ti-6Al-4V", "stainless 17-4/316L", "Inconel 718", "Invar"], "tolerance_capability": "±0.0005 in typical", "certifications_applicable": ["AS9100D", "NADCAP", "ITAR"]},
+        {"process": "horizontal milling", "envelope_directional": "medium parts, high production", "materials_supported": ["Al alloys", "stainless", "steels"], "tolerance_capability": "±0.001 in", "certifications_applicable": ["AS9100D", "ITAR"]},
+        {"process": "turning", "envelope_directional": "small-to-medium", "materials_supported": ["all common"], "tolerance_capability": "±0.0005 in"},
+        {"process": "aluminum vacuum brazing", "envelope_directional": "small-to-medium", "materials_supported": ["Al alloys"], "tolerance_capability": "±0.002 in", "specialty_note": "Named as BTX platform-level specialty"},
+        {"process": "EDM", "envelope_directional": "small", "materials_supported": ["stainless", "steels", "Inconel"]},
+        {"process": "grinding", "envelope_directional": "small-to-medium", "materials_supported": ["hardened steels", "stainless"]},
+        {"process": "assembly", "envelope_directional": "medium complexity"},
+        {"process": "cleanroom operations", "envelope_directional": "class-controlled", "specialty_note": "Cleanroom available for aerospace/defense CUI-adjacent work"}
+      ],
+      "industries_served": ["aerospace", "defense", "medical", "military", "space", "transportation", "semiconductor"],
+      "certifications": ["AS9100D:2016", "ISO 9001:2015", "NADCAP", "ITAR"],
+      "volume_profile": ["prototype", "low-rate production", "high-rate production"],
+      "capacity_notes": "Multi-pallet lights-out machining explicitly named; supports long-run production."
+    },
+    {
+      "bu_id": "gen-el-mec",
+      "process_families": [
+        {"process": "milling", "envelope_directional": "small-to-medium", "materials_supported": ["Al alloys", "stainless", "titanium"], "tolerance_capability": "±0.0005 in"},
+        {"process": "turning", "envelope_directional": "small-to-medium", "materials_supported": ["Al alloys", "stainless", "titanium"]},
+        {"process": "wire EDM", "envelope_directional": "small", "materials_supported": ["hardened steels", "stainless", "Inconel"]}
+      ],
+      "industries_served": ["aerospace", "defense", "medical"],
+      "certifications": ["AS9100D:2015", "ISO 9001:2015", "ITAR"],
+      "volume_profile": ["prototype", "short-run", "long-run"],
+      "capacity_notes": "Positioning is 'complex CNC for prototypes through long-run production'; smaller BU."
+    },
+    {
+      "bu_id": "i3d-mfg",
+      "process_families": [
+        {"process": "additive DMLS (direct metal laser sintering)", "envelope_directional": "part-size envelope up to EOS M400-4 build volume; 12 machines", "materials_supported": ["Inconel 718", "AlSi10Mg", "Ti-6Al-4V", "GRCop-84", "17-4 PH stainless"], "tolerance_capability": "±0.002 in as-printed, ±0.0005 in post-processed", "specialty_note": "Only DMLS-focused BU in the BTX platform"},
+        {"process": "post-processing EDM", "envelope_directional": "small", "materials_supported": ["all DMLS output"]},
+        {"process": "turning (post-print finishing)", "envelope_directional": "small-to-medium"}
+      ],
+      "industries_served": ["aerospace", "defense", "space", "recreation", "medical", "energy"],
+      "certifications": ["AS9100D:2016", "ITAR", "FFL"],
+      "volume_profile": ["prototype", "low-rate production", "one-off complex geometries"],
+      "capacity_notes": "12 EOS M400-4 metal 3D printers. FFL (Federal Firearms License) confirms warhead-class defense work is authorized. Case-study evidence for thrusters, warheads, aircraft wings.",
+      "unique_capabilities": ["topology optimization", "lattice-reinforced structures", "conformal cooling channels"]
+    },
+    {
+      "bu_id": "addison-precision",
+      "process_families": [
+        {"process": "multi-axis milling", "envelope_directional": "small ultra-tight-tolerance", "materials_supported": ["Al alloys", "stainless", "titanium", "Invar"], "tolerance_capability": "±0.0001 in typical"},
+        {"process": "turning", "envelope_directional": "small-to-medium", "materials_supported": ["all common"]},
+        {"process": "Swiss turning", "envelope_directional": "micro-to-small", "materials_supported": ["stainless", "titanium"]},
+        {"process": "CNC grinding", "envelope_directional": "small", "materials_supported": ["hardened steels", "carbide"]},
+        {"process": "EDM", "envelope_directional": "small"},
+        {"process": "micro-debur", "envelope_directional": "micro"}
+      ],
+      "industries_served": ["aerospace", "aircraft", "medical", "precision manufacturing"],
+      "certifications": ["AS9100D:2016", "ISO 9001:2015", "NADCAP", "ITAR"],
+      "volume_profile": ["prototype", "low-rate production"],
+      "capacity_notes": "Part size .050″ to 50″+. Ultra-tight tolerance is the positioning; best fit for optics, sensor mounts, valve bodies, medical delivery systems."
+    },
+    {
+      "bu_id": "a1j-technologies",
+      "process_families": [
+        {"process": "milling", "envelope_directional": "small-to-medium", "materials_supported": ["Al alloys", "stainless", "titanium", "PEEK", "PTFE"]},
+        {"process": "turning", "envelope_directional": "small-to-medium"},
+        {"process": "EDM", "envelope_directional": "small"},
+        {"process": "assembly", "envelope_directional": "complex mechanical assembly"},
+        {"process": "sheet metal fabrication", "envelope_directional": "medium-to-large"},
+        {"process": "micro laser", "envelope_directional": "micro-scale features"},
+        {"process": "grinding", "envelope_directional": "small-to-medium"},
+        {"process": "cleanroom operations", "envelope_directional": "ISO Class 5 (Class 100)", "specialty_note": "Only BU with published ISO Class 5 cleanroom"},
+        {"process": "precision cleaning", "envelope_directional": "semiconductor-grade"}
+      ],
+      "industries_served": ["aerospace", "semiconductor", "medical", "defense", "energy", "high-tech"],
+      "certifications": ["AS9100:2016", "ISO 9001:2015", "ISO 13485:2015", "ISO Class 5 Cleanroom", "ITAR", "CMMC"],
+      "volume_profile": ["prototype", "low-rate", "medium-rate production"],
+      "capacity_notes": "Bay Area location + Class 5 cleanroom + CMMC = strong fit for semi capital equipment OEMs. Formed from 5 acquired specialty companies covering machining, sheet metal, laser, grinding, cleaning."
+    },
+    {
+      "bu_id": "chandler-industries",
+      "process_families": [
+        {"process": "milling", "envelope_directional": "small-to-large across 5 facilities"},
+        {"process": "turning", "envelope_directional": "small-to-large"},
+        {"process": "welding", "envelope_directional": "certified TIG/MIG", "specialty_note": "NADCAP-accredited welding"},
+        {"process": "assembly", "envelope_directional": "complex mechanical + electromechanical"},
+        {"process": "sheet metal fabrication", "envelope_directional": "medium-to-large"},
+        {"process": "finishing", "envelope_directional": "anodize, alodine, plating (via qualified subs)"},
+        {"process": "EDM", "envelope_directional": "small-to-medium"},
+        {"process": "cleanroom operations", "envelope_directional": "ISO Class 6"}
+      ],
+      "industries_served": ["aerospace", "defense", "industrial", "medical", "energy", "electronic connectors"],
+      "certifications": ["AS9100D:2016", "ISO 9001:2015", "ISO 13485:2016", "ISO Class 6 Cleanroom", "ITAR", "NADCAP"],
+      "volume_profile": ["prototype", "low-rate production", "high-rate production"],
+      "capacity_notes": "5 facilities, 213K sqft, 370+ employees. Publicly named Tier I supplier to Boeing (defense page). Broadest industry coverage of any BU. Medical products publicly listed: surgical jaws, ligatures, implantable components, micro components, infusion equipment.",
+      "geography_advantage": "Cross-border capability via Chihuahua Mexico facility for cost-sensitive high-volume work."
+    },
+    {
+      "bu_id": "high-tech-solutions",
+      "process_families": [
+        {"process": "multi-axis machining", "envelope_directional": "medium-to-large"},
+        {"process": "milling", "envelope_directional": "medium-to-large"},
+        {"process": "turning", "envelope_directional": "medium-to-large"},
+        {"process": "complex mechanical assembly", "envelope_directional": "medium-to-large", "specialty_note": "'Program-driven manufacturing' per BU positioning"}
+      ],
+      "industries_served": ["aerospace", "defense", "space"],
+      "certifications": ["AS9100D", "ISO 9001:2015", "ITAR"],
+      "volume_profile": ["low-rate production", "medium-rate production", "sole-source positions per L Squared PR"],
+      "capacity_notes": "Newest BU (Aug 2025). Kansas City geography positions it for Boeing (St. Louis/Wichita), Spirit AeroSystems (Wichita), Textron (Wichita). L Squared PR references NASA Artemis, SpaceX Starship, commercial satellites as end-markets and 'sole-source positions' and 'blue-chip customer relationships'."
+    },
+    {
+      "bu_id": "maitland-engineering",
+      "process_families": [
+        {"process": "Swiss turning", "envelope_directional": "micro-to-small ultra-tight tolerance", "materials_supported": ["Ti-6Al-4V ELI", "cobalt-chromium", "tantalum", "17-4 PH", "316L", "MP35N", "PEEK"], "tolerance_capability": "±0.0002 in typical", "specialty_note": "BU signature process; only medical-only BU"},
+        {"process": "multi-axis machining", "envelope_directional": "small"},
+        {"process": "turning", "envelope_directional": "small"},
+        {"process": "milling", "envelope_directional": "small"},
+        {"process": "EDM", "envelope_directional": "micro-to-small"},
+        {"process": "grinding", "envelope_directional": "small"},
+        {"process": "finishing", "envelope_directional": "medical-grade"}
+      ],
+      "industries_served": ["medical", "orthopedic implants"],
+      "certifications": ["ISO 13485:2016"],
+      "volume_profile": ["low-rate production", "medium-rate production", "long-run orthopedic implant components"],
+      "capacity_notes": "Only ISO 13485-only BU (no AS9100 or ITAR). Positioning is pure medical, particularly orthopedic implants. Metadata evidence: Zimmer, Biomet named as historical customer context. Two locations: South Bend IN + Coon Rapids MN.",
+      "materials_specialty": "Cobalt-chromium and tantalum capability distinguishes Maitland from other BUs; these are orthopedic-implant-specific."
+    }
+  ],
+  "cross_bu_capability_matrix": {
+    "high-precision-swiss-turning": ["maitland-engineering", "addison-precision"],
+    "additive-dmls": ["i3d-mfg"],
+    "cleanroom-iso5": ["a1j-technologies"],
+    "cleanroom-iso6": ["chandler-industries"],
+    "iso-13485-medical": ["a1j-technologies", "chandler-industries", "maitland-engineering"],
+    "nadcap": ["era-industries", "chandler-industries", "addison-precision"],
+    "cmmc": ["a1j-technologies"],
+    "ffl-federal-firearms-license": ["i3d-mfg"],
+    "5-axis-milling": ["era-industries", "addison-precision", "a1j-technologies", "chandler-industries", "high-tech-solutions"],
+    "vacuum-brazing-al": ["era-industries"],
+    "wire-edm": ["gen-el-mec", "era-industries", "a1j-technologies", "chandler-industries"],
+    "sheet-metal-fabrication": ["a1j-technologies", "chandler-industries"]
+  },
+  "summary": {
+    "total_bus": 8,
+    "unique_processes": 22,
+    "cross_bu_process_matrix_entries": 12
+  }
+}

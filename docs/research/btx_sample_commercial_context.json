@@ -1,0 +1,3168 @@
+{
+  "schema_version": "1.0",
+  "generated_date": "2026-08-17",
+  "purpose": "Simulated monthly customer \u00d7 business unit commercial context in the shape a Prism / BTX-data-lake extract will produce. Feeds Account Attractiveness scoring (BTX Commercial Adjacency, Addressable BTX Work), the CommercialAlertEngine (bookings-decline, customer-inactivity), and Account 360's revenue/bookings history. Includes long-form monthly rows plus pre-derived TTM aggregates per customer \u00d7 BU.",
+  "truth_rules": {
+    "shape_faithful": "Grain is customer \u00d7 BU \u00d7 month for revenue/bookings; TTM aggregates derived server-side. Real lake column names TBD from Alan; the domain-facing shape is CommercialContext + MonthlyCommercialHistory from domain/commercial.py.",
+    "scale_realism": "Lockheed anchored as largest (3x tier-1 baseline per your attestation). Tier 2 customers get ~25% of Lockheed. Tier 3 ~8%. Prospects have no monthly rows.",
+    "provenance": "Every record is synthetic and marked data_mode=SAMPLE, synthetic=true. No real BTX customer commercial data is asserted.",
+    "capacity_note": "No capacity data included; capacity is derived from production history per Alan and belongs in a separate derived table."
+  },
+  "monthly_rows": [
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 323850000,
+      "bookings_cents": 417766500,
+      "orders_count": 65,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 191250000,
+      "bookings_cents": 162562500,
+      "orders_count": 39,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 201449999,
+      "bookings_cents": 225623998,
+      "orders_count": 42,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 326399999,
+      "bookings_cents": 385151998,
+      "orders_count": 67,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 178500000,
+      "bookings_cents": 167790000,
+      "orders_count": 35,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 265200000,
+      "bookings_cents": 291720000,
+      "orders_count": 54,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-02-01",
+      "revenue_cents": 191250000,
+      "bookings_cents": 179775000,
+      "orders_count": 38,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-02-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2026-01-01",
+      "revenue_cents": 224399999,
+      "bookings_cents": 224399999,
+      "orders_count": 44,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2026-01-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2025-12-01",
+      "revenue_cents": 249900000,
+      "bookings_cents": 249900000,
+      "orders_count": 52,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2025-12-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2025-11-01",
+      "revenue_cents": 255000000,
+      "bookings_cents": 265200000,
+      "orders_count": 54,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2025-11-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2025-10-01",
+      "revenue_cents": 321300000,
+      "bookings_cents": 276318000,
+      "orders_count": 66,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2025-10-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "month": "2025-09-01",
+      "revenue_cents": 216750000,
+      "bookings_cents": 264435000,
+      "orders_count": 43,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-era-industries-2025-09-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 100980000,
+      "bookings_cents": 96940800,
+      "orders_count": 12,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 88740000,
+      "bookings_cents": 102050999,
+      "orders_count": 11,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 81600000,
+      "bookings_cents": 103632000,
+      "orders_count": 10,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 93840000,
+      "bookings_cents": 114484800,
+      "orders_count": 11,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 85680000,
+      "bookings_cents": 78825600,
+      "orders_count": 10,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 79559999,
+      "bookings_cents": 88311598,
+      "orders_count": 9,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-02-01",
+      "revenue_cents": 111179999,
+      "bookings_cents": 127856998,
+      "orders_count": 13,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-02-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-01-01",
+      "revenue_cents": 80579999,
+      "bookings_cents": 87832198,
+      "orders_count": 10,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lockheed-martin-chandler-industries-2026-01-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 64600000,
+      "bookings_cents": 69122000,
+      "orders_count": 12,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 79900000,
+      "bookings_cents": 77503000,
+      "orders_count": 15,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 78200000,
+      "bookings_cents": 100878000,
+      "orders_count": 18,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 94349999,
+      "bookings_cents": 113219998,
+      "orders_count": 19,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 88400000,
+      "bookings_cents": 99008000,
+      "orders_count": 18,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 75649999,
+      "bookings_cents": 74893499,
+      "orders_count": 17,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-02-01",
+      "revenue_cents": 62900000,
+      "bookings_cents": 59755000,
+      "orders_count": 14,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-02-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-01-01",
+      "revenue_cents": 92649999,
+      "bookings_cents": 84311499,
+      "orders_count": 20,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2026-01-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-12-01",
+      "revenue_cents": 99450000,
+      "bookings_cents": 123318000,
+      "orders_count": 20,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2025-12-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-11-01",
+      "revenue_cents": 80750000,
+      "bookings_cents": 101745000,
+      "orders_count": 17,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2025-11-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-10-01",
+      "revenue_cents": 69700000,
+      "bookings_cents": 60639000,
+      "orders_count": 14,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2025-10-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-09-01",
+      "revenue_cents": 81600000,
+      "bookings_cents": 78336000,
+      "orders_count": 16,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-chandler-industries-2025-09-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-08-01",
+      "revenue_cents": 31619999,
+      "bookings_cents": 32252398,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-07-01",
+      "revenue_cents": 31960000,
+      "bookings_cents": 39630400,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-06-01",
+      "revenue_cents": 34680000,
+      "bookings_cents": 44737200,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-05-01",
+      "revenue_cents": 34340000,
+      "bookings_cents": 31592799,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-04-01",
+      "revenue_cents": 41820000,
+      "bookings_cents": 53529600,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-03-01",
+      "revenue_cents": 37739999,
+      "bookings_cents": 35098199,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-02-01",
+      "revenue_cents": 32640000,
+      "bookings_cents": 38515200,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-02-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-01-01",
+      "revenue_cents": 28220000,
+      "bookings_cents": 26526800,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boeing-high-tech-solutions-2026-01-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 92649999,
+      "bookings_cents": 111179998,
+      "orders_count": 20,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 103700000,
+      "bookings_cents": 129625000,
+      "orders_count": 23,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 62900000,
+      "bookings_cents": 73593000,
+      "orders_count": 12,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 74799999,
+      "bookings_cents": 84523998,
+      "orders_count": 15,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 68850000,
+      "bookings_cents": 68161500,
+      "orders_count": 13,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 102000000,
+      "bookings_cents": 93840000,
+      "orders_count": 23,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-02-01",
+      "revenue_cents": 68000000,
+      "bookings_cents": 85680000,
+      "orders_count": 13,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-02-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-01-01",
+      "revenue_cents": 62050000,
+      "bookings_cents": 78183000,
+      "orders_count": 12,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2026-01-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-12-01",
+      "revenue_cents": 74799999,
+      "bookings_cents": 89011998,
+      "orders_count": 17,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2025-12-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-11-01",
+      "revenue_cents": 65450000,
+      "bookings_cents": 59559499,
+      "orders_count": 16,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2025-11-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-10-01",
+      "revenue_cents": 103700000,
+      "bookings_cents": 89182000,
+      "orders_count": 20,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2025-10-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "month": "2025-09-01",
+      "revenue_cents": 101150000,
+      "bookings_cents": 89012000,
+      "orders_count": 20,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-chandler-industries-2025-09-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 25500000,
+      "bookings_cents": 24990000,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 28900000,
+      "bookings_cents": 34680000,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 41140000,
+      "bookings_cents": 41551400,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 43860000,
+      "bookings_cents": 52632000,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 24820000,
+      "bookings_cents": 32017800,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 41480000,
+      "bookings_cents": 38991200,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-02-01",
+      "revenue_cents": 25840000,
+      "bookings_cents": 31783200,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-02-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "month": "2026-01-01",
+      "revenue_cents": 31619999,
+      "bookings_cents": 30355199,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-northrop-grumman-era-industries-2026-01-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 17160000,
+      "bookings_cents": 18189600,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rtx-collins-aerospace-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 15840000,
+      "bookings_cents": 14256000,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rtx-collins-aerospace-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 27500000,
+      "bookings_cents": 33550000,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rtx-collins-aerospace-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 18480000,
+      "bookings_cents": 21252000,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rtx-collins-aerospace-era-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 24419999,
+      "bookings_cents": 23931599,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rtx-collins-aerospace-era-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 23760000,
+      "bookings_cents": 26848799,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rtx-collins-aerospace-era-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 18700000,
+      "bookings_cents": 15895000,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-pratt-whitney-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 21560000,
+      "bookings_cents": 24793999,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-pratt-whitney-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 20240000,
+      "bookings_cents": 24692800,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-pratt-whitney-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 25520000,
+      "bookings_cents": 30368800,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-pratt-whitney-era-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 15620000,
+      "bookings_cents": 14526599,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-pratt-whitney-era-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 21780000,
+      "bookings_cents": 22215600,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-pratt-whitney-era-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 24859999,
+      "bookings_cents": 28091798,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-aerospace-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 15620000,
+      "bookings_cents": 14682800,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-aerospace-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 24200000,
+      "bookings_cents": 28071999,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-aerospace-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 25299999,
+      "bookings_cents": 32383998,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-aerospace-era-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 19799999,
+      "bookings_cents": 16829999,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-aerospace-era-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 20900000,
+      "bookings_cents": 20691000,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-aerospace-era-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-08-01",
+      "revenue_cents": 28159999,
+      "bookings_cents": 26470399,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spirit-aerosystems-high-tech-solutions-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-07-01",
+      "revenue_cents": 24419999,
+      "bookings_cents": 30036598,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spirit-aerosystems-high-tech-solutions-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-06-01",
+      "revenue_cents": 24859999,
+      "bookings_cents": 26848798,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spirit-aerosystems-high-tech-solutions-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-05-01",
+      "revenue_cents": 22880000,
+      "bookings_cents": 27456000,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spirit-aerosystems-high-tech-solutions-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-04-01",
+      "revenue_cents": 18700000,
+      "bookings_cents": 20756999,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spirit-aerosystems-high-tech-solutions-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-03-01",
+      "revenue_cents": 23320000,
+      "bookings_cents": 25185600,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spirit-aerosystems-high-tech-solutions-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "l3harris",
+      "business_unit_id": "addison-precision",
+      "month": "2026-08-01",
+      "revenue_cents": 7279999,
+      "bookings_cents": 6770399,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-l3harris-addison-precision-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "l3harris",
+      "business_unit_id": "addison-precision",
+      "month": "2026-07-01",
+      "revenue_cents": 6760000,
+      "bookings_cents": 6624800,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-l3harris-addison-precision-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "l3harris",
+      "business_unit_id": "addison-precision",
+      "month": "2026-06-01",
+      "revenue_cents": 6240000,
+      "bookings_cents": 7675200,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-l3harris-addison-precision-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "general-atomics",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 4550000,
+      "bookings_cents": 4914000,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-general-atomics-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "general-atomics",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 7995000,
+      "bookings_cents": 8634600,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-general-atomics-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "general-atomics",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 8190000,
+      "bookings_cents": 7125300,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-general-atomics-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-08-01",
+      "revenue_cents": 25960000,
+      "bookings_cents": 25181200,
+      "orders_count": 8,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spacex-i3d-mfg-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-07-01",
+      "revenue_cents": 25740000,
+      "bookings_cents": 22136400,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spacex-i3d-mfg-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-06-01",
+      "revenue_cents": 22880000,
+      "bookings_cents": 27913600,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spacex-i3d-mfg-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-05-01",
+      "revenue_cents": 18040000,
+      "bookings_cents": 15875200,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spacex-i3d-mfg-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-04-01",
+      "revenue_cents": 16500000,
+      "bookings_cents": 17490000,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spacex-i3d-mfg-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-03-01",
+      "revenue_cents": 27280000,
+      "bookings_cents": 32463200,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-spacex-i3d-mfg-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-08-01",
+      "revenue_cents": 23760000,
+      "bookings_cents": 23997600,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-blue-origin-i3d-mfg-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-07-01",
+      "revenue_cents": 24419999,
+      "bookings_cents": 26129398,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-blue-origin-i3d-mfg-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-06-01",
+      "revenue_cents": 24639999,
+      "bookings_cents": 22915199,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-blue-origin-i3d-mfg-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-05-01",
+      "revenue_cents": 17820000,
+      "bookings_cents": 19067400,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-blue-origin-i3d-mfg-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-04-01",
+      "revenue_cents": 22440000,
+      "bookings_cents": 27825600,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-blue-origin-i3d-mfg-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-03-01",
+      "revenue_cents": 17160000,
+      "bookings_cents": 19562400,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-blue-origin-i3d-mfg-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-08-01",
+      "revenue_cents": 7020000,
+      "bookings_cents": 8985600,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rocket-lab-usa-i3d-mfg-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-07-01",
+      "revenue_cents": 8385000,
+      "bookings_cents": 8888100,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rocket-lab-usa-i3d-mfg-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "business_unit_id": "i3d-mfg",
+      "month": "2026-06-01",
+      "revenue_cents": 5460000,
+      "bookings_cents": 6388200,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-rocket-lab-usa-i3d-mfg-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ula-united-launch-alliance",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 8190000,
+      "bookings_cents": 9991800,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ula-united-launch-alliance-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ula-united-launch-alliance",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 6370000,
+      "bookings_cents": 7771400,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ula-united-launch-alliance-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ula-united-launch-alliance",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 7279999,
+      "bookings_cents": 6624799,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ula-united-launch-alliance-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "sierra-space",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 5719999,
+      "bookings_cents": 6120398,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-sierra-space-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "sierra-space",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 5460000,
+      "bookings_cents": 6825000,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-sierra-space-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "sierra-space",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 8125000,
+      "bookings_cents": 7150000,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-sierra-space-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-08-01",
+      "revenue_cents": 28159999,
+      "bookings_cents": 36326398,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-applied-materials-a1j-technologies-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-07-01",
+      "revenue_cents": 20020000,
+      "bookings_cents": 23223200,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-applied-materials-a1j-technologies-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-06-01",
+      "revenue_cents": 22220000,
+      "bookings_cents": 22442200,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-applied-materials-a1j-technologies-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-05-01",
+      "revenue_cents": 21780000,
+      "bookings_cents": 27660600,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-applied-materials-a1j-technologies-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-04-01",
+      "revenue_cents": 16720000,
+      "bookings_cents": 21568800,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-applied-materials-a1j-technologies-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-03-01",
+      "revenue_cents": 27060000,
+      "bookings_cents": 24083400,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-applied-materials-a1j-technologies-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-08-01",
+      "revenue_cents": 17380000,
+      "bookings_cents": 15294400,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lam-research-a1j-technologies-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-07-01",
+      "revenue_cents": 27060000,
+      "bookings_cents": 30577799,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lam-research-a1j-technologies-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-06-01",
+      "revenue_cents": 25740000,
+      "bookings_cents": 28571399,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lam-research-a1j-technologies-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-05-01",
+      "revenue_cents": 28159999,
+      "bookings_cents": 28723198,
+      "orders_count": 8,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lam-research-a1j-technologies-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-04-01",
+      "revenue_cents": 17820000,
+      "bookings_cents": 17820000,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lam-research-a1j-technologies-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-03-01",
+      "revenue_cents": 18260000,
+      "bookings_cents": 21729400,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-lam-research-a1j-technologies-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "kla",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-08-01",
+      "revenue_cents": 8125000,
+      "bookings_cents": 9425000,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-kla-a1j-technologies-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "kla",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-07-01",
+      "revenue_cents": 5849999,
+      "bookings_cents": 7078498,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-kla-a1j-technologies-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "kla",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-06-01",
+      "revenue_cents": 5005000,
+      "bookings_cents": 4554550,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-kla-a1j-technologies-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "asml",
+      "business_unit_id": "addison-precision",
+      "month": "2026-08-01",
+      "revenue_cents": 7084999,
+      "bookings_cents": 8785398,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-asml-addison-precision-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "asml",
+      "business_unit_id": "addison-precision",
+      "month": "2026-07-01",
+      "revenue_cents": 7930000,
+      "bookings_cents": 8009300,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-asml-addison-precision-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "asml",
+      "business_unit_id": "addison-precision",
+      "month": "2026-06-01",
+      "revenue_cents": 7474999,
+      "bookings_cents": 7699248,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-asml-addison-precision-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 20240000,
+      "bookings_cents": 19430400,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-medtronic-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 27280000,
+      "bookings_cents": 31099199,
+      "orders_count": 8,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-medtronic-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 22220000,
+      "bookings_cents": 25775200,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-medtronic-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-05-01",
+      "revenue_cents": 16500000,
+      "bookings_cents": 19470000,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-medtronic-chandler-industries-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-04-01",
+      "revenue_cents": 27060000,
+      "bookings_cents": 26789400,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-medtronic-chandler-industries-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-03-01",
+      "revenue_cents": 20900000,
+      "bookings_cents": 19855000,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-medtronic-chandler-industries-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-08-01",
+      "revenue_cents": 25960000,
+      "bookings_cents": 32190400,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-zimmer-biomet-maitland-engineering-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-07-01",
+      "revenue_cents": 27280000,
+      "bookings_cents": 29189600,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-zimmer-biomet-maitland-engineering-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-06-01",
+      "revenue_cents": 20240000,
+      "bookings_cents": 25907200,
+      "orders_count": 7,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-zimmer-biomet-maitland-engineering-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-05-01",
+      "revenue_cents": 15840000,
+      "bookings_cents": 13464000,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-zimmer-biomet-maitland-engineering-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-04-01",
+      "revenue_cents": 15840000,
+      "bookings_cents": 19324800,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-zimmer-biomet-maitland-engineering-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-03-01",
+      "revenue_cents": 19579999,
+      "bookings_cents": 19384199,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-zimmer-biomet-maitland-engineering-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-08-01",
+      "revenue_cents": 26840000,
+      "bookings_cents": 28450400,
+      "orders_count": 8,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-stryker-maitland-engineering-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-07-01",
+      "revenue_cents": 20240000,
+      "bookings_cents": 23478400,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-stryker-maitland-engineering-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-06-01",
+      "revenue_cents": 25079999,
+      "bookings_cents": 31349998,
+      "orders_count": 6,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-stryker-maitland-engineering-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-05-01",
+      "revenue_cents": 16500000,
+      "bookings_cents": 16995000,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-stryker-maitland-engineering-2026-05-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-04-01",
+      "revenue_cents": 18920000,
+      "bookings_cents": 19487600,
+      "orders_count": 5,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-stryker-maitland-engineering-2026-04-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "month": "2026-03-01",
+      "revenue_cents": 20680000,
+      "bookings_cents": 23575199,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-stryker-maitland-engineering-2026-03-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 8255000,
+      "bookings_cents": 10236200,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boston-scientific-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 7474999,
+      "bookings_cents": 7325499,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boston-scientific-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 8190000,
+      "bookings_cents": 9172800,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-boston-scientific-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-08-01",
+      "revenue_cents": 7800000,
+      "bookings_cents": 8112000,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-intuitive-surgical-a1j-technologies-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-07-01",
+      "revenue_cents": 5395000,
+      "bookings_cents": 6581900,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-intuitive-surgical-a1j-technologies-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "business_unit_id": "a1j-technologies",
+      "month": "2026-06-01",
+      "revenue_cents": 8190000,
+      "bookings_cents": 8681400,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-intuitive-surgical-a1j-technologies-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 7930000,
+      "bookings_cents": 10150400,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-johnson-johnson-medtech-chandler-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 6045000,
+      "bookings_cents": 5742750,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-johnson-johnson-medtech-chandler-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "business_unit_id": "chandler-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 8125000,
+      "bookings_cents": 9668750,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-johnson-johnson-medtech-chandler-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "business_unit_id": "era-industries",
+      "month": "2026-08-01",
+      "revenue_cents": 5525000,
+      "bookings_cents": 4751500,
+      "orders_count": 3,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-vernova-era-industries-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "business_unit_id": "era-industries",
+      "month": "2026-07-01",
+      "revenue_cents": 8255000,
+      "bookings_cents": 9658350,
+      "orders_count": 2,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-vernova-era-industries-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "business_unit_id": "era-industries",
+      "month": "2026-06-01",
+      "revenue_cents": 5265000,
+      "bookings_cents": 5265000,
+      "orders_count": 4,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-ge-vernova-era-industries-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "textron",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-08-01",
+      "revenue_cents": 7539999,
+      "bookings_cents": 8143198,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-textron-high-tech-solutions-2026-08-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "textron",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-07-01",
+      "revenue_cents": 5460000,
+      "bookings_cents": 6006000,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-textron-high-tech-solutions-2026-07-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "textron",
+      "business_unit_id": "high-tech-solutions",
+      "month": "2026-06-01",
+      "revenue_cents": 5719999,
+      "bookings_cents": 5491199,
+      "orders_count": 1,
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample",
+        "source_record_id": "ctx-textron-high-tech-solutions-2026-06-01",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "ttm_aggregates_derived": [
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 2945249997,
+      "ttm_bookings_cents": 3110642995,
+      "orders_count_ttm": 599,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "defense",
+      "customer_segment": "STRATEGIC",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-lockheed-martin-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 722159997,
+      "ttm_bookings_cents": 799934993,
+      "orders_count_ttm": 86,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "defense",
+      "customer_segment": "STRATEGIC",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-lockheed-martin-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 968149997,
+      "ttm_bookings_cents": 1042728996,
+      "orders_count_ttm": 200,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "aerospace",
+      "customer_segment": "STRATEGIC",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-boeing-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "business_unit_id": "high-tech-solutions",
+      "ttm_revenue_cents": 273019998,
+      "ttm_bookings_cents": 301882596,
+      "orders_count_ttm": 30,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-02-09",
+      "end_market": "aerospace",
+      "customer_segment": "STRATEGIC",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-boeing-high-tech-solutions",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 980049997,
+      "ttm_bookings_cents": 1051551993,
+      "orders_count_ttm": 204,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-10-14",
+      "end_market": "defense",
+      "customer_segment": "STRATEGIC",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-northrop-grumman-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 263159999,
+      "ttm_bookings_cents": 287000799,
+      "orders_count_ttm": 30,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "defense",
+      "customer_segment": "STRATEGIC",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-northrop-grumman-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 127159999,
+      "ttm_bookings_cents": 138027998,
+      "orders_count_ttm": 30,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "aerospace",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-rtx-collins-aerospace-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 123420000,
+      "ttm_bookings_cents": 132492798,
+      "orders_count_ttm": 34,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-03-07",
+      "end_market": "aerospace",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-pratt-whitney-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 130679997,
+      "ttm_bookings_cents": 140751594,
+      "orders_count_ttm": 31,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "aerospace",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-ge-aerospace-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "business_unit_id": "high-tech-solutions",
+      "ttm_revenue_cents": 142339997,
+      "ttm_bookings_cents": 156754394,
+      "orders_count_ttm": 33,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "aerospace",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-spirit-aerosystems-high-tech-solutions",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "l3harris",
+      "business_unit_id": "addison-precision",
+      "ttm_revenue_cents": 20279999,
+      "ttm_bookings_cents": 21070399,
+      "orders_count_ttm": 9,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "defense",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-l3harris-addison-precision",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "general-atomics",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 20735000,
+      "ttm_bookings_cents": 20673900,
+      "orders_count_ttm": 9,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-02-04",
+      "end_market": "defense",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-general-atomics-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "business_unit_id": "i3d-mfg",
+      "ttm_revenue_cents": 136400000,
+      "ttm_bookings_cents": 141059600,
+      "orders_count_ttm": 30,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-08-23",
+      "end_market": "space",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-spacex-i3d-mfg",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "business_unit_id": "i3d-mfg",
+      "ttm_revenue_cents": 130239998,
+      "ttm_bookings_cents": 139497597,
+      "orders_count_ttm": 30,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-03-15",
+      "end_market": "space",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-blue-origin-i3d-mfg",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "business_unit_id": "i3d-mfg",
+      "ttm_revenue_cents": 20865000,
+      "ttm_bookings_cents": 24261900,
+      "orders_count_ttm": 9,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-03-08",
+      "end_market": "space",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-rocket-lab-usa-i3d-mfg",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ula-united-launch-alliance",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 21839999,
+      "ttm_bookings_cents": 24387999,
+      "orders_count_ttm": 8,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "space",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-ula-united-launch-alliance-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "sierra-space",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 19304999,
+      "ttm_bookings_cents": 20095398,
+      "orders_count_ttm": 8,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-09-19",
+      "end_market": "space",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-sierra-space-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "business_unit_id": "a1j-technologies",
+      "ttm_revenue_cents": 135959999,
+      "ttm_bookings_cents": 155304598,
+      "orders_count_ttm": 34,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "semiconductor",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-applied-materials-a1j-technologies",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "business_unit_id": "a1j-technologies",
+      "ttm_revenue_cents": 134419999,
+      "ttm_bookings_cents": 142716196,
+      "orders_count_ttm": 37,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-08-29",
+      "end_market": "semiconductor",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-lam-research-a1j-technologies",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "kla",
+      "business_unit_id": "a1j-technologies",
+      "ttm_revenue_cents": 18979999,
+      "ttm_bookings_cents": 21058048,
+      "orders_count_ttm": 7,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "semiconductor",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-kla-a1j-technologies",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "asml",
+      "business_unit_id": "addison-precision",
+      "ttm_revenue_cents": 22489998,
+      "ttm_bookings_cents": 24493946,
+      "orders_count_ttm": 11,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "semiconductor",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-asml-addison-precision",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 134200000,
+      "ttm_bookings_cents": 142419199,
+      "orders_count_ttm": 39,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2025-12-17",
+      "end_market": "medical",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-medtronic-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "business_unit_id": "maitland-engineering",
+      "ttm_revenue_cents": 124739999,
+      "ttm_bookings_cents": 139460199,
+      "orders_count_ttm": 33,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-06-27",
+      "end_market": "medical",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-zimmer-biomet-maitland-engineering",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "business_unit_id": "maitland-engineering",
+      "ttm_revenue_cents": 128259999,
+      "ttm_bookings_cents": 143336597,
+      "orders_count_ttm": 32,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-06-06",
+      "end_market": "medical",
+      "customer_segment": "GROWTH",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-stryker-maitland-engineering",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 23919999,
+      "ttm_bookings_cents": 26734499,
+      "orders_count_ttm": 8,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "medical",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-boston-scientific-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "business_unit_id": "a1j-technologies",
+      "ttm_revenue_cents": 21385000,
+      "ttm_bookings_cents": 23375300,
+      "orders_count_ttm": 10,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "medical",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-intuitive-surgical-a1j-technologies",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "business_unit_id": "chandler-industries",
+      "ttm_revenue_cents": 22100000,
+      "ttm_bookings_cents": 25561900,
+      "orders_count_ttm": 6,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": null,
+      "end_market": "medical",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-johnson-johnson-medtech-chandler-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "business_unit_id": "era-industries",
+      "ttm_revenue_cents": 19045000,
+      "ttm_bookings_cents": 19674850,
+      "orders_count_ttm": 9,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-01-29",
+      "end_market": "energy",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-ge-vernova-era-industries",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "research_account_id": "textron",
+      "business_unit_id": "high-tech-solutions",
+      "ttm_revenue_cents": 18719998,
+      "ttm_bookings_cents": 19640397,
+      "orders_count_ttm": 3,
+      "last_booking_date": "2026-08-01",
+      "last_order_date": "2026-08-13",
+      "end_market": "aerospace",
+      "customer_segment": "STANDARD",
+      "currency": "USD",
+      "provenance": {
+        "source_system": "prism-lake-sample-derived",
+        "source_record_id": "ttm-textron-high-tech-solutions",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "summary": {
+    "total_monthly_rows": 162,
+    "total_ttm_aggregates": 29,
+    "accounts_with_history": 26,
+    "tier_1_anchor_accounts": [
+      "lockheed-martin",
+      "boeing",
+      "northrop-grumman"
+    ]
+  }
+}

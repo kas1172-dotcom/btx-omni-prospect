@@ -11,7 +11,7 @@ NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 def test_final_manifest_contains_real_companies_and_named_poc_scenarios() -> None:
     sample = build_sample_environment()
-    assert len(sample.accounts) == 78
+    assert len(sample.accounts) == 34
     assert len(sample.scenario_accounts) == len(SCENARIOS)
     assert all(item.research_account_id and item.public_identity for item in sample.accounts)
     assert all(item.account_id in {account.id for account in sample.accounts} for item in sample.quotes)

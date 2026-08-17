@@ -1,22 +1,31 @@
 {
   "schema_version": "1.0",
-  "purpose": "Exact public legal-recipient names permitted for USAspending entity resolution. These mappings do not imply a BTX relationship.",
+  "purpose": "Exact public legal-recipient names permitted for USAspending entity resolution. These mappings do not imply a BTX relationship; they permit a Monitor USAspending observation about the named recipient to be tied to the canonical BTX account universe. Aligned to the new 34-account universe replacing the prior 11 mappings.",
   "rules": [
     "Names are matched after case, punctuation, and whitespace normalization only.",
     "No parent, subsidiary, DBA, UEI, CAGE, or recipient ID is added without direct public evidence.",
     "A mapping permits exact recipient resolution only; award evidence must separately meet the seller-visibility policy."
   ],
   "mappings": [
-    {"research_account_id": "anduril-industries", "recipient_legal_name": "Anduril Industries, Inc.", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.anduril.com/", "verified_at": "2026-08-17"},
-    {"research_account_id": "blue-origin", "recipient_legal_name": "Blue Origin Manufacturing, LLC", "source_type": "US_GOVERNMENT_NAME_CHANGE_NOTICE", "source_url": "https://www.pmddtc.state.gov/sys_attachment.do?sys_id=cb53442047d9ee507ddc0c03e16d4300", "verified_at": "2026-08-17"},
-    {"research_account_id": "boeing", "recipient_legal_name": "The Boeing Company", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/12927/000162828026004357/ba-20251231.htm", "verified_at": "2026-08-17"},
-    {"research_account_id": "ge-aerospace", "recipient_legal_name": "General Electric Company", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/40545/000004054526000032/ge-20260505.htm", "verified_at": "2026-08-17"},
-    {"research_account_id": "lockheed-martin", "recipient_legal_name": "Lockheed Martin Corporation", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/936468/000162828026004195/lmt-20251231.htm", "verified_at": "2026-08-17"},
-    {"research_account_id": "northrop-grumman", "recipient_legal_name": "Northrop Grumman Systems Corporation", "source_type": "SEC_SUBSIDIARY_EXHIBIT", "source_url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342119000007/noc-12312018xex21.htm", "verified_at": "2026-08-17"},
-    {"research_account_id": "rocket-lab-usa", "recipient_legal_name": "Rocket Lab USA, Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/1819994/000162828025008724/rklb-20241231.htm", "verified_at": "2026-08-17"},
     {"research_account_id": "intel", "recipient_legal_name": "Intel Corporation", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm", "verified_at": "2026-08-17"},
     {"research_account_id": "tsmc-arizona", "recipient_legal_name": "TSMC Arizona Corporation", "source_type": "SEC_SUBSIDIARY_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/1046179/000104617925000140/tsmcazagm20251219_6k.htm", "verified_at": "2026-08-17"},
-    {"research_account_id": "applied-materials", "recipient_legal_name": "Applied Materials, Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/6951/000162828025056742/amat-20251026.htm", "verified_at": "2026-08-17"},
-    {"research_account_id": "symbotic", "recipient_legal_name": "Symbotic Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm", "verified_at": "2026-08-17"}
+    {"research_account_id": "symbotic", "recipient_legal_name": "Symbotic Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm", "verified_at": "2026-08-17"},
+    {"research_account_id": "lockheed-martin", "recipient_legal_name": "Lockheed Martin Corporation", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000936468&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "boeing", "recipient_legal_name": "The Boeing Company", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000012927&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "northrop-grumman", "recipient_legal_name": "Northrop Grumman Systems Corporation", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001133421&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "rtx-collins-aerospace", "recipient_legal_name": "RTX Corporation", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000101829&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "rtx-collins-aerospace", "recipient_legal_name": "Raytheon Company", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000101829&type=10-K", "verified_at": "2026-08-17", "note": "Legacy recipient name retained for pre-2020 award history."},
+    {"research_account_id": "ge-aerospace", "recipient_legal_name": "General Electric Company", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000040545&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "spirit-aerosystems", "recipient_legal_name": "Spirit AeroSystems, Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001364885&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "l3harris", "recipient_legal_name": "L3Harris Technologies, Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000202058&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "general-atomics", "recipient_legal_name": "General Atomics", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.ga.com/", "verified_at": "2026-08-17"},
+    {"research_account_id": "spacex", "recipient_legal_name": "Space Exploration Technologies Corp.", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.spacex.com/", "verified_at": "2026-08-17"},
+    {"research_account_id": "blue-origin", "recipient_legal_name": "Blue Origin Manufacturing, LLC", "source_type": "US_GOVERNMENT_NAME_CHANGE_NOTICE", "source_url": "https://www.pmddtc.state.gov/sys_attachment.do?sys_id=cb53442047d9ee507ddc0c03e16d4300", "verified_at": "2026-08-17"},
+    {"research_account_id": "rocket-lab-usa", "recipient_legal_name": "Rocket Lab USA, Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001819994&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "ula-united-launch-alliance", "recipient_legal_name": "United Launch Alliance, LLC", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.ulalaunch.com/about", "verified_at": "2026-08-17"},
+    {"research_account_id": "sierra-space", "recipient_legal_name": "Sierra Space Corporation", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.sierraspace.com/about/", "verified_at": "2026-08-17"},
+    {"research_account_id": "anduril-industries", "recipient_legal_name": "Anduril Industries, Inc.", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.anduril.com/", "verified_at": "2026-08-17"},
+    {"research_account_id": "textron", "recipient_legal_name": "Textron Inc.", "source_type": "SEC_FILING", "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000217346&type=10-K", "verified_at": "2026-08-17"},
+    {"research_account_id": "terrapower", "recipient_legal_name": "TerraPower, LLC", "source_type": "OFFICIAL_COMPANY_SITE", "source_url": "https://www.terrapower.com/", "verified_at": "2026-08-17"}
   ]
 }

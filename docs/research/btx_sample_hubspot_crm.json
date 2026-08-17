@@ -1,0 +1,3599 @@
+{
+  "schema_version": "1.0",
+  "generated_date": "2026-08-17",
+  "purpose": "Simulated HubSpot CRM records in HubSpot v3 default-property shape. Populates companies (30), contacts (~60), deals (~40), activities (~50). Includes console-enriched custom-property examples (btx_ttm_revenue_cents_console_enriched, btx_last_order_date_console_enriched, btx_customer_segment_console_enriched, btx_program_id_console_enriched) that demonstrate the bidirectional write-back pattern from the audit.",
+  "truth_rules": {
+    "default_v3_properties_only": "Standard HubSpot v3 properties every portal has (hs_object_id, name, domain, industry, hubspot_owner_id, lifecyclestage, firstname, lastname, jobtitle, dealname, dealstage, amount, closedate, hs_activity_type). BTX-custom property fidelity is deferred until BTX HubSpot is authorized.",
+    "console_enriched_marker": "Custom properties prefixed btx_*_console_enriched carry the field-ownership marker per audit section 7d.",
+    "bidirectional_pattern": "This file is what the console reads (companies, contacts, deals, activities) plus what the console writes (btx_*_console_enriched properties on companies/deals).",
+    "no_real_contacts": "Contact firstname/lastname are randomized POC placeholders. No email or phone populated. No real HubSpot data. Consult batch 2 btx_researched_contacts.json for real public procurement contacts.",
+    "provenance": "Every record is synthetic and marked data_mode=SAMPLE, synthetic=true. No real BTX customer commercial data is asserted."
+  },
+  "companies": [
+    {
+      "hs_object_id": "hs-company-427868",
+      "research_account_id": "lockheed-martin",
+      "properties": {
+        "name": "Lockheed Martin",
+        "domain": "lockheedmartin.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$10B+",
+        "numberofemployees_display": "10000+",
+        "btx_ttm_revenue_cents_console_enriched": 2945249997,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STRATEGIC",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-427868",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-882965",
+      "research_account_id": "boeing",
+      "properties": {
+        "name": "Boeing",
+        "domain": "boeing.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$10B+",
+        "numberofemployees_display": "10000+",
+        "btx_ttm_revenue_cents_console_enriched": 968149997,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STRATEGIC",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-882965",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-892957",
+      "research_account_id": "northrop-grumman",
+      "properties": {
+        "name": "Northrop Grumman",
+        "domain": "northropgrumman.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$10B+",
+        "numberofemployees_display": "10000+",
+        "btx_ttm_revenue_cents_console_enriched": 980049997,
+        "btx_last_order_date_console_enriched": "2026-10-14",
+        "btx_customer_segment_console_enriched": "STRATEGIC",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-892957",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-554623",
+      "research_account_id": "rtx-collins-aerospace",
+      "properties": {
+        "name": "RTX / Collins Aerospace",
+        "domain": "rtx.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 127159999,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-554623",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-834612",
+      "research_account_id": "pratt-whitney",
+      "properties": {
+        "name": "Pratt & Whitney",
+        "domain": "prattwhitney.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 123420000,
+        "btx_last_order_date_console_enriched": "2026-03-07",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-834612",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-313093",
+      "research_account_id": "ge-aerospace",
+      "properties": {
+        "name": "GE Aerospace",
+        "domain": "geaerospace.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 130679997,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-313093",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-523426",
+      "research_account_id": "spirit-aerosystems",
+      "properties": {
+        "name": "Spirit AeroSystems",
+        "domain": "spiritaero.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 142339997,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-523426",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-392145",
+      "research_account_id": "l3harris",
+      "properties": {
+        "name": "L3Harris Technologies",
+        "domain": "l3harris.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 20279999,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-392145",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-744147",
+      "research_account_id": "general-atomics",
+      "properties": {
+        "name": "General Atomics",
+        "domain": "ga.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 20735000,
+        "btx_last_order_date_console_enriched": "2026-02-04",
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-744147",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-144588",
+      "research_account_id": "spacex",
+      "properties": {
+        "name": "SpaceX",
+        "domain": "spacex.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 136400000,
+        "btx_last_order_date_console_enriched": "2026-08-23",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-144588",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-886665",
+      "research_account_id": "blue-origin",
+      "properties": {
+        "name": "Blue Origin",
+        "domain": "blueorigin.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 130239998,
+        "btx_last_order_date_console_enriched": "2026-03-15",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-886665",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-763337",
+      "research_account_id": "rocket-lab-usa",
+      "properties": {
+        "name": "Rocket Lab USA",
+        "domain": "rocketlabusa.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 20865000,
+        "btx_last_order_date_console_enriched": "2026-03-08",
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-763337",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-609052",
+      "research_account_id": "ula-united-launch-alliance",
+      "properties": {
+        "name": "United Launch Alliance",
+        "domain": "ulalaunch.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 21839999,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-609052",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-111725",
+      "research_account_id": "sierra-space",
+      "properties": {
+        "name": "Sierra Space",
+        "domain": "sierraspace.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 19304999,
+        "btx_last_order_date_console_enriched": "2026-09-19",
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-111725",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-599256",
+      "research_account_id": "applied-materials",
+      "properties": {
+        "name": "Applied Materials",
+        "domain": "appliedmaterials.com",
+        "industry": "Semiconductors",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 135959999,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-599256",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-970968",
+      "research_account_id": "lam-research",
+      "properties": {
+        "name": "Lam Research",
+        "domain": "lamresearch.com",
+        "industry": "Semiconductors",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 134419999,
+        "btx_last_order_date_console_enriched": "2026-08-29",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-970968",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-861893",
+      "research_account_id": "kla",
+      "properties": {
+        "name": "KLA Corporation",
+        "domain": "kla.com",
+        "industry": "Semiconductors",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 18979999,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-861893",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-921859",
+      "research_account_id": "asml",
+      "properties": {
+        "name": "ASML",
+        "domain": "asml.com",
+        "industry": "Semiconductors",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 22489998,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-921859",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-510928",
+      "research_account_id": "medtronic",
+      "properties": {
+        "name": "Medtronic",
+        "domain": "medtronic.com",
+        "industry": "Medical Devices",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 134200000,
+        "btx_last_order_date_console_enriched": "2025-12-17",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-510928",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-670161",
+      "research_account_id": "zimmer-biomet",
+      "properties": {
+        "name": "Zimmer Biomet",
+        "domain": "zimmerbiomet.com",
+        "industry": "Medical Devices",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 124739999,
+        "btx_last_order_date_console_enriched": "2026-06-27",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-670161",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-492805",
+      "research_account_id": "stryker",
+      "properties": {
+        "name": "Stryker",
+        "domain": "stryker.com",
+        "industry": "Medical Devices",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "customer",
+        "annualrevenue_display": "$1B-$10B",
+        "numberofemployees_display": "5000-10000",
+        "btx_ttm_revenue_cents_console_enriched": 128259999,
+        "btx_last_order_date_console_enriched": "2026-06-06",
+        "btx_customer_segment_console_enriched": "GROWTH",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-492805",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-159744",
+      "research_account_id": "boston-scientific",
+      "properties": {
+        "name": "Boston Scientific",
+        "domain": "bostonscientific.com",
+        "industry": "Medical Devices",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 23919999,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-159744",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-220350",
+      "research_account_id": "intuitive-surgical",
+      "properties": {
+        "name": "Intuitive Surgical",
+        "domain": "intuitive.com",
+        "industry": "Medical Devices",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 21385000,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-220350",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-340675",
+      "research_account_id": "johnson-johnson-medtech",
+      "properties": {
+        "name": "Johnson & Johnson MedTech",
+        "domain": "jnj.com",
+        "industry": "Medical Devices",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 22100000,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-340675",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-363388",
+      "research_account_id": "ge-vernova",
+      "properties": {
+        "name": "GE Vernova",
+        "domain": "gevernova.com",
+        "industry": "Energy",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 19045000,
+        "btx_last_order_date_console_enriched": "2026-01-29",
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-363388",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-232435",
+      "research_account_id": "westinghouse",
+      "properties": {
+        "name": "Westinghouse Electric",
+        "domain": "westinghousenuclear.com",
+        "industry": "Energy",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "lifecyclestage": "lead",
+        "annualrevenue_display": "$10M-$100M",
+        "numberofemployees_display": "100-1000",
+        "btx_ttm_revenue_cents_console_enriched": 0,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "PROSPECT",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-232435",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-739773",
+      "research_account_id": "afit",
+      "properties": {
+        "name": "Air Force Institute of Technology",
+        "domain": "afit.edu",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "lead",
+        "annualrevenue_display": "$10M-$100M",
+        "numberofemployees_display": "100-1000",
+        "btx_ttm_revenue_cents_console_enriched": 0,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "PROSPECT",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-739773",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-947335",
+      "research_account_id": "anduril-industries",
+      "properties": {
+        "name": "Anduril Industries",
+        "domain": "anduril.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "lead",
+        "annualrevenue_display": "$10M-$100M",
+        "numberofemployees_display": "100-1000",
+        "btx_ttm_revenue_cents_console_enriched": 0,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "PROSPECT",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-947335",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-643647",
+      "research_account_id": "textron",
+      "properties": {
+        "name": "Textron",
+        "domain": "textron.com",
+        "industry": "Aerospace/Defense",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "lifecyclestage": "opportunity",
+        "annualrevenue_display": "$100M-$1B",
+        "numberofemployees_display": "1000-5000",
+        "btx_ttm_revenue_cents_console_enriched": 18719998,
+        "btx_last_order_date_console_enriched": "2026-08-13",
+        "btx_customer_segment_console_enriched": "STANDARD",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-643647",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-385655",
+      "research_account_id": "terrapower",
+      "properties": {
+        "name": "TerraPower",
+        "domain": "terrapower.com",
+        "industry": "Energy",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "lead",
+        "annualrevenue_display": "$10M-$100M",
+        "numberofemployees_display": "100-1000",
+        "btx_ttm_revenue_cents_console_enriched": 0,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "PROSPECT",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-385655",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-company-337535",
+      "research_account_id": "commonwealth-fusion",
+      "properties": {
+        "name": "Commonwealth Fusion Systems",
+        "domain": "cfs.energy",
+        "industry": "Energy",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "lifecyclestage": "lead",
+        "annualrevenue_display": "$10M-$100M",
+        "numberofemployees_display": "100-1000",
+        "btx_ttm_revenue_cents_console_enriched": 0,
+        "btx_last_order_date_console_enriched": null,
+        "btx_customer_segment_console_enriched": "PROSPECT",
+        "btx_console_last_updated_at": "2026-08-17"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-company-337535",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "contacts": [
+    {
+      "hs_object_id": "hs-contact-725258",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "firstname": "Chris",
+        "lastname": "Martinez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supplier Quality Engineer",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supplier_management"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-725258",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-390478",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "firstname": "Alex",
+        "lastname": "Martinez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-390478",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-837963",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "firstname": "Jamie",
+        "lastname": "Rodriguez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-837963",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-659284",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "firstname": "Alex",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supplier Quality Engineer",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "supplier_management"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-659284",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-882693",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-882693",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-814632",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "firstname": "Casey",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-814632",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-171749",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-171749",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-736537",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Kim",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-736537",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-113952",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-113952",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-798293",
+      "research_account_id": "rtx-collins-aerospace",
+      "associated_hs_company_id": "hs-company-554623",
+      "properties": {
+        "firstname": "Taylor",
+        "lastname": "Nguyen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-798293",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-830286",
+      "research_account_id": "rtx-collins-aerospace",
+      "associated_hs_company_id": "hs-company-554623",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-830286",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-847375",
+      "research_account_id": "pratt-whitney",
+      "associated_hs_company_id": "hs-company-834612",
+      "properties": {
+        "firstname": "Sam",
+        "lastname": "Patel",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supplier Quality Engineer",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "supplier_management"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-847375",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-765590",
+      "research_account_id": "pratt-whitney",
+      "associated_hs_company_id": "hs-company-834612",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-765590",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-749270",
+      "research_account_id": "ge-aerospace",
+      "associated_hs_company_id": "hs-company-313093",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Anderson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-749270",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-943888",
+      "research_account_id": "ge-aerospace",
+      "associated_hs_company_id": "hs-company-313093",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-943888",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-291447",
+      "research_account_id": "spirit-aerosystems",
+      "associated_hs_company_id": "hs-company-523426",
+      "properties": {
+        "firstname": "Jamie",
+        "lastname": "Kim",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-291447",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-440613",
+      "research_account_id": "spirit-aerosystems",
+      "associated_hs_company_id": "hs-company-523426",
+      "properties": {
+        "firstname": "Sam",
+        "lastname": "Brown",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-440613",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-683508",
+      "research_account_id": "l3harris",
+      "associated_hs_company_id": "hs-company-392145",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Kim",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-683508",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-903621",
+      "research_account_id": "general-atomics",
+      "associated_hs_company_id": "hs-company-744147",
+      "properties": {
+        "firstname": "Sam",
+        "lastname": "Chen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-903621",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-534298",
+      "research_account_id": "spacex",
+      "associated_hs_company_id": "hs-company-144588",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Chen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-534298",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-762398",
+      "research_account_id": "spacex",
+      "associated_hs_company_id": "hs-company-144588",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Chen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-762398",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-835876",
+      "research_account_id": "blue-origin",
+      "associated_hs_company_id": "hs-company-886665",
+      "properties": {
+        "firstname": "Alex",
+        "lastname": "Rodriguez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-835876",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-214146",
+      "research_account_id": "blue-origin",
+      "associated_hs_company_id": "hs-company-886665",
+      "properties": {
+        "firstname": "Chris",
+        "lastname": "Kim",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-214146",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-242341",
+      "research_account_id": "rocket-lab-usa",
+      "associated_hs_company_id": "hs-company-763337",
+      "properties": {
+        "firstname": "Jamie",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-242341",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-528242",
+      "research_account_id": "ula-united-launch-alliance",
+      "associated_hs_company_id": "hs-company-609052",
+      "properties": {
+        "firstname": "Robin",
+        "lastname": "Nguyen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-528242",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-136516",
+      "research_account_id": "sierra-space",
+      "associated_hs_company_id": "hs-company-111725",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-136516",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-792731",
+      "research_account_id": "applied-materials",
+      "associated_hs_company_id": "hs-company-599256",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Patel",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-792731",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-615668",
+      "research_account_id": "applied-materials",
+      "associated_hs_company_id": "hs-company-599256",
+      "properties": {
+        "firstname": "Taylor",
+        "lastname": "Patel",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-615668",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-432545",
+      "research_account_id": "lam-research",
+      "associated_hs_company_id": "hs-company-970968",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Rodriguez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supplier Quality Engineer",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supplier_management"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-432545",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-832521",
+      "research_account_id": "lam-research",
+      "associated_hs_company_id": "hs-company-970968",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Patel",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-832521",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-791079",
+      "research_account_id": "kla",
+      "associated_hs_company_id": "hs-company-861893",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Rodriguez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-791079",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-808998",
+      "research_account_id": "asml",
+      "associated_hs_company_id": "hs-company-921859",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Chen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-808998",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-238508",
+      "research_account_id": "medtronic",
+      "associated_hs_company_id": "hs-company-510928",
+      "properties": {
+        "firstname": "Taylor",
+        "lastname": "Rodriguez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-238508",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-452295",
+      "research_account_id": "medtronic",
+      "associated_hs_company_id": "hs-company-510928",
+      "properties": {
+        "firstname": "Taylor",
+        "lastname": "Johnson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-452295",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-937357",
+      "research_account_id": "zimmer-biomet",
+      "associated_hs_company_id": "hs-company-670161",
+      "properties": {
+        "firstname": "Taylor",
+        "lastname": "Martinez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-937357",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-413004",
+      "research_account_id": "zimmer-biomet",
+      "associated_hs_company_id": "hs-company-670161",
+      "properties": {
+        "firstname": "Morgan",
+        "lastname": "Nguyen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-413004",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-202526",
+      "research_account_id": "stryker",
+      "associated_hs_company_id": "hs-company-492805",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-202526",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-927645",
+      "research_account_id": "stryker",
+      "associated_hs_company_id": "hs-company-492805",
+      "properties": {
+        "firstname": "Sam",
+        "lastname": "Nguyen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-927645",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-145646",
+      "research_account_id": "boston-scientific",
+      "associated_hs_company_id": "hs-company-159744",
+      "properties": {
+        "firstname": "Robin",
+        "lastname": "Rodriguez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-145646",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-145939",
+      "research_account_id": "intuitive-surgical",
+      "associated_hs_company_id": "hs-company-220350",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Patel",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-145939",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-398261",
+      "research_account_id": "johnson-johnson-medtech",
+      "associated_hs_company_id": "hs-company-340675",
+      "properties": {
+        "firstname": "Riley",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supplier Quality Engineer",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_role_family_console_enriched": "supplier_management"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-398261",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-841422",
+      "research_account_id": "ge-vernova",
+      "associated_hs_company_id": "hs-company-363388",
+      "properties": {
+        "firstname": "Sam",
+        "lastname": "Wilson",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-841422",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-442287",
+      "research_account_id": "westinghouse",
+      "associated_hs_company_id": "hs-company-232435",
+      "properties": {
+        "firstname": "Robin",
+        "lastname": "Martinez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-442287",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-259811",
+      "research_account_id": "afit",
+      "associated_hs_company_id": "hs-company-739773",
+      "properties": {
+        "firstname": "Chris",
+        "lastname": "Patel",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Engineering Manager",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "engineering"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-259811",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-431721",
+      "research_account_id": "anduril-industries",
+      "associated_hs_company_id": "hs-company-947335",
+      "properties": {
+        "firstname": "Taylor",
+        "lastname": "Kim",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-431721",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-285987",
+      "research_account_id": "textron",
+      "associated_hs_company_id": "hs-company-643647",
+      "properties": {
+        "firstname": "Robin",
+        "lastname": "Chen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Supply Chain Director",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_role_family_console_enriched": "supply_chain"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-285987",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-252569",
+      "research_account_id": "terrapower",
+      "associated_hs_company_id": "hs-company-385655",
+      "properties": {
+        "firstname": "Chris",
+        "lastname": "Martinez",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Buyer",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-252569",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-contact-179947",
+      "research_account_id": "commonwealth-fusion",
+      "associated_hs_company_id": "hs-company-337535",
+      "properties": {
+        "firstname": "Jordan",
+        "lastname": "Chen",
+        "email": null,
+        "phone": null,
+        "jobtitle": "Procurement Manager",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_role_family_console_enriched": "procurement"
+      },
+      "note": "Simulated contact for POC; no personal info populated. Consult SIMULATED_POC_ATTESTATION for real customer contacts.",
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-contact-179947",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "deals": [
+    {
+      "hs_object_id": "hs-deal-920639",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "dealname": "lockheed-martin - jassm-lrasm - Q1 2026 opportunity",
+        "dealstage": "prospectqualified",
+        "pipeline": "default",
+        "amount": 135806.99,
+        "closedate": "2026-04-23",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.2,
+        "btx_program_id_console_enriched": "jassm-lrasm",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-920639",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-286951",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "dealname": "lockheed-martin - thaad - Q2 2026 opportunity",
+        "dealstage": "presentationscheduled",
+        "pipeline": "default",
+        "amount": 124342.48,
+        "closedate": "2026-05-10",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.4,
+        "btx_program_id_console_enriched": "thaad",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-286951",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-502239",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "dealname": "lockheed-martin - jassm-lrasm - Q3 2026 opportunity",
+        "dealstage": "prospectqualified",
+        "pipeline": "default",
+        "amount": 446742.13,
+        "closedate": "2026-04-05",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.2,
+        "btx_program_id_console_enriched": "jassm-lrasm",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-502239",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-939450",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "dealname": "boeing - kc-46a - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 136995.24,
+        "closedate": "2026-06-12",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "kc-46a",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-939450",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-928047",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "dealname": "boeing - 787-dreamliner - Q2 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 339259.85,
+        "closedate": "2026-07-21",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "787-dreamliner",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-928047",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-521729",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "dealname": "boeing - 787-dreamliner - Q3 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 298494.27,
+        "closedate": "2026-04-13",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "787-dreamliner",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-521729",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-250610",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "dealname": "northrop-grumman - artemis - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 462467.4,
+        "closedate": "2026-05-02",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "artemis",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-250610",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-732737",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "dealname": "northrop-grumman - b-21-raider - Q2 2026 opportunity",
+        "dealstage": "closedwon",
+        "pipeline": "default",
+        "amount": 339490.55,
+        "closedate": "2026-05-06",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 1.0,
+        "btx_program_id_console_enriched": "b-21-raider",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-732737",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-164158",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "dealname": "northrop-grumman - b-21-raider - Q3 2026 opportunity",
+        "dealstage": "closedwon",
+        "pipeline": "default",
+        "amount": 308875.98,
+        "closedate": "2026-08-27",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 1.0,
+        "btx_program_id_console_enriched": "b-21-raider",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-164158",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-983869",
+      "research_account_id": "rtx-collins-aerospace",
+      "associated_hs_company_id": "hs-company-554623",
+      "properties": {
+        "dealname": "rtx-collins-aerospace - patriot-air-defense - Q1 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 386300.22,
+        "closedate": "2026-06-22",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "patriot-air-defense",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-983869",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-653771",
+      "research_account_id": "rtx-collins-aerospace",
+      "associated_hs_company_id": "hs-company-554623",
+      "properties": {
+        "dealname": "rtx-collins-aerospace - lrso - Q2 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 342380.87,
+        "closedate": "2026-04-01",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "lrso",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-653771",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-820624",
+      "research_account_id": "pratt-whitney",
+      "associated_hs_company_id": "hs-company-834612",
+      "properties": {
+        "dealname": "pratt-whitney - 787-dreamliner - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 287081.22,
+        "closedate": "2026-07-22",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "787-dreamliner",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-820624",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-340012",
+      "research_account_id": "pratt-whitney",
+      "associated_hs_company_id": "hs-company-834612",
+      "properties": {
+        "dealname": "pratt-whitney - f-35-lightning-ii - Q2 2026 opportunity",
+        "dealstage": "prospectqualified",
+        "pipeline": "default",
+        "amount": 499379.35,
+        "closedate": "2026-04-17",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.2,
+        "btx_program_id_console_enriched": "f-35-lightning-ii",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-340012",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-891082",
+      "research_account_id": "ge-aerospace",
+      "associated_hs_company_id": "hs-company-313093",
+      "properties": {
+        "dealname": "ge-aerospace - 787-dreamliner - Q1 2026 opportunity",
+        "dealstage": "closedwon",
+        "pipeline": "default",
+        "amount": 117122.07,
+        "closedate": "2026-07-04",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 1.0,
+        "btx_program_id_console_enriched": "787-dreamliner",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-891082",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-992770",
+      "research_account_id": "ge-aerospace",
+      "associated_hs_company_id": "hs-company-313093",
+      "properties": {
+        "dealname": "ge-aerospace - 777x - Q2 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 417147.94,
+        "closedate": "2026-09-13",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "777x",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-992770",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-356121",
+      "research_account_id": "spirit-aerosystems",
+      "associated_hs_company_id": "hs-company-523426",
+      "properties": {
+        "dealname": "spirit-aerosystems - 787-dreamliner - Q1 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 341500.34,
+        "closedate": "2026-05-25",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "787-dreamliner",
+        "btx_business_unit_console_enriched": "high-tech-solutions"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-356121",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-537075",
+      "research_account_id": "spirit-aerosystems",
+      "associated_hs_company_id": "hs-company-523426",
+      "properties": {
+        "dealname": "spirit-aerosystems - 737-max - Q2 2026 opportunity",
+        "dealstage": "presentationscheduled",
+        "pipeline": "default",
+        "amount": 65477.28,
+        "closedate": "2026-05-15",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "hs_deal_stage_probability": 0.4,
+        "btx_program_id_console_enriched": "737-max",
+        "btx_business_unit_console_enriched": "high-tech-solutions"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-537075",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-674261",
+      "research_account_id": "l3harris",
+      "associated_hs_company_id": "hs-company-392145",
+      "properties": {
+        "dealname": "l3harris - general-account-work - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 376207.03,
+        "closedate": "2026-05-10",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "general-account-work",
+        "btx_business_unit_console_enriched": "addison-precision"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-674261",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-923933",
+      "research_account_id": "general-atomics",
+      "associated_hs_company_id": "hs-company-744147",
+      "properties": {
+        "dealname": "general-atomics - mq-9-reaper - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 320391.85,
+        "closedate": "2026-07-07",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "mq-9-reaper",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-923933",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-162405",
+      "research_account_id": "spacex",
+      "associated_hs_company_id": "hs-company-144588",
+      "properties": {
+        "dealname": "spacex - falcon-9-heavy - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 245073.56,
+        "closedate": "2026-05-13",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "falcon-9-heavy",
+        "btx_business_unit_console_enriched": "i3d-mfg"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-162405",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-948943",
+      "research_account_id": "spacex",
+      "associated_hs_company_id": "hs-company-144588",
+      "properties": {
+        "dealname": "spacex - falcon-9-heavy - Q2 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 289126.56,
+        "closedate": "2026-08-11",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "falcon-9-heavy",
+        "btx_business_unit_console_enriched": "i3d-mfg"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-948943",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-833656",
+      "research_account_id": "blue-origin",
+      "associated_hs_company_id": "hs-company-886665",
+      "properties": {
+        "dealname": "blue-origin - new-glenn - Q1 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 246480.19,
+        "closedate": "2026-05-19",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "new-glenn",
+        "btx_business_unit_console_enriched": "i3d-mfg"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-833656",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-287277",
+      "research_account_id": "blue-origin",
+      "associated_hs_company_id": "hs-company-886665",
+      "properties": {
+        "dealname": "blue-origin - artemis - Q2 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 353264.53,
+        "closedate": "2026-05-14",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "artemis",
+        "btx_business_unit_console_enriched": "i3d-mfg"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-287277",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-319227",
+      "research_account_id": "rocket-lab-usa",
+      "associated_hs_company_id": "hs-company-763337",
+      "properties": {
+        "dealname": "rocket-lab-usa - neutron - Q1 2026 opportunity",
+        "dealstage": "closedwon",
+        "pipeline": "default",
+        "amount": 269193.49,
+        "closedate": "2026-04-10",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "hs_deal_stage_probability": 1.0,
+        "btx_program_id_console_enriched": "neutron",
+        "btx_business_unit_console_enriched": "i3d-mfg"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-319227",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-576133",
+      "research_account_id": "ula-united-launch-alliance",
+      "associated_hs_company_id": "hs-company-609052",
+      "properties": {
+        "dealname": "ula-united-launch-alliance - vulcan-centaur - Q1 2026 opportunity",
+        "dealstage": "closedwon",
+        "pipeline": "default",
+        "amount": 287162.06,
+        "closedate": "2026-04-29",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "hs_deal_stage_probability": 1.0,
+        "btx_program_id_console_enriched": "vulcan-centaur",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-576133",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-168733",
+      "research_account_id": "sierra-space",
+      "associated_hs_company_id": "hs-company-111725",
+      "properties": {
+        "dealname": "sierra-space - dream-chaser - Q1 2026 opportunity",
+        "dealstage": "presentationscheduled",
+        "pipeline": "default",
+        "amount": 101477.09,
+        "closedate": "2026-07-11",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "hs_deal_stage_probability": 0.4,
+        "btx_program_id_console_enriched": "dream-chaser",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-168733",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-384289",
+      "research_account_id": "applied-materials",
+      "associated_hs_company_id": "hs-company-599256",
+      "properties": {
+        "dealname": "applied-materials - amat-sym3-etch - Q1 2026 opportunity",
+        "dealstage": "closedwon",
+        "pipeline": "default",
+        "amount": 236383.66,
+        "closedate": "2026-05-07",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 1.0,
+        "btx_program_id_console_enriched": "amat-sym3-etch",
+        "btx_business_unit_console_enriched": "a1j-technologies"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-384289",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-721452",
+      "research_account_id": "applied-materials",
+      "associated_hs_company_id": "hs-company-599256",
+      "properties": {
+        "dealname": "applied-materials - amat-sym3-etch - Q2 2026 opportunity",
+        "dealstage": "presentationscheduled",
+        "pipeline": "default",
+        "amount": 143878.03,
+        "closedate": "2026-04-15",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.4,
+        "btx_program_id_console_enriched": "amat-sym3-etch",
+        "btx_business_unit_console_enriched": "a1j-technologies"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-721452",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-715088",
+      "research_account_id": "lam-research",
+      "associated_hs_company_id": "hs-company-970968",
+      "properties": {
+        "dealname": "lam-research - lam-kiyo-etch - Q1 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 131902.48,
+        "closedate": "2026-06-25",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "lam-kiyo-etch",
+        "btx_business_unit_console_enriched": "a1j-technologies"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-715088",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-168558",
+      "research_account_id": "lam-research",
+      "associated_hs_company_id": "hs-company-970968",
+      "properties": {
+        "dealname": "lam-research - lam-kiyo-etch - Q2 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 199204.31,
+        "closedate": "2026-09-09",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "lam-kiyo-etch",
+        "btx_business_unit_console_enriched": "a1j-technologies"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-168558",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-286813",
+      "research_account_id": "kla",
+      "associated_hs_company_id": "hs-company-861893",
+      "properties": {
+        "dealname": "kla - general-account-work - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 499237.82,
+        "closedate": "2026-04-12",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "general-account-work",
+        "btx_business_unit_console_enriched": "a1j-technologies"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-286813",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-286961",
+      "research_account_id": "asml",
+      "associated_hs_company_id": "hs-company-921859",
+      "properties": {
+        "dealname": "asml - asml-nxe-3800 - Q1 2026 opportunity",
+        "dealstage": "presentationscheduled",
+        "pipeline": "default",
+        "amount": 53104.34,
+        "closedate": "2026-05-10",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "hs_deal_stage_probability": 0.4,
+        "btx_program_id_console_enriched": "asml-nxe-3800",
+        "btx_business_unit_console_enriched": "addison-precision"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-286961",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-356419",
+      "research_account_id": "medtronic",
+      "associated_hs_company_id": "hs-company-510928",
+      "properties": {
+        "dealname": "medtronic - medtronic-hugo - Q1 2026 opportunity",
+        "dealstage": "prospectqualified",
+        "pipeline": "default",
+        "amount": 493397.97,
+        "closedate": "2026-08-01",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.2,
+        "btx_program_id_console_enriched": "medtronic-hugo",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-356419",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-617176",
+      "research_account_id": "medtronic",
+      "associated_hs_company_id": "hs-company-510928",
+      "properties": {
+        "dealname": "medtronic - medtronic-hugo - Q2 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 206808.13,
+        "closedate": "2026-06-19",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "medtronic-hugo",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-617176",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-692196",
+      "research_account_id": "zimmer-biomet",
+      "associated_hs_company_id": "hs-company-670161",
+      "properties": {
+        "dealname": "zimmer-biomet - zimmer-rosa - Q1 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 89722.46,
+        "closedate": "2026-06-17",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "zimmer-rosa",
+        "btx_business_unit_console_enriched": "maitland-engineering"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-692196",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-153189",
+      "research_account_id": "zimmer-biomet",
+      "associated_hs_company_id": "hs-company-670161",
+      "properties": {
+        "dealname": "zimmer-biomet - zimmer-rosa - Q2 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 310289.13,
+        "closedate": "2026-07-20",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "zimmer-rosa",
+        "btx_business_unit_console_enriched": "maitland-engineering"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-153189",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-510041",
+      "research_account_id": "stryker",
+      "associated_hs_company_id": "hs-company-492805",
+      "properties": {
+        "dealname": "stryker - stryker-mako - Q1 2026 opportunity",
+        "dealstage": "contractsent",
+        "pipeline": "default",
+        "amount": 69237.87,
+        "closedate": "2026-04-06",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "hs_deal_stage_probability": 0.8,
+        "btx_program_id_console_enriched": "stryker-mako",
+        "btx_business_unit_console_enriched": "maitland-engineering"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-510041",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-944125",
+      "research_account_id": "stryker",
+      "associated_hs_company_id": "hs-company-492805",
+      "properties": {
+        "dealname": "stryker - stryker-mako - Q2 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 227928.32,
+        "closedate": "2026-09-05",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "stryker-mako",
+        "btx_business_unit_console_enriched": "maitland-engineering"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-944125",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-332057",
+      "research_account_id": "boston-scientific",
+      "associated_hs_company_id": "hs-company-159744",
+      "properties": {
+        "dealname": "boston-scientific - general-account-work - Q1 2026 opportunity",
+        "dealstage": "presentationscheduled",
+        "pipeline": "default",
+        "amount": 312491.03,
+        "closedate": "2026-06-07",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "hs_deal_stage_probability": 0.4,
+        "btx_program_id_console_enriched": "general-account-work",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-332057",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-175986",
+      "research_account_id": "intuitive-surgical",
+      "associated_hs_company_id": "hs-company-220350",
+      "properties": {
+        "dealname": "intuitive-surgical - davinci-sp - Q1 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 368283.7,
+        "closedate": "2026-06-04",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "davinci-sp",
+        "btx_business_unit_console_enriched": "a1j-technologies"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-175986",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-211248",
+      "research_account_id": "johnson-johnson-medtech",
+      "associated_hs_company_id": "hs-company-340675",
+      "properties": {
+        "dealname": "johnson-johnson-medtech - general-account-work - Q1 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 159550.14,
+        "closedate": "2026-05-12",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "general-account-work",
+        "btx_business_unit_console_enriched": "chandler-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-211248",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-421219",
+      "research_account_id": "ge-vernova",
+      "associated_hs_company_id": "hs-company-363388",
+      "properties": {
+        "dealname": "ge-vernova - gev-9ha-turbine - Q1 2026 opportunity",
+        "dealstage": "closedlost",
+        "pipeline": "default",
+        "amount": 172012.14,
+        "closedate": "2026-04-16",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "hs_deal_stage_probability": 0.0,
+        "btx_program_id_console_enriched": "gev-9ha-turbine",
+        "btx_business_unit_console_enriched": "era-industries"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-421219",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-deal-571393",
+      "research_account_id": "textron",
+      "associated_hs_company_id": "hs-company-643647",
+      "properties": {
+        "dealname": "textron - general-account-work - Q1 2026 opportunity",
+        "dealstage": "decisionmakerboughtin",
+        "pipeline": "default",
+        "amount": 414846.12,
+        "closedate": "2026-08-30",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "hs_deal_stage_probability": 0.6,
+        "btx_program_id_console_enriched": "general-account-work",
+        "btx_business_unit_console_enriched": "high-tech-solutions"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-deal-571393",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "activities": [
+    {
+      "hs_object_id": "hs-activity-938135",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-06-29T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-938135",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-147189",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-07-11T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-147189",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-387343",
+      "research_account_id": "lockheed-martin",
+      "associated_hs_company_id": "hs-company-427868",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-07-14T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-387343",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-847379",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-08-11T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-847379",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-281075",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-07-23T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-281075",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-794254",
+      "research_account_id": "boeing",
+      "associated_hs_company_id": "hs-company-882965",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-08-05T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-794254",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-468383",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-07-04T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-468383",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-633415",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-06-13T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-633415",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-925961",
+      "research_account_id": "northrop-grumman",
+      "associated_hs_company_id": "hs-company-892957",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-06-17T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-925961",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-639060",
+      "research_account_id": "rtx-collins-aerospace",
+      "associated_hs_company_id": "hs-company-554623",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-05-23T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-639060",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-153654",
+      "research_account_id": "rtx-collins-aerospace",
+      "associated_hs_company_id": "hs-company-554623",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-06-27T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-153654",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-309432",
+      "research_account_id": "pratt-whitney",
+      "associated_hs_company_id": "hs-company-834612",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-08-08T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-309432",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-940289",
+      "research_account_id": "pratt-whitney",
+      "associated_hs_company_id": "hs-company-834612",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-07-15T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-940289",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-911069",
+      "research_account_id": "ge-aerospace",
+      "associated_hs_company_id": "hs-company-313093",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-05-29T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-911069",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-361360",
+      "research_account_id": "ge-aerospace",
+      "associated_hs_company_id": "hs-company-313093",
+      "properties": {
+        "hs_activity_type": "CALL",
+        "hs_engagement_timestamp": "2026-06-29T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated call activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-361360",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-841228",
+      "research_account_id": "spirit-aerosystems",
+      "associated_hs_company_id": "hs-company-523426",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-07-01T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-841228",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-241100",
+      "research_account_id": "spirit-aerosystems",
+      "associated_hs_company_id": "hs-company-523426",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-07-09T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-241100",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-917682",
+      "research_account_id": "l3harris",
+      "associated_hs_company_id": "hs-company-392145",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-07-25T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-917682",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-970590",
+      "research_account_id": "general-atomics",
+      "associated_hs_company_id": "hs-company-744147",
+      "properties": {
+        "hs_activity_type": "CALL",
+        "hs_engagement_timestamp": "2026-05-21T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated call activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-970590",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-442883",
+      "research_account_id": "spacex",
+      "associated_hs_company_id": "hs-company-144588",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-05-31T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-442883",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-868025",
+      "research_account_id": "spacex",
+      "associated_hs_company_id": "hs-company-144588",
+      "properties": {
+        "hs_activity_type": "CALL",
+        "hs_engagement_timestamp": "2026-07-23T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated call activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-868025",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-304359",
+      "research_account_id": "blue-origin",
+      "associated_hs_company_id": "hs-company-886665",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-06-09T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-304359",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-360738",
+      "research_account_id": "blue-origin",
+      "associated_hs_company_id": "hs-company-886665",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-06-17T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-360738",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-491528",
+      "research_account_id": "rocket-lab-usa",
+      "associated_hs_company_id": "hs-company-763337",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-05-25T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-491528",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-474737",
+      "research_account_id": "ula-united-launch-alliance",
+      "associated_hs_company_id": "hs-company-609052",
+      "properties": {
+        "hs_activity_type": "CALL",
+        "hs_engagement_timestamp": "2026-07-17T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_activity_summary_console_enriched": "Simulated call activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-474737",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-287535",
+      "research_account_id": "sierra-space",
+      "associated_hs_company_id": "hs-company-111725",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-06-07T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-287535",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-875792",
+      "research_account_id": "applied-materials",
+      "associated_hs_company_id": "hs-company-599256",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-07-02T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-875792",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-792462",
+      "research_account_id": "applied-materials",
+      "associated_hs_company_id": "hs-company-599256",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-08-13T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-792462",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-608725",
+      "research_account_id": "lam-research",
+      "associated_hs_company_id": "hs-company-970968",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-06-03T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-608725",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-420027",
+      "research_account_id": "lam-research",
+      "associated_hs_company_id": "hs-company-970968",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-07-13T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-420027",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-687426",
+      "research_account_id": "kla",
+      "associated_hs_company_id": "hs-company-861893",
+      "properties": {
+        "hs_activity_type": "EMAIL",
+        "hs_engagement_timestamp": "2026-07-26T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated email activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-687426",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-963022",
+      "research_account_id": "asml",
+      "associated_hs_company_id": "hs-company-921859",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-06-07T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1005-morgan",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-963022",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-822962",
+      "research_account_id": "medtronic",
+      "associated_hs_company_id": "hs-company-510928",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-06-09T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-822962",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-288846",
+      "research_account_id": "medtronic",
+      "associated_hs_company_id": "hs-company-510928",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-08-13T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-288846",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-201111",
+      "research_account_id": "zimmer-biomet",
+      "associated_hs_company_id": "hs-company-670161",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-06-10T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-201111",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-546091",
+      "research_account_id": "zimmer-biomet",
+      "associated_hs_company_id": "hs-company-670161",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-07-10T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-546091",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-935405",
+      "research_account_id": "stryker",
+      "associated_hs_company_id": "hs-company-492805",
+      "properties": {
+        "hs_activity_type": "CALL",
+        "hs_engagement_timestamp": "2026-07-04T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_activity_summary_console_enriched": "Simulated call activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-935405",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-136852",
+      "research_account_id": "stryker",
+      "associated_hs_company_id": "hs-company-492805",
+      "properties": {
+        "hs_activity_type": "CALL",
+        "hs_engagement_timestamp": "2026-05-19T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1002-sam",
+        "btx_activity_summary_console_enriched": "Simulated call activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-136852",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-515454",
+      "research_account_id": "boston-scientific",
+      "associated_hs_company_id": "hs-company-159744",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-07-24T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-515454",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-839104",
+      "research_account_id": "intuitive-surgical",
+      "associated_hs_company_id": "hs-company-220350",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-06-02T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1001-jamie",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-839104",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-597699",
+      "research_account_id": "johnson-johnson-medtech",
+      "associated_hs_company_id": "hs-company-340675",
+      "properties": {
+        "hs_activity_type": "NOTE",
+        "hs_engagement_timestamp": "2026-06-05T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_activity_summary_console_enriched": "Simulated note activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-597699",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-416912",
+      "research_account_id": "ge-vernova",
+      "associated_hs_company_id": "hs-company-363388",
+      "properties": {
+        "hs_activity_type": "MEETING",
+        "hs_engagement_timestamp": "2026-06-10T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1004-alex",
+        "btx_activity_summary_console_enriched": "Simulated meeting activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-416912",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    },
+    {
+      "hs_object_id": "hs-activity-662825",
+      "research_account_id": "textron",
+      "associated_hs_company_id": "hs-company-643647",
+      "properties": {
+        "hs_activity_type": "TASK",
+        "hs_engagement_timestamp": "2026-07-06T14:00:00Z",
+        "hubspot_owner_id": "hubspot-owner-1003-priya",
+        "btx_activity_summary_console_enriched": "Simulated task activity for POC"
+      },
+      "provenance": {
+        "source_system": "hubspot-sample",
+        "source_record_id": "hs-activity-662825",
+        "data_mode": "SAMPLE",
+        "synthetic": true,
+        "evidence_state": "CONFIRMED"
+      }
+    }
+  ],
+  "summary": {
+    "companies": 31,
+    "contacts": 48,
+    "deals": 43,
+    "activities": 43,
+    "console_enriched_properties_demonstrated": [
+      "btx_ttm_revenue_cents_console_enriched",
+      "btx_last_order_date_console_enriched",
+      "btx_customer_segment_console_enriched",
+      "btx_program_id_console_enriched",
+      "btx_business_unit_console_enriched",
+      "btx_role_family_console_enriched",
+      "btx_activity_summary_console_enriched",
+      "btx_console_last_updated_at"
+    ]
+  }
+}

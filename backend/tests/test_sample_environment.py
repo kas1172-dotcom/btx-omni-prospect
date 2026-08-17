@@ -8,7 +8,7 @@ from btx_omni.providers.sample.environment import (
 
 def test_environment_contains_only_researched_public_companies() -> None:
     environment = build_sample_environment()
-    assert len(environment.accounts) == len(environment.researched_accounts) == 78
+    assert len(environment.accounts) == len(environment.researched_accounts) == 34
     assert set(environment.research_mappings) == {account.id for account in environment.accounts}
     assert all(account.research_account_id == account.id for account in environment.accounts)
     assert all(account.public_identity and account.public_research_state == "RESEARCHED_PUBLIC" for account in environment.accounts)
@@ -34,6 +34,6 @@ def test_seller_scenarios_use_real_companies_and_public_geography() -> None:
     accounts = {account.id: account for account in environment.accounts}
     assert len(environment.scenario_accounts) == len(SCENARIOS)
     assert set(environment.scenario_accounts["southwest-trip"]) <= set(accounts)
-    assert accounts[environment.scenario_accounts["medical-whitespace"][0]].industries[0] == "Medical Device"
+    assert accounts[environment.scenario_accounts["medical-whitespace"][0]].industries[0] == "Medical"
     assert environment.scenario_accounts["defense-award-quote"] == ("lockheed-martin",)
     assert all(facility.verification_state.startswith("VERIFIED_PUBLIC") for facility in environment.public_facilities)

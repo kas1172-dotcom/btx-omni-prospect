@@ -19,7 +19,7 @@ def test_sample_scenarios_fire_deterministic_commercial_alerts_with_evidence() -
 
 def test_no_alert_when_threshold_is_not_met() -> None:
     sample = build_sample_environment()
-    context = next(item for item in sample.commercial_contexts if item.account_id == sample.accounts[0].id)
+    context = next(item for item in sample.commercial_contexts if item.account_id == "lockheed-martin" and item.business_unit == "Southwest")
     alerts = CommercialAlertEngine().evaluate((context,), (), observed_at=NOW)
     assert alerts == ()
 
