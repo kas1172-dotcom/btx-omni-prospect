@@ -52,7 +52,8 @@ class OmniOrchestrator:
         """Bounded deterministic retrieval fallback; it never presents itself as model output."""
         query = question.casefold().strip()
         accounts = list(environment.accounts)
-        session_account_id = (context or {}).get("session_account_id")
+        product_context = context or {}
+        session_account_id = product_context.get("session_account_id")
         account = next((item for item in accounts if item.id == (account_id or session_account_id)), None)
         if account is None:
             account = next((item for item in accounts if item.research_account_id and item.legal_name.casefold() in query), None)
@@ -76,8 +77,8 @@ class OmniOrchestrator:
         if account_alerts:
             lines.append("Alerts: " + ", ".join(item.type.value for item in account_alerts) + ".")
             citations.extend(value for alert in account_alerts for value in alert.evidence_ids)
-        context = [item for item in environment.commercial_contexts if item.account_id == account_id]
-        if not context:
+        commercial_contexts = [item for item in environment.commercial_contexts if item.account_id == account_id]
+        if not commercial_contexts:
             missing.append("PRISM commercial context unavailable.")
         if ("score" in question.casefold() or "attractive" in question.casefold()) and account.id in environment.scoring_inputs:
             score = calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), evidence_ids=tuple(citations), calculated_at=observed_at)
@@ -112,8 +113,8 @@ class OmniOrchestrator:
             lines.append(f"Comparable researched {primary_market_label(account.industries)} targets: {', '.join(peers) or 'none loaded'}.")
         lines.append("This is a deterministic fallback, not model-generated advice. Omni is read-only and cannot perform CRM writes.")
         context_used = {"account_id": account.id}
-        if (context or {}).get("surface"):
-            context_used["surface"] = (context or {})["surface"]
+        if product_context.get("surface"):
+            context_used["surface"] = str(product_context["surface"])
         return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name, context_used=context_used)
 
     @staticmethod

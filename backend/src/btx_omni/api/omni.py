@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
 from enum import StrEnum
+
+from fastapi import APIRouter, Depends
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
