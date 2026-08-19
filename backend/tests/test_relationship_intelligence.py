@@ -48,6 +48,13 @@ def test_warm_path_requires_an_explicit_evidenced_edge() -> None:
     assert any(path["target_entity"].kind in {"contact", "business_unit"} and path["presentation_state"] == "validated" for path in result["paths"])
 
 
+def test_source_less_explicit_edges_need_validation_even_if_the_legacy_state_is_confirmed() -> None:
+    result = RelationshipIntelligenceService(build_sample_environment()).account_relationships("spirit-aerosystems", depth=1)
+    geographic = next(path for path in result["direct_relationships"] if path["hops"][0].relationship_type == "GEOGRAPHIC_CLUSTER_REVERSE")
+    assert geographic["overall_evidence_state"] is EvidenceState.CONFIRMED
+    assert geographic["presentation_state"] == "needs_validation"
+
+
 def test_evidence_presentation_mapping_is_deterministic() -> None:
     assert presentation_state(EvidenceState.CONFIRMED) == "validated"
     assert presentation_state(EvidenceState.INFERRED) == "needs_validation"

@@ -38,6 +38,15 @@ def presentation_state(evidence: EvidenceState) -> str:
     }[evidence]
 
 
+def _path_presentation_state(hops: tuple[RelationshipHop, ...], evidence: EvidenceState) -> str:
+    # A legacy edge can carry a governed record provenance without an attached
+    # catalog source ID. Preserve the fact, but do not render it as a validated
+    # seller path until research supplies the missing source reference.
+    if evidence is EvidenceState.CONFIRMED and any(not hop.derived and not hop.source_ids for hop in hops):
+        return "needs_validation"
+    return presentation_state(evidence)
+
+
 def _combined_evidence(states: tuple[EvidenceState, ...]) -> EvidenceState:
     order = {EvidenceState.CONFIRMED: 3, EvidenceState.INFERRED: 2, EvidenceState.MISSING: 1, EvidenceState.CONFLICTING: 0}
     return min(states, key=lambda state: order[state])
@@ -133,7 +142,7 @@ class RelationshipIntelligenceService:
                 path_id = "|".join(f"{item.from_entity.kind}:{item.from_entity.id}:{item.relationship_type}:{item.to_entity.kind}:{item.to_entity.id}" for item in next_hops)
                 if path_id not in path_ids:
                     path_ids.add(path_id)
-                    paths.append({"path_id": path_id, "source_entity": source, "target_entity": hop.to_entity, "hops": next_hops, "overall_evidence_state": evidence, "presentation_state": presentation_state(evidence), "narrative": next((item.narrative for item in reversed(next_hops) if item.narrative), None)})
+                    paths.append({"path_id": path_id, "source_entity": source, "target_entity": hop.to_entity, "hops": next_hops, "overall_evidence_state": evidence, "presentation_state": _path_presentation_state(next_hops, evidence), "narrative": next((item.narrative for item in reversed(next_hops) if item.narrative), None)})
                 if not already_seen:
                     visited.add(hop.to_entity); queue.append((hop.to_entity, next_hops))
         paths.sort(key=lambda item: (len(item["hops"]), item["target_entity"].kind, item["target_entity"].id, item["path_id"]))
