@@ -94,6 +94,17 @@ test('Intelligence distinguishes browser validation from publisher-blocked sourc
   assert.match(intelligence, /timeZone: 'UTC'/)
 })
 
+test('Intelligence sends canonical selected event context to the shared Omni request and clears it on navigation', () => {
+  const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
+  assert.match(intelligence, /onEventSelect/)
+  assert.match(intelligence, /selectEvent\(signal\.id\)/)
+  assert.match(intelligence, /aria-pressed=\{selectedEventId === signal\.id\}/)
+  assert.match(app, /selectedEventId/)
+  assert.match(app, /selected_event_id: surface === 'intelligence' \? selectedEventId : undefined/)
+  assert.match(app, /clearSelectedEvent\(\); setSurface\(id\)/)
+  assert.match(drawer, /\{ \.\.\.context, session_account_id/)
+})
+
 test('curated public evidence is never labeled as synthetic demo', () => {
   assert.match(today, /CURATED PUBLIC/)
   assert.match(map, /PUBLIC/)

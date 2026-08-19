@@ -13,7 +13,7 @@ const starters = [
   'What public evidence supports this action?',
 ]
 
-export function OmniDrawer({ accountId, accountName, surface }: { accountId?: string; accountName?: string; surface: OmniContext['surface'] }) {
+export function OmniDrawer({ accountId, accountName, context }: { accountId?: string; accountName?: string; context: OmniContext }) {
   const [open, setOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -43,7 +43,7 @@ export function OmniDrawer({ accountId, accountName, surface }: { accountId?: st
     setLoading(true)
     setError('')
     try {
-      const response = await api.omni(activeAccount?.id, text, { surface, selected_account_id: accountId, session_account_id: sessionAccount?.id, prior_turns: history })
+      const response = await api.omni(activeAccount?.id, text, { ...context, session_account_id: sessionAccount?.id, prior_turns: history })
       if (response.account_id && response.account_name) setSessionAccount({ id: response.account_id, name: response.account_name })
       setMessages(old => [...old, { role: 'assistant', text: response.content, response }])
     } catch (err) {
@@ -59,7 +59,7 @@ export function OmniDrawer({ accountId, accountName, surface }: { accountId?: st
     <button className="omni-launch" ref={opener} onClick={() => setOpen(true)} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
     {open && <div className="drawer-backdrop" onClick={close}>
       <aside className="omni-drawer" role="dialog" aria-modal="true" aria-labelledby="omni-title" onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') close() }}>
-        <header><div><span className="eyebrow">Read-only deterministic POC assistant · {surface}</span><h2 id="omni-title">Omni</h2></div><button onClick={close} aria-label="Close Omni">×</button></header>
+        <header><div><span className="eyebrow">Read-only deterministic POC assistant · {context.surface}</span><h2 id="omni-title">Omni</h2></div><button onClick={close} aria-label="Close Omni">×</button></header>
         <div className="context-ribbon"><span>Context</span><strong>{activeAccount?.name ?? 'No account selected'}</strong>{activeAccount ? <button onClick={clearContext}>Clear</button> : accountId ? <button onClick={() => setClearedAccountId(undefined)}>Use selected account</button> : <small>Ask generally or open an Account 360 record.</small>}</div>
         <p className="muted omni-boundary">Grounded only in local POC read models. Public evidence is sourced; BTX commercial, CRM, quote, scoring, and workflow context is simulated. Omni cannot write to CRM.</p>
         <div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => void ask(prompt)} disabled={loading}>{prompt}</button>)}</div>
