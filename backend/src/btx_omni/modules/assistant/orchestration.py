@@ -69,6 +69,17 @@ class OmniOrchestrator:
                 observed_at=observed_at,
                 context=product_context,
             )
+        selected_action_id = product_context.get("selected_action_id")
+        if isinstance(selected_action_id, str) and self._is_action_question(query):
+            event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
+            return self._selected_action_answer(
+                environment,
+                work_items=work_items,
+                event_records=event_records,
+                action_id=selected_action_id,
+                question=query,
+                context=product_context,
+            )
         session_account_id = product_context.get("session_account_id")
         session_id = session_account_id if isinstance(session_account_id, str) else None
         account = next((item for item in accounts if item.id == (account_id or session_id)), None)
@@ -148,6 +159,125 @@ class OmniOrchestrator:
             "which account is this facility", "what do we know about this location",
             "evidence supports this facility", "facility record", "btx context for this facility",
         ))
+
+    @staticmethod
+    def _is_action_question(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "this action", "why was this created", "why did this action appear",
+            "what triggered this", "evidence supports this action",
+            "review before acting", "what account is this for", "what should i do next",
+            "is this action still valid", "what would happen if i act",
+            "execute this action", "complete this action", "go ahead and execute",
+        ))
+
+    def _selected_action_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        work_items: Iterable[object],
+        event_records: Iterable[Mapping[str, object]],
+        action_id: str,
+        question: str,
+        context: Mapping[str, object],
+    ) -> OmniResponse:
+        """Explain one stored governed work item without changing workflow state."""
+        item = next((candidate for candidate in work_items if getattr(candidate, "id", None) == action_id), None)
+        context_used: dict[str, object] = {"action_id": action_id}
+        if context.get("surface"):
+            context_used["surface"] = str(context["surface"])
+        if item is None:
+            return OmniResponse(
+                "I can't resolve the selected action to a current canonical work item in this session. It may be stale because Actions are session-only, but I will not match it by title or account.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("Selected action is unavailable or stale in the current session.",), None, (), None,
+                context_used=context_used,
+            )
+
+        account_id = getattr(item, "account_id", None)
+        account = next((candidate for candidate in environment.accounts if candidate.id == account_id), None)
+        evidence_ids = tuple(getattr(item, "evidence_ids", ()))
+        linked_events = [
+            event for event in event_records
+            if {str(value) for value in event.get("evidence_ids", ())} & set(evidence_ids)
+        ]
+        citations = list(evidence_ids)
+        citation_links = [
+            OmniCitation(str(event.get("title") or "Intelligence event"), str(event["source_url"]))
+            for event in linked_events
+            if isinstance(event.get("source_url"), str)
+        ]
+        missing: list[str] = []
+        status = getattr(item, "status", "UNAVAILABLE")
+        status_value = getattr(status, "value", str(status))
+        priority = getattr(item, "priority", "UNAVAILABLE")
+        created_at = getattr(item, "created_at", None)
+        created_text = created_at.isoformat() if hasattr(created_at, "isoformat") else "unavailable"
+        lines = [
+            f"Canonical governed work item: {getattr(item, 'summary', 'Untitled action')} ({getattr(item, 'id', action_id)}).",
+            f"Current status: {status_value}; priority: {priority}; created: {created_text}.",
+            "This work item exists in the current session-only SAMPLE workflow state.",
+        ]
+        owner_id = getattr(item, "owner_id", None)
+        due_date = getattr(item, "due_date", None)
+        if owner_id:
+            lines.append(f"Stored owner: {owner_id}.")
+        if due_date:
+            lines.append(f"Stored due date: {due_date}.")
+        notes = getattr(item, "notes", None)
+        if notes:
+            lines.append(f"Stored workflow note: {notes}")
+        if account is None:
+            lines.append("No canonical researched account association is available for this work item.")
+            missing.append("No canonical researched account association is available for this work item.")
+        else:
+            context_used["account_id"] = account.id
+            lines.append(f"Canonical account: {account.legal_name} ({account.id}).")
+            selected_account_id = context.get("selected_account_id")
+            if isinstance(selected_account_id, str) and selected_account_id != account.id:
+                lines.append("The UI-selected account does not match this work item's canonical account; action facts use the governed work-item association.")
+                missing.append("Selected account context conflicts with the work item's canonical account.")
+        if evidence_ids:
+            lines.append(f"Stored supporting evidence IDs: {', '.join(evidence_ids)}.")
+        else:
+            missing.append("No evidence IDs are attached to this work item.")
+        if linked_events:
+            for event in linked_events:
+                title = str(event.get("title") or "Intelligence event")
+                state = str(event.get("evidence_state") or "MISSING")
+                lines.append(f"Exactly linked canonical Intelligence evidence: {title}; evidence state: {state}.")
+                if state != EvidenceState.CONFIRMED.value:
+                    missing.append(f"Linked Intelligence evidence is {state}, not confirmed.")
+        else:
+            lines.append("No canonical originating Intelligence event is attached to this work item.")
+            missing.append("No canonical originating Intelligence event is attached to this work item.")
+        lines.append("No canonical originating commercial-alert or rule ID is stored on this work item, so Omni does not recreate a triggering rule from its summary or account data.")
+        missing.append("No canonical originating commercial-alert or rule ID is attached to this work item.")
+
+        is_execution_request = any(phrase in question for phrase in ("execute", "complete", "go ahead", "do this for me"))
+        is_validity_question = "still valid" in question
+        if is_validity_question:
+            lines.append(f"The governed record is currently {status_value}; Omni can report this stored state and evidence, but cannot independently certify continued validity beyond the current session data.")
+        if is_execution_request:
+            lines.append("Omni is read-only and did not execute, complete, dismiss, or update this work item. Existing CRM execution remains separately gated by explicit human confirmation.")
+        elif "what would happen if i act" in question:
+            lines.append("Omni cannot simulate or execute a workflow transition. The current governed state is reported above; any external CRM execution remains separately gated by explicit human confirmation.")
+        elif "review before acting" in question:
+            lines.append("Before acting, review the stored summary and evidence IDs above, any linked canonical Intelligence evidence, and the listed missing or conflicting evidence. No additional checklist is inferred.")
+        elif "what should i do next" in question:
+            lines.append(f"The stored governed next step is the work-item summary: {getattr(item, 'summary', 'unavailable')}. No stronger recommendation is generated by Omni.")
+        lines.append("Any commercial/workflow facts in this response are from the current SAMPLE commercial dataset. Public Intelligence evidence remains source-backed. Omni is read-only and cannot perform CRM writes.")
+        provenance = [AssistantProvenance.CANONICAL_FACT]
+        if linked_events:
+            provenance.append(AssistantProvenance.STORED_INTELLIGENCE)
+        if account is not None:
+            provenance.append(AssistantProvenance.DETERMINISTIC_DERIVATION)
+        if missing:
+            provenance.append(AssistantProvenance.MISSING_UNAVAILABLE)
+        return OmniResponse(
+            " ".join(lines), account.id if account else "", tuple(dict.fromkeys(citations)), tuple(provenance),
+            tuple(dict.fromkeys(missing)), getattr(item, "summary", None), tuple(dict.fromkeys(citation_links)), account.legal_name if account else None,
+            context_used=context_used,
+        )
 
     def _selected_facility_answer(
         self,

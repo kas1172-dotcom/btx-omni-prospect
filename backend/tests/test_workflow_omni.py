@@ -31,6 +31,20 @@ def public_facility_id_for(sample, account_id: str) -> str:
     return next(item.id for item in sample.public_facilities if item.account_id == account_id)
 
 
+def create_selected_work_item(*, account_id: str = "boeing", evidence_ids: tuple[str, ...] = ("FAA_BOEING",), summary: str = "Review Boeing public evidence"):
+    service = WorkService()
+    item = service.create(
+        account_id=account_id,
+        summary=summary,
+        evidence_ids=evidence_ids,
+        idempotency_key=f"omni-{summary}",
+        actor_id="seller",
+        occurred_at=NOW,
+        priority="HIGH",
+    )
+    return service, item
+
+
 def test_governed_action_lifecycle_audit_and_idempotency() -> None:
     service = WorkService()
     first = service.create(account_id="acct-01-003", summary="Review dormant customer", evidence_ids=("ev-dormant",), idempotency_key="dormant-1", actor_id="seller", occurred_at=NOW, priority="HIGH")
@@ -201,3 +215,76 @@ def test_omni_selected_facility_preserves_non_facility_queries_and_invalid_ids()
     assert "Defense researched account(s) with open quotes" in cross_account.content and "Boeing headquarters" not in cross_account.content
     assert "curated public-company universe" in general.content and "Boeing headquarters" not in general.content
     assert "can't resolve the selected facility" in invalid.content
+
+
+def test_omni_routes_a_selected_work_item_with_stored_evidence_and_sample_boundary() -> None:
+    sample = build_sample_environment()
+    service, item = create_selected_work_item()
+    response = OmniOrchestrator().answer(
+        sample,
+        account_id=None,
+        question="Why was this created?",
+        observed_at=NOW,
+        context={"surface": "ACTIONS", "selected_action_id": item.id},
+        work_items=service.list(),
+    )
+    assert item.summary in response.content
+    assert "Canonical account: Boeing (boeing)" in response.content
+    assert "Stored supporting evidence IDs: FAA_BOEING" in response.content
+    assert "No canonical originating commercial-alert or rule ID" in response.content
+    assert "current SAMPLE commercial dataset" in response.content
+    assert response.recommended_action == item.summary
+    assert response.context_used == {"action_id": item.id, "surface": "ACTIONS", "account_id": "boeing"}
+
+
+def test_omni_selected_work_item_explains_linked_conflicting_evidence_and_review_scope() -> None:
+    sample = build_sample_environment()
+    raw = RawSignal("controlled-action-conflict", SignalKind.PRESS_RELEASE, "Controlled conflicting action evidence", "https://example.test/action-conflict", NOW, "Boeing", None, EvidenceState.CONFLICTING, "Controlled unit fixture.")
+    controlled = replace(sample, intelligence_events=(*sample.intelligence_events, raw))
+    event_record = OmniOrchestrator._sample_event_records(controlled)[-1]
+    service, item = create_selected_work_item(evidence_ids=tuple(event_record["evidence_ids"]), summary="Review conflicting public evidence")
+    response = OmniOrchestrator().answer(
+        controlled,
+        account_id=None,
+        question="What should I review before acting?",
+        observed_at=NOW,
+        context={"surface": "ACTIONS", "selected_action_id": item.id},
+        intelligence_events=(event_record,),
+        work_items=service.list(),
+    )
+    assert "Controlled conflicting action evidence" in response.content
+    assert "evidence state: CONFLICTING" in response.content
+    assert "No additional checklist is inferred" in response.content
+    assert any("CONFLICTING" in item for item in response.missingness)
+
+
+def test_omni_selected_work_item_handles_next_step_conflicts_invalid_and_read_only_execution() -> None:
+    sample = build_sample_environment()
+    service, item = create_selected_work_item()
+    omni = OmniOrchestrator()
+    next_step = omni.answer(sample, account_id=None, question="What should I do next?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id, "selected_account_id": "lockheed-martin"}, work_items=service.list())
+    outcome = omni.answer(sample, account_id=None, question="What would happen if I act on this?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=service.list())
+    before = service.list()
+    execution = omni.answer(sample, account_id=None, question="Go ahead and execute this action.", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=service.list())
+    invalid = omni.answer(sample, account_id=None, question="Why was this created?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": "missing-work-item"}, work_items=service.list())
+    assert f"stored governed next step is the work-item summary: {item.summary}" in next_step.content
+    assert "does not match this work item's canonical account" in next_step.content
+    assert any("conflicts" in item for item in next_step.missingness)
+    assert "cannot simulate or execute a workflow transition" in outcome.content
+    assert "did not execute, complete, dismiss, or update" in execution.content
+    assert service.list() == before
+    assert "can't resolve the selected action" in invalid.content
+
+
+def test_omni_selected_work_item_preserves_non_action_queries_and_missing_event_association() -> None:
+    sample = build_sample_environment()
+    service, item = create_selected_work_item()
+    omni = OmniOrchestrator()
+    cross_account = omni.answer(sample, account_id=None, question="Which Defense accounts have open quotes?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=service.list())
+    general = omni.answer(sample, account_id=None, question="What is an RFQ?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=service.list())
+    missing_account_service, missing_account_item = create_selected_work_item(account_id="unmapped-account", summary="Review unmapped action")
+    missing_account = omni.answer(sample, account_id=None, question="What account is this for?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": missing_account_item.id}, work_items=missing_account_service.list())
+    assert "Defense researched account(s) with open quotes" in cross_account.content and item.summary not in cross_account.content
+    assert "curated public-company universe" in general.content and item.summary not in general.content
+    assert "No canonical originating Intelligence event" in missing_account.content
+    assert "No canonical researched account association" in missing_account.content

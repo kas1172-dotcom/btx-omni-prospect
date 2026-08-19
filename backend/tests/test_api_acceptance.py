@@ -127,6 +127,17 @@ async def test_omni_resolves_selected_facilities_through_the_canonical_map_recor
 
 
 @pytest.mark.asyncio
+async def test_omni_resolves_selected_actions_through_the_canonical_work_service() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        created = await client.post("/api/actions", json={"account_id": "boeing", "summary": "Review Boeing public evidence", "evidence_ids": ["FAA_BOEING"], "idempotency_key": "omni-selected-action", "actor_id": "seller", "priority": "HIGH"})
+        response = await client.post("/api/omni", json={"question": "Why was this created?", "context": {"surface": "ACTIONS", "selected_action_id": created.json()["id"]}})
+    payload = response.json()
+    assert created.status_code == response.status_code == 200
+    assert "Review Boeing public evidence" in payload["content"]
+    assert payload["context_used"] == {"action_id": created.json()["id"], "surface": "ACTIONS", "account_id": "boeing"}
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

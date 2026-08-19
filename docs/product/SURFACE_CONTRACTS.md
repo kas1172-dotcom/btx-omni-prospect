@@ -50,6 +50,16 @@ relationships from proximity, and label any parent-account commercial context
 as the current SAMPLE commercial dataset. Unknown facility IDs and missing
 canonical associations remain explicit limitations.
 
+When an Actions work item is selected and the question is action-focused,
+Omni resolves the exact canonical `WorkItem.id` through the current governed
+work-service read. It explains the stored summary, status, priority, account,
+and evidence IDs, and links public Intelligence only through exact shared
+evidence IDs. Current work items do not store a canonical originating alert or
+rule ID, so Omni reports that limitation rather than recreating decision logic.
+Actions are session-only SAMPLE workflow state; Omni remains read-only and
+cannot bypass the separate human-confirmation gate for CRM execution. Unknown
+or stale action IDs remain explicit limitations.
+
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |
 | Today | none | none | rendered alert and intelligence IDs, in display order |
