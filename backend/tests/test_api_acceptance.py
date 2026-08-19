@@ -114,6 +114,19 @@ async def test_omni_resolves_selected_intelligence_events_through_the_canonical_
 
 
 @pytest.mark.asyncio
+async def test_omni_resolves_selected_facilities_through_the_canonical_map_records() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        map_response = await client.get("/api/map")
+        selected = next(item for item in map_response.json()["facilities"] if item["account_id"] == "boeing")
+        response = await client.post("/api/omni", json={"question": "Tell me about this facility.", "context": {"surface": "MAP", "selected_facility_id": selected["facility_id"]}})
+    payload = response.json()
+    assert response.status_code == 200
+    assert selected["name"] in payload["content"]
+    assert payload["context_used"] == {"facility_id": selected["facility_id"], "surface": "MAP"}
+    assert payload["citation_links"]
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

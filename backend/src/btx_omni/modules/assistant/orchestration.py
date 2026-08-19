@@ -60,6 +60,15 @@ class OmniOrchestrator:
         if isinstance(selected_event_id, str) and self._is_event_question(query):
             event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
             return self._selected_event_answer(environment, event_records=event_records, work_items=work_items, event_id=selected_event_id, question=query, observed_at=observed_at, context=product_context)
+        selected_facility_id = product_context.get("selected_facility_id")
+        if isinstance(selected_facility_id, str) and self._is_facility_question(query):
+            return self._selected_facility_answer(
+                environment,
+                facility_id=selected_facility_id,
+                question=query,
+                observed_at=observed_at,
+                context=product_context,
+            )
         session_account_id = product_context.get("session_account_id")
         session_id = session_account_id if isinstance(session_account_id, str) else None
         account = next((item for item in accounts if item.id == (account_id or session_id)), None)
@@ -131,6 +140,150 @@ class OmniOrchestrator:
             "what happened", "why does this matter", "what does this mean", "who is this about",
             "what evidence", "evidence supports", "is this actionable", "this award", "this event",
         ))
+
+    @staticmethod
+    def _is_facility_question(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "this facility", "what is this facility", "who owns this facility",
+            "which account is this facility", "what do we know about this location",
+            "evidence supports this facility", "facility record", "btx context for this facility",
+        ))
+
+    def _selected_facility_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        facility_id: str,
+        question: str,
+        observed_at,
+        context: Mapping[str, object],
+    ) -> OmniResponse:
+        """Explain one exact canonical facility without geographic inference."""
+        researched = next((item for item in environment.public_facilities if item.id == facility_id), None)
+        btx = next((item for item in environment.btx_facilities if item.id == facility_id), None)
+        context_used: dict[str, object] = {"facility_id": facility_id}
+        if context.get("surface"):
+            context_used["surface"] = str(context["surface"])
+        if researched is None and btx is None:
+            return OmniResponse(
+                "I can't resolve the selected facility to a canonical facility record in the current dataset. I will not match it by name, coordinates, or proximity.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("Selected facility is unavailable or stale.",), None, (), None,
+                context_used=context_used,
+            )
+
+        if btx is not None:
+            return self._selected_btx_facility_answer(
+                environment,
+                facility=btx,
+                context_used=context_used,
+            )
+        assert researched is not None
+        return self._selected_researched_facility_answer(
+            environment,
+            facility=researched,
+            question=question,
+            observed_at=observed_at,
+            context=context,
+            context_used=context_used,
+        )
+
+    @staticmethod
+    def _location_text(facility) -> str:
+        return f"{facility.city}, {facility.region}, {facility.country}; canonical coordinates {facility.latitude}, {facility.longitude}"
+
+    def _selected_researched_facility_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        facility,
+        question: str,
+        observed_at,
+        context: Mapping[str, object],
+        context_used: dict[str, object],
+    ) -> OmniResponse:
+        account = next((item for item in environment.accounts if item.id == facility.account_id), None)
+        citations = list(facility.provenance.source_ids if facility.provenance else ())
+        citation_links = [OmniCitation(facility.name, facility.source_url)] if facility.source_url else []
+        missing: list[str] = []
+        lines = [
+            f"Canonical researched facility: {facility.name} ({facility.id}). ",
+            f"Facility type: {facility.facility_type}. Location: {self._location_text(facility)}.",
+            f"Verification state: {facility.verification_state}; source type: {facility.source_type or 'unavailable'}.",
+        ]
+        if facility.source_url:
+            lines.append("The facility's researched public source is cited with this response.")
+        else:
+            missing.append("No source URL is present for this canonical facility record.")
+        if account is None:
+            lines.append("This facility is present in the canonical researched-facility dataset, but no canonical researched account association is established for it here.")
+            missing.append("No canonical parent account is associated with this facility.")
+        else:
+            lines.append(f"Canonical parent account: {account.legal_name} ({account.id}).")
+            selected_account_id = context.get("selected_account_id")
+            if isinstance(selected_account_id, str) and selected_account_id != account.id:
+                lines.append("The UI-selected account does not match this facility's canonical parent account; facility facts use the canonical facility association.")
+                missing.append("Selected account context conflicts with the facility's canonical parent account.")
+
+        action: str | None = None
+        if account is not None and "matter" in question:
+            context_used["account_id"] = account.id
+            score = None
+            if account.id in environment.scoring_inputs:
+                score = calculate_account_attractiveness(
+                    AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
+                    evidence_ids=tuple(citations),
+                    calculated_at=observed_at,
+                )
+                lines.append(f"This facility has no separate facility score. Its parent account's deterministic attractiveness is {score.score if score.score is not None else 'insufficient data'} with coverage {score.coverage}.")
+                missing.extend(score.missingness)
+            else:
+                missing.append("No canonical account-attractiveness input is mapped to this facility's parent account.")
+            alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)
+            account_alerts = [item for item in alerts if item.account_id == account.id]
+            if account_alerts:
+                action = account_alerts[0].recommended_action
+                lines.append(f"In the current SAMPLE commercial dataset, the parent account has a governed alert recommending: {action}")
+            else:
+                lines.append("No governed commercial alert currently connects this parent account to a seller recommendation.")
+        lines.append("This describes the canonical facility record only. Geographic proximity is not used to infer ownership, relationships, or commercial importance. Any commercial context above is from the current SAMPLE commercial dataset; Omni is read-only.")
+        provenance = [AssistantProvenance.CANONICAL_FACT]
+        if action or "account_id" in context_used:
+            provenance.append(AssistantProvenance.DETERMINISTIC_DERIVATION)
+        if missing:
+            provenance.append(AssistantProvenance.MISSING_UNAVAILABLE)
+        return OmniResponse(
+            " ".join(lines), account.id if account else "", tuple(dict.fromkeys(citations)), tuple(provenance),
+            tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name if account else None,
+            context_used=context_used,
+        )
+
+    def _selected_btx_facility_answer(self, environment: SampleEnvironment, *, facility, context_used: dict[str, object]) -> OmniResponse:
+        business_unit = next((item for item in environment.business_units if item.id == facility.business_unit_id), None)
+        citations = [facility.provenance.source_record_id]
+        citation_links = [OmniCitation(facility.name, facility.source_url)] if facility.source_url else []
+        missing: list[str] = []
+        lines = [
+            f"Canonical BTX facility: {facility.name} ({facility.id}). Location: {self._location_text(facility)}.",
+            f"Verification state: {facility.verification_state}; source type: {facility.source_type or 'unavailable'}.",
+        ]
+        if facility.source_url:
+            lines.append("The facility's public BTX business-unit source is cited with this response.")
+        else:
+            missing.append("No source URL is present for this canonical BTX facility record.")
+        if business_unit is None:
+            lines.append("No canonical BTX business-unit association is present for this facility.")
+            missing.append("No canonical BTX business-unit association is present for this facility.")
+        else:
+            lines.append(f"Canonical BTX business unit: {business_unit.name} ({business_unit.id}).")
+            if business_unit.processes:
+                lines.append(f"Publicly documented processes: {', '.join(business_unit.processes)}.")
+        lines.append("This is a public BTX business-unit facility profile, not a production-capacity or prospect/customer record. No customer or prospect account association is inferred. Geographic proximity is not used to infer relationships or commercial importance.")
+        return OmniResponse(
+            " ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT,) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()),
+            tuple(dict.fromkeys(missing)), None, tuple(dict.fromkeys(citation_links)), None,
+            context_used=context_used,
+        )
 
     @staticmethod
     def _sample_event_records(environment: SampleEnvironment) -> tuple[dict[str, object], ...]:

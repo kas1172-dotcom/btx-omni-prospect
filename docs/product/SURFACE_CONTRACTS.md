@@ -41,6 +41,15 @@ event remains unresolved: Omni does not fuzzy-match an account or infer event
 geography. Any commercial alert, score, or workflow context is identified as
 the current SAMPLE commercial dataset.
 
+When a Map facility is selected and the question is facility-focused, Omni
+resolves its exact canonical ID through the researched-facility or BTX-facility
+read model. Researched facilities identify a parent account only when that
+canonical association exists; BTX facilities never imply a prospect/customer
+account. Facility answers cite stored provenance, do not infer ownership or
+relationships from proximity, and label any parent-account commercial context
+as the current SAMPLE commercial dataset. Unknown facility IDs and missing
+canonical associations remain explicit limitations.
+
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |
 | Today | none | none | rendered alert and intelligence IDs, in display order |
