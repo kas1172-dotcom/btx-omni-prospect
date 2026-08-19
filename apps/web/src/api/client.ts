@@ -1,4 +1,4 @@
-import type { Account, Account360, Alert, BtxMapFacility, MapIntelligence, MapRecord, MonitorHealth, OmniResponse, PublicLocation, Signal, WorkItem } from '../types/api'
+import type { Account, Account360, Alert, BtxMapFacility, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, PublicLocation, Signal, WorkItem } from '../types/api'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -19,6 +19,6 @@ export const api = {
   audit: (id: string) => request<{ events: unknown[] }>(`/actions/${id}/audit`),
   preview: (id: string) => request<{ confirmed: boolean; executed: boolean }>(`/actions/${id}/crm-preview`, { method: 'POST' }),
   execute: (id: string) => request<{ executed: boolean }>(`/actions/${id}/crm-execute?confirmed=true`, { method: 'POST' }),
-  omni: (account_id: string | undefined, question: string, context?: Record<string, string>) => request<OmniResponse>('/omni', { method: 'POST', body: JSON.stringify({ account_id, question, context }) }),
+  omni: (account_id: string | undefined, question: string, context?: OmniContext) => request<OmniResponse>('/omni', { method: 'POST', body: JSON.stringify({ account_id, question, context }) }),
   monitor: () => request<MonitorHealth>('/monitor/health'),
 }

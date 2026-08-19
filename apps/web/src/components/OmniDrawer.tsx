@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
-import type { OmniResponse } from '../types/api'
+import type { OmniContext, OmniResponse } from '../types/api'
 import './omni-drawer.css'
 
 type Message = { role: 'user' | 'assistant'; text: string; response?: OmniResponse }
@@ -13,7 +13,7 @@ const starters = [
   'What public evidence supports this action?',
 ]
 
-export function OmniDrawer({ accountId, accountName, surface }: { accountId?: string; accountName?: string; surface: string }) {
+export function OmniDrawer({ accountId, accountName, surface }: { accountId?: string; accountName?: string; surface: OmniContext['surface'] }) {
   const [open, setOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -43,7 +43,7 @@ export function OmniDrawer({ accountId, accountName, surface }: { accountId?: st
     setLoading(true)
     setError('')
     try {
-      const response = await api.omni(activeAccount?.id, text, { surface, session_account_id: activeAccount?.id ?? '', prior_turns: history })
+      const response = await api.omni(activeAccount?.id, text, { surface, selected_account_id: accountId, session_account_id: sessionAccount?.id, prior_turns: history })
       if (response.account_id && response.account_name) setSessionAccount({ id: response.account_id, name: response.account_name })
       setMessages(old => [...old, { role: 'assistant', text: response.content, response }])
     } catch (err) {
