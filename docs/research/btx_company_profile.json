@@ -28,7 +28,11 @@
     "I3D_HOME": {"title": "i3D MFG", "url": "https://www.i3dmfg.com/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
     "APM_HOME": {"title": "Addison Precision Manufacturing", "url": "https://addisonprec.com/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
     "GEM_HOME": {"title": "Gen-El-Mec Associates", "url": "https://www.gen-el-mec.com/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
-    "HTS_HOME": {"title": "High Tech Solutions", "url": "https://htsmfg.com/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"}
+    "HTS_HOME": {"title": "High Tech Solutions", "url": "https://htsmfg.com/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
+    "ERA_CONTACT": {"title": "ERA Industries — Contact Us", "url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
+    "APM_CONTACT": {"title": "Addison Precision Manufacturing — Contact", "url": "https://addisonprec.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
+    "A1J_CONTACT": {"title": "A1J Technologies — Contact", "url": "https://a1jt.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
+    "US_CENSUS_GEOCODER": {"title": "U.S. Census Bureau Geocoder", "url": "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress", "source_type": "US_GOVERNMENT"}
   },
   "company": {
     "id": "btx-precision",
@@ -194,6 +198,13 @@
       "known_products": ["pins", "screws", "implantable subassemblies", "orthopedic instruments"],
       "source_ids": ["MAITLAND_HOME"]
     }
+  ],
+  "btx_facilities": [
+    {"id": "era-elk-grove", "business_unit_id": "era-industries", "name": "ERA Elk Grove", "city": "Elk Grove Village", "region": "IL", "country": "US", "latitude": 42.004130428338, "longitude": -87.957417790824, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"]},
+    {"id": "era-wheeling", "business_unit_id": "era-industries", "name": "ERA Wheeling", "city": "Wheeling", "region": "IL", "country": "US", "latitude": 42.125346964817, "longitude": -87.915308630795, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"]},
+    {"id": "era-arizona", "business_unit_id": "era-industries", "name": "ERA Arizona", "city": "Phoenix", "region": "AZ", "country": "US", "latitude": 33.398297311653, "longitude": -112.012758041019, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"]},
+    {"id": "apm-rochester", "business_unit_id": "addison-precision", "name": "Addison Precision Manufacturing", "city": "Rochester", "region": "NY", "country": "US", "latitude": 43.17941172008, "longitude": -77.711678618957, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://addisonprec.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["APM_CONTACT", "US_CENSUS_GEOCODER"]},
+    {"id": "a1j-san-jose", "business_unit_id": "a1j-technologies", "name": "A1J Technologies", "city": "San Jose", "region": "CA", "country": "US", "latitude": 37.399940162215, "longitude": -121.902657337961, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://a1jt.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["A1J_CONTACT", "US_CENSUS_GEOCODER"]}
   ],
   "acquisitions_timeline": [
     {"date": "2023-06-16", "action": "ERA Industries acquired by L Squared (founding BU)"},

@@ -251,7 +251,7 @@ The design brief formalizes this ask.
 Not the full code review yet, but the workflow points at these code changes:
 
 - **Delete:** placeholder scenarios' `sim-program-*` and `SIM-100` synthetic identifiers. Replace with real program IDs from the program catalog seed.
-- **Delete:** if there are auto-generated or overly generic account records beyond the 78 researched (needs verification in the code review pass; the ingestion module claims only 78 exist, but the "600 overly general" you flagged suggests a leftover generator or fixture file somewhere I haven't found).
+- **Delete:** any auto-generated or overly generic account records discovered in a code-review pass. The POC must load only researched real entities; it has no population target.
 - **Add:** `docs/research/btx_program_catalog.json`, `docs/research/btx_component_taxonomy.json`, `docs/research/btx_capability_catalog.json`, `docs/research/btx_facility_list.json`, `docs/research/btx_customer_master.json`.
 - **Add:** Alembic migration `0008_commercial_tables` with programs, component_classes, commercial_contexts, monthly_commercial_history, commercial_quotes, paperless_accounts, orders, and account_relationship_edges (from audit sections 5 and 8).
 - **Add:** `providers/lake_sample/` module that models rows in long form (`customer_bu_month`) plus `orders_transaction` shape.
@@ -265,5 +265,5 @@ The full change/delete list comes in the code review deliverable, anchored to th
 ## Next
 
 1. Draft the design brief (with you) that translates this workflow into the concrete extract-ask for Alan and the seed-data ask for Jamie / BU leads.
-2. Do the code review (with an explicit hunt for the "600 overly general accounts" you referenced).
+2. Do the code review, including an explicit hunt for generated identities, filler records, and fixed-population assumptions.
 3. Execute the sample-data rebuild against the change/delete list.

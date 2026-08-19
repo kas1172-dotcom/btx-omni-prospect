@@ -33,7 +33,8 @@ def source_provenance(
         source_id = str(record.get("id", record.get("edge_id", "unknown")))
         evidence = EvidenceState(record.get("evidence_state", "CONFIRMED"))
     now = datetime.now(UTC)
-    return Provenance(source_system, source_id, None, now, now, classification, evidence, mode, synthetic)
+    source_url = payload.get("source_url") if isinstance(payload, dict) else record.get("source_url")
+    return Provenance(source_system, source_id, str(source_url) if source_url is not None else None, now, now, classification, evidence, mode, synthetic)
 
 
 def require_ids(record: dict[str, object], key: str, valid: set[str], label: str) -> None:

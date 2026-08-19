@@ -145,7 +145,7 @@ class SamAdapter(LiveSourceAdapter):
 
 
 class UsaSpendingAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("defense", "space", "commercial_aerospace", "semiconductor"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name")
+    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("aerospace", "defense", "space_exploration", "semiconductor", "energy"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name")
     def __init__(self, get: HttpGet = default_get, *, recipient_names: tuple[str, ...] = (), post: HttpPost = default_post) -> None:
         super().__init__(get)
         self.recipient_names = recipient_names
@@ -219,7 +219,7 @@ class FederalRegisterAdapter(LiveSourceAdapter):
 
 
 class SecEdgarAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("sec_edgar", "SEC EDGAR Submissions", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "securities filings", ("commercial_aerospace", "defense", "space", "semiconductor", "medical_device", "robotics"), (EventType.EARNINGS_SIGNAL, EventType.BACKLOG_CHANGE, EventType.CAPITAL_INVESTMENT, EventType.M_AND_A, EventType.FACILITY_EXPANSION), "daily", "full submissions archives", "keyless", "requires descriptive User-Agent and SEC fair access", "https://data.sec.gov/submissions", "CIK/accession number")
+    definition = SourceDefinition("sec_edgar", "SEC EDGAR Submissions", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "securities filings", ("aerospace", "defense", "space_exploration", "semiconductor", "medical", "energy"), (EventType.EARNINGS_SIGNAL, EventType.BACKLOG_CHANGE, EventType.CAPITAL_INVESTMENT, EventType.M_AND_A, EventType.FACILITY_EXPANSION), "daily", "full submissions archives", "keyless", "requires descriptive User-Agent and SEC fair access", "https://data.sec.gov/submissions", "CIK/accession number")
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("filings", {}).get("recent", {}).get("accessionNumber", []) and [{"accessionNumber": value, "filingDate": decoded["filings"]["recent"]["filingDate"][index], "form": decoded["filings"]["recent"]["form"][index]} for index, value in enumerate(decoded["filings"]["recent"]["accessionNumber"])]
     def available(self, settings: Any) -> tuple[bool, str | None]: return (self.definition.api_base != "https://data.sec.gov/submissions", "verified SEC CIK from an account watch profile is required")
     def for_cik(self, cik: str, get: HttpGet | None = None) -> SecEdgarAdapter:
@@ -255,12 +255,12 @@ class FdaAdapter(LiveSourceAdapter):
 
 
 class CompanyNewsAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("commercial_aerospace", "defense", "space", "semiconductor", "medical_device", "robotics"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL")
+    definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("aerospace", "defense", "space_exploration", "semiconductor", "medical", "energy"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL")
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified account-watch-profile newsroom URL is required"
 
 
 class StateEconomicAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("semiconductor", "robotics", "medical_device", "commercial_aerospace"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography")
+    definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("semiconductor", "medical", "aerospace", "energy"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography")
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified state publisher URL is required"
 
 

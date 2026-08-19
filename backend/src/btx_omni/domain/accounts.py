@@ -120,6 +120,7 @@ class CanonicalAccount:
     prospect_research_priority: str | None = None
     prospect_rationale: str | None = None
     public_contacts: tuple[PublicContactResearch, ...] = ()
+    secondary_classifications: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

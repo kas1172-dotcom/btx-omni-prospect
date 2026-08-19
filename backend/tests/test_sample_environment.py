@@ -1,4 +1,3 @@
-from btx_omni.providers.research.scenarios import SCENARIOS as RICH_SCENARIOS
 from btx_omni.providers.sample.environment import (
     ROLE_FAMILIES,
     SCENARIOS,
@@ -8,11 +7,12 @@ from btx_omni.providers.sample.environment import (
 
 def test_environment_contains_only_researched_public_companies() -> None:
     environment = build_sample_environment()
-    assert len(environment.accounts) == len(environment.researched_accounts) == 34
+    assert len(environment.accounts) == len(environment.researched_accounts) > 0
     assert set(environment.research_mappings) == {account.id for account in environment.accounts}
     assert all(account.research_account_id == account.id for account in environment.accounts)
     assert all(account.public_identity and account.public_research_state == "RESEARCHED_PUBLIC" for account in environment.accounts)
     assert all("market target" not in account.legal_name.casefold() for account in environment.accounts)
+    assert all("placeholder" not in account.legal_name.casefold() for account in environment.accounts)
     assert all(account.contact_role_families == ROLE_FAMILIES for account in environment.accounts)
     assert environment.facilities == environment.public_facilities
 

@@ -23,7 +23,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     facilities = {item.account_id: item for item in sample.facilities}
     contexts = {item.account_id: item for item in sample.commercial_contexts}
     return {"poc_mode": "REAL_PUBLIC_MARKET_DATA_SIMULATED_BTX_CONTEXT", "accounts": [{
-        "id": item.id, "name": item.legal_name, "relationship": item.relationship, "industries": item.industries,
+        "id": item.id, "name": item.legal_name, "relationship": item.relationship, "industries": item.industries, "secondary_classifications": item.secondary_classifications,
         "domain": item.domain, "contact_role_families": item.contact_role_families, "public_research_state": item.public_research_state,
         "public_identity_state": item.public_identity.verification_state if item.public_identity else "UNVERIFIED",
         "research_account_id": item.research_account_id,

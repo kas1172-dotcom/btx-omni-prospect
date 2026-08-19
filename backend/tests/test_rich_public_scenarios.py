@@ -12,7 +12,9 @@ def test_rich_scenarios_are_real_public_identities_with_sourced_events() -> None
     environment = build_sample_environment()
     accounts = {item.id: item for item in environment.accounts}
     assert len(environment.rich_scenarios) == 12
-    assert {accounts[account_id].industries[0] for account_id in environment.rich_scenarios} >= {"Commercial Aerospace", "Defense", "Space", "Semiconductor", "Medical", "Robotics"}
+    observed_markets = {market for account_id in environment.rich_scenarios for market in accounts[account_id].industries}
+    assert observed_markets <= {"Aerospace", "Defense", "Semiconductor", "Space Exploration", "Energy", "Medical"}
+    assert accounts["symbotic"].secondary_classifications == ("Robotics",)
     assert all(accounts[account_id].research_account_id and scenario.event.source_url.startswith("https://") for account_id, scenario in environment.rich_scenarios.items())
 
 

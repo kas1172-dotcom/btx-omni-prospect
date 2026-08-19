@@ -8,7 +8,7 @@
 
 The current `docs/research/` universe is 78 large public-market companies (Boeing, Lockheed, Intel, TSMC, Applied Materials, etc.). That set is **prospecting-oriented, not BTX-weighted**. Only one account (Boeing) carries an explicit BTX-supplier basis (via Chandler Industries' public defense page). Every other relationship is `NO_RELATIONSHIP_EVIDENCE`. Sellers cannot see themselves in this universe.
 
-The manifest's own vision statement calls for "the final 600 real account universe" (100 real companies × 6 industries). That's the target. This replacement is the first material step toward it: a BTX-weighted customer set built from BTX Precision's own business-unit websites, industry pages, case studies, press releases, and third-party award profiles, with public contact channels sourced from official supplier portals.
+The POC has no target account count. It uses a BTX-weighted set of researched real companies built from BTX Precision business-unit websites, industry pages, case studies, press releases, and third-party award profiles, with public contact channels sourced from official supplier portals. Coverage expands only when additional real entities are sufficiently researched.
 
 ## What BTX Precision actually is (research summary)
 
@@ -109,9 +109,9 @@ The workflow spec noted the scoring rubric is a working draft, and research find
 
 These feed into the design brief conversation.
 
-## Where the "600 overly general accounts" concern comes from
+## Account coverage
 
-The current manifest states: `"data_complete_for_final_600_real_account_universe": false`. Your instinct was right that 600 was the target; the current file has 78. This replacement moves toward that target with ~30 rich BTX-relevant accounts in batch 2, not 600, because rich detail matters more than count for POC credibility. Growing to 600 is a subsequent research phase against the same schema.
+Research depth is intentionally uneven. The POC does not manufacture entities to fill industries or reach a count: canonical accounts are exactly the sufficiently researched real companies in the account file. BTX-internal commercial records are simulated separately and must reference those canonical IDs.
 
 ## Next steps in the sequence
 

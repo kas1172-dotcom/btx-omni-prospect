@@ -10,7 +10,7 @@ The repository already used `docs/research/`, `docs/architecture/`, `docs/produc
 
 ## 1. Already implemented
 
-- A canonical researched-account universe is loaded by [backend/src/btx_omni/providers/research/ingestion.py](../../backend/src/btx_omni/providers/research/ingestion.py), converted to `CanonicalAccount`, and enriched with public facilities. This is not an auto-generated 600-account fixture. The pre-replacement source was [docs/research/btx_researched_account_universe.json](../research/btx_researched_account_universe.json).
+- A canonical researched-account set is loaded by [backend/src/btx_omni/providers/research/ingestion.py](../../backend/src/btx_omni/providers/research/ingestion.py), converted to `CanonicalAccount`, and enriched with public facilities. It contains only real researched entities; there is no target population or generated filler.
 - Monitor 2.0 is implemented: source registry and adapters in [backend/src/btx_omni/monitor/sources.py](../../backend/src/btx_omni/monitor/sources.py), USAspending support in [backend/src/btx_omni/monitor/usaspending.py](../../backend/src/btx_omni/monitor/usaspending.py), service in [backend/src/btx_omni/monitor/service.py](../../backend/src/btx_omni/monitor/service.py), and durable monitor tables in [backend/src/btx_omni/persistence/models.py](../../backend/src/btx_omni/persistence/models.py). Live collection is deliberately fail-closed unless configured.
 - Deterministic account-attractiveness scoring is implemented in [backend/src/btx_omni/modules/scoring/account_attractiveness.py](../../backend/src/btx_omni/modules/scoring/account_attractiveness.py), including factor contributions, coverage, missingness, and proportional missing-data handling. Do not change its rubric in this checkpoint.
 - The seller-facing surfaces already exist: Today API/UI at [backend/src/btx_omni/api/today.py](../../backend/src/btx_omni/api/today.py) and [apps/web/src/features/today/Today.tsx](../../apps/web/src/features/today/Today.tsx); Account 360 at [backend/src/btx_omni/api/accounts.py](../../backend/src/btx_omni/api/accounts.py) and [apps/web/src/features/accounts/Accounts.tsx](../../apps/web/src/features/accounts/Accounts.tsx); Omni at [backend/src/btx_omni/api/omni.py](../../backend/src/btx_omni/api/omni.py), [backend/src/btx_omni/modules/assistant/orchestration.py](../../backend/src/btx_omni/modules/assistant/orchestration.py), and [apps/web/src/components/OmniDrawer.tsx](../../apps/web/src/components/OmniDrawer.tsx).
@@ -54,7 +54,7 @@ Do not delete in this checkpoint.
 ## 6. Should be deferred
 
 - Scoring-weight/bins redesign, Signal Confidence redesign, and capacity-fit scoring changes; preserve [BTX_Account_Scoring_Working_Draft (1).docx](../scoring/BTX_Account_Scoring_Working_Draft%20(1).docx) unchanged.
-- LLM component extraction; live BTX data-lake, Paperless, and HubSpot integrations; Gemini/provider migration; compliance/deployment migration; 600-account expansion; relationship-matrix frontend; Figma changes; and mobile redesign.
+- LLM component extraction; live BTX data-lake, Paperless, and HubSpot integrations; Gemini/provider migration; compliance/deployment migration; relationship-matrix frontend; Figma changes; and mobile redesign.
 
 ## 7. Proposed implementation order
 
@@ -102,4 +102,4 @@ Migration required: one additive `0008_commercial_and_edges.py` for programs, co
 
 Tests required: schema-version and foreign-key validation for every loader; explicit scenario-ID integrity; provenance/SAMPLE assertions; loader-to-runtime integration across all accounts; unchanged scoring determinism/missingness; alerts/matching/Omni smoke coverage; connected-mode 503; and human-confirmed CRM-write seam tests.
 
-Explicit non-goals: scoring redesign; LLM extraction; live Prism/Paperless/HubSpot; Gemini migration; relationship frontend; Figma/mobile; deployment/compliance work; 600-account research; or deletion before parity.
+Explicit non-goals: scoring redesign; LLM extraction; live Prism/Paperless/HubSpot; Gemini migration; relationship frontend; Figma/mobile; deployment/compliance work; or deletion before parity.

@@ -11,9 +11,10 @@ from btx_omni.providers.sample.environment import build_sample_environment
 def test_researched_identities_are_the_canonical_universe_and_support_simulated_scenarios() -> None:
     environment = build_sample_environment()
 
-    assert len(environment.researched_accounts) == len(environment.research_mappings) == 34
+    assert len(environment.researched_accounts) == len(environment.research_mappings) > 0
     assert all(account.id in environment.research_mappings for account in environment.accounts)
     assert all(account.provenance and not account.provenance.synthetic for account in environment.accounts)
+    assert all(account.research_account_id == account.id for account in environment.accounts)
     assert len(environment.rich_scenarios) == 12
     assert all(account.id in environment.scoring_inputs for account in environment.accounts if account.id in environment.rich_scenarios and environment.rich_scenarios[account.id].simulated_score_inputs)
 

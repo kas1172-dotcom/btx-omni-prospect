@@ -5,18 +5,18 @@ sources. It does not infer a BTX commercial relationship from those sources.
 
 | Company | Industry | Public event/source | POC teaching scenario |
 | --- | --- | --- | --- |
-| Boeing | Commercial Aerospace | FAA production oversight update | Ideal strategic target |
-| GE Aerospace | Commercial Aerospace | NASA propulsion contracts | Strong cold prospect |
-| Lockheed Martin | Defense / Space | NASA CLPS | Cross-BU coordination |
-| Northrop Grumman | Defense / Space | NASA VADR | Strong public program context |
-| Anduril Industries | Defense / Robotics | DoD microelectronics remarks | Visible company, poor fit hypothesis |
-| Blue Origin | Space | NASA VADR | Strong cold prospect |
-| Rocket Lab USA | Space | NASA VADR | Needs research / low coverage |
+| Boeing | Aerospace / Defense | FAA production oversight update | Ideal strategic target |
+| GE Aerospace | Aerospace / Defense | NASA propulsion contracts | Strong cold prospect |
+| Lockheed Martin | Defense / Space Exploration | NASA CLPS | Cross-BU coordination |
+| Northrop Grumman | Defense / Space Exploration | NASA VADR | Strong public program context |
+| Anduril Industries | Defense (robotics secondary) | DoD microelectronics remarks | Visible company, poor fit hypothesis |
+| Blue Origin | Space Exploration | NASA VADR | Strong cold prospect |
+| Rocket Lab USA | Space Exploration | NASA VADR | Needs research / low coverage |
 | Intel | Semiconductor | Commerce CHIPS award | Ideal strategic target |
 | TSMC Arizona | Semiconductor | Commerce CHIPS award | Strong cold prospect |
 | Applied Materials | Semiconductor | Commerce equipment announcement | Warm simulated context, declining outlook |
-| Medtronic | Medical Device | SEC annual report | Needs research / low coverage |
-| Symbotic | Robotics / industrial automation | SEC annual report | Explicit scoring exclusion |
+| Medtronic | Medical | SEC annual report | Needs research / low coverage |
+| Symbotic | Unclassified (robotics secondary) | SEC annual report | Explicit scoring exclusion |
 
 ## Official source-validation record
 

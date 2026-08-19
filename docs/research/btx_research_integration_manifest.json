@@ -8,8 +8,8 @@
   "assessment": {
     "account_schema_sufficient_for_current_product_vision": true,
     "contact_schema_sufficient_for_current_product_vision": true,
-    "data_complete_for_final_600_real_account_universe": false,
-    "reason": "Universe was replaced 2026-08-17 with 34 BTX-weighted accounts anchored to Lockheed Martin (CRO attestation) plus standard top-tier POC guesses, while retaining three provenance-backed curated public-signal accounts required by the scenario set. The prior 78-account public-market universe was superseded because it was BTX-adjacent rather than BTX-weighted. Reaching the 600-target vision requires additional research passes plus real customer confirmations from Jamie/BTX."
+    "reason": "The POC loads the researched BTX-weighted account set directly. It has no target population; coverage grows only through additional real, sufficiently sourced research and confirmed BTX internal data.",
+    "data_complete_for_variable_researched_poc": true
   },
   "required_truth_boundaries": [
     "Every account carries provenance including source_ids and last_verified_at.",
@@ -22,10 +22,10 @@
   "future_data_enrichment": [
     "Promote GUESSED_STANDARD_TOP_TIER_POC_ONLY accounts to HIGH_INTERNAL_ATTESTATION as Jamie confirms named customers.",
     "Remove or reclassify accounts BTX does not actually serve.",
-    "Add 570+ additional real companies to reach 600-account per-industry vision.",
+    "Add real researched companies only where evidence supports them.",
     "Run USAspending federal contract history mining for each BTX BU as recipient (ERA Industries, Chandler Industries, i3D MFG, A1J Technologies, Addison Precision Manufacturing, Maitland Engineering, High Tech Solutions, Gen-El-Mec) to surface additional customer signals.",
-    "Add named contacts via SEC filing signatories, supplier day speaker rosters, patent co-authors, and publicly-indexed LinkedIn snippets sourced via Google search only.",
-    "Batch 3 will add btx_sample_paperless_quotes.json, btx_sample_orders.json, btx_sample_commercial_context.json (Prism/lake shape), and btx_sample_hubspot_crm.json for the simulated commercial layer."
+    "Add named contacts via official supplier portals, filings, and other authoritative public sources.",
+    "Maintain the simulated commercial datasets as the BTX-internal SAMPLE layer until approved connected access exists."
   ],
   "batch_1_reference_catalogs": [
     "btx_company_profile.json",

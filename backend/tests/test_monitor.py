@@ -63,4 +63,4 @@ def test_source_health_is_not_a_commercial_alert() -> None:
 
 def test_industry_packs_keep_generic_core_free_of_btx_strings() -> None:
     assert "sam_gov" in PACKS["defense"].source_ids
-    assert MonitorPipeline(PACKS["robotics"]).pack.id == "robotics"
+    assert MonitorPipeline(PACKS["energy"]).pack.id == "energy"

@@ -21,86 +21,984 @@
     "no_fabricated_people": "No named individual is invented for the POC.",
     "no_personal_email_inference": "No email guessing (firstname.lastname@company.com etc.) is performed."
   },
-  "role_families": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"],
+  "role_families": [
+    "procurement",
+    "supply_chain",
+    "supplier_management",
+    "engineering",
+    "manufacturing",
+    "operations"
+  ],
   "official_contact_sources": {
-    "LOCKHEED_RMS_PROCUREMENT": {"title": "Lockheed Martin Rotary and Mission Systems Procurement", "url": "https://www.lockheedmartin.com/en-us/suppliers.html"},
-    "LOCKHEED_SUPPLIERS": {"title": "Lockheed Martin Supplier Marketing Portal / Business Area Procurement", "url": "https://www.lockheedmartin.com/en-us/suppliers/business-area-supplier-relationships.html"},
-    "BOEING_CONTACT": {"title": "Boeing Suppliers", "url": "https://www.boeing.com/suppliers/"},
-    "RTX_SUPPLIERS": {"title": "RTX Suppliers", "url": "https://www.rtx.com/suppliers"},
-    "NGC_SUPPLIER": {"title": "Northrop Grumman OASIS Supplier Portal", "url": "https://www.northropgrumman.com/suppliers"},
-    "SPIRIT_SUPPLIERS": {"title": "Spirit AeroSystems Suppliers", "url": "https://www.spiritaero.com/suppliers/"},
-    "GE_AEROSPACE_SUPPLIER": {"title": "GE Aerospace Suppliers", "url": "https://www.geaerospace.com/suppliers"},
-    "SPACEX_SUPPLIER": {"title": "SpaceX Careers/Supplier", "url": "https://www.spacex.com/careers/index.html"},
-    "BLUE_SUPPLIER": {"title": "Blue Origin Careers", "url": "https://www.blueorigin.com/careers"},
-    "AMAT_SUPPLIER": {"title": "Applied Materials Suppliers", "url": "https://www.appliedmaterials.com/us/en/company/suppliers.html"},
-    "LAM_SUPPLIER": {"title": "Lam Research Suppliers", "url": "https://www.lamresearch.com/company/suppliers/"},
-    "KLA_SUPPLIER": {"title": "KLA Suppliers", "url": "https://www.kla.com/suppliers"},
-    "MDT_SUPPLIER": {"title": "Medtronic Suppliers", "url": "https://www.medtronic.com/us-en/about/suppliers.html"},
-    "STRYKER_SUPPLIER": {"title": "Stryker Suppliers", "url": "https://www.stryker.com/us/en/about/suppliers.html"},
-    "BSX_SUPPLIER": {"title": "Boston Scientific Suppliers", "url": "https://www.bostonscientific.com/en-US/supplier-information.html"},
-    "ISRG_SUPPLIER": {"title": "Intuitive Surgical Suppliers", "url": "https://www.intuitive.com/en-us/about-us/suppliers"},
-    "JNJ_SUPPLIER": {"title": "J&J Suppliers", "url": "https://www.jnj.com/suppliers"},
-    "ZB_SUPPLIER": {"title": "Zimmer Biomet Suppliers", "url": "https://www.zimmerbiomet.com/en/about-us/suppliers.html"},
-    "GEV_SUPPLIER": {"title": "GE Vernova Suppliers", "url": "https://www.gevernova.com/about/suppliers"},
-    "I3D_AFIT_CASE": {"title": "i3D MFG DMLS Case Studies (AFIT)", "url": "https://www.i3dmfg.com/i3d-news-press/new-case-studies-additive-manufacturing-dmls-optimization-warheads-and-aircraft-wings/"}
+    "LOCKHEED_RMS_PROCUREMENT": {
+      "title": "Lockheed Martin Rotary and Mission Systems Procurement",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers.html"
+    },
+    "LOCKHEED_SUPPLIERS": {
+      "title": "Lockheed Martin Supplier Marketing Portal / Business Area Procurement",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers/business-area-supplier-relationships.html"
+    },
+    "BOEING_CONTACT": {
+      "title": "Boeing Suppliers",
+      "url": "https://www.boeing.com/suppliers/"
+    },
+    "RTX_SUPPLIERS": {
+      "title": "RTX Suppliers",
+      "url": "https://www.rtx.com/suppliers"
+    },
+    "NGC_SUPPLIER": {
+      "title": "Northrop Grumman OASIS Supplier Portal",
+      "url": "https://www.northropgrumman.com/suppliers"
+    },
+    "SPIRIT_SUPPLIERS": {
+      "title": "Spirit AeroSystems Suppliers",
+      "url": "https://www.spiritaero.com/suppliers/"
+    },
+    "GE_AEROSPACE_SUPPLIER": {
+      "title": "GE Aerospace Suppliers",
+      "url": "https://www.geaerospace.com/suppliers"
+    },
+    "SPACEX_SUPPLIER": {
+      "title": "SpaceX Careers/Supplier",
+      "url": "https://www.spacex.com/careers/index.html"
+    },
+    "BLUE_SUPPLIER": {
+      "title": "Blue Origin Careers",
+      "url": "https://www.blueorigin.com/careers"
+    },
+    "AMAT_SUPPLIER": {
+      "title": "Applied Materials Suppliers",
+      "url": "https://www.appliedmaterials.com/us/en/company/suppliers.html"
+    },
+    "LAM_SUPPLIER": {
+      "title": "Lam Research Suppliers",
+      "url": "https://www.lamresearch.com/company/suppliers/"
+    },
+    "KLA_SUPPLIER": {
+      "title": "KLA Suppliers",
+      "url": "https://www.kla.com/suppliers"
+    },
+    "MDT_SUPPLIER": {
+      "title": "Medtronic Suppliers",
+      "url": "https://www.medtronic.com/us-en/about/suppliers.html"
+    },
+    "STRYKER_SUPPLIER": {
+      "title": "Stryker Suppliers",
+      "url": "https://www.stryker.com/us/en/about/suppliers.html"
+    },
+    "BSX_SUPPLIER": {
+      "title": "Boston Scientific Suppliers",
+      "url": "https://www.bostonscientific.com/en-US/supplier-information.html"
+    },
+    "ISRG_SUPPLIER": {
+      "title": "Intuitive Surgical Suppliers",
+      "url": "https://www.intuitive.com/en-us/about-us/suppliers"
+    },
+    "JNJ_SUPPLIER": {
+      "title": "J&J Suppliers",
+      "url": "https://www.jnj.com/suppliers"
+    },
+    "ZB_SUPPLIER": {
+      "title": "Zimmer Biomet Suppliers",
+      "url": "https://www.zimmerbiomet.com/en/about-us/suppliers.html"
+    },
+    "GEV_SUPPLIER": {
+      "title": "GE Vernova Suppliers",
+      "url": "https://www.gevernova.com/about/suppliers"
+    },
+    "I3D_AFIT_CASE": {
+      "title": "i3D MFG DMLS Case Studies (AFIT)",
+      "url": "https://www.i3dmfg.com/i3d-news-press/new-case-studies-additive-manufacturing-dmls-optimization-warheads-and-aircraft-wings/"
+    }
   },
   "named_public_contacts": [
-    {"research_account_id": "lockheed-martin", "name": "Alex Drickey", "title": "Procurement — Electrical Items", "role_family": "procurement", "division": "Rotary and Mission Systems", "location": "Moorestown, NJ", "contact_type": "NAMED_PUBLIC_CONTACT", "verification_state": "VERIFIED_OFFICIAL", "public_email": null, "public_phone": null, "source_ids": ["LOCKHEED_RMS_PROCUREMENT"]},
-    {"research_account_id": "afit", "name": "Major David Liu", "title": "Researcher — AFIT (aircraft wing topology optimization)", "role_family": "research", "division": "Air Force Institute of Technology", "location": "Wright-Patterson AFB, OH", "contact_type": "NAMED_PUBLIC_CONTACT", "verification_state": "VERIFIED_OFFICIAL", "public_email": null, "public_phone": null, "source_ids": ["I3D_AFIT_CASE"]},
-    {"research_account_id": "afit", "name": "Captain Hayden K. Richards", "title": "Researcher — AFIT (penetrative warhead lattice)", "role_family": "research", "division": "Air Force Institute of Technology", "location": "Wright-Patterson AFB, OH", "contact_type": "NAMED_PUBLIC_CONTACT", "verification_state": "VERIFIED_OFFICIAL", "public_email": null, "public_phone": null, "source_ids": ["I3D_AFIT_CASE"]}
+    {
+      "research_account_id": "lockheed-martin",
+      "name": "Alex Drickey",
+      "title": "Procurement — Electrical Items",
+      "role_family": "procurement",
+      "division": "Rotary and Mission Systems",
+      "location": "Moorestown, NJ",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_RMS_PROCUREMENT"
+      ]
+    },
+    {
+      "research_account_id": "afit",
+      "name": "Major David Liu",
+      "title": "Researcher — AFIT (aircraft wing topology optimization)",
+      "role_family": "research",
+      "division": "Air Force Institute of Technology",
+      "location": "Wright-Patterson AFB, OH",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "I3D_AFIT_CASE"
+      ]
+    },
+    {
+      "research_account_id": "afit",
+      "name": "Captain Hayden K. Richards",
+      "title": "Researcher — AFIT (penetrative warhead lattice)",
+      "role_family": "research",
+      "division": "Air Force Institute of Technology",
+      "location": "Wright-Patterson AFB, OH",
+      "contact_type": "NAMED_PUBLIC_CONTACT",
+      "verification_state": "VERIFIED_OFFICIAL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "I3D_AFIT_CASE"
+      ]
+    }
   ],
   "public_contact_channels": [
-    {"research_account_id": "lockheed-martin", "channel_name": "Lockheed Martin Supplier Marketing Portal / Business Area Procurement", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": "inquiries.supplier@lmco.com", "public_phone": null, "source_ids": ["LOCKHEED_SUPPLIERS"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "boeing", "channel_name": "Boeing Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["BOEING_CONTACT"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "northrop-grumman", "channel_name": "Northrop Grumman OASIS Supplier Portal", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["NGC_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "rtx-collins-aerospace", "channel_name": "RTX Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["RTX_SUPPLIERS"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "spirit-aerosystems", "channel_name": "Spirit AeroSystems Supplier Registration", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["SPIRIT_SUPPLIERS"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "ge-aerospace", "channel_name": "GE Aerospace Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["GE_AEROSPACE_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "spacex", "channel_name": "SpaceX Supplier / Careers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["SPACEX_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "blue-origin", "channel_name": "Blue Origin Careers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["BLUE_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "applied-materials", "channel_name": "Applied Materials Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["AMAT_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "lam-research", "channel_name": "Lam Research Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["LAM_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "kla", "channel_name": "KLA Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["KLA_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "medtronic", "channel_name": "Medtronic Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["MDT_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "zimmer-biomet", "channel_name": "Zimmer Biomet Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["ZB_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "stryker", "channel_name": "Stryker Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["STRYKER_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "boston-scientific", "channel_name": "Boston Scientific Supplier Information", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["BSX_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "intuitive-surgical", "channel_name": "Intuitive Surgical Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["ISRG_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "johnson-johnson-medtech", "channel_name": "Johnson & Johnson Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["JNJ_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"},
-    {"research_account_id": "ge-vernova", "channel_name": "GE Vernova Suppliers", "role_family": "supplier_management", "contact_type": "PUBLIC_CONTACT_CHANNEL", "public_email": null, "public_phone": null, "source_ids": ["GEV_SUPPLIER"], "verification_state": "VERIFIED_OFFICIAL"}
+    {
+      "research_account_id": "lockheed-martin",
+      "channel_name": "Lockheed Martin Supplier Marketing Portal / Business Area Procurement",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": "inquiries.supplier@lmco.com",
+      "public_phone": null,
+      "source_ids": [
+        "LOCKHEED_SUPPLIERS"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "boeing",
+      "channel_name": "Boeing Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "BOEING_CONTACT"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "channel_name": "Northrop Grumman OASIS Supplier Portal",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "NGC_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "channel_name": "RTX Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "RTX_SUPPLIERS"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "channel_name": "Spirit AeroSystems Supplier Registration",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "SPIRIT_SUPPLIERS"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "channel_name": "GE Aerospace Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "GE_AEROSPACE_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "spacex",
+      "channel_name": "SpaceX Supplier / Careers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "SPACEX_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "blue-origin",
+      "channel_name": "Blue Origin Careers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "BLUE_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "applied-materials",
+      "channel_name": "Applied Materials Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "AMAT_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "lam-research",
+      "channel_name": "Lam Research Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "LAM_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "kla",
+      "channel_name": "KLA Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "KLA_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "medtronic",
+      "channel_name": "Medtronic Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "MDT_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "channel_name": "Zimmer Biomet Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "ZB_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "stryker",
+      "channel_name": "Stryker Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "STRYKER_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "channel_name": "Boston Scientific Supplier Information",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "BSX_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "channel_name": "Intuitive Surgical Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "ISRG_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "channel_name": "Johnson & Johnson Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "JNJ_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "channel_name": "GE Vernova Suppliers",
+      "role_family": "supplier_management",
+      "contact_type": "PUBLIC_CONTACT_CHANNEL",
+      "public_email": null,
+      "public_phone": null,
+      "source_ids": [
+        "GEV_SUPPLIER"
+      ],
+      "verification_state": "VERIFIED_OFFICIAL"
+    }
   ],
   "account_contact_research": [
-    {"research_account_id": "lockheed-martin", "display_name": "Lockheed Martin", "industries": ["Defense", "Space"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "named_public_contact_count": 1, "public_contact_channel_count": 1, "named_role_coverage": ["procurement"], "research_state": "NAMED_PLUS_CHANNEL_VERIFIED", "gaps": ["supply_chain", "engineering", "manufacturing", "operations"]},
-    {"research_account_id": "boeing", "display_name": "Boeing", "industries": ["Commercial Aerospace", "Defense"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "northrop-grumman", "display_name": "Northrop Grumman", "industries": ["Defense", "Space"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "rtx-collins-aerospace", "display_name": "RTX / Collins Aerospace", "industries": ["Aerospace", "Defense"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "pratt-whitney", "display_name": "Pratt & Whitney", "industries": ["Aerospace", "Defense"], "role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "ge-aerospace", "display_name": "GE Aerospace", "industries": ["Aerospace", "Defense"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "spirit-aerosystems", "display_name": "Spirit AeroSystems", "industries": ["Commercial Aerospace"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "l3harris", "display_name": "L3Harris", "industries": ["Defense", "Space"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "general-atomics", "display_name": "General Atomics", "industries": ["Defense"], "role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "spacex", "display_name": "SpaceX", "industries": ["Space"], "role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "blue-origin", "display_name": "Blue Origin", "industries": ["Space"], "role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "rocket-lab-usa", "display_name": "Rocket Lab USA", "industries": ["Space"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "ula-united-launch-alliance", "display_name": "ULA", "industries": ["Space", "Defense"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "sierra-space", "display_name": "Sierra Space", "industries": ["Space"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "applied-materials", "display_name": "Applied Materials", "industries": ["Semiconductor"], "role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "lam-research", "display_name": "Lam Research", "industries": ["Semiconductor"], "role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "kla", "display_name": "KLA", "industries": ["Semiconductor"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "asml", "display_name": "ASML", "industries": ["Semiconductor"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "medtronic", "display_name": "Medtronic", "industries": ["Medical"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "zimmer-biomet", "display_name": "Zimmer Biomet", "industries": ["Medical"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "stryker", "display_name": "Stryker", "industries": ["Medical"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "boston-scientific", "display_name": "Boston Scientific", "industries": ["Medical"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "intuitive-surgical", "display_name": "Intuitive Surgical", "industries": ["Medical"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "johnson-johnson-medtech", "display_name": "J&J MedTech / Ethicon", "industries": ["Medical"], "role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "ge-vernova", "display_name": "GE Vernova", "industries": ["Energy"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 1, "named_role_coverage": [], "research_state": "PUBLIC_CHANNEL_VERIFIED", "gaps": ["all role families lack named public contacts"]},
-    {"research_account_id": "westinghouse", "display_name": "Westinghouse", "industries": ["Energy"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "afit", "display_name": "AFIT", "industries": ["Defense"], "role_targets": ["research", "engineering"], "named_public_contact_count": 2, "public_contact_channel_count": 0, "named_role_coverage": ["research"], "research_state": "NAMED_VERIFIED", "gaps": []},
-    {"research_account_id": "anduril-industries", "display_name": "Anduril Industries", "industries": ["Defense"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "textron", "display_name": "Textron", "industries": ["Aerospace", "Defense"], "role_targets": ["procurement", "supply_chain", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "terrapower", "display_name": "TerraPower", "industries": ["Energy"], "role_targets": ["procurement", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]},
-    {"research_account_id": "commonwealth-fusion", "display_name": "Commonwealth Fusion", "industries": ["Energy"], "role_targets": ["procurement", "engineering"], "named_public_contact_count": 0, "public_contact_channel_count": 0, "named_role_coverage": [], "research_state": "ROLE_TARGETS_ONLY", "gaps": ["all role families lack named public contacts and channels"]}
+    {
+      "research_account_id": "lockheed-martin",
+      "display_name": "Lockheed Martin",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 1,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [
+        "procurement"
+      ],
+      "research_state": "NAMED_PLUS_CHANNEL_VERIFIED",
+      "gaps": [
+        "supply_chain",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ]
+    },
+    {
+      "research_account_id": "boeing",
+      "display_name": "Boeing",
+      "industries": [
+        "Commercial Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "display_name": "Northrop Grumman",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering",
+        "manufacturing",
+        "operations"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "display_name": "RTX / Collins Aerospace",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "display_name": "Pratt & Whitney",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "display_name": "GE Aerospace",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "display_name": "Spirit AeroSystems",
+      "industries": [
+        "Commercial Aerospace"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "l3harris",
+      "display_name": "L3Harris",
+      "industries": [
+        "Defense",
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "general-atomics",
+      "display_name": "General Atomics",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "spacex",
+      "display_name": "SpaceX",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "blue-origin",
+      "display_name": "Blue Origin",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "display_name": "Rocket Lab USA",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "ula-united-launch-alliance",
+      "display_name": "ULA",
+      "industries": [
+        "Space",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "sierra-space",
+      "display_name": "Sierra Space",
+      "industries": [
+        "Space"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "applied-materials",
+      "display_name": "Applied Materials",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "lam-research",
+      "display_name": "Lam Research",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering",
+        "manufacturing"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "kla",
+      "display_name": "KLA",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "asml",
+      "display_name": "ASML",
+      "industries": [
+        "Semiconductor"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "medtronic",
+      "display_name": "Medtronic",
+      "industries": [
+        "Medical"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "display_name": "Zimmer Biomet",
+      "industries": [
+        "Medical"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "stryker",
+      "display_name": "Stryker",
+      "industries": [
+        "Medical"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "display_name": "Boston Scientific",
+      "industries": [
+        "Medical"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "display_name": "Intuitive Surgical",
+      "industries": [
+        "Medical"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "display_name": "J&J MedTech / Ethicon",
+      "industries": [
+        "Medical"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "supplier_management",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "display_name": "GE Vernova",
+      "industries": [
+        "Energy"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 1,
+      "named_role_coverage": [],
+      "research_state": "PUBLIC_CHANNEL_VERIFIED",
+      "gaps": [
+        "all role families lack named public contacts"
+      ]
+    },
+    {
+      "research_account_id": "westinghouse",
+      "display_name": "Westinghouse",
+      "industries": [
+        "Energy"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "afit",
+      "display_name": "AFIT",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "research",
+        "engineering"
+      ],
+      "named_public_contact_count": 2,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [
+        "research"
+      ],
+      "research_state": "NAMED_VERIFIED",
+      "gaps": []
+    },
+    {
+      "research_account_id": "anduril-industries",
+      "display_name": "Anduril Industries",
+      "industries": [
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "textron",
+      "display_name": "Textron",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "role_targets": [
+        "procurement",
+        "supply_chain",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "terrapower",
+      "display_name": "TerraPower",
+      "industries": [
+        "Energy"
+      ],
+      "role_targets": [
+        "procurement",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    },
+    {
+      "research_account_id": "commonwealth-fusion",
+      "display_name": "Commonwealth Fusion",
+      "industries": [
+        "Energy"
+      ],
+      "role_targets": [
+        "procurement",
+        "engineering"
+      ],
+      "named_public_contact_count": 0,
+      "public_contact_channel_count": 0,
+      "named_role_coverage": [],
+      "research_state": "ROLE_TARGETS_ONLY",
+      "gaps": [
+        "all role families lack named public contacts and channels"
+      ]
+    }
   ],
   "summary": {
     "accounts_covered": 30,

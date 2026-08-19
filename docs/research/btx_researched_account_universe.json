@@ -31,84 +31,2166 @@
     "AFIT is an academic-DoD collaboration recorded on i3D's public case study; do not treat as a commercial customer."
   ],
   "sources": {
-    "CHIPS_2026": {"title": "Commerce 2026 Semiconductor Investment Summary", "url": "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick", "source_type": "US_GOVERNMENT"},
-    "CHIPS_INTEL": {"title": "Commerce Intel CHIPS Award", "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel", "source_type": "US_GOVERNMENT"},
-    "CHIPS_TSMC": {"title": "Commerce TSMC Arizona CHIPS Award", "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-tsmc", "source_type": "US_GOVERNMENT"},
-    "SEC_SYMBOTIC": {"title": "SEC Symbotic 2025 10-K", "url": "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm", "source_type": "SEC_FILING"},
-    "BTX_DEFENSE_CHANDLER": {"title": "Chandler Industries — Defense", "url": "https://www.chandlerindustries.com/industries/defense/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
-    "MAITLAND_METADATA": {"title": "Maitland Engineering — page metadata references Zimmer and Biomet", "url": "https://www.maitlandengineering.com/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
-    "I3D_AFIT_CASE": {"title": "i3D MFG — DMLS Optimization of Warheads and Aircraft Wings (AFIT collaboration)", "url": "https://www.i3dmfg.com/i3d-news-press/new-case-studies-additive-manufacturing-dmls-optimization-warheads-and-aircraft-wings/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"},
-    "LSQUARED_HTS": {"title": "L Squared Capital Partners Marks Milestone 10th Acquisition — references NASA Artemis, SpaceX Starship end markets", "url": "https://www.lsquaredcap.com/l-squared-capital-partners-marks-milestone-10th-acquisition-at-btx-precision-with-addition-of-high-tech-solutions/", "source_type": "OWNER_OFFICIAL"},
-    "BTX_CRO_ATTESTATION": {"title": "Kapil relay of Jamie Goettler CRO attestation via research task 2026-08-17", "url": "internal://btx-cro-attestation-2026-08-17", "source_type": "BTX_INTERNAL_CRO_ATTESTATION"},
-    "USER_POC_GUESS": {"title": "User-directed POC guess for standard top-tier customer set", "url": "internal://user-poc-guess-2026-08-17", "source_type": "USER_POC_ASSUMPTION"},
-    "LOCKHEED_RMS_PROCUREMENT": {"title": "Lockheed Martin RMS Procurement (existing)", "url": "https://www.lockheedmartin.com/en-us/suppliers.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "LOCKHEED_SUPPLIERS": {"title": "Lockheed Martin Supplier Portal (existing)", "url": "https://www.lockheedmartin.com/en-us/suppliers/business-area-supplier-relationships.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "BOEING_CONTACT": {"title": "Boeing Supplier Contact (existing)", "url": "https://www.boeing.com/suppliers/", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "RTX_SUPPLIERS": {"title": "RTX Supplier Portal", "url": "https://www.rtx.com/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "NGC_SUPPLIER": {"title": "Northrop Grumman OASIS Supplier Portal", "url": "https://www.northropgrumman.com/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "SPIRIT_SUPPLIERS": {"title": "Spirit AeroSystems Supplier Portal", "url": "https://www.spiritaero.com/suppliers/", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "GE_AEROSPACE_SUPPLIER": {"title": "GE Aerospace Supplier", "url": "https://www.geaerospace.com/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "SPACEX_SUPPLIER": {"title": "SpaceX Supplier Portal", "url": "https://www.spacex.com/careers/index.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "BLUE_SUPPLIER": {"title": "Blue Origin Careers", "url": "https://www.blueorigin.com/careers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "AMAT_SUPPLIER": {"title": "Applied Materials Supplier", "url": "https://www.appliedmaterials.com/us/en/company/suppliers.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "LAM_SUPPLIER": {"title": "Lam Research Supplier", "url": "https://www.lamresearch.com/company/suppliers/", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "KLA_SUPPLIER": {"title": "KLA Supplier", "url": "https://www.kla.com/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "MDT_SUPPLIER": {"title": "Medtronic Supplier", "url": "https://www.medtronic.com/us-en/about/suppliers.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "STRYKER_SUPPLIER": {"title": "Stryker Supplier", "url": "https://www.stryker.com/us/en/about/suppliers.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "BSX_SUPPLIER": {"title": "Boston Scientific Supplier", "url": "https://www.bostonscientific.com/en-US/supplier-information.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "ISRG_SUPPLIER": {"title": "Intuitive Surgical Supplier", "url": "https://www.intuitive.com/en-us/about-us/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "JNJ_SUPPLIER": {"title": "Johnson & Johnson Supplier", "url": "https://www.jnj.com/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "ZB_SUPPLIER": {"title": "Zimmer Biomet Supplier", "url": "https://www.zimmerbiomet.com/en/about-us/suppliers.html", "source_type": "PRIME_CONTRACTOR_OFFICIAL"},
-    "GEV_SUPPLIER": {"title": "GE Vernova Supplier", "url": "https://www.gevernova.com/about/suppliers", "source_type": "PRIME_CONTRACTOR_OFFICIAL"}
+    "CHIPS_2026": {
+      "title": "Commerce 2026 Semiconductor Investment Summary",
+      "url": "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_INTEL": {
+      "title": "Commerce Intel CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel",
+      "source_type": "US_GOVERNMENT"
+    },
+    "CHIPS_TSMC": {
+      "title": "Commerce TSMC Arizona CHIPS Award",
+      "url": "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-tsmc",
+      "source_type": "US_GOVERNMENT"
+    },
+    "SEC_SYMBOTIC": {
+      "title": "SEC Symbotic 2025 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm",
+      "source_type": "SEC_FILING"
+    },
+    "BTX_DEFENSE_CHANDLER": {
+      "title": "Chandler Industries — Defense",
+      "url": "https://www.chandlerindustries.com/industries/defense/",
+      "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"
+    },
+    "MAITLAND_METADATA": {
+      "title": "Maitland Engineering — page metadata references Zimmer and Biomet",
+      "url": "https://www.maitlandengineering.com/",
+      "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"
+    },
+    "I3D_AFIT_CASE": {
+      "title": "i3D MFG — DMLS Optimization of Warheads and Aircraft Wings (AFIT collaboration)",
+      "url": "https://www.i3dmfg.com/i3d-news-press/new-case-studies-additive-manufacturing-dmls-optimization-warheads-and-aircraft-wings/",
+      "source_type": "BTX_BUSINESS_UNIT_OFFICIAL"
+    },
+    "LSQUARED_HTS": {
+      "title": "L Squared Capital Partners Marks Milestone 10th Acquisition — references NASA Artemis, SpaceX Starship end markets",
+      "url": "https://www.lsquaredcap.com/l-squared-capital-partners-marks-milestone-10th-acquisition-at-btx-precision-with-addition-of-high-tech-solutions/",
+      "source_type": "OWNER_OFFICIAL"
+    },
+    "BTX_CRO_ATTESTATION": {
+      "title": "Kapil relay of Jamie Goettler CRO attestation via research task 2026-08-17",
+      "url": "internal://btx-cro-attestation-2026-08-17",
+      "source_type": "BTX_INTERNAL_CRO_ATTESTATION"
+    },
+    "USER_POC_GUESS": {
+      "title": "User-directed POC guess for standard top-tier customer set",
+      "url": "internal://user-poc-guess-2026-08-17",
+      "source_type": "USER_POC_ASSUMPTION"
+    },
+    "LOCKHEED_RMS_PROCUREMENT": {
+      "title": "Lockheed Martin RMS Procurement (existing)",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "LOCKHEED_SUPPLIERS": {
+      "title": "Lockheed Martin Supplier Portal (existing)",
+      "url": "https://www.lockheedmartin.com/en-us/suppliers/business-area-supplier-relationships.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "BOEING_CONTACT": {
+      "title": "Boeing Supplier Contact (existing)",
+      "url": "https://www.boeing.com/suppliers/",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "RTX_SUPPLIERS": {
+      "title": "RTX Supplier Portal",
+      "url": "https://www.rtx.com/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "NGC_SUPPLIER": {
+      "title": "Northrop Grumman OASIS Supplier Portal",
+      "url": "https://www.northropgrumman.com/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "SPIRIT_SUPPLIERS": {
+      "title": "Spirit AeroSystems Supplier Portal",
+      "url": "https://www.spiritaero.com/suppliers/",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "GE_AEROSPACE_SUPPLIER": {
+      "title": "GE Aerospace Supplier",
+      "url": "https://www.geaerospace.com/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "SPACEX_SUPPLIER": {
+      "title": "SpaceX Supplier Portal",
+      "url": "https://www.spacex.com/careers/index.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "BLUE_SUPPLIER": {
+      "title": "Blue Origin Careers",
+      "url": "https://www.blueorigin.com/careers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "AMAT_SUPPLIER": {
+      "title": "Applied Materials Supplier",
+      "url": "https://www.appliedmaterials.com/us/en/company/suppliers.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "LAM_SUPPLIER": {
+      "title": "Lam Research Supplier",
+      "url": "https://www.lamresearch.com/company/suppliers/",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "KLA_SUPPLIER": {
+      "title": "KLA Supplier",
+      "url": "https://www.kla.com/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "MDT_SUPPLIER": {
+      "title": "Medtronic Supplier",
+      "url": "https://www.medtronic.com/us-en/about/suppliers.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "STRYKER_SUPPLIER": {
+      "title": "Stryker Supplier",
+      "url": "https://www.stryker.com/us/en/about/suppliers.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "BSX_SUPPLIER": {
+      "title": "Boston Scientific Supplier",
+      "url": "https://www.bostonscientific.com/en-US/supplier-information.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "ISRG_SUPPLIER": {
+      "title": "Intuitive Surgical Supplier",
+      "url": "https://www.intuitive.com/en-us/about-us/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "JNJ_SUPPLIER": {
+      "title": "Johnson & Johnson Supplier",
+      "url": "https://www.jnj.com/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "ZB_SUPPLIER": {
+      "title": "Zimmer Biomet Supplier",
+      "url": "https://www.zimmerbiomet.com/en/about-us/suppliers.html",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    },
+    "GEV_SUPPLIER": {
+      "title": "GE Vernova Supplier",
+      "url": "https://www.gevernova.com/about/suppliers",
+      "source_type": "PRIME_CONTRACTOR_OFFICIAL"
+    }
   },
   "accounts": [
-    {"research_account_id": "intel", "display_name": "Intel", "official_domain": "intel.com", "industries": ["Semiconductor"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "NO_RELATIONSHIP_EVIDENCE", "relationship_confidence": "NONE", "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "HIGH", "prospect_rationale": "Major U.S. semiconductor manufacturer with large fab expansion.", "source_ids": ["CHIPS_2026", "CHIPS_INTEL"], "source_urls": ["https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick", "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel"], "watch_profile": {"official_domain": "intel.com", "sec_cik": null, "ticker": null, "newsroom_url": null, "investor_relations_url": null, "aliases": [], "source_native_ids": {}, "verification_state": "PARTIAL_RESEARCHED_IDENTITY"}, "research_status": "RESEARCHED_CANDIDATE", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "intel"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["CHIPS_2026", "CHIPS_INTEL"], "last_verified_at": null}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "tsmc-arizona", "display_name": "TSMC Arizona", "official_domain": "tsmc.com", "industries": ["Semiconductor"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "NO_RELATIONSHIP_EVIDENCE", "relationship_confidence": "NONE", "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "HIGH", "prospect_rationale": "Leading-edge Phoenix fab expansion.", "source_ids": ["CHIPS_2026", "CHIPS_TSMC"], "source_urls": ["https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick", "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-tsmc"], "watch_profile": {"official_domain": "tsmc.com", "sec_cik": null, "ticker": null, "newsroom_url": null, "investor_relations_url": null, "aliases": [], "source_native_ids": {}, "verification_state": "PARTIAL_RESEARCHED_IDENTITY"}, "research_status": "RESEARCHED_CANDIDATE", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "research_state": "NAMED_CONTACTS_VERIFIED", "named_public_contact_count": 4, "public_contact_channel_count": 1, "companion_join_key": "tsmc-arizona"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["CHIPS_2026", "CHIPS_TSMC"], "last_verified_at": null}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "symbotic", "display_name": "Symbotic", "official_domain": "symbotic.com", "industries": ["Robotics"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "NO_RELATIONSHIP_EVIDENCE", "relationship_confidence": "NONE", "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "HIGH", "prospect_rationale": "Large robotic warehouse-automation systems company.", "source_ids": ["SEC_SYMBOTIC"], "source_urls": ["https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm"], "watch_profile": {"official_domain": "symbotic.com", "sec_cik": null, "ticker": null, "newsroom_url": null, "investor_relations_url": null, "aliases": [], "source_native_ids": {}, "verification_state": "PARTIAL_RESEARCHED_IDENTITY"}, "research_status": "RESEARCHED_CANDIDATE", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "symbotic"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["SEC_SYMBOTIC"], "last_verified_at": null}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "lockheed-martin", "display_name": "Lockheed Martin", "official_domain": "lockheedmartin.com", "industries": ["Defense", "Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "HIGH_INTERNAL_ATTESTATION", "relationship_basis": "BTX CRO attestation via Kapil relay: Lockheed Martin is BTX's largest customer.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Anchor customer for BTX platform across F-35, JASSM/LRASM, THAAD, CLPS lunar programs. Multi-BU relevance.", "source_ids": ["BTX_CRO_ATTESTATION", "LOCKHEED_RMS_PROCUREMENT", "LOCKHEED_SUPPLIERS"], "source_urls": ["internal://btx-cro-attestation-2026-08-17", "https://www.lockheedmartin.com/en-us/suppliers.html"], "watch_profile": {"official_domain": "lockheedmartin.com", "sec_cik": "0000936468", "ticker": "LMT", "aliases": ["Lockheed Martin Corporation", "LMCO"], "verification_state": "VERIFIED"}, "research_status": "RESEARCHED_ANCHOR_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "research_state": "NAMED_PLUS_CHANNEL_VERIFIED", "named_public_contact_count": 1, "public_contact_channel_count": 1, "companion_join_key": "lockheed-martin"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["BTX_CRO_ATTESTATION", "LOCKHEED_RMS_PROCUREMENT"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "boeing", "display_name": "Boeing", "official_domain": "boeing.com", "industries": ["Commercial Aerospace", "Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP", "relationship_confidence": "HIGH", "relationship_basis": "Chandler Industries publicly states it is a Tier I supplier to Boeing (defense page).", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "HIGH", "prospect_rationale": "Public BTX-BU supplier statement; 777X/787/737 MAX/KC-46/Artemis/NGAD context; HTS Kansas City geography aligned.", "source_ids": ["BTX_DEFENSE_CHANDLER", "BOEING_CONTACT"], "source_urls": ["https://www.chandlerindustries.com/industries/defense/", "https://www.boeing.com/suppliers/"], "watch_profile": {"official_domain": "boeing.com", "sec_cik": "0000012927", "ticker": "BA", "aliases": ["The Boeing Company"], "verification_state": "VERIFIED"}, "research_status": "RESEARCHED_ANCHOR_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "boeing"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["BTX_DEFENSE_CHANDLER"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "northrop-grumman", "display_name": "Northrop Grumman", "official_domain": "northropgrumman.com", "industries": ["Defense", "Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. F-35 center fuselage integrator, B-21 prime, VADR launch services, SLS solid rocket boosters. Multi-BU fit for BTX defense/space.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "B-21 Raider prime; F-35 center fuselage; VADR; SLS boosters.", "source_ids": ["USER_POC_GUESS", "NGC_SUPPLIER"], "source_urls": ["https://www.northropgrumman.com/suppliers"], "watch_profile": {"official_domain": "northropgrumman.com", "sec_cik": "0001133421", "ticker": "NOC", "aliases": ["Northrop Grumman Corporation", "Northrop Grumman Systems Corporation"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "northrop-grumman"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "rtx-collins-aerospace", "display_name": "RTX (Raytheon Technologies) / Collins Aerospace", "official_domain": "rtx.com", "industries": ["Aerospace", "Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Patriot, LRSO, Collins avionics, 787 interior systems.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "RTX portfolio (Collins Aerospace, Raytheon, Pratt & Whitney) spans commercial aero, defense, and missile programs.", "source_ids": ["USER_POC_GUESS", "RTX_SUPPLIERS"], "source_urls": ["https://www.rtx.com/suppliers"], "watch_profile": {"official_domain": "rtx.com", "sec_cik": "0000101829", "ticker": "RTX", "aliases": ["RTX Corporation", "Raytheon Technologies", "Collins Aerospace"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "rtx-collins-aerospace"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "pratt-whitney", "display_name": "Pratt & Whitney", "official_domain": "prattwhitney.com", "industries": ["Aerospace", "Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. F-35 engine (F135), commercial engines (GTF), engine components.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Engine BU of RTX; distinct customer for turbine components; ERA vacuum brazing fit.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.prattwhitney.com/en/suppliers"], "watch_profile": {"official_domain": "prattwhitney.com", "aliases": ["Pratt & Whitney", "P&W"], "parent_ticker": "RTX", "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "pratt-whitney"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "ge-aerospace", "display_name": "GE Aerospace", "official_domain": "geaerospace.com", "industries": ["Aerospace", "Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. GE9X (777X), GEnx (787), CFM56/LEAP engines.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Engine OEM; turbine hardware fit for ERA + Chandler.", "source_ids": ["USER_POC_GUESS", "GE_AEROSPACE_SUPPLIER"], "source_urls": ["https://www.geaerospace.com/suppliers"], "watch_profile": {"official_domain": "geaerospace.com", "sec_cik": "0000040545", "ticker": "GE", "aliases": ["General Electric Company"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "ge-aerospace"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "spirit-aerosystems", "display_name": "Spirit AeroSystems", "official_domain": "spiritaero.com", "industries": ["Commercial Aerospace"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. 737/787/777 fuselage sections; Wichita KS geography aligned to HTS.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Boeing fuselage integrator (acquired by Boeing 2025 but distinct customer entity). Wichita KS proximity to HTS.", "source_ids": ["USER_POC_GUESS", "SPIRIT_SUPPLIERS"], "source_urls": ["https://www.spiritaero.com/suppliers/"], "watch_profile": {"official_domain": "spiritaero.com", "sec_cik": "0001364885", "ticker": "SPR", "aliases": ["Spirit AeroSystems, Inc."], "note": "Acquired by Boeing 2025; retained as distinct customer entity for POC.", "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "spirit-aerosystems"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "l3harris", "display_name": "L3Harris Technologies", "official_domain": "l3harris.com", "industries": ["Defense", "Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Rochester NY heritage (Harris) aligns to Addison Precision Manufacturing geography.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Defense electronics, communications, avionics; Rochester NY geography aligns to APM.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.l3harris.com/suppliers"], "watch_profile": {"official_domain": "l3harris.com", "sec_cik": "0000202058", "ticker": "LHX", "aliases": ["L3Harris Technologies, Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "l3harris"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "general-atomics", "display_name": "General Atomics", "official_domain": "ga.com", "industries": ["Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. MQ-9 Reaper and other UAS platforms.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "MQ-9 UAS; airframe machining fit for ERA/Chandler.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.ga.com/"], "watch_profile": {"official_domain": "ga.com", "aliases": ["General Atomics Aeronautical Systems", "GA-ASI"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "general-atomics"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "spacex", "display_name": "SpaceX", "official_domain": "spacex.com", "industries": ["Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. L Squared press release explicitly names SpaceX Starship as HTS end-market context.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Starship, Falcon, Merlin/Raptor engine components; i3D DMLS + HTS complex assembly fit.", "source_ids": ["USER_POC_GUESS", "LSQUARED_HTS", "SPACEX_SUPPLIER"], "source_urls": ["https://www.spacex.com/", "https://www.lsquaredcap.com/l-squared-capital-partners-marks-milestone-10th-acquisition-at-btx-precision-with-addition-of-high-tech-solutions/"], "watch_profile": {"official_domain": "spacex.com", "aliases": ["Space Exploration Technologies Corp.", "SpaceX"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "spacex"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS", "LSQUARED_HTS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "blue-origin", "display_name": "Blue Origin", "official_domain": "blueorigin.com", "industries": ["Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. New Glenn, BE-4 engines, HLS lunar lander.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "New Glenn structural + engine components; DMLS fit for BE-4 hardware.", "source_ids": ["USER_POC_GUESS", "BLUE_SUPPLIER"], "source_urls": ["https://www.blueorigin.com/", "https://www.blueorigin.com/careers"], "watch_profile": {"official_domain": "blueorigin.com", "aliases": ["Blue Origin, LLC", "Blue Origin Manufacturing, LLC"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "blue-origin"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "rocket-lab-usa", "display_name": "Rocket Lab USA", "official_domain": "rocketlabusa.com", "industries": ["Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Electron, Neutron, Archimedes engine.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "MEDIUM", "prospect_rationale": "Neutron scale-up; DMLS engine components fit; smaller volume than SpaceX/Blue.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.rocketlabusa.com/"], "watch_profile": {"official_domain": "rocketlabusa.com", "sec_cik": "0001819994", "ticker": "RKLB", "aliases": ["Rocket Lab USA, Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "rocket-lab-usa"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "ula-united-launch-alliance", "display_name": "United Launch Alliance", "official_domain": "ulalaunch.com", "industries": ["Space", "Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Vulcan Centaur launch vehicle.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "MEDIUM", "prospect_rationale": "Boeing-Lockheed JV; Vulcan program; structural components fit.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.ulalaunch.com/"], "watch_profile": {"official_domain": "ulalaunch.com", "aliases": ["United Launch Alliance, LLC"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "ula-united-launch-alliance"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "sierra-space", "display_name": "Sierra Space", "official_domain": "sierraspace.com", "industries": ["Space"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Dream Chaser spaceplane.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "MEDIUM", "prospect_rationale": "Dream Chaser structural components; landing gear; hatch assemblies.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.sierraspace.com/"], "watch_profile": {"official_domain": "sierraspace.com", "aliases": ["Sierra Space Corporation"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "sierra-space"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "applied-materials", "display_name": "Applied Materials", "official_domain": "appliedmaterials.com", "industries": ["Semiconductor"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Sym3 etch platform, semi capital equipment; A1J Bay Area geography aligned.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Etch equipment chambers, wafer chucks, cooling plates; A1J ISO 5 cleanroom + CMMC fit.", "source_ids": ["USER_POC_GUESS", "AMAT_SUPPLIER"], "source_urls": ["https://www.appliedmaterials.com/us/en/company/suppliers.html"], "watch_profile": {"official_domain": "appliedmaterials.com", "sec_cik": "0000006951", "ticker": "AMAT", "aliases": ["Applied Materials, Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "applied-materials"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "lam-research", "display_name": "Lam Research", "official_domain": "lamresearch.com", "industries": ["Semiconductor"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Kiyo conductor etch, chamber hardware; A1J Bay Area geography aligned.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Etch equipment chambers, electrostatic chucks; A1J fit.", "source_ids": ["USER_POC_GUESS", "LAM_SUPPLIER"], "source_urls": ["https://www.lamresearch.com/company/suppliers/"], "watch_profile": {"official_domain": "lamresearch.com", "sec_cik": "0000707549", "ticker": "LRCX", "aliases": ["Lam Research Corporation"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering", "manufacturing"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "lam-research"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "kla", "display_name": "KLA Corporation", "official_domain": "kla.com", "industries": ["Semiconductor"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Inspection and metrology equipment; A1J Bay Area geography aligned.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "MEDIUM", "prospect_rationale": "Optical/inspection hardware, precision-machined enclosures; A1J + Addison fit.", "source_ids": ["USER_POC_GUESS", "KLA_SUPPLIER"], "source_urls": ["https://www.kla.com/suppliers"], "watch_profile": {"official_domain": "kla.com", "sec_cik": "0000319201", "ticker": "KLAC", "aliases": ["KLA Corporation", "KLA-Tencor"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "kla"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "asml", "display_name": "ASML", "official_domain": "asml.com", "industries": ["Semiconductor"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. NXE:3800 EUV lithography (named in Figma relationship-matrix mockup).", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "EUV lithography optical mounts, vacuum chambers, thermal control; Invar capability at ERA/Addison; Wilton CT + Veldhoven NL.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.asml.com/"], "watch_profile": {"official_domain": "asml.com", "ticker": "ASML", "aliases": ["ASML Holding N.V.", "ASML"], "note": "Named in Figma relationship-matrix concept as example account.", "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "asml"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "medtronic", "display_name": "Medtronic", "official_domain": "medtronic.com", "industries": ["Medical"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Minneapolis MN geography aligns to Chandler; Hugo robotic surgery, pumps, staplers.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Broadest medical device portfolio; Chandler MN + A1J + Maitland fit.", "source_ids": ["USER_POC_GUESS", "MDT_SUPPLIER"], "source_urls": ["https://www.medtronic.com/us-en/about/suppliers.html"], "watch_profile": {"official_domain": "medtronic.com", "sec_cik": "0001613103", "ticker": "MDT", "aliases": ["Medtronic plc", "Medtronic, Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "medtronic"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "zimmer-biomet", "display_name": "Zimmer Biomet", "official_domain": "zimmerbiomet.com", "industries": ["Medical"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP", "relationship_confidence": "MEDIUM", "relationship_basis": "Maitland Engineering site metadata explicitly references Zimmer and Biomet. Warsaw IN / South Bend IN orthopedic corridor alignment.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "HIGH", "prospect_rationale": "Orthopedic implant components, ROSA robotics; Maitland Swiss CNC + tantalum + cobalt-chromium fit.", "source_ids": ["MAITLAND_METADATA", "ZB_SUPPLIER"], "source_urls": ["https://www.maitlandengineering.com/", "https://www.zimmerbiomet.com/en/about-us/suppliers.html"], "watch_profile": {"official_domain": "zimmerbiomet.com", "sec_cik": "0001136869", "ticker": "ZBH", "aliases": ["Zimmer Biomet Holdings, Inc.", "Zimmer Holdings", "Biomet"], "verification_state": "VERIFIED"}, "research_status": "PUBLICLY_EVIDENCED", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "zimmer-biomet"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["MAITLAND_METADATA"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "stryker", "display_name": "Stryker", "official_domain": "stryker.com", "industries": ["Medical"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Kalamazoo MI orthopedic corridor; Mako robotics, surgical instruments.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Orthopedic implants and robotic-arm surgery; Maitland + Chandler fit.", "source_ids": ["USER_POC_GUESS", "STRYKER_SUPPLIER"], "source_urls": ["https://www.stryker.com/us/en/about/suppliers.html"], "watch_profile": {"official_domain": "stryker.com", "sec_cik": "0000310764", "ticker": "SYK", "aliases": ["Stryker Corporation"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "stryker"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "boston-scientific", "display_name": "Boston Scientific", "official_domain": "bostonscientific.com", "industries": ["Medical"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Cardiac rhythm, neuromodulation, structural heart; MN division.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Electrophysiology and structural heart delivery systems; Chandler + A1J fit.", "source_ids": ["USER_POC_GUESS", "BSX_SUPPLIER"], "source_urls": ["https://www.bostonscientific.com/en-US/supplier-information.html"], "watch_profile": {"official_domain": "bostonscientific.com", "sec_cik": "0000885725", "ticker": "BSX", "aliases": ["Boston Scientific Corporation"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "boston-scientific"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "intuitive-surgical", "display_name": "Intuitive Surgical", "official_domain": "intuitive.com", "industries": ["Medical"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. da Vinci SP, endoscopy, wrist articulation; A1J Bay Area geography aligned.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Surgical robotics precision components; A1J + Maitland fit.", "source_ids": ["USER_POC_GUESS", "ISRG_SUPPLIER"], "source_urls": ["https://www.intuitive.com/en-us/about-us/suppliers"], "watch_profile": {"official_domain": "intuitive.com", "sec_cik": "0001035267", "ticker": "ISRG", "aliases": ["Intuitive Surgical, Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "intuitive-surgical"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "johnson-johnson-medtech", "display_name": "Johnson & Johnson MedTech / Ethicon", "official_domain": "jnj.com", "industries": ["Medical"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Ethicon surgical staplers; Cincinnati OH manufacturing.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "HIGH", "prospect_rationale": "Surgical staplers, energy devices, orthopedic instruments; Chandler surgical-jaws capability fit.", "source_ids": ["USER_POC_GUESS", "JNJ_SUPPLIER"], "source_urls": ["https://www.jnj.com/suppliers"], "watch_profile": {"official_domain": "jnj.com", "sec_cik": "0000200406", "ticker": "JNJ", "aliases": ["Johnson & Johnson", "J&J MedTech", "Ethicon Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "supplier_management", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "johnson-johnson-medtech"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "ge-vernova", "display_name": "GE Vernova", "official_domain": "gevernova.com", "industries": ["Energy"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. HA gas turbine family, nuclear services.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "MEDIUM", "prospect_rationale": "Turbine blade hardware, compressor housings; ERA + Chandler fit.", "source_ids": ["USER_POC_GUESS", "GEV_SUPPLIER"], "source_urls": ["https://www.gevernova.com/about/suppliers"], "watch_profile": {"official_domain": "gevernova.com", "sec_cik": "0001996810", "ticker": "GEV", "aliases": ["GE Vernova Inc."], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "PUBLIC_CHANNEL_VERIFIED", "named_public_contact_count": 0, "public_contact_channel_count": 1, "companion_join_key": "ge-vernova"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "westinghouse", "display_name": "Westinghouse Electric Company", "official_domain": "westinghousenuclear.com", "industries": ["Energy"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "PUBLIC_INTERACTION_INFERENCE", "relationship_confidence": "LOW", "relationship_basis": "Inferred fit based on Chandler nuclear-rated bracket capability; not evidenced.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "MEDIUM", "prospect_rationale": "AP1000, eVinci microreactor; nuclear-grade components; Chandler NQA-1 potential fit.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.westinghousenuclear.com/"], "watch_profile": {"official_domain": "westinghousenuclear.com", "aliases": ["Westinghouse Electric Company LLC"], "verification_state": "VERIFIED"}, "research_status": "INFERRED_PROSPECT", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "westinghouse"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "afit", "display_name": "Air Force Institute of Technology (AFIT)", "official_domain": "afit.edu", "industries": ["Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP", "relationship_confidence": "HIGH", "relationship_basis": "i3D MFG published DMLS case studies (aircraft wing topology optimization, warhead lattice structures) with named AFIT researchers Major David Liu and Captain Hayden K. Richards. Academic-DoD collaboration; not a commercial customer.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "LOW", "prospect_rationale": "Research partnership; academic-DoD collaboration valuable for i3D positioning, not seller-actionable in a commercial sense.", "source_ids": ["I3D_AFIT_CASE"], "source_urls": ["https://www.i3dmfg.com/i3d-news-press/new-case-studies-additive-manufacturing-dmls-optimization-warheads-and-aircraft-wings/"], "watch_profile": {"official_domain": "afit.edu", "aliases": ["Air Force Institute of Technology"], "verification_state": "VERIFIED"}, "research_status": "PUBLICLY_EVIDENCED", "contact_research": {"role_targets": ["research", "engineering"], "research_state": "NAMED_VERIFIED", "named_public_contact_count": 2, "public_contact_channel_count": 0, "companion_join_key": "afit"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["I3D_AFIT_CASE"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "anduril-industries", "display_name": "Anduril Industries", "official_domain": "anduril.com", "industries": ["Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "PUBLIC_INTERACTION_INFERENCE", "relationship_confidence": "LOW", "relationship_basis": "Preserved from prior universe; defense-tech growth account with public microelectronics context.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "MEDIUM", "prospect_rationale": "Fast-growing defense-tech; Costa Mesa CA; Roadrunner, Barracuda, Fury platforms.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.anduril.com/"], "watch_profile": {"official_domain": "anduril.com", "aliases": ["Anduril Industries, Inc."], "verification_state": "VERIFIED"}, "research_status": "PROSPECT", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "anduril-industries"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "textron", "display_name": "Textron", "official_domain": "textron.com", "industries": ["Aerospace", "Defense"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "BTX_CONFIRMED", "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY", "relationship_basis": "POC assumption per user direction. Wichita KS (Cessna, Beechcraft, Bell); HTS geography aligned.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": false, "prospect_priority": "MEDIUM", "prospect_rationale": "Business aviation, Bell helicopters, ground vehicles; HTS Kansas City proximity.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.textron.com/"], "watch_profile": {"official_domain": "textron.com", "sec_cik": "0000217346", "ticker": "TXT", "aliases": ["Textron Inc.", "Cessna", "Beechcraft", "Bell Textron"], "verification_state": "VERIFIED"}, "research_status": "POC_GUESSED_CURRENT_CUSTOMER", "contact_research": {"role_targets": ["procurement", "supply_chain", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "textron"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "FULL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": false}},
-    {"research_account_id": "terrapower", "display_name": "TerraPower", "official_domain": "terrapower.com", "industries": ["Energy"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "NO_RELATIONSHIP_EVIDENCE", "relationship_confidence": "LOW", "relationship_basis": "No BTX evidence; watch account for advanced nuclear program growth.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "MEDIUM", "prospect_rationale": "Natrium sodium-cooled reactor demonstration; DOE ARDP program.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://www.terrapower.com/"], "watch_profile": {"official_domain": "terrapower.com", "aliases": ["TerraPower LLC"], "verification_state": "VERIFIED"}, "research_status": "PROSPECT", "contact_research": {"role_targets": ["procurement", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "terrapower"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}},
-    {"research_account_id": "commonwealth-fusion", "display_name": "Commonwealth Fusion Systems", "official_domain": "cfs.energy", "industries": ["Energy"], "public_identity_state": "VERIFIED_PUBLIC", "relationship_state": "NO_RELATIONSHIP_EVIDENCE", "relationship_confidence": "LOW", "relationship_basis": "No BTX evidence; watch account for fusion energy growth.", "replaceable_by_internal": true, "do_not_treat_as_btx_confirmed_customer": true, "prospect_priority": "LOW", "prospect_rationale": "SPARC tokamak; Devens MA; cryogenic mounts and magnet structural fit.", "source_ids": ["USER_POC_GUESS"], "source_urls": ["https://cfs.energy/"], "watch_profile": {"official_domain": "cfs.energy", "aliases": ["Commonwealth Fusion Systems, Inc."], "verification_state": "VERIFIED"}, "research_status": "PROSPECT", "contact_research": {"role_targets": ["procurement", "engineering"], "research_state": "ROLE_TARGETS_ONLY", "named_public_contact_count": 0, "public_contact_channel_count": 0, "companion_join_key": "commonwealth-fusion"}, "identity_provenance": {"state": "VERIFIED_PUBLIC", "source_ids": ["USER_POC_GUESS"], "last_verified_at": "2026-08-17"}, "monitor_readiness": {"official_domain_available": true, "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY", "entity_resolution_allowed": true, "missing_identifiers_must_remain_null": true}}
+    {
+      "research_account_id": "intel",
+      "display_name": "Intel",
+      "official_domain": "intel.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Major U.S. semiconductor manufacturer with large fab expansion.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_INTEL"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel"
+      ],
+      "watch_profile": {
+        "official_domain": "intel.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "intel"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_INTEL"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "tsmc-arizona",
+      "display_name": "TSMC Arizona",
+      "official_domain": "tsmc.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Leading-edge Phoenix fab expansion.",
+      "source_ids": [
+        "CHIPS_2026",
+        "CHIPS_TSMC"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+        "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-tsmc"
+      ],
+      "watch_profile": {
+        "official_domain": "tsmc.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "NAMED_CONTACTS_VERIFIED",
+        "named_public_contact_count": 4,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "tsmc-arizona"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "CHIPS_2026",
+          "CHIPS_TSMC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "symbotic",
+      "display_name": "Symbotic",
+      "official_domain": "symbotic.com",
+      "industries": [],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "NONE",
+      "relationship_basis": "No BTX-specific public relationship evidence found in this research pass.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Large robotic warehouse-automation systems company.",
+      "source_ids": [
+        "SEC_SYMBOTIC"
+      ],
+      "source_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1837240/000183724025000278/sym-20250927.htm"
+      ],
+      "watch_profile": {
+        "official_domain": "symbotic.com",
+        "sec_cik": null,
+        "ticker": null,
+        "newsroom_url": null,
+        "investor_relations_url": null,
+        "aliases": [],
+        "source_native_ids": {},
+        "verification_state": "PARTIAL_RESEARCHED_IDENTITY"
+      },
+      "research_status": "RESEARCHED_CANDIDATE",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "symbotic"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "SEC_SYMBOTIC"
+        ],
+        "last_verified_at": null
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      },
+      "secondary_classifications": [
+        "Robotics"
+      ]
+    },
+    {
+      "research_account_id": "lockheed-martin",
+      "display_name": "Lockheed Martin",
+      "official_domain": "lockheedmartin.com",
+      "industries": [
+        "Defense",
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "HIGH_INTERNAL_ATTESTATION",
+      "relationship_basis": "BTX CRO attestation via Kapil relay: Lockheed Martin is BTX's largest customer.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Anchor customer for BTX platform across F-35, JASSM/LRASM, THAAD, CLPS lunar programs. Multi-BU relevance.",
+      "source_ids": [
+        "BTX_CRO_ATTESTATION",
+        "LOCKHEED_RMS_PROCUREMENT",
+        "LOCKHEED_SUPPLIERS"
+      ],
+      "source_urls": [
+        "internal://btx-cro-attestation-2026-08-17",
+        "https://www.lockheedmartin.com/en-us/suppliers.html"
+      ],
+      "watch_profile": {
+        "official_domain": "lockheedmartin.com",
+        "sec_cik": "0000936468",
+        "ticker": "LMT",
+        "aliases": [
+          "Lockheed Martin Corporation",
+          "LMCO"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "RESEARCHED_ANCHOR_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "NAMED_PLUS_CHANNEL_VERIFIED",
+        "named_public_contact_count": 1,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "lockheed-martin"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "BTX_CRO_ATTESTATION",
+          "LOCKHEED_RMS_PROCUREMENT"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "boeing",
+      "display_name": "Boeing",
+      "official_domain": "boeing.com",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP",
+      "relationship_confidence": "HIGH",
+      "relationship_basis": "Chandler Industries publicly states it is a Tier I supplier to Boeing (defense page).",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Public BTX-BU supplier statement; 777X/787/737 MAX/KC-46/Artemis/NGAD context; HTS Kansas City geography aligned.",
+      "source_ids": [
+        "BTX_DEFENSE_CHANDLER",
+        "BOEING_CONTACT"
+      ],
+      "source_urls": [
+        "https://www.chandlerindustries.com/industries/defense/",
+        "https://www.boeing.com/suppliers/"
+      ],
+      "watch_profile": {
+        "official_domain": "boeing.com",
+        "sec_cik": "0000012927",
+        "ticker": "BA",
+        "aliases": [
+          "The Boeing Company"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "RESEARCHED_ANCHOR_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "boeing"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "BTX_DEFENSE_CHANDLER"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "northrop-grumman",
+      "display_name": "Northrop Grumman",
+      "official_domain": "northropgrumman.com",
+      "industries": [
+        "Defense",
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. F-35 center fuselage integrator, B-21 prime, VADR launch services, SLS solid rocket boosters. Multi-BU fit for BTX defense/space.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "B-21 Raider prime; F-35 center fuselage; VADR; SLS boosters.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "NGC_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.northropgrumman.com/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "northropgrumman.com",
+        "sec_cik": "0001133421",
+        "ticker": "NOC",
+        "aliases": [
+          "Northrop Grumman Corporation",
+          "Northrop Grumman Systems Corporation"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering",
+          "manufacturing",
+          "operations"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "northrop-grumman"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "rtx-collins-aerospace",
+      "display_name": "RTX (Raytheon Technologies) / Collins Aerospace",
+      "official_domain": "rtx.com",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Patriot, LRSO, Collins avionics, 787 interior systems.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "RTX portfolio (Collins Aerospace, Raytheon, Pratt & Whitney) spans commercial aero, defense, and missile programs.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "RTX_SUPPLIERS"
+      ],
+      "source_urls": [
+        "https://www.rtx.com/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "rtx.com",
+        "sec_cik": "0000101829",
+        "ticker": "RTX",
+        "aliases": [
+          "RTX Corporation",
+          "Raytheon Technologies",
+          "Collins Aerospace"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "rtx-collins-aerospace"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "pratt-whitney",
+      "display_name": "Pratt & Whitney",
+      "official_domain": "prattwhitney.com",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. F-35 engine (F135), commercial engines (GTF), engine components.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Engine BU of RTX; distinct customer for turbine components; ERA vacuum brazing fit.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.prattwhitney.com/en/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "prattwhitney.com",
+        "aliases": [
+          "Pratt & Whitney",
+          "P&W"
+        ],
+        "parent_ticker": "RTX",
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering",
+          "manufacturing"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "pratt-whitney"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "ge-aerospace",
+      "display_name": "GE Aerospace",
+      "official_domain": "geaerospace.com",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. GE9X (777X), GEnx (787), CFM56/LEAP engines.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Engine OEM; turbine hardware fit for ERA + Chandler.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "GE_AEROSPACE_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.geaerospace.com/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "geaerospace.com",
+        "sec_cik": "0000040545",
+        "ticker": "GE",
+        "aliases": [
+          "General Electric Company"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "ge-aerospace"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "spirit-aerosystems",
+      "display_name": "Spirit AeroSystems",
+      "official_domain": "spiritaero.com",
+      "industries": [
+        "Aerospace"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. 737/787/777 fuselage sections; Wichita KS geography aligned to HTS.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Boeing fuselage integrator (acquired by Boeing 2025 but distinct customer entity). Wichita KS proximity to HTS.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "SPIRIT_SUPPLIERS"
+      ],
+      "source_urls": [
+        "https://www.spiritaero.com/suppliers/"
+      ],
+      "watch_profile": {
+        "official_domain": "spiritaero.com",
+        "sec_cik": "0001364885",
+        "ticker": "SPR",
+        "aliases": [
+          "Spirit AeroSystems, Inc."
+        ],
+        "note": "Acquired by Boeing 2025; retained as distinct customer entity for POC.",
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "spirit-aerosystems"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "l3harris",
+      "display_name": "L3Harris Technologies",
+      "official_domain": "l3harris.com",
+      "industries": [
+        "Defense",
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Rochester NY heritage (Harris) aligns to Addison Precision Manufacturing geography.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Defense electronics, communications, avionics; Rochester NY geography aligns to APM.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.l3harris.com/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "l3harris.com",
+        "sec_cik": "0000202058",
+        "ticker": "LHX",
+        "aliases": [
+          "L3Harris Technologies, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "l3harris"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "general-atomics",
+      "display_name": "General Atomics",
+      "official_domain": "ga.com",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. MQ-9 Reaper and other UAS platforms.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "MQ-9 UAS; airframe machining fit for ERA/Chandler.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.ga.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "ga.com",
+        "aliases": [
+          "General Atomics Aeronautical Systems",
+          "GA-ASI"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering",
+          "manufacturing"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "general-atomics"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "spacex",
+      "display_name": "SpaceX",
+      "official_domain": "spacex.com",
+      "industries": [
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. L Squared press release explicitly names SpaceX Starship as HTS end-market context.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Starship, Falcon, Merlin/Raptor engine components; i3D DMLS + HTS complex assembly fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "LSQUARED_HTS",
+        "SPACEX_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.spacex.com/",
+        "https://www.lsquaredcap.com/l-squared-capital-partners-marks-milestone-10th-acquisition-at-btx-precision-with-addition-of-high-tech-solutions/"
+      ],
+      "watch_profile": {
+        "official_domain": "spacex.com",
+        "aliases": [
+          "Space Exploration Technologies Corp.",
+          "SpaceX"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering",
+          "manufacturing"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "spacex"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS",
+          "LSQUARED_HTS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "blue-origin",
+      "display_name": "Blue Origin",
+      "official_domain": "blueorigin.com",
+      "industries": [
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. New Glenn, BE-4 engines, HLS lunar lander.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "New Glenn structural + engine components; DMLS fit for BE-4 hardware.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "BLUE_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.blueorigin.com/",
+        "https://www.blueorigin.com/careers"
+      ],
+      "watch_profile": {
+        "official_domain": "blueorigin.com",
+        "aliases": [
+          "Blue Origin, LLC",
+          "Blue Origin Manufacturing, LLC"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering",
+          "manufacturing"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "blue-origin"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "rocket-lab-usa",
+      "display_name": "Rocket Lab USA",
+      "official_domain": "rocketlabusa.com",
+      "industries": [
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Electron, Neutron, Archimedes engine.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Neutron scale-up; DMLS engine components fit; smaller volume than SpaceX/Blue.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.rocketlabusa.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "rocketlabusa.com",
+        "sec_cik": "0001819994",
+        "ticker": "RKLB",
+        "aliases": [
+          "Rocket Lab USA, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "rocket-lab-usa"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "ula-united-launch-alliance",
+      "display_name": "United Launch Alliance",
+      "official_domain": "ulalaunch.com",
+      "industries": [
+        "Space Exploration",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Vulcan Centaur launch vehicle.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Boeing-Lockheed JV; Vulcan program; structural components fit.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.ulalaunch.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "ulalaunch.com",
+        "aliases": [
+          "United Launch Alliance, LLC"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "ula-united-launch-alliance"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "sierra-space",
+      "display_name": "Sierra Space",
+      "official_domain": "sierraspace.com",
+      "industries": [
+        "Space Exploration"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Dream Chaser spaceplane.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Dream Chaser structural components; landing gear; hatch assemblies.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.sierraspace.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "sierraspace.com",
+        "aliases": [
+          "Sierra Space Corporation"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "sierra-space"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "applied-materials",
+      "display_name": "Applied Materials",
+      "official_domain": "appliedmaterials.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Sym3 etch platform, semi capital equipment; A1J Bay Area geography aligned.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Etch equipment chambers, wafer chucks, cooling plates; A1J ISO 5 cleanroom + CMMC fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "AMAT_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.appliedmaterials.com/us/en/company/suppliers.html"
+      ],
+      "watch_profile": {
+        "official_domain": "appliedmaterials.com",
+        "sec_cik": "0000006951",
+        "ticker": "AMAT",
+        "aliases": [
+          "Applied Materials, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering",
+          "manufacturing"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "applied-materials"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "lam-research",
+      "display_name": "Lam Research",
+      "official_domain": "lamresearch.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Kiyo conductor etch, chamber hardware; A1J Bay Area geography aligned.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Etch equipment chambers, electrostatic chucks; A1J fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "LAM_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.lamresearch.com/company/suppliers/"
+      ],
+      "watch_profile": {
+        "official_domain": "lamresearch.com",
+        "sec_cik": "0000707549",
+        "ticker": "LRCX",
+        "aliases": [
+          "Lam Research Corporation"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering",
+          "manufacturing"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "lam-research"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "kla",
+      "display_name": "KLA Corporation",
+      "official_domain": "kla.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Inspection and metrology equipment; A1J Bay Area geography aligned.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Optical/inspection hardware, precision-machined enclosures; A1J + Addison fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "KLA_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.kla.com/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "kla.com",
+        "sec_cik": "0000319201",
+        "ticker": "KLAC",
+        "aliases": [
+          "KLA Corporation",
+          "KLA-Tencor"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "kla"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "asml",
+      "display_name": "ASML",
+      "official_domain": "asml.com",
+      "industries": [
+        "Semiconductor"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. NXE:3800 EUV lithography (named in Figma relationship-matrix mockup).",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "EUV lithography optical mounts, vacuum chambers, thermal control; Invar capability at ERA/Addison; Wilton CT + Veldhoven NL.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.asml.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "asml.com",
+        "ticker": "ASML",
+        "aliases": [
+          "ASML Holding N.V.",
+          "ASML"
+        ],
+        "note": "Named in Figma relationship-matrix concept as example account.",
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "asml"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "medtronic",
+      "display_name": "Medtronic",
+      "official_domain": "medtronic.com",
+      "industries": [
+        "Medical"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Minneapolis MN geography aligns to Chandler; Hugo robotic surgery, pumps, staplers.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Broadest medical device portfolio; Chandler MN + A1J + Maitland fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "MDT_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.medtronic.com/us-en/about/suppliers.html"
+      ],
+      "watch_profile": {
+        "official_domain": "medtronic.com",
+        "sec_cik": "0001613103",
+        "ticker": "MDT",
+        "aliases": [
+          "Medtronic plc",
+          "Medtronic, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "medtronic"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "zimmer-biomet",
+      "display_name": "Zimmer Biomet",
+      "official_domain": "zimmerbiomet.com",
+      "industries": [
+        "Medical"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP",
+      "relationship_confidence": "MEDIUM",
+      "relationship_basis": "Maitland Engineering site metadata explicitly references Zimmer and Biomet. Warsaw IN / South Bend IN orthopedic corridor alignment.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Orthopedic implant components, ROSA robotics; Maitland Swiss CNC + tantalum + cobalt-chromium fit.",
+      "source_ids": [
+        "MAITLAND_METADATA",
+        "ZB_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.maitlandengineering.com/",
+        "https://www.zimmerbiomet.com/en/about-us/suppliers.html"
+      ],
+      "watch_profile": {
+        "official_domain": "zimmerbiomet.com",
+        "sec_cik": "0001136869",
+        "ticker": "ZBH",
+        "aliases": [
+          "Zimmer Biomet Holdings, Inc.",
+          "Zimmer Holdings",
+          "Biomet"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "PUBLICLY_EVIDENCED",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "zimmer-biomet"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "MAITLAND_METADATA"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "stryker",
+      "display_name": "Stryker",
+      "official_domain": "stryker.com",
+      "industries": [
+        "Medical"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Kalamazoo MI orthopedic corridor; Mako robotics, surgical instruments.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Orthopedic implants and robotic-arm surgery; Maitland + Chandler fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "STRYKER_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.stryker.com/us/en/about/suppliers.html"
+      ],
+      "watch_profile": {
+        "official_domain": "stryker.com",
+        "sec_cik": "0000310764",
+        "ticker": "SYK",
+        "aliases": [
+          "Stryker Corporation"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "stryker"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "boston-scientific",
+      "display_name": "Boston Scientific",
+      "official_domain": "bostonscientific.com",
+      "industries": [
+        "Medical"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Cardiac rhythm, neuromodulation, structural heart; MN division.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Electrophysiology and structural heart delivery systems; Chandler + A1J fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "BSX_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.bostonscientific.com/en-US/supplier-information.html"
+      ],
+      "watch_profile": {
+        "official_domain": "bostonscientific.com",
+        "sec_cik": "0000885725",
+        "ticker": "BSX",
+        "aliases": [
+          "Boston Scientific Corporation"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "boston-scientific"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "intuitive-surgical",
+      "display_name": "Intuitive Surgical",
+      "official_domain": "intuitive.com",
+      "industries": [
+        "Medical"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. da Vinci SP, endoscopy, wrist articulation; A1J Bay Area geography aligned.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Surgical robotics precision components; A1J + Maitland fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "ISRG_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.intuitive.com/en-us/about-us/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "intuitive.com",
+        "sec_cik": "0001035267",
+        "ticker": "ISRG",
+        "aliases": [
+          "Intuitive Surgical, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "intuitive-surgical"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "johnson-johnson-medtech",
+      "display_name": "Johnson & Johnson MedTech / Ethicon",
+      "official_domain": "jnj.com",
+      "industries": [
+        "Medical"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Ethicon surgical staplers; Cincinnati OH manufacturing.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "HIGH",
+      "prospect_rationale": "Surgical staplers, energy devices, orthopedic instruments; Chandler surgical-jaws capability fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "JNJ_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.jnj.com/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "jnj.com",
+        "sec_cik": "0000200406",
+        "ticker": "JNJ",
+        "aliases": [
+          "Johnson & Johnson",
+          "J&J MedTech",
+          "Ethicon Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "supplier_management",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "johnson-johnson-medtech"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "ge-vernova",
+      "display_name": "GE Vernova",
+      "official_domain": "gevernova.com",
+      "industries": [
+        "Energy"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. HA gas turbine family, nuclear services.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Turbine blade hardware, compressor housings; ERA + Chandler fit.",
+      "source_ids": [
+        "USER_POC_GUESS",
+        "GEV_SUPPLIER"
+      ],
+      "source_urls": [
+        "https://www.gevernova.com/about/suppliers"
+      ],
+      "watch_profile": {
+        "official_domain": "gevernova.com",
+        "sec_cik": "0001996810",
+        "ticker": "GEV",
+        "aliases": [
+          "GE Vernova Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "PUBLIC_CHANNEL_VERIFIED",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 1,
+        "companion_join_key": "ge-vernova"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "westinghouse",
+      "display_name": "Westinghouse Electric Company",
+      "official_domain": "westinghousenuclear.com",
+      "industries": [
+        "Energy"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLIC_INTERACTION_INFERENCE",
+      "relationship_confidence": "LOW",
+      "relationship_basis": "Inferred fit based on Chandler nuclear-rated bracket capability; not evidenced.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "AP1000, eVinci microreactor; nuclear-grade components; Chandler NQA-1 potential fit.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.westinghousenuclear.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "westinghousenuclear.com",
+        "aliases": [
+          "Westinghouse Electric Company LLC"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "INFERRED_PROSPECT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "westinghouse"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "afit",
+      "display_name": "Air Force Institute of Technology (AFIT)",
+      "official_domain": "afit.edu",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLICLY_EVIDENCED_RELATIONSHIP",
+      "relationship_confidence": "HIGH",
+      "relationship_basis": "i3D MFG published DMLS case studies (aircraft wing topology optimization, warhead lattice structures) with named AFIT researchers Major David Liu and Captain Hayden K. Richards. Academic-DoD collaboration; not a commercial customer.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "LOW",
+      "prospect_rationale": "Research partnership; academic-DoD collaboration valuable for i3D positioning, not seller-actionable in a commercial sense.",
+      "source_ids": [
+        "I3D_AFIT_CASE"
+      ],
+      "source_urls": [
+        "https://www.i3dmfg.com/i3d-news-press/new-case-studies-additive-manufacturing-dmls-optimization-warheads-and-aircraft-wings/"
+      ],
+      "watch_profile": {
+        "official_domain": "afit.edu",
+        "aliases": [
+          "Air Force Institute of Technology"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "PUBLICLY_EVIDENCED",
+      "contact_research": {
+        "role_targets": [
+          "research",
+          "engineering"
+        ],
+        "research_state": "NAMED_VERIFIED",
+        "named_public_contact_count": 2,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "afit"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "I3D_AFIT_CASE"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "anduril-industries",
+      "display_name": "Anduril Industries",
+      "official_domain": "anduril.com",
+      "industries": [
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "PUBLIC_INTERACTION_INFERENCE",
+      "relationship_confidence": "LOW",
+      "relationship_basis": "Preserved from prior universe; defense-tech growth account with public microelectronics context.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Fast-growing defense-tech; Costa Mesa CA; Roadrunner, Barracuda, Fury platforms.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.anduril.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "anduril.com",
+        "aliases": [
+          "Anduril Industries, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "PROSPECT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "anduril-industries"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "textron",
+      "display_name": "Textron",
+      "official_domain": "textron.com",
+      "industries": [
+        "Aerospace",
+        "Defense"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "BTX_CONFIRMED",
+      "relationship_confidence": "GUESSED_STANDARD_TOP_TIER_POC_ONLY",
+      "relationship_basis": "POC assumption per user direction. Wichita KS (Cessna, Beechcraft, Bell); HTS geography aligned.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": false,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Business aviation, Bell helicopters, ground vehicles; HTS Kansas City proximity.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.textron.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "textron.com",
+        "sec_cik": "0000217346",
+        "ticker": "TXT",
+        "aliases": [
+          "Textron Inc.",
+          "Cessna",
+          "Beechcraft",
+          "Bell Textron"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "POC_GUESSED_CURRENT_CUSTOMER",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "supply_chain",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "textron"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "FULL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": false
+      }
+    },
+    {
+      "research_account_id": "terrapower",
+      "display_name": "TerraPower",
+      "official_domain": "terrapower.com",
+      "industries": [
+        "Energy"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "LOW",
+      "relationship_basis": "No BTX evidence; watch account for advanced nuclear program growth.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "MEDIUM",
+      "prospect_rationale": "Natrium sodium-cooled reactor demonstration; DOE ARDP program.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://www.terrapower.com/"
+      ],
+      "watch_profile": {
+        "official_domain": "terrapower.com",
+        "aliases": [
+          "TerraPower LLC"
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "PROSPECT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "terrapower"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    },
+    {
+      "research_account_id": "commonwealth-fusion",
+      "display_name": "Commonwealth Fusion Systems",
+      "official_domain": "cfs.energy",
+      "industries": [
+        "Energy"
+      ],
+      "public_identity_state": "VERIFIED_PUBLIC",
+      "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
+      "relationship_confidence": "LOW",
+      "relationship_basis": "No BTX evidence; watch account for fusion energy growth.",
+      "replaceable_by_internal": true,
+      "do_not_treat_as_btx_confirmed_customer": true,
+      "prospect_priority": "LOW",
+      "prospect_rationale": "SPARC tokamak; Devens MA; cryogenic mounts and magnet structural fit.",
+      "source_ids": [
+        "USER_POC_GUESS"
+      ],
+      "source_urls": [
+        "https://cfs.energy/"
+      ],
+      "watch_profile": {
+        "official_domain": "cfs.energy",
+        "aliases": [
+          "Commonwealth Fusion Systems, Inc."
+        ],
+        "verification_state": "VERIFIED"
+      },
+      "research_status": "PROSPECT",
+      "contact_research": {
+        "role_targets": [
+          "procurement",
+          "engineering"
+        ],
+        "research_state": "ROLE_TARGETS_ONLY",
+        "named_public_contact_count": 0,
+        "public_contact_channel_count": 0,
+        "companion_join_key": "commonwealth-fusion"
+      },
+      "identity_provenance": {
+        "state": "VERIFIED_PUBLIC",
+        "source_ids": [
+          "USER_POC_GUESS"
+        ],
+        "last_verified_at": "2026-08-17"
+      },
+      "monitor_readiness": {
+        "official_domain_available": true,
+        "watch_profile_state": "PARTIAL_RESEARCHED_IDENTITY",
+        "entity_resolution_allowed": true,
+        "missing_identifiers_must_remain_null": true
+      }
+    }
   ],
   "summary": {
     "unique_accounts": 34,
-    "by_relationship_state": {"BTX_CONFIRMED": 24, "PUBLICLY_EVIDENCED_RELATIONSHIP": 3, "PUBLIC_INTERACTION_INFERENCE": 2, "NO_RELATIONSHIP_EVIDENCE": 5},
-    "by_confidence": {"HIGH_INTERNAL_ATTESTATION": 1, "HIGH": 2, "MEDIUM": 1, "GUESSED_STANDARD_TOP_TIER_POC_ONLY": 23, "LOW": 4, "NONE": 3},
-    "industry_memberships": {"Defense": 12, "Aerospace": 4, "Commercial Aerospace": 2, "Space": 8, "Semiconductor": 6, "Medical": 6, "Energy": 4, "Robotics": 1},
-    "notes": "24 accounts classified BTX_CONFIRMED, of which 23 carry GUESSED_STANDARD_TOP_TIER_POC_ONLY tag; 1 (Lockheed) carries HIGH_INTERNAL_ATTESTATION; three preserved curated public-signal accounts retain NO_RELATIONSHIP_EVIDENCE and original public provenance."
+    "by_relationship_state": {
+      "BTX_CONFIRMED": 24,
+      "PUBLICLY_EVIDENCED_RELATIONSHIP": 3,
+      "PUBLIC_INTERACTION_INFERENCE": 2,
+      "NO_RELATIONSHIP_EVIDENCE": 5
+    },
+    "by_confidence": {
+      "HIGH_INTERNAL_ATTESTATION": 1,
+      "HIGH": 2,
+      "MEDIUM": 1,
+      "GUESSED_STANDARD_TOP_TIER_POC_ONLY": 23,
+      "LOW": 4,
+      "NONE": 3
+    },
+    "industry_memberships": {
+      "Aerospace": 6,
+      "Defense": 12,
+      "Semiconductor": 6,
+      "Space Exploration": 8,
+      "Energy": 4,
+      "Medical": 6
+    },
+    "notes": "The POC contains only researched real companies. Research depth and primary-market coverage are intentionally uneven; Robotics remains a secondary classification for Symbotic."
   },
   "vision_readiness": {
     "schema_sufficient_for_current_omni_prospect_integration": true,
-    "data_complete_for_final_100_per_industry_universe": false,
-    "current_gap": "34 accounts; the 100-per-industry vision requires 600 total.",
-    "required_future_enrichment": ["real customer confirmations from Jamie/BTX to demote GUESSED_STANDARD_TOP_TIER_POC_ONLY where wrong and promote where right", "additional accounts to reach 600-target vision", "USAspending federal contract mining for named recipients across BTX BUs", "BTX quote history from Paperless when authorized"]
+    "data_complete_for_variable_researched_poc": true,
+    "current_gap": "Research coverage is intentionally variable; add real, sufficiently sourced companies as coverage grows.",
+    "required_future_enrichment": [
+      "real customer confirmations from Jamie/BTX to demote GUESSED_STANDARD_TOP_TIER_POC_ONLY where wrong and promote where right",
+      "additional researched companies where evidence supports them",
+      "USAspending federal contract mining for named recipients across BTX BUs",
+      "BTX quote history from Paperless when authorized"
+    ]
   },
   "contact_research_companion": {
     "filename": "btx_researched_contacts.json",

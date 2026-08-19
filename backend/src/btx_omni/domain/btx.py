@@ -14,8 +14,12 @@ class BtxFacility:
     name: str
     city: str | None
     region: str | None
+    country: str | None
     latitude: Decimal | None
     longitude: Decimal | None
+    verification_state: str
+    source_url: str | None
+    source_type: str | None
     provenance: Provenance
 
 

@@ -5,10 +5,13 @@ import pytest
 
 from btx_omni.domain.alerts import CommercialAlertKind
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
-from btx_omni.modules.scoring.account_attractiveness import AccountAttractivenessInputs, calculate_account_attractiveness
-from btx_omni.providers.research import _catalog_support
-from btx_omni.providers.research.programs import load_programs
+from btx_omni.modules.scoring.account_attractiveness import (
+    AccountAttractivenessInputs,
+    calculate_account_attractiveness,
+)
+from btx_omni.providers.research import _catalog_support, btx_profile
 from btx_omni.providers.research.components import load_component_classes
+from btx_omni.providers.research.programs import load_programs
 from btx_omni.providers.sample.environment import build_sample_environment
 
 
@@ -24,6 +27,13 @@ def test_component_foreign_keys_are_rejected() -> None:
         load_component_classes(business_unit_ids=set())
 
 
+def test_btx_facility_coordinates_require_known_bu_and_public_verification(monkeypatch) -> None:
+    payload = {"schema_version": "1.0", "sources": {"SOURCE": {}}, "btx_facilities": [{"id": "bad", "business_unit_id": "era-industries", "name": "Bad", "latitude": 33.0, "longitude": -112.0, "verification_state": "MISSING_LOCATION", "source_ids": ["SOURCE"]}]}
+    monkeypatch.setattr(btx_profile, "document", lambda _: payload)
+    with pytest.raises(ValueError, match="coordinates require public verification"):
+        btx_profile.load_btx_facilities(business_unit_ids={"era-industries"})
+
+
 def test_complete_sample_provider_links_and_provenance() -> None:
     sample = build_sample_environment()
     accounts = {item.id for item in sample.accounts}
@@ -32,13 +42,15 @@ def test_complete_sample_provider_links_and_provenance() -> None:
     units = {item.id for item in sample.business_units}
     quotes = {item.id for item in sample.quotes}
     companies = {item.id for item in sample.crm_companies}
-    assert len(accounts) == 34 and len(sample.rich_scenarios) == 12
+    assert len(accounts) == len(sample.researched_accounts) > 0
     assert all(item.research_account_id in accounts for item in sample.rich_scenarios.values())
     assert all(item.account_id in accounts and item.business_unit in units and item.program_id in programs for item in sample.quotes)
     assert all(item.quote_id in quotes and item.account_id in accounts and item.component_class_id in components and item.program_id in programs for item in sample.orders if item.quote_id)
     assert all(item.from_account_id in accounts and item.to_account_id in accounts and (item.program_id is None or item.program_id in programs) for item in sample.relationship_edges)
     assert all(item.company_id in companies for item in sample.crm_contacts + sample.crm_deals + sample.crm_activities)
     assert all(item.provenance.source_record_id and item.provenance.synthetic for item in sample.quotes + sample.orders + sample.crm_companies)
+    assert len(sample.btx_facilities) == 5
+    assert all(item.business_unit_id in units and item.latitude is not None and item.longitude is not None and item.provenance.source_url for item in sample.btx_facilities)
 
 
 def test_monthly_history_and_runtime_workflow_are_composed() -> None:

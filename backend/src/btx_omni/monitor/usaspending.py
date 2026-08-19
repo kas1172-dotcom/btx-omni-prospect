@@ -25,7 +25,7 @@ from btx_omni.monitor.ontology import (
 )
 from btx_omni.monitor.resolution import AccountWatchProfile
 
-TARGET_INDUSTRIES = frozenset({"Commercial Aerospace", "Defense", "Space", "Semiconductor", "Robotics"})
+TARGET_INDUSTRIES = frozenset({"Aerospace", "Defense", "Semiconductor", "Space Exploration", "Energy", "Medical"})
 ELIGIBLE_WINDOW_DAYS = 90
 STALE_WINDOW_DAYS = 180
 APPROVED_AWARD_TYPE_CODES = frozenset({"A", "B", "C", "D"})

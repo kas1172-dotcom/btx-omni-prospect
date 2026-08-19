@@ -448,7 +448,7 @@
       "properties": {
         "name": "Medtronic",
         "domain": "medtronic.com",
-        "industry": "Medical Devices",
+        "industry": "Medical",
         "hubspot_owner_id": "hubspot-owner-1003-priya",
         "lifecyclestage": "customer",
         "annualrevenue_display": "$1B-$10B",
@@ -472,7 +472,7 @@
       "properties": {
         "name": "Zimmer Biomet",
         "domain": "zimmerbiomet.com",
-        "industry": "Medical Devices",
+        "industry": "Medical",
         "hubspot_owner_id": "hubspot-owner-1001-jamie",
         "lifecyclestage": "customer",
         "annualrevenue_display": "$1B-$10B",
@@ -496,7 +496,7 @@
       "properties": {
         "name": "Stryker",
         "domain": "stryker.com",
-        "industry": "Medical Devices",
+        "industry": "Medical",
         "hubspot_owner_id": "hubspot-owner-1002-sam",
         "lifecyclestage": "customer",
         "annualrevenue_display": "$1B-$10B",
@@ -520,7 +520,7 @@
       "properties": {
         "name": "Boston Scientific",
         "domain": "bostonscientific.com",
-        "industry": "Medical Devices",
+        "industry": "Medical",
         "hubspot_owner_id": "hubspot-owner-1004-alex",
         "lifecyclestage": "opportunity",
         "annualrevenue_display": "$100M-$1B",
@@ -544,7 +544,7 @@
       "properties": {
         "name": "Intuitive Surgical",
         "domain": "intuitive.com",
-        "industry": "Medical Devices",
+        "industry": "Medical",
         "hubspot_owner_id": "hubspot-owner-1001-jamie",
         "lifecyclestage": "opportunity",
         "annualrevenue_display": "$100M-$1B",
@@ -568,7 +568,7 @@
       "properties": {
         "name": "Johnson & Johnson MedTech",
         "domain": "jnj.com",
-        "industry": "Medical Devices",
+        "industry": "Medical",
         "hubspot_owner_id": "hubspot-owner-1004-alex",
         "lifecyclestage": "opportunity",
         "annualrevenue_display": "$100M-$1B",

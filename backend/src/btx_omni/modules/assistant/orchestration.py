@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from btx_omni.domain.common import EvidenceState
+from btx_omni.domain.markets import primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.intelligence.signals import normalize_signal
 from btx_omni.modules.matching.commercial import match_component_to_quote
@@ -107,7 +108,7 @@ class OmniOrchestrator:
         action = account_alerts[0].recommended_action if account_alerts else "Review governed commercial context before taking action."
         if "compare" in query:
             peers = [item.legal_name for item in accounts if item.research_account_id and item.id != account.id and item.industries == account.industries][:3]
-            lines.append(f"Comparable researched {account.industries[0]} targets: {', '.join(peers) or 'none loaded'}.")
+            lines.append(f"Comparable researched {primary_market_label(account.industries)} targets: {', '.join(peers) or 'none loaded'}.")
         lines.append("This is a deterministic fallback, not model-generated advice. Omni is read-only and cannot perform CRM writes.")
         return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name)
 

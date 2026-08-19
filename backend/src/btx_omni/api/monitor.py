@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
+from btx_omni.domain.markets import primary_market_label
 from btx_omni.monitor.sources import REGISTRY
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
@@ -25,7 +26,7 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             "id": signal["id"],
             "account_id": signal["account_id"],
             "company": accounts[signal["account_id"]].legal_name,
-            "industry": accounts[signal["account_id"]].industries[0],
+            "industry": primary_market_label(accounts[signal["account_id"]].industries),
             "event_type": signal["kind"],
             "title": signal["title"],
             "event_date": signal["observed_at"],
