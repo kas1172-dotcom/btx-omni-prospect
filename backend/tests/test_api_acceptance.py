@@ -101,6 +101,19 @@ async def test_omni_typed_context_is_bounded_and_backwards_compatible() -> None:
 
 
 @pytest.mark.asyncio
+async def test_omni_resolves_selected_intelligence_events_through_the_canonical_projection() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        signals = await client.get("/api/intelligence")
+        selected = next(item for item in signals.json()["signals"] if item["account_id"] == "boeing")
+        response = await client.post("/api/omni", json={"question": "What evidence supports this?", "context": {"surface": "INTELLIGENCE", "selected_event_id": selected["id"]}})
+    payload = response.json()
+    assert response.status_code == 200
+    assert selected["title"] in payload["content"]
+    assert payload["context_used"] == {"event_id": selected["id"], "surface": "INTELLIGENCE", "account_id": "boeing"}
+    assert payload["citation_links"]
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

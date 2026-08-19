@@ -1,16 +1,30 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
 
+from btx_omni.domain.common import EvidenceState
 from btx_omni.integrations.hubspot.contracts import (
     CrmProviderState,
     SampleHubSpotAdapter,
 )
 from btx_omni.modules.assistant.orchestration import OmniOrchestrator
+from btx_omni.modules.intelligence.signals import (
+    RawSignal,
+    SignalKind,
+    normalize_signal,
+)
 from btx_omni.modules.work.service import WorkService, WorkStatus
 from btx_omni.providers.sample.environment import build_sample_environment
 
 NOW = datetime(2026, 8, 31, tzinfo=UTC)
+
+
+def event_id_for(sample, account_id: str) -> str:
+    raw = next(item for item in sample.intelligence_events if item.account_name and next(account.id for account in sample.accounts if account.legal_name == item.account_name) == account_id)
+    names = {account.legal_name: account.id for account in sample.accounts}
+    account = next(item for item in sample.accounts if item.id == account_id)
+    return normalize_signal(raw, account_name_to_id=names, provenance=account.provenance).id
 
 
 def test_governed_action_lifecycle_audit_and_idempotency() -> None:
@@ -68,3 +82,38 @@ def test_omni_supports_grounded_unscoped_and_session_follow_up_context() -> None
     assert follow_up.account_id == "boeing" and follow_up.account_name == "Boeing"
     assert "Account Attractiveness" in follow_up.content and "CROSS_BU_COORDINATION" in follow_up.content
     assert "cannot perform CRM writes" in follow_up.content
+
+
+def test_omni_routes_a_selected_resolved_event_with_evidence_and_sample_boundary() -> None:
+    sample = build_sample_environment()
+    event_id = event_id_for(sample, "boeing")
+    response = OmniOrchestrator().answer(sample, account_id=None, question="Why does this matter to BTX?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": event_id})
+    assert "FAA production oversight update" in response.content
+    assert "Resolved organization: Boeing" in response.content
+    assert "current SAMPLE commercial dataset" in response.content
+    assert response.citation_links and response.context_used == {"event_id": event_id, "surface": "INTELLIGENCE", "account_id": "boeing"}
+    assert any("No canonical facility association" in item for item in response.missingness)
+
+
+def test_omni_selected_event_handles_unresolved_conflicting_evidence_without_guessing() -> None:
+    sample = build_sample_environment()
+    raw = RawSignal("controlled-unresolved", SignalKind.PRESS_RELEASE, "Controlled unresolved public event", "https://example.test/unresolved", NOW, None, "Unmapped program", EvidenceState.CONFLICTING, "Controlled unit fixture.")
+    controlled = replace(sample, intelligence_events=(*sample.intelligence_events, raw))
+    event_id = OmniOrchestrator._sample_event_records(controlled)[-1]["id"]
+    response = OmniOrchestrator().answer(controlled, account_id=None, question="What happened here?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": event_id})
+    assert "Controlled unresolved public event" in response.content
+    assert "unresolved to a canonical researched account" in response.content
+    assert response.account_id == "" and response.context_used == {"event_id": event_id, "surface": "INTELLIGENCE"}
+    assert "CONFLICTING" in response.content and any("Unmapped program" in item for item in response.missingness)
+
+
+def test_omni_selected_event_preserves_non_event_queries_and_invalid_event_handling() -> None:
+    sample = build_sample_environment()
+    event_id = event_id_for(sample, "boeing")
+    omni = OmniOrchestrator()
+    cross_account = omni.answer(sample, account_id=None, question="Which Defense accounts have open quotes?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": event_id})
+    general = omni.answer(sample, account_id=None, question="What is an RFQ?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": event_id})
+    invalid = omni.answer(sample, account_id=None, question="What happened here?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": "missing-event"})
+    assert "Defense researched account(s) with open quotes" in cross_account.content and "FAA production oversight update" not in cross_account.content
+    assert "curated public-company universe" in general.content and "FAA production oversight update" not in general.content
+    assert "not available in the current canonical Monitor read model" in invalid.content

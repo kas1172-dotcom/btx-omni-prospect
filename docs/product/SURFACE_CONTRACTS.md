@@ -33,6 +33,14 @@ Actions sends the currently selected governed work-item `id` as
 `selected_action_id`; it clears on navigation. Omni does not yet interpret
 that action context semantically.
 
+When an Intelligence event is selected and the question is event-focused,
+Omni resolves the canonical event through the Monitor/Intelligence projection.
+It returns source-backed event evidence, exact account/program/facility
+resolution only where present, and `context_used.event_id`. An unresolved
+event remains unresolved: Omni does not fuzzy-match an account or infer event
+geography. Any commercial alert, score, or workflow context is identified as
+the current SAMPLE commercial dataset.
+
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |
 | Today | none | none | rendered alert and intelligence IDs, in display order |

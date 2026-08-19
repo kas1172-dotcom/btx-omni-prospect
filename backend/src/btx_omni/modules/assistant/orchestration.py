@@ -1,6 +1,7 @@
 """Bounded Omni POC orchestration over supplied governed read models only."""
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -48,13 +49,20 @@ class OmniResponse:
 class OmniOrchestrator:
     """No SQL, tools, writes, or source authority: only supplied POC facts."""
 
-    def answer(self, environment: SampleEnvironment, *, account_id: str | None, question: str, observed_at, context: dict[str, str] | None = None) -> OmniResponse:
+    def answer(self, environment: SampleEnvironment, *, account_id: str | None, question: str, observed_at, context: dict[str, object] | None = None, intelligence_events: Iterable[Mapping[str, object]] | None = None, work_items: Iterable[object] = ()) -> OmniResponse:
         """Bounded deterministic retrieval fallback; it never presents itself as model output."""
         query = question.casefold().strip()
         accounts = list(environment.accounts)
         product_context = context or {}
+        if "open quote" in query:
+            return self._unscoped_answer(environment, observed_at=observed_at, question=query)
+        selected_event_id = product_context.get("selected_event_id")
+        if isinstance(selected_event_id, str) and self._is_event_question(query):
+            event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
+            return self._selected_event_answer(environment, event_records=event_records, work_items=work_items, event_id=selected_event_id, question=query, observed_at=observed_at, context=product_context)
         session_account_id = product_context.get("session_account_id")
-        account = next((item for item in accounts if item.id == (account_id or session_account_id)), None)
+        session_id = session_account_id if isinstance(session_account_id, str) else None
+        account = next((item for item in accounts if item.id == (account_id or session_id)), None)
         if account is None:
             account = next((item for item in accounts if item.research_account_id and item.legal_name.casefold() in query), None)
         if account is None:
@@ -116,6 +124,113 @@ class OmniOrchestrator:
         if product_context.get("surface"):
             context_used["surface"] = str(product_context["surface"])
         return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name, context_used=context_used)
+
+    @staticmethod
+    def _is_event_question(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "what happened", "why does this matter", "what does this mean", "who is this about",
+            "what evidence", "evidence supports", "is this actionable", "this award", "this event",
+        ))
+
+    @staticmethod
+    def _sample_event_records(environment: SampleEnvironment) -> tuple[dict[str, object], ...]:
+        accounts = {item.id: item for item in environment.accounts}
+        names = {item.legal_name: item.id for item in environment.accounts}
+        records: list[dict[str, object]] = []
+        for raw in environment.intelligence_events:
+            provenance = accounts[names[raw.account_name]].provenance if raw.account_name in names else next(iter(accounts.values())).provenance
+            signal = normalize_signal(raw, account_name_to_id=names, provenance=provenance)
+            records.append({
+                "id": signal.id, "kind": signal.kind.value, "title": signal.title,
+                "source_url": signal.source_url, "account_id": signal.account_id,
+                "program_name": signal.program_name, "program_id": None, "facility_id": None,
+                "evidence_state": signal.evidence_state.value, "resolution_state": "RESOLVED" if signal.account_id else "UNRESOLVED",
+                "data_mode": "CURATED_PUBLIC", "observed_at": signal.occurred_at,
+                "relevance_explanation": signal.relevance_explanation, "evidence_ids": signal.evidence_ids,
+                "source_tier": "CURATED_POC_PUBLIC", "provenance": signal.provenance,
+            })
+        return tuple(records)
+
+    def _selected_event_answer(self, environment: SampleEnvironment, *, event_records: Iterable[Mapping[str, object]], work_items: Iterable[object], event_id: str, question: str, observed_at, context: Mapping[str, object]) -> OmniResponse:
+        event = next((record for record in event_records if record.get("id") == event_id), None)
+        context_used: dict[str, object] = {"event_id": event_id}
+        if context.get("surface"):
+            context_used["surface"] = str(context["surface"])
+        if event is None:
+            return OmniResponse(
+                "The selected Intelligence event is not available in the current canonical Monitor read model. I cannot explain it or connect it to account history without a canonical event record.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("Selected Intelligence event is unavailable or stale.",), None, (), None,
+                context_used=context_used,
+            )
+
+        account_id = event.get("account_id") if isinstance(event.get("account_id"), str) else None
+        account = next((item for item in environment.accounts if item.id == account_id), None)
+        title = str(event.get("title") or "Untitled intelligence event")
+        kind = str(event.get("kind") or "INTELLIGENCE_EVENT")
+        source_url = event.get("source_url") if isinstance(event.get("source_url"), str) else None
+        observed_at_value = event.get("observed_at")
+        observed_text = observed_at_value.isoformat() if hasattr(observed_at_value, "isoformat") else str(observed_at_value or "unavailable")
+        evidence_state = str(event.get("evidence_state") or "MISSING")
+        resolution_state = str(event.get("resolution_state") or ("RESOLVED" if account else "UNRESOLVED"))
+        citations = [str(value) for value in event.get("evidence_ids", ())]
+        citation_links = [OmniCitation(title, source_url)] if source_url else []
+        missing: list[str] = []
+        lines = [f"Source-backed Intelligence event: {title}. Type: {kind}. Observed/source date: {observed_text}."]
+        if source_url:
+            lines.append("The supplied public source is cited with this response.")
+        lines.append(f"Evidence state: {evidence_state}; canonical resolution state: {resolution_state}.")
+        relevance = event.get("relevance_explanation")
+        if relevance:
+            lines.append(f"Seller relevance from the canonical Monitor projection: {relevance}")
+        if account is None:
+            lines.append("This event is currently unresolved to a canonical researched account, so it cannot be reliably connected to BTX account history, scoring, or workflow context.")
+            missing.append("No canonical account resolution is present for this event.")
+        else:
+            context_used["account_id"] = account.id
+            lines.append(f"Resolved organization: {account.legal_name} ({primary_market_label(account.industries)}).")
+        program_id = event.get("program_id") if isinstance(event.get("program_id"), str) else None
+        program_name = event.get("program_name") if isinstance(event.get("program_name"), str) else None
+        program = next((item for item in environment.programs if item.id == program_id), None)
+        if program:
+            lines.append(f"Canonical program: {program.name} ({program.id}).")
+        elif program_name:
+            missing.append(f"Program text '{program_name}' is not canonically resolved.")
+        else:
+            missing.append("No canonical program association is present for this event.")
+        facility_id = event.get("facility_id") if isinstance(event.get("facility_id"), str) else None
+        facility = next((item for item in environment.facilities if item.id == facility_id), None)
+        if facility:
+            lines.append(f"Canonical facility: {facility.name} ({facility.id}).")
+        else:
+            missing.append("No canonical facility association is present for this event; account headquarters geography is not used as an event location.")
+        if evidence_state != EvidenceState.CONFIRMED.value:
+            missing.append(f"Event evidence is {evidence_state}, not confirmed.")
+        action: str | None = None
+        if account is not None and ("actionable" in question or "matter to btx" in question or "why does this matter" in question or "what does this mean" in question):
+            alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)
+            account_alerts = [alert for alert in alerts if alert.account_id == account.id]
+            account_work_items = [item for item in work_items if getattr(item, "account_id", None) == account.id]
+            if account_alerts:
+                action = account_alerts[0].recommended_action
+                lines.append(f"In the current SAMPLE commercial dataset, a governed commercial alert recommends: {action}")
+            else:
+                lines.append("No governed commercial alert currently connects this resolved account to a seller recommendation.")
+            if account_work_items:
+                lines.append(f"Current governed work items for this account: {len(account_work_items)} (session-only SAMPLE workflow state).")
+            else:
+                lines.append("No current governed work item was found for this account.")
+        lines.append("Public event facts remain source-backed. Any commercial, score, alert, or workflow context above is explicitly from the current SAMPLE commercial dataset. Omni is read-only and cannot create actions or CRM records.")
+        provenance = [AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.CANONICAL_FACT]
+        if action or account is not None:
+            provenance.append(AssistantProvenance.DETERMINISTIC_DERIVATION)
+        if missing:
+            provenance.append(AssistantProvenance.MISSING_UNAVAILABLE)
+        return OmniResponse(
+            " ".join(lines), account.id if account else "", tuple(dict.fromkeys(citations)), tuple(provenance),
+            tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name if account else None,
+            context_used=context_used,
+        )
 
     @staticmethod
     def _unscoped_answer(environment: SampleEnvironment, *, observed_at, question: str) -> OmniResponse:

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from btx_omni.api.accounts import get_runtime
+from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.modules.assistant.orchestration import OmniOrchestrator
 
@@ -57,4 +58,12 @@ class OmniQuestion(BaseModel):
 
 @router.post("")
 def omni(body: OmniQuestion, runtime: PocRuntime = Depends(get_runtime)):
-    return OmniOrchestrator().answer(runtime.environment(), account_id=body.account_id, question=body.question, observed_at=runtime.observed_at(), context=(body.context.model_dump(exclude_none=True) if body.context else {}))
+    return OmniOrchestrator().answer(
+        runtime.environment(),
+        account_id=body.account_id,
+        question=body.question,
+        observed_at=runtime.observed_at(),
+        context=(body.context.model_dump(exclude_none=True) if body.context else {}),
+        intelligence_events=intelligence_signals(runtime),
+        work_items=runtime.work.list(),
+    )
