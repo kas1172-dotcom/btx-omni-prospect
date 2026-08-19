@@ -67,7 +67,7 @@ test('map and action interactions remain touch-accessible and confirmation-safe'
   assert.match(actions, /Preview demo CRM action/)
   assert.match(mapCanvas, /Map unavailable/)
   assert.match(mapCanvas, /tile\.openstreetmap\.org/)
-  assert.match(map, /onSelect=\{setSelected\}/)
+  assert.match(map, /onAccountSelect=\{selectAccount\}/)
   assert.match(map, /item\.coordinates/)
   assert.match(actions, /Development-only user identity/)
 })
@@ -101,8 +101,21 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(intelligence, /aria-pressed=\{selectedEventId === signal\.id\}/)
   assert.match(app, /selectedEventId/)
   assert.match(app, /selected_event_id: surface === 'intelligence' \? selectedEventId : undefined/)
-  assert.match(app, /clearSelectedEvent\(\); setSurface\(id\)/)
+  assert.match(app, /clearSelectedEvent\(\); clearMapSelection\(\); setSurface\(id\)/)
   assert.match(drawer, /\{ \.\.\.context, session_account_id/)
+})
+
+test('Map selection sends canonical account and facility context without inventing BTX account identity', () => {
+  assert.match(map, /selectAccount = \(accountId: string\)/)
+  assert.match(map, /selectFacility = \(facilityId: string, accountId\?: string\)/)
+  assert.match(map, /selectFacility\(location\.facility_id, location\.account_id\)/)
+  assert.match(map, /selectFacility\(facility\.facility_id\)/)
+  assert.match(mapCanvas, /facilityId: item\.facility_id \?\? ''/)
+  assert.match(mapCanvas, /onFacilitySelectRef\.current\(facilityId, feature\.accountId \|\| undefined\)/)
+  assert.match(app, /selectedMapAccountId/)
+  assert.match(app, /selectedMapFacilityId/)
+  assert.match(app, /selected_facility_id: surface === 'map' \? selectedMapFacilityId : undefined/)
+  assert.match(app, /clearMapSelection\(\); setSurface\(id\)/)
 })
 
 test('curated public evidence is never labeled as synthetic demo', () => {

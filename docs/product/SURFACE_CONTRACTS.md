@@ -25,6 +25,11 @@ Lowercase legacy surfaces and the previous context shape remain accepted.
 Responses may include `context_used` for passive context that actually
 influenced the answer; it never contains conversation transcripts.
 
+On Map, account-point selection supplies the canonical `selected_account_id`.
+Research-facility selection supplies `selected_facility_id` and its canonical
+parent account only when the facility record has one. BTX facility selection
+supplies only its canonical facility ID. Map selections clear on navigation.
+
 ## Decisioning rules
 
 `Account Attractiveness v1` is a deterministic, intrinsic 0–100 structural
