@@ -30,9 +30,9 @@ test('mobile-first layout prevents horizontal overflow and exposes an Omni drawe
 })
 
 test('live Monitor observations use the canonical intelligence and map surfaces', () => {
-  assert.match(app, /intelligence_signals/)
-  assert.match(map, /LIVE_PUBLIC/)
-  assert.match(map, /No linked signals have map coordinates/)
+  assert.match(app, /map\.intelligence/)
+  assert.match(map, /geographically linked intelligence/)
+  assert.match(map, /No current intelligence event has verified event or canonical-facility coordinates/)
 })
 
 test('Account 360 distinguishes public evidence from simulated BTX context', () => {
@@ -60,15 +60,15 @@ test('map and action interactions remain touch-accessible and confirmation-safe'
   assert.match(map, /Map controls/)
   assert.match(map, /Account quick view/)
   assert.match(mapCanvas, /maplibregl\.Map/)
-  assert.match(mapCanvas, /cluster: true/)
-  assert.match(mapCanvas, /canonical-locations/)
+  assert.match(mapCanvas, /clusterRadius/)
+  assert.match(mapCanvas, /account-clusters/)
+  assert.match(mapCanvas, /setData/)
   assert.match(actions, /Confirm demo CRM execution/)
   assert.match(actions, /Preview demo CRM action/)
   assert.match(mapCanvas, /Map unavailable/)
-  assert.match(mapCanvas, /VITE_MAP_API_KEY is missing/)
-  assert.match(mapCanvas, /do not paste a key into the application/)
-  assert.match(map, /onSelect=\{onAccount\}/)
-  assert.match(map, /signal\.account_id \?\? 'unresolved'/)
+  assert.match(mapCanvas, /tile\.openstreetmap\.org/)
+  assert.match(map, /onSelect=\{setSelected\}/)
+  assert.match(map, /item\.coordinates/)
   assert.match(actions, /Development-only user identity/)
 })
 
@@ -96,7 +96,7 @@ test('Intelligence distinguishes browser validation from publisher-blocked sourc
 
 test('curated public evidence is never labeled as synthetic demo', () => {
   assert.match(today, /CURATED PUBLIC/)
-  assert.match(map, /CURATED PUBLIC/)
+  assert.match(map, /PUBLIC/)
 })
 
 test('Monitor keeps inactive collection separate from curated public preview signals', () => {

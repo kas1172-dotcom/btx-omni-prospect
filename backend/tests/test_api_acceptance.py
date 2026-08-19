@@ -21,13 +21,18 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         conflict = await client.post("/api/omni", json={"account_id": "symbotic", "question": "What is missing?"})
     assert southwest.status_code == medical.status_code == accounts.status_code == defense.status_code == no_quote.status_code == 200
     assert southwest.json()["records"] and medical.json()["records"]
+    assert southwest.json()["accounts"] == southwest.json()["records"]
+    assert all(item["entity_type"] == "ACCOUNT" and item["coordinates"] for item in southwest.json()["accounts"])
+    assert all(item["entity_type"] == "FACILITY" and item["facility_id"] and item["coordinates"] for item in southwest.json()["facilities"])
     assert len(southwest.json()["btx_facilities"]) == 5
+    assert all(item["entity_type"] == "BTX_FACILITY" and item["coordinates"] for item in southwest.json()["btx_facilities"])
     assert all(item["verification_state"] == "VERIFIED_PUBLIC_FACILITY" and item["provenance"]["source_url"] for item in southwest.json()["btx_facilities"])
     assert all(item["nearest_btx_facility"] is not None and item["nearest_btx_facility"]["id"] != "btx-southwest" for item in southwest.json()["records"])
     assert all(item["location"] is None or item["location"]["country"] for item in accounts.json()["accounts"])
     assert accounts.json()["accounts"] and all(item["public_identity_state"] != "UNVERIFIED" for item in accounts.json()["accounts"])
     assert all("attractiveness" in item and "commercial_context_state" in item for item in accounts.json()["accounts"])
     assert "intelligence_signals" in southwest.json()
+    assert all(item["coordinates"] is None or item["facility_id"] for item in southwest.json()["intelligence"])
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"
     assert len(defense.json()["paperless_accounts"]) == 1 and len(defense.json()["paperless_quotes"]) == 8
     assert defense.json()["public_identity"] is not None and defense.json()["public_identity_state"] != "UNVERIFIED"

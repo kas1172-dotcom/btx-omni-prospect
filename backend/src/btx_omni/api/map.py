@@ -1,3 +1,8 @@
+"""Small, typed geographic read model for the MapLibre surface."""
+from __future__ import annotations
+
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends
 
 from btx_omni.api.accounts import get_runtime
@@ -6,21 +11,40 @@ from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.markets import primary_market_label
 
 router = APIRouter(prefix="/map", tags=["map"])
+
+
+def _coordinates(latitude: Decimal | None, longitude: Decimal | None) -> dict[str, str] | None:
+    if latitude is None or longitude is None or not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return None
+    return {"latitude": str(latitude), "longitude": str(longitude)}
+
+
 @router.get("")
 def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runtime)) -> dict:
     sample = runtime.environment()
-    mapped_btx_facilities = tuple(item for item in sample.btx_facilities if item.latitude is not None and item.longitude is not None)
-    records = []
-    for account in sample.accounts:
-        if industry and industry not in account.industries:
+    accounts = {account.id: account for account in sample.accounts}
+    facilities = tuple(facility for facility in sample.public_facilities if _coordinates(facility.latitude, facility.longitude))
+    btx_facilities = tuple(facility for facility in sample.btx_facilities if _coordinates(facility.latitude, facility.longitude))
+    selected_accounts = tuple(account for account in sample.accounts if not industry or industry in account.industries)
+    selected_ids = {account.id for account in selected_accounts}
+    commercial_accounts = {item.account_id for item in sample.commercial_contexts}
+    account_points = []
+    for account in selected_accounts:
+        candidates = tuple(facility for facility in facilities if facility.account_id == account.id)
+        location = next((facility for facility in candidates if facility.id == f"public-hq-{account.id}"), None) or next(iter(candidates), None)
+        if location is None:
             continue
-        facility = next((item for item in sample.facilities if item.account_id == account.id), None)
-        if facility is None:
+        nearest = min(btx_facilities, key=lambda item: abs(location.latitude - item.latitude) + abs(location.longitude - item.longitude), default=None)
+        proximity = abs(location.latitude - nearest.latitude) + abs(location.longitude - nearest.longitude) if nearest else None
+        account_points.append({"id": f"account:{account.id}", "entity_type": "ACCOUNT", "account_id": account.id, "name": account.legal_name, "primary_markets": account.industries, "industry": primary_market_label(account.industries), "relationship": account.relationship, "is_rich_scenario": account.id in sample.rich_scenarios, "coordinates": _coordinates(location.latitude, location.longitude), "location_truth_state": location.verification_state, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in commercial_accounts else "UNAVAILABLE", "nearest_btx_facility": {"id": nearest.id, "name": nearest.name} if nearest else None, "proximity_input": str(proximity) if proximity is not None else None, "deep_account": account.id in commercial_accounts})
+    facility_points = [{"id": f"facility:{facility.id}", "entity_type": "FACILITY", "account_id": facility.account_id, "facility_id": facility.id, "name": facility.name, "primary_markets": accounts[facility.account_id].industries, "city": facility.city, "region": facility.region, "country": facility.country, "location_type": facility.facility_type, "truth_state": facility.verification_state, "coordinates": _coordinates(facility.latitude, facility.longitude), "source_url": facility.source_url, "provenance": facility.provenance} for facility in facilities if facility.account_id in selected_ids]
+    btx_points = [{"id": f"btx-facility:{facility.id}", "entity_type": "BTX_FACILITY", "facility_id": facility.id, "business_unit_id": facility.business_unit_id, "name": facility.name, "city": facility.city, "region": facility.region, "country": facility.country, "coordinates": _coordinates(facility.latitude, facility.longitude), "source_url": facility.source_url, "source_type": facility.source_type, "truth_state": facility.verification_state, "verification_state": facility.verification_state, "provenance": facility.provenance} for facility in btx_facilities]
+    facility_coordinates = {facility.id: _coordinates(facility.latitude, facility.longitude) for facility in facilities}
+    intelligence_points = []
+    for signal in intelligence_signals(runtime):
+        account_id, facility_id = signal.get("account_id"), signal.get("facility_id")
+        if account_id not in selected_ids:
             continue
-        nearest = min(mapped_btx_facilities, key=lambda item: abs(facility.latitude - item.latitude) + abs(facility.longitude - item.longitude), default=None)
-        distance_input = abs(facility.latitude - nearest.latitude) + abs(facility.longitude - nearest.longitude) if nearest else None
-        records.append({"account_id": account.id, "industry": primary_market_label(account.industries), "relationship": account.relationship, "is_rich_scenario": account.id in sample.rich_scenarios, "latitude": facility.latitude, "longitude": facility.longitude, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in {item.account_id for item in sample.commercial_contexts} else "UNAVAILABLE", "location_truth_state": facility.verification_state, "nearest_btx_facility": nearest, "proximity_input": str(distance_input) if distance_input is not None else None, "deep_account": account.id in {item.account_id for item in sample.commercial_contexts}})
-    account_coordinates = {item["account_id"]: {"latitude": item["latitude"], "longitude": item["longitude"]} for item in records}
-    signals = [{**signal, "coordinates": account_coordinates.get(signal["account_id"])} for signal in intelligence_signals(runtime)]
-    public_locations = [{"account_id": item.account_id, "location_id": item.id, "location_name": item.name, "location_type": item.facility_type, "truth_state": item.verification_state, "city": item.city, "region": item.region, "country": item.country, "latitude": item.latitude, "longitude": item.longitude, "provenance": item.provenance, "source_url": item.source_url} for item in sample.public_facilities]
-    return {"layers": sorted({primary_market_label(item.industries) for item in sample.accounts}), "records": records, "public_locations": public_locations, "btx_facilities": sample.btx_facilities, "intelligence_signals": signals, "proximity_note": "Seller planning input only; never an attractiveness input."}
+        coordinates = facility_coordinates.get(facility_id) if facility_id else None
+        intelligence_points.append({"id": f"intelligence:{signal['id']}", "entity_type": "INTELLIGENCE", "event_id": signal["id"], "account_id": account_id, "facility_id": facility_id, "title": signal["title"], "primary_markets": accounts[account_id].industries if account_id in accounts else (), "event_date": signal.get("observed_at"), "source_url": signal["source_url"], "relevance": signal.get("relevance_explanation"), "evidence_state": signal.get("evidence_state"), "coordinates": coordinates, "coordinate_derivation": "CANONICAL_FACILITY" if coordinates else None})
+    return {"layers": sorted({market for account in sample.accounts for market in account.industries}), "accounts": account_points, "facilities": facility_points, "btx_facilities": btx_points, "intelligence": intelligence_points, "records": account_points, "public_locations": facility_points, "intelligence_signals": intelligence_points, "proximity_note": "Seller planning input only; never an attractiveness input."}

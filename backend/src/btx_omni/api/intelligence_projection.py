@@ -30,6 +30,8 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
             "source_url": observation.raw_evidence.locator if observation else event.provenance.source_url,
             "account_id": subject.canonical_account_id if subject else None,
             "program_name": event.program.mention,
+            "program_id": event.program.canonical_program_id,
+            "facility_id": event.canonical_facility_id,
             "evidence_state": event.provenance.evidence_state,
             "resolution_state": event.resolution_state,
             "data_mode": event.provenance.data_mode,

@@ -1,4 +1,4 @@
-import type { Account, Account360, Alert, MapRecord, MonitorHealth, OmniResponse, PublicLocation, Signal, WorkItem } from '../types/api'
+import type { Account, Account360, Alert, BtxMapFacility, MapIntelligence, MapRecord, MonitorHealth, OmniResponse, PublicLocation, Signal, WorkItem } from '../types/api'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -12,7 +12,7 @@ export const api = {
   account: (id: string) => request<Account360>(`/accounts/${id}`),
   today: () => request<{ priority_intelligence: Signal[]; commercial_alerts: Alert[]; recommended_actions: Array<{ account_id: string; action: string; evidence_ids: string[] }> }>('/today'),
   intelligence: () => request<{ signals: Signal[] }>('/intelligence'),
-  map: (industry?: string) => request<{ layers: string[]; records: MapRecord[]; public_locations: PublicLocation[]; intelligence_signals: Signal[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : '')),
+  map: (industry?: string) => request<{ layers: string[]; accounts: MapRecord[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : '')),
   createAction: (body: { account_id: string; summary: string; evidence_ids: string[]; idempotency_key: string; actor_id: string; priority?: string; notes?: string }) => request<WorkItem>('/actions', { method: 'POST', body: JSON.stringify(body) }),
   actions: () => request<{ items: WorkItem[]; persistence: string; warning: string }>('/actions'),
   transition: (id: string, status: string) => request<WorkItem>(`/actions/${id}/${status}`, { method: 'POST', body: JSON.stringify({ actor_id: 'development-demo-user', note: 'Development-only POC actor' }) }),
