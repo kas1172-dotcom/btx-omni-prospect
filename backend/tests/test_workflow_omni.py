@@ -288,3 +288,136 @@ def test_omni_selected_work_item_preserves_non_action_queries_and_missing_event_
     assert "curated public-company universe" in general.content and item.summary not in general.content
     assert "No canonical originating Intelligence event" in missing_account.content
     assert "No canonical researched account association" in missing_account.content
+
+
+def test_omni_routes_selected_account_relationships_through_canonical_service() -> None:
+    sample = build_sample_environment()
+    response = OmniOrchestrator().answer(
+        sample,
+        account_id=None,
+        question="How are we connected to this company?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"},
+    )
+    assert "Spirit AeroSystems --PARENT_CHILD--> Boeing" in response.content
+    assert "BOEING_SPIRIT" in response.content
+    assert response.context_used == {"surface": "ACCOUNT_DETAIL", "account_id": "spirit-aerosystems"}
+
+
+def test_omni_relationship_routing_preserves_source_less_and_conflicting_evidence() -> None:
+    sample = build_sample_environment()
+    omni = OmniOrchestrator()
+    source_less = omni.answer(
+        sample,
+        account_id=None,
+        question="What evidence supports this relationship?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"},
+    )
+    parent = next(edge for edge in sample.relationship_edges if edge.id == "e001")
+    conflicting = replace(sample, relationship_edges=tuple(replace(edge, evidence_state=EvidenceState.CONFLICTING) if edge.id == parent.id else edge for edge in sample.relationship_edges))
+    unusable = omni.answer(
+        conflicting,
+        account_id=None,
+        question="How are Spirit AeroSystems and Boeing connected?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "lockheed-martin"},
+    )
+    assert "GEOGRAPHIC_CLUSTER_REVERSE" in source_less.content
+    assert "needs_validation" in source_less.content
+    assert any("no attached relationship source IDs" in item for item in source_less.missingness)
+    assert "PARENT_CHILD" in unusable.content and "unusable" in unusable.content
+    assert any("conflicting evidence" in item for item in unusable.missingness)
+
+
+def test_omni_relationship_routing_uses_explicit_pair_program_and_warm_path_context() -> None:
+    sample = build_sample_environment()
+    omni = OmniOrchestrator()
+    pair = omni.answer(
+        sample,
+        account_id=None,
+        question="How are Boeing and Spirit AeroSystems connected?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "lockheed-martin"},
+    )
+    programs = omni.answer(
+        sample,
+        account_id=None,
+        question="What programs connect Boeing and Northrop Grumman?",
+        observed_at=NOW,
+        context={},
+    )
+    warm = omni.answer(
+        sample,
+        account_id=None,
+        question="Which current customer gives us a route into this prospect?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"},
+    )
+    assert "Boeing --PARENT_CHILD_REVERSE--> Spirit AeroSystems" in pair.content
+    assert pair.context_used["account_id"] == "boeing" and pair.context_used["related_account_id"] == "spirit-aerosystems"
+    assert "F-35 Lightning II" in programs.content and "NASA Artemis" in programs.content
+    assert "Boeing has current SAMPLE commercial context" in warm.content
+    assert "not a guaranteed introduction" in warm.content
+
+
+def test_omni_relationship_routing_handles_contacts_no_path_invalid_and_read_only_requests() -> None:
+    sample = build_sample_environment()
+    omni = OmniOrchestrator()
+    contact = omni.answer(
+        sample,
+        account_id=None,
+        question="Do we know anyone connected to this account?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"},
+    )
+    no_path = omni.answer(
+        sample,
+        account_id=None,
+        question="How are Lockheed Martin and Anduril Industries connected?",
+        observed_at=NOW,
+        context={},
+    )
+    invalid = omni.answer(
+        sample,
+        account_id=None,
+        question="How are we connected to this company?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "not-real"},
+    )
+    unresolved_named = omni.answer(
+        sample,
+        account_id=None,
+        question="How are Boeing and Not A Real Company connected?",
+        observed_at=NOW,
+        context={},
+    )
+    work, item = create_selected_work_item()
+    before = work.list()
+    readonly = omni.answer(
+        sample,
+        account_id=None,
+        question="Create an introduction task through this relationship.",
+        observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"},
+        work_items=work.list(),
+    )
+    assert "current SAMPLE CRM dataset" in contact.content
+    assert "don't have an evidence-backed relationship path" in no_path.content
+    assert "need a canonical researched account" in invalid.content
+    assert "can't resolve 'not a real company'" in unresolved_named.content
+    assert "did not create an introduction task" in readonly.content
+    assert work.list() == before and item in before
+
+
+def test_omni_relationship_routing_preserves_account_and_unrelated_routes() -> None:
+    sample = build_sample_environment()
+    omni = OmniOrchestrator()
+    cross_account = omni.answer(sample, account_id=None, question="Which Defense accounts have open quotes?", observed_at=NOW, context={"selected_account_id": "spirit-aerosystems"})
+    score = omni.answer(sample, account_id="boeing", question="Why is this account attractive?", observed_at=NOW, context={"selected_account_id": "spirit-aerosystems"})
+    named_account = omni.answer(sample, account_id=None, question="Tell me about Boeing.", observed_at=NOW, context={"selected_account_id": "spirit-aerosystems"})
+    general = omni.answer(sample, account_id=None, question="What is an RFQ?", observed_at=NOW, context={"selected_account_id": "spirit-aerosystems"})
+    assert "Defense researched account(s) with open quotes" in cross_account.content
+    assert "Account Attractiveness" in score.content
+    assert "Deterministic governed answer for Boeing" in named_account.content
+    assert "curated public-company universe" in general.content

@@ -1,6 +1,7 @@
 """Bounded Omni POC orchestration over supplied governed read models only."""
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -10,6 +11,7 @@ from btx_omni.domain.markets import primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.intelligence.signals import normalize_signal
 from btx_omni.modules.matching.commercial import match_component_to_quote
+from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
     calculate_account_attractiveness,
@@ -78,6 +80,13 @@ class OmniOrchestrator:
                 event_records=event_records,
                 action_id=selected_action_id,
                 question=query,
+                context=product_context,
+            )
+        if self._is_relationship_question(query):
+            return self._relationship_answer(
+                environment,
+                question=query,
+                account_id=account_id,
                 context=product_context,
             )
         session_account_id = product_context.get("session_account_id")
@@ -169,6 +178,187 @@ class OmniOrchestrator:
             "is this action still valid", "what would happen if i act",
             "execute this action", "complete this action", "go ahead and execute",
         ))
+
+    @staticmethod
+    def _is_relationship_question(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "how are we connected", "how are these companies connected",
+            "connected", "relationship", "relationships",
+            "warm path", "route into", "who could introduce", "do we know anyone connected",
+            "programs connect", "companies are related", "related?", "introduction task",
+        ))
+
+    @staticmethod
+    def _accounts_named_in(question: str, environment: SampleEnvironment) -> tuple[object, ...]:
+        """Exact legal-name or researched-alias matching only; no fuzzy entity resolution."""
+        matches: list[object] = []
+        for account in environment.accounts:
+            names = [account.legal_name]
+            if account.public_identity:
+                names.extend(field.value for field in account.public_identity.aliases)
+            if any(name.casefold() in question for name in names):
+                matches.append(account)
+        return tuple(matches)
+
+    @staticmethod
+    def _unresolved_pair_entity(question: str, environment: SampleEnvironment) -> str | None:
+        """Name only an exact unresolved member of the common two-account form."""
+        match = re.search(r"how are (.+?) and (.+?) connected", question)
+        if not match:
+            return None
+        known = {account.legal_name.casefold() for account in environment.accounts}
+        known.update(
+            field.value.casefold()
+            for account in environment.accounts
+            for field in (account.public_identity.aliases if account.public_identity else ())
+        )
+        return next((name for name in match.groups() if name.casefold().strip() not in known), None)
+
+    def _relationship_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        question: str,
+        account_id: str | None,
+        context: Mapping[str, object],
+    ) -> OmniResponse:
+        """Adapt canonical relationship paths for Omni without implementing traversal."""
+        named = self._accounts_named_in(question, environment)
+        unresolved_entity = self._unresolved_pair_entity(question, environment)
+        selected_id = context.get("selected_account_id")
+        selected = next((item for item in environment.accounts if item.id == selected_id), None) if isinstance(selected_id, str) else None
+        explicit = next((item for item in environment.accounts if item.id == account_id), None) if account_id else None
+        source = named[0] if named else explicit or selected
+        target = named[1] if len(named) > 1 else (named[0] if named and (explicit or selected) and named[0].id != (explicit or selected).id else None)
+        if named and len(named) == 1 and (explicit or selected) and named[0].id != (explicit or selected).id:
+            source = explicit or selected
+            target = named[0]
+        context_used: dict[str, object] = {}
+        if context.get("surface"):
+            context_used["surface"] = str(context["surface"])
+        if source is None:
+            return OmniResponse(
+                "I need a canonical researched account to inspect relationship intelligence. Select an account or name one exactly; Omni will not infer a graph node from similarity.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("No canonical account was supplied or resolved for the relationship query.",), None, (), None,
+                context_used=context_used,
+            )
+        if unresolved_entity:
+            return OmniResponse(
+                f"I can't resolve '{unresolved_entity}' to a canonical researched account for this relationship query. I will not fuzzy-match it to a graph node.",
+                source.id, (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                (f"Canonical researched account '{unresolved_entity}' was not resolved.",), None, (), source.legal_name,
+                context_used=context_used,
+            )
+        context_used["account_id"] = source.id
+        if target is not None:
+            context_used["related_account_id"] = target.id
+        service = RelationshipIntelligenceService(environment)
+        result = service.account_relationships(source.id, depth=4, max_paths=80)
+        paths = list(result["paths"])
+        if target is not None:
+            paths = [path for path in paths if path["target_entity"].kind == "account" and path["target_entity"].id == target.id]
+        warm_path = any(phrase in question for phrase in ("warm path", "route into", "who could introduce", "introduction task"))
+        program_query = "programs connect" in question
+        contact_query = "do we know anyone connected" in question
+        if warm_path:
+            customer_ids = {item.account_id for item in environment.commercial_contexts}
+            paths = [path for path in paths if path["target_entity"].kind == "account" and path["target_entity"].id in customer_ids and path["target_entity"].id != source.id]
+        elif contact_query:
+            paths = [path for path in paths if path["target_entity"].kind == "contact"]
+        elif program_query:
+            paths = [path for path in paths if any(hop.relationship_type in {"SHARED_PROGRAM", "SHARED_PROGRAM_REVERSE", "PARTICIPATES_IN", "HAS_PARTICIPANT"} for hop in path["hops"])]
+        else:
+            direct = result["direct_relationships"] if target is None else paths
+            paths = list(direct)
+        if not paths:
+            pair = f" between {source.legal_name} and {target.legal_name}" if target else f" around {source.legal_name}"
+            return OmniResponse(
+                f"I don't have an evidence-backed relationship path{pair} in the current canonical graph. That does not establish that no real-world relationship exists.",
+                source.id, (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.MISSING_UNAVAILABLE),
+                ("No canonical relationship path was found within the supported traversal depth.",), None, (), source.legal_name,
+                context_used=context_used,
+            )
+        paths.sort(key=lambda path: (
+            0 if any(not hop.derived for hop in path["hops"]) else 1,
+            0 if path["presentation_state"] == "validated" else 1,
+            len(path["hops"]),
+            path["path_id"],
+        ))
+        selected_paths = paths[:1] if warm_path else paths[:3]
+        citations: list[str] = []
+        citation_links: list[OmniCitation] = []
+        missing: list[str] = []
+        lines: list[str] = []
+        for path in selected_paths:
+            hops = path["hops"]
+            rendered = " -> ".join(
+                f"{hop.from_entity.name} --{hop.relationship_type}--> {hop.to_entity.name}"
+                for hop in hops
+            )
+            state = path["presentation_state"]
+            evidence = path["overall_evidence_state"].value
+            lines.append(f"Canonical relationship path ({state}; evidence {evidence}): {rendered}.")
+            if path["narrative"]:
+                lines.append(f"Relationship record: {path['narrative']}")
+            source_ids = tuple(source_id for hop in hops for source_id in hop.source_ids)
+            if source_ids:
+                citations.extend(source_ids)
+                lines.append(f"Relationship source IDs: {', '.join(source_ids)}.")
+            if state == "needs_validation":
+                missing.append("This relationship path needs validation; a material edge is inferred or lacks attached source IDs.")
+            if state == "unusable":
+                missing.append("This relationship path has missing or conflicting evidence and is not usable for seller action.")
+            if not source_ids and any(not hop.derived for hop in hops):
+                missing.append("An explicit relationship edge in this path has no attached relationship source IDs.")
+            if any(hop.relationship_type.startswith("GEOGRAPHIC_CLUSTER") for hop in hops):
+                lines.append("GEOGRAPHIC_CLUSTER is a geographic grouping only; it is not ownership, a commercial relationship, or an introduction route.")
+            if any(hop.provenance and hop.provenance.synthetic for hop in hops):
+                lines.append("This path includes current SAMPLE commercial or CRM context; it is not connected BTX production data.")
+        if program_query:
+            program_ids = self._program_ids_for_relationship_paths(environment, selected_paths)
+            programs = [item for item in environment.programs if item.id in program_ids]
+            if programs:
+                lines.append("Canonical programs on the selected direct relationship record: " + ", ".join(f"{item.name} ({item.id})" for item in programs) + ".")
+            else:
+                missing.append("The selected relationship paths do not identify a canonical program.")
+        if warm_path:
+            candidate = selected_paths[0]["target_entity"]
+            if selected_paths[0]["presentation_state"] == "validated":
+                lines.append(f"{candidate.name} has current SAMPLE commercial context. This is a relationship path worth reviewing, not a guaranteed introduction.")
+            else:
+                lines.append(f"{candidate.name} is only a potential route worth validating; the path is not a proven introduction.")
+        if contact_query and selected_paths:
+            contact = next((item for item in environment.crm_contacts if item.id == selected_paths[0]["target_entity"].id), None)
+            if contact:
+                name = " ".join(value for value in (contact.properties.get("firstname"), contact.properties.get("lastname")) if value) or contact.role_family
+                lines.append(f"The path reaches {name} ({contact.role_family}) in the current SAMPLE CRM dataset. This is not a verified live introduction.")
+        if any(phrase in question for phrase in ("introduction task", "create an introduction", "introduce us")):
+            lines.append("Omni is read-only and did not create an introduction task, contact, relationship edge, or CRM record.")
+        lines.append("Relationship evidence remains distinct from account similarity, market overlap, score, and proximity. Omni is read-only and does not validate or modify relationship evidence.")
+        provenance = [AssistantProvenance.CANONICAL_FACT]
+        if any(hop.provenance and hop.provenance.synthetic for path in selected_paths for hop in path["hops"]):
+            provenance.append(AssistantProvenance.DETERMINISTIC_DERIVATION)
+        if missing:
+            provenance.append(AssistantProvenance.MISSING_UNAVAILABLE)
+        return OmniResponse(
+            " ".join(lines), source.id, tuple(dict.fromkeys(citations)), tuple(provenance),
+            tuple(dict.fromkeys(missing)), None, tuple(dict.fromkeys(citation_links)), source.legal_name,
+            context_used=context_used,
+        )
+
+    @staticmethod
+    def _program_ids_for_relationship_paths(environment: SampleEnvironment, paths: Iterable[Mapping[str, object]]) -> set[str]:
+        """Recover only direct-edge program metadata; traversal stays in the relationship service."""
+        ids: set[str] = set()
+        for path in paths:
+            for hop in path["hops"]:
+                for edge in environment.relationship_edges:
+                    direct = edge.from_account_id == hop.from_entity.id and edge.to_account_id == hop.to_entity.id and edge.edge_type == hop.relationship_type
+                    reverse = edge.from_account_id == hop.to_entity.id and edge.to_account_id == hop.from_entity.id and f"{edge.edge_type}_REVERSE" == hop.relationship_type
+                    if (direct or reverse) and edge.program_id:
+                        ids.add(edge.program_id)
+        return ids
 
     def _selected_action_answer(
         self,

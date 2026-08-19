@@ -138,6 +138,17 @@ async def test_omni_resolves_selected_actions_through_the_canonical_work_service
 
 
 @pytest.mark.asyncio
+async def test_omni_resolves_relationship_questions_through_the_canonical_service() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        response = await client.post("/api/omni", json={"question": "How are Boeing and Spirit AeroSystems connected?", "context": {"surface": "ACCOUNT_DETAIL", "selected_account_id": "lockheed-martin"}})
+    payload = response.json()
+    assert response.status_code == 200
+    assert "Boeing --PARENT_CHILD_REVERSE--> Spirit AeroSystems" in payload["content"]
+    assert payload["context_used"]["account_id"] == "boeing"
+    assert payload["context_used"]["related_account_id"] == "spirit-aerosystems"
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

@@ -60,6 +60,17 @@ Actions are session-only SAMPLE workflow state; Omni remains read-only and
 cannot bypass the separate human-confirmation gate for CRM execution. Unknown
 or stale action IDs remain explicit limitations.
 
+Relationship-oriented Omni questions use `RelationshipIntelligenceService` for
+the existing bounded canonical paths; Omni does not traverse or infer graph
+edges itself. It preserves the service's `validated`, `needs_validation`, and
+unusable presentation states. Source-less explicit edges remain
+`needs_validation`, and no-path answers mean only that the current graph has
+no evidence-backed path. Relationship answers keep researched/public edges,
+SAMPLE CRM/commercial hops, and BTX context distinct; market similarity and
+geographic proximity are never treated as a relationship or warm introduction.
+Omni can suggest validation, but is read-only and cannot create tasks, contacts,
+CRM records, or relationship edges.
+
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |
 | Today | none | none | rendered alert and intelligence IDs, in display order |
