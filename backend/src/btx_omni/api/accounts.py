@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.matching.commercial import match_component_to_quote
+from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
     calculate_account_attractiveness,
@@ -63,3 +64,11 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     presentation_status = "UNAVAILABLE" if scenario and scenario.exclusion_reason else ("NEEDS_RESEARCH" if score.coverage < 0.5 else "SIMULATED_BTX_CONTEXT")
     factors = [{"name": item.key, "score": item.factor_score, "contribution": item.contribution, "missing": item.missing, "gaps": item.missing_subfactors} for item in score.factors]
     return {"account": account, "public_identity": account.public_identity, "public_identity_state": account.public_identity.verification_state if account.public_identity else "UNVERIFIED", "public_relationship": account.public_relationship, "prospect_research_priority": account.prospect_research_priority, "prospect_rationale": account.prospect_rationale, "reason_for_attention": scenario.reason_for_attention if scenario else account.prospect_rationale, "recommended_next_step": scenario.recommended_next_step if scenario else "Research public evidence before recommending outreach.", "truth_categories": {"public": "PUBLICLY_VERIFIED" if account.research_account_id else "UNAVAILABLE", "btx": "SIMULATED_BTX_CONTEXT" if scenario or contexts else "UNAVAILABLE"}, "public_contacts": account.public_contacts, "public_facilities": public_facilities, "prism_commercial_context": contexts, "paperless_accounts": paperless_accounts, "paperless_quotes": quotes, "orders": [item for item in sample.orders if item.account_id == account_id], "crm": crm, "account_attractiveness": {"score": score.score if presentation_status == "SIMULATED_BTX_CONTEXT" else None, "coverage": score.coverage, "status": presentation_status, "factors": factors, "missingness": score.missingness, "simulation": True, "exclusion_reason": scenario.exclusion_reason if scenario else None}, "alerts": alerts, "intelligence": signals, "matching": matches, "provenance": account.provenance, "missingness": list(score.missingness) + (["CRM context unavailable"] if not companies else [])}
+
+
+@router.get("/{account_id}/relationships")
+def account_relationships(account_id: str, depth: int = Query(default=2, ge=1, le=4), runtime: PocRuntime = Depends(get_runtime)) -> dict:
+    try:
+        return RelationshipIntelligenceService(runtime.environment()).account_relationships(account_id, depth=depth)
+    except KeyError as exc:
+        raise HTTPException(404, "Canonical account not found.") from exc

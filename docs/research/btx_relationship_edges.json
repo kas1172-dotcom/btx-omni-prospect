@@ -62,7 +62,7 @@
   ],
   "summary": {
     "total_edges": 35,
-    "by_type": {"SHARED_PROGRAM": 10, "SHARED_PRIME": 2, "PARENT_CHILD": 4, "COMPETITOR_ON_PROGRAM": 13, "GEOGRAPHIC_CLUSTER": 6},
+    "by_type": {"SHARED_PROGRAM": 11, "SHARED_PRIME": 2, "PARENT_CHILD": 4, "COMPETITOR_ON_PROGRAM": 13, "GEOGRAPHIC_CLUSTER": 5},
     "by_evidence_state": {"CONFIRMED": 33, "INFERRED": 2},
     "by_provenance_data_mode": {"CONNECTED": 33, "SAMPLE": 2}
   },
