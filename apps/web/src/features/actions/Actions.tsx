@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Account, Alert, Signal, WorkItem } from '../../types/api'
 import { api } from '../../api/client'
 import { Empty, Panel, State } from '../../components/UI'
@@ -17,7 +17,7 @@ const sortPriority = <T extends { priority: string }>(items: T[]) => [...items].
 const sortAlerts = (items: Alert[]) => [...items].sort((left, right) => (priorityRank[left.severity] ?? 9) - (priorityRank[right.severity] ?? 9))
 const sourceValidation = (state?: string) => state === 'BROWSER_VERIFIED' ? 'Browser verified' : state === 'AUTOMATION_BLOCKED' ? 'Automated validation blocked' : state ? 'Source validation needs research' : 'No public event linked'
 
-export function Actions({ items, onItem, alerts, accounts, signals, warning, onAccount }: { items: WorkItem[]; onItem: (item: WorkItem) => void; alerts: Alert[]; accounts: Account[]; signals: Signal[]; warning: string; onAccount: (id: string) => void }) {
+export function Actions({ items, onItem, alerts, accounts, signals, warning, onAccount, onActionSelect }: { items: WorkItem[]; onItem: (item: WorkItem) => void; alerts: Alert[]; accounts: Account[]; signals: Signal[]; warning: string; onAccount: (id: string) => void; onActionSelect: (id?: string) => void }) {
   const [notice, setNotice] = useState('')
   const [selectedId, setSelectedId] = useState<string>()
   const [query, setQuery] = useState('')
@@ -38,6 +38,8 @@ export function Actions({ items, onItem, alerts, accounts, signals, warning, onA
   }
   const visible = sortPriority(items.filter(matches))
   const selected = items.find(item => item.id === selectedId) ?? visible[0]
+  useEffect(() => { onActionSelect(selected?.id) }, [onActionSelect, selected?.id])
+  useEffect(() => () => onActionSelect(undefined), [onActionSelect])
   const create = async (alert: Alert) => {
     try {
       const item = await api.createAction({ account_id: alert.account_id, summary: alert.recommended_action, notes: alert.trigger_reason, evidence_ids: alert.evidence_ids, idempotency_key: `ui-${alert.id}`, actor_id: 'development-demo-user', priority: alert.severity })

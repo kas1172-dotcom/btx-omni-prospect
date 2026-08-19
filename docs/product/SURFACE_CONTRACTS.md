@@ -29,6 +29,9 @@ On Map, account-point selection supplies the canonical `selected_account_id`.
 Research-facility selection supplies `selected_facility_id` and its canonical
 parent account only when the facility record has one. BTX facility selection
 supplies only its canonical facility ID. Map selections clear on navigation.
+Actions sends the currently selected governed work-item `id` as
+`selected_action_id`; it clears on navigation. Omni does not yet interpret
+that action context semantically.
 
 ## Decisioning rules
 

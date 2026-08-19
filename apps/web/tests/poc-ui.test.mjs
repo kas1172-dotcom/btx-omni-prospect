@@ -101,7 +101,7 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(intelligence, /aria-pressed=\{selectedEventId === signal\.id\}/)
   assert.match(app, /selectedEventId/)
   assert.match(app, /selected_event_id: surface === 'intelligence' \? selectedEventId : undefined/)
-  assert.match(app, /clearSelectedEvent\(\); clearMapSelection\(\); setSurface\(id\)/)
+  assert.match(app, /clearSelectedEvent\(\); clearMapSelection\(\); clearSelectedAction\(\); setSurface\(id\)/)
   assert.match(drawer, /\{ \.\.\.context, session_account_id/)
 })
 
@@ -115,7 +115,16 @@ test('Map selection sends canonical account and facility context without inventi
   assert.match(app, /selectedMapAccountId/)
   assert.match(app, /selectedMapFacilityId/)
   assert.match(app, /selected_facility_id: surface === 'map' \? selectedMapFacilityId : undefined/)
-  assert.match(app, /clearMapSelection\(\); setSurface\(id\)/)
+  assert.match(app, /clearMapSelection\(\); clearSelectedAction\(\); setSurface\(id\)/)
+})
+
+test('Actions sends the selected canonical work-item ID without leaking other passive selections', () => {
+  assert.match(actions, /onActionSelect/)
+  assert.match(actions, /onActionSelect\(selected\?\.id\)/)
+  assert.match(actions, /setSelectedId\(item\.id\)/)
+  assert.match(app, /selectedActionId/)
+  assert.match(app, /selected_action_id: surface === 'actions' \? selectedActionId : undefined/)
+  assert.match(app, /clearSelectedEvent\(\); clearMapSelection\(\); clearSelectedAction\(\); setSurface\(id\)/)
 })
 
 test('curated public evidence is never labeled as synthetic demo', () => {
