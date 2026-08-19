@@ -10,6 +10,8 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
+from btx_omni.domain.markets import PRIMARY_MARKETS
+from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.contracts import (
     EntityResolution,
     IntelligenceEvent,
@@ -23,9 +25,10 @@ from btx_omni.monitor.ontology import (
     ResolutionState,
     SellerRelevanceState,
 )
+from btx_omni.monitor.policy import recency_state
 from btx_omni.monitor.resolution import AccountWatchProfile
 
-TARGET_INDUSTRIES = frozenset({"Aerospace", "Defense", "Semiconductor", "Space Exploration", "Energy", "Medical"})
+TARGET_INDUSTRIES = PRIMARY_MARKETS
 ELIGIBLE_WINDOW_DAYS = 90
 STALE_WINDOW_DAYS = 180
 APPROVED_AWARD_TYPE_CODES = frozenset({"A", "B", "C", "D"})
@@ -95,14 +98,33 @@ class UsaSpendingDecision:
     rejected: RejectedObservation | None = None
 
 
-def normalize_usaspending_observation(observation: SourceObservation, *, profiles: tuple[AccountWatchProfile, ...], now: datetime | None = None) -> UsaSpendingDecision:
+def normalize_usaspending_observation(
+    observation: SourceObservation,
+    *,
+    profiles: tuple[AccountWatchProfile, ...],
+    catalog: MonitorCatalog | None = None,
+    now: datetime | None = None,
+) -> UsaSpendingDecision:
     """Map one award without allowing broad federal-spending noise into seller views."""
     clock = now or datetime.now(UTC)
     payload = json.loads(observation.structured_payload or "{}")
     recipient = str(payload.get("Recipient Name") or "").strip()
     resolution = _recipient_resolution(recipient, profiles) if recipient else EntityResolution("missing recipient", None, ResolutionState.UNRESOLVED, "usaspending_recipient_missing", "source record has no recipient name")
-    candidate = normalize_structured_observation(observation, subject_mention=recipient or None, event_type=EventType.CONTRACT_AWARD)
-    event = replace(candidate.event, subject_entities=(resolution,), resolution_state=resolution.state)
+    candidate = normalize_structured_observation(
+        observation,
+        subject_mention=recipient or None,
+        event_type=EventType.CONTRACT_AWARD,
+        catalog=catalog,
+        source_markets=(),
+        now=clock,
+    )
+    event = replace(
+        candidate.event,
+        subject_entities=(resolution,),
+        resolution_state=resolution.state,
+        recency_state=recency_state(observation.source_published_at, now=clock),
+        markets=(catalog.markets_for_account(resolution.canonical_account_id) if catalog else candidate.event.markets),
+    )
     action_date = observation.source_published_at
     award_code = str(payload.get("Award Type Code") or payload.get("Award Type") or "A").upper().strip()
     amount = _amount(payload.get("Award Amount"))

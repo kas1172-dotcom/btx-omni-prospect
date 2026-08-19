@@ -29,9 +29,10 @@ remain usable.
   restart; they are not durable PostgreSQL workflow records yet.
 - Omni retains browser-session conversation history. Its fallback is bounded
   deterministic retrieval, not fabricated model output, and is read-only.
-- Monitor does not collect from the public UI. With no configured scheduler or
-  durable run state, it reports that live ingestion is inactive. “LIVE PUBLIC”
-  is reserved for successful collection output.
+- Monitor does not collect from the public UI. A protected manual operational
+  run requires durable state, an operator token, and `BTX_MONITOR_MODE=live`.
+  “LIVE PUBLIC” is reserved for successful collection output. There is no
+  automatic scheduler in this POC.
 
 ## Monitor demo script
 
@@ -81,14 +82,18 @@ remain usable.
 
 ## Future Monitor worker contract
 
-Monitor collection remains disabled in the seller UI. Before a worker or GitHub
-Action is authorized, apply the database migrations and configure these names
+Monitor collection remains disabled in the seller UI. Before a manual operator
+run or future scheduler is authorized, apply the database migrations and configure these names
 only: `BTX_MONITOR_DURABLE_STATE_ENABLED`, `BTX_MONITOR_OPERATOR_TOKEN`, and
 `BTX_MONITOR_MODE=live`, plus only the approved source-specific configuration.
-The worker calls `POST /api/monitor/internal/collect/{source_id}` with the
-`X-BTX-Monitor-Operator-Token` header. The route fails closed when the token or
-durable-state configuration is absent; `/api/monitor/collect/{source_id}` stays
-blocked for seller-facing use.
+The operator calls `POST /api/monitor/internal/collect` with the
+`X-BTX-Monitor-Operator-Token` header to collect every registered source through
+the single canonical runner. `POST /api/monitor/internal/collect/{source_id}`
+is available for a controlled one-source retry. Both routes fail closed when the
+token or durable-state configuration is absent; `/api/monitor/collect/{source_id}`
+stays blocked for seller-facing use. A future scheduler need only invoke the
+same all-source endpoint with these configuration values; no scheduler is
+enabled by this repository.
 
 Each durable event stores the source publication date separately from the BTX
 collection timestamp and latest update timestamp. Only an event produced by a

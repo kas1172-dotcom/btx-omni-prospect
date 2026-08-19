@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Frozen public-source calibration examples for deterministic Monitor regression review. These are not BTX commercial facts and do not authorize live test dependencies.",
+  "captured_at": "2026-08-19T17:49:00Z",
+  "examples": [
+    {
+      "source_id": "usaspending",
+      "source_record_id": "CONT_AWD_89233126FNA400803_8900_89233126DNA000072_8900",
+      "source_url": "https://api.usaspending.gov/api/v2/awards/CONT_AWD_89233126FNA400803_8900_89233126DNA000072_8900/",
+      "event_date": "2026-07-28",
+      "expected_market": "Defense",
+      "expected_event_type": "CONTRACT_AWARD",
+      "expected_account_id": "anduril-industries",
+      "expected_program_id": null,
+      "should_be_seller_relevant": true,
+      "should_resolve": true,
+      "review_note": "Exact USAspending recipient identity is the only account-resolution basis."
+    },
+    {
+      "source_id": "usaspending",
+      "source_record_id": "CONT_AWD_80MSFC23CA014_8000_-NONE-_-NONE-",
+      "source_url": "https://api.usaspending.gov/api/v2/awards/CONT_AWD_80MSFC23CA014_8000_-NONE-_-NONE-/",
+      "event_date": "2026-08-04",
+      "expected_market": "Space Exploration",
+      "expected_event_type": "CONTRACT_AWARD",
+      "expected_account_id": "blue-origin",
+      "expected_program_id": null,
+      "should_be_seller_relevant": true,
+      "should_resolve": true,
+      "review_note": "Program remains unresolved because no canonical program name is asserted by the award payload."
+    },
+    {
+      "source_id": "fda_openfda",
+      "source_record_id": "K253702",
+      "source_url": "https://api.fda.gov/device/510k.json",
+      "event_date": "2026-08-07",
+      "expected_market": "Medical",
+      "expected_event_type": "REGULATORY_APPROVAL",
+      "expected_account_id": "intuitive-surgical",
+      "expected_program_id": null,
+      "should_be_seller_relevant": true,
+      "should_resolve": true,
+      "review_note": "A 510(k) is a public regulatory event, not proof of a BTX opportunity or commercial launch."
+    },
+    {
+      "source_id": "federal_register",
+      "source_record_id": "2026-16979",
+      "source_url": "https://www.federalregister.gov/documents/2026/08/19/2026-16979/adjusting-imports-of-unmanned-aircraft-systems-and-unmanned-aircraft-systems-components-into-the",
+      "event_date": "2026-08-19",
+      "expected_market": "Aerospace",
+      "expected_event_type": "REGULATORY_CHANGE",
+      "expected_account_id": null,
+      "expected_program_id": null,
+      "should_be_seller_relevant": false,
+      "should_resolve": false,
+      "review_note": "Retained as public regulatory context; no canonical company should be forced from topic similarity."
+    },
+    {
+      "source_id": "usaspending",
+      "source_record_id": "CONT_AWD_DEAC0476DP00656_8900_-NONE-_-NONE-",
+      "source_url": "https://api.usaspending.gov/api/v2/awards/CONT_AWD_DEAC0476DP00656_8900_-NONE-_-NONE-/",
+      "event_date": "2026-07-30",
+      "expected_market": "Energy",
+      "expected_event_type": "CONTRACT_AWARD",
+      "expected_account_id": null,
+      "expected_program_id": null,
+      "should_be_seller_relevant": false,
+      "should_resolve": false,
+      "review_note": "A relevant Energy-domain award remains unresolved rather than being matched to a similarly named researched company."
+    }
+  ],
+  "known_coverage_gap": {
+    "market": "Semiconductor",
+    "status": "FAIL",
+    "reason": "Commerce, SEC, company newsroom, and state-publisher paths remain configuration-required or deliberately disabled; this live run produced no credible semiconductor record."
+  }
+}

@@ -76,3 +76,28 @@ class MonitorRepository:
                 "events": tuple(dict(row) for row in connection.execute(select(monitor_events).order_by(monitor_events.c.updated_at.desc()).limit(100)).mappings()),
                 "rejected": tuple(dict(row) for row in connection.execute(select(monitor_rejected_observations).order_by(monitor_rejected_observations.c.rejected_at.desc()).limit(20)).mappings()),
             }
+
+    def source_content_hash(self, source_id: str, source_record_id: str) -> str | None:
+        with self.engine.connect() as connection:
+            return connection.execute(
+                select(monitor_source_versions.c.content_hash).where(
+                    monitor_source_versions.c.source_id == source_id,
+                    monitor_source_versions.c.source_record_id == source_record_id,
+                )
+            ).scalar_one_or_none()
+
+    def cluster(self, cluster_id: str) -> EventCluster | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                select(monitor_event_clusters).where(monitor_event_clusters.c.id == cluster_id)
+            ).mappings().one_or_none()
+        if row is None:
+            return None
+        return EventCluster(
+            row["id"],
+            row["event_id"],
+            tuple(json.loads(row["observation_ids"])),
+            tuple(json.loads(row["evidence_ids"])),
+            tuple(json.loads(row["related_event_ids"])),
+            row["ambiguity_reason"],
+        )

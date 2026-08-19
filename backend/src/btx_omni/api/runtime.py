@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from btx_omni.core.config import Settings
 from btx_omni.modules.work.service import WorkService
+from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.service import MonitorService
 from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
@@ -31,7 +32,13 @@ class PocRuntime:
         usa_profiles = targeted_profiles(self.sample.watch_profiles, rich_account_ids=set(self.sample.rich_scenarios))
         registry = dict(REGISTRY)
         registry["usaspending"] = UsaSpendingAdapter(recipient_names=recipient_query_names(usa_profiles))
-        self.monitor = MonitorService(self.settings, registry=registry, repository=repository, watch_profiles=usa_profiles)
+        self.monitor = MonitorService(
+            self.settings,
+            registry=registry,
+            repository=repository,
+            watch_profiles=usa_profiles,
+            catalog=MonitorCatalog(self.sample.watch_profiles, self.sample.programs, self.sample.facilities),
+        )
 
     def environment(self) -> SampleEnvironment:
         if self.settings.data_mode.upper() != "SAMPLE":

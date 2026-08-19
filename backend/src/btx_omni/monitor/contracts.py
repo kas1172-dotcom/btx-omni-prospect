@@ -130,6 +130,9 @@ class IntelligenceEvent:
     initiative_id: str | None = None
     supersedes_event_id: str | None = None
     seller_relevance_state: SellerRelevanceState = SellerRelevanceState.UNRESOLVED
+    markets: tuple[str, ...] = ()
+    recency_state: str = "UNKNOWN"
+    canonical_facility_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.event_date is not None:

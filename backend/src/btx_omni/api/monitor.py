@@ -89,3 +89,16 @@ def operational_collect(source_id: str, runtime: PocRuntime = Depends(get_runtim
         raise HTTPException(404, "Unknown Monitor source.")
     run = runtime.monitor.collect(source_id)
     return {"run": run, "data_mode": "LIVE_PUBLIC" if not run.failures else "FAILED"}
+
+
+@router.post("/internal/collect", include_in_schema=False)
+def operational_collect_all(runtime: PocRuntime = Depends(get_runtime), operator_token: str | None = Header(default=None, alias="X-BTX-Monitor-Operator-Token")) -> dict:
+    configured = runtime.settings.monitor_operator_token
+    if not configured:
+        raise HTTPException(503, "Operational collection is unavailable: BTX_MONITOR_OPERATOR_TOKEN is not configured.")
+    if not operator_token or not hmac.compare_digest(operator_token, configured):
+        raise HTTPException(403, "Operational collection authorization failed.")
+    if not runtime.settings.monitor_durable_state_enabled:
+        raise HTTPException(503, "Operational collection is unavailable: durable Monitor state is not enabled.")
+    runs = runtime.monitor.collect_all()
+    return {"runs": runs, "data_mode": "LIVE_PUBLIC", "failed_sources": tuple(run.source_id for run in runs if run.failures)}
