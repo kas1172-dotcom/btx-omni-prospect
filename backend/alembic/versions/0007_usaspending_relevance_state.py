@@ -15,7 +15,20 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    columns = {column["name"] for column in inspect(bind).get_columns("monitor_events")}
+    columns = {column["name"]: column for column in inspect(bind).get_columns("monitor_events")}
+    existing = columns.get("seller_relevance_state")
+    if existing is not None:
+        default = str(existing.get("default") or "")
+        if (
+            not isinstance(existing["type"], String)
+            or existing["type"].length != 48
+            or existing["nullable"]
+            or "UNRESOLVED" not in default.upper()
+        ):
+            raise RuntimeError(
+                "monitor_events.seller_relevance_state exists but is not the VARCHAR(48) "
+                "NOT NULL column with UNRESOLVED default required by revision 0007"
+            )
     if "seller_relevance_state" not in columns:
         op.add_column("monitor_events", Column("seller_relevance_state", String(48), nullable=False, server_default="UNRESOLVED"))
 

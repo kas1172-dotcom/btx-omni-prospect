@@ -24,7 +24,11 @@ def upgrade() -> None:
     # install that definition can already contain these additive fields, while
     # an older upgraded database may not.  Add only missing columns so both
     # histories converge without duplicate-column failures.
-    existing_columns = {column["name"] for column in inspect(bind).get_columns("monitor_observations")}
+    existing_columns = {column["name"]: column for column in inspect(bind).get_columns("monitor_observations")}
+    for name in ("title", "structured_payload"):
+        existing = existing_columns.get(name)
+        if existing is not None and (not isinstance(existing["type"], Text) or not existing["nullable"]):
+            raise RuntimeError(f"monitor_observations.{name} exists but is not the nullable TEXT column required by revision 0006")
     if "title" not in existing_columns:
         op.add_column("monitor_observations", Column("title", Text))
     if "structured_payload" not in existing_columns:
