@@ -85,6 +85,19 @@ async def test_omni_accepts_an_unscoped_question_with_truthful_fallback() -> Non
 
 
 @pytest.mark.asyncio
+async def test_omni_typed_context_is_bounded_and_backwards_compatible() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        typed = await client.post("/api/omni", json={"question": "Why is this account attractive?", "context": {"surface": "account_detail", "selected_account_id": "boeing", "session_account_id": "boeing", "active_filters": {"market": "Defense"}, "visible_record_ids": ["boeing"], "prior_turns": "user: Boeing"}})
+        legacy = await client.post("/api/omni", json={"question": "Why is this account attractive?", "context": {"surface": "accounts", "session_account_id": "boeing", "prior_turns": "user: Boeing"}})
+        invalid_surface = await client.post("/api/omni", json={"question": "x", "context": {"surface": "settings"}})
+        oversized = await client.post("/api/omni", json={"question": "x", "context": {"visible_record_ids": [str(value) for value in range(51)]}})
+    assert typed.status_code == legacy.status_code == 200
+    assert typed.json()["context_used"] == {"account_id": "boeing", "surface": "ACCOUNT_DETAIL"}
+    assert legacy.json()["context_used"] == {"account_id": "boeing", "surface": "ACCOUNTS"}
+    assert invalid_surface.status_code == oversized.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

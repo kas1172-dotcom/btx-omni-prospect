@@ -12,6 +12,18 @@ calculate commercial decision logic.
 | Intelligence | `GET /api/intelligence` | event, source URL/date, account/program/facility resolution, relevance | Monitor observation/event projection | Public-source evidence; unresolved entities stay unresolved |
 | Map | `GET /api/map` | canonical account/facility/BTX/intelligence geometry | researched locations and safely resolved monitor facilities | No generated geography; proximity is seller planning only |
 | Actions | `GET/POST /api/actions` | evidence-backed, idempotent local work items and audit | governed work service | Session-only SAMPLE workflow; no autonomous CRM writes |
+| Omni | `POST /api/omni` | bounded answer, citations, missingness, recommended action, `context_used` | canonical Account 360/scoring/alerts/intelligence reads | Read-only; public facts remain sourced and commercial facts remain SAMPLE |
+
+## Omni context
+
+`context` is typed and optional: `surface` (`TODAY`, `ACCOUNTS`,
+`ACCOUNT_DETAIL`, `INTELLIGENCE`, `MAP`, `ACTIONS`), selected event/facility/
+program/action/account IDs, bounded filters, visible IDs, and prior turns.
+Top-level `account_id` is explicit request scope; `selected_account_id` is
+current UI selection; `session_account_id` is conversational continuity.
+Lowercase legacy surfaces and the previous context shape remain accepted.
+Responses may include `context_used` for passive context that actually
+influenced the answer; it never contains conversation transcripts.
 
 ## Decisioning rules
 

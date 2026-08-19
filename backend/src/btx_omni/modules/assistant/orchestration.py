@@ -1,7 +1,7 @@
 """Bounded Omni POC orchestration over supplied governed read models only."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 from btx_omni.domain.common import EvidenceState
@@ -42,6 +42,7 @@ class OmniResponse:
     account_name: str | None = None
     source_of_record: bool = False
     public_research_permitted: bool = False
+    context_used: dict[str, object] = field(default_factory=dict)
 
 
 class OmniOrchestrator:
@@ -110,7 +111,10 @@ class OmniOrchestrator:
             peers = [item.legal_name for item in accounts if item.research_account_id and item.id != account.id and item.industries == account.industries][:3]
             lines.append(f"Comparable researched {primary_market_label(account.industries)} targets: {', '.join(peers) or 'none loaded'}.")
         lines.append("This is a deterministic fallback, not model-generated advice. Omni is read-only and cannot perform CRM writes.")
-        return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name)
+        context_used = {"account_id": account.id}
+        if (context or {}).get("surface"):
+            context_used["surface"] = (context or {})["surface"]
+        return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name, context_used=context_used)
 
     @staticmethod
     def _unscoped_answer(environment: SampleEnvironment, *, observed_at, question: str) -> OmniResponse:
