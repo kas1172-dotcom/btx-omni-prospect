@@ -116,6 +116,16 @@ class OmniOrchestrator:
     def _unscoped_answer(environment: SampleEnvironment, *, observed_at, question: str) -> OmniResponse:
         """Ground a general seller question in the loaded curated universe, not a generic refusal."""
         researched = [item for item in environment.accounts if item.research_account_id]
+        if "open quote" in question:
+            market = next((market for market in ("Aerospace", "Defense", "Semiconductor", "Space Exploration", "Energy", "Medical") if market.casefold() in question), None)
+            quoted_ids = {quote.account_id for quote in environment.quotes if quote.status.value == "OPEN"}
+            matches = [account.legal_name for account in researched if account.id in quoted_ids and (market is None or market in account.industries)]
+            scope = f" {market}" if market else ""
+            return OmniResponse(
+                f"The current SAMPLE commercial dataset contains {len(matches)}{scope} researched account(s) with open quotes: {', '.join(matches) or 'none'}. Quote status is simulated BTX commercial context; company identity and market classification are researched public data.",
+                "", (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION), (),
+                "Review the matching Account 360 record before acting.", (), None,
+            )
         alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)
         account_by_id = {item.id: item for item in researched}
         priority_items = [
