@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { Account, Signal } from '../../types/api'
+import { useEffect, useMemo, useState } from 'react'
+import type { Account, OmniContext, Signal } from '../../types/api'
 import { Empty, Panel, State } from '../../components/UI'
 
 const usable = (url: string) => /^https?:\/\//.test(url) && !url.includes('.invalid')
@@ -12,9 +12,12 @@ const sourceValidation = (state?: string) => ({
   NEEDS_RESEARCH: 'Source validation still needs research.',
 }[state ?? ''])
 
-export function Intelligence({ signals, accounts, onAccount, onEventSelect }: { signals: Signal[]; accounts: Account[]; onAccount: (id: string) => void; onEventSelect: (id?: string) => void }) {
+export function Intelligence({ signals, accounts, onAccount, onEventSelect, onOmniContext }: { signals: Signal[]; accounts: Account[]; onAccount: (id: string) => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
   const [selectedEventId, setSelectedEventId] = useState<string>()
+  const visibleRecordIds = useMemo(() => signals.slice(0, 50).map(signal => signal.id), [signals])
   useEffect(() => () => onEventSelect(undefined), [onEventSelect])
+  useEffect(() => { onOmniContext({ visible_record_ids: visibleRecordIds }) }, [onOmniContext, visibleRecordIds])
+  useEffect(() => () => onOmniContext({}), [onOmniContext])
   const selectEvent = (id: string) => setSelectedEventId(current => {
     const next = current === id ? undefined : id
     onEventSelect(next)

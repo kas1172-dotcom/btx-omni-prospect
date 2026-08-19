@@ -101,7 +101,7 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(intelligence, /aria-pressed=\{selectedEventId === signal\.id\}/)
   assert.match(app, /selectedEventId/)
   assert.match(app, /selected_event_id: surface === 'intelligence' \? selectedEventId : undefined/)
-  assert.match(app, /clearSelectedEvent\(\); clearMapSelection\(\); clearSelectedAction\(\); setSurface\(id\)/)
+  assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
   assert.match(drawer, /\{ \.\.\.context, session_account_id/)
 })
 
@@ -115,7 +115,7 @@ test('Map selection sends canonical account and facility context without inventi
   assert.match(app, /selectedMapAccountId/)
   assert.match(app, /selectedMapFacilityId/)
   assert.match(app, /selected_facility_id: surface === 'map' \? selectedMapFacilityId : undefined/)
-  assert.match(app, /clearMapSelection\(\); clearSelectedAction\(\); setSurface\(id\)/)
+  assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
 })
 
 test('Actions sends the selected canonical work-item ID without leaking other passive selections', () => {
@@ -124,7 +124,28 @@ test('Actions sends the selected canonical work-item ID without leaking other pa
   assert.match(actions, /setSelectedId\(item\.id\)/)
   assert.match(app, /selectedActionId/)
   assert.match(app, /selected_action_id: surface === 'actions' \? selectedActionId : undefined/)
-  assert.match(app, /clearSelectedEvent\(\); clearMapSelection\(\); clearSelectedAction\(\); setSurface\(id\)/)
+  assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
+})
+
+test('list surfaces publish only their current filters and bounded canonical visible IDs to Omni', () => {
+  assert.match(accounts, /account_scope: 'RICH'/)
+  assert.match(accounts, /market: industry/)
+  assert.match(accounts, /shown\.slice\(0, 50\)\.map\(account => account\.id\)/)
+  assert.match(accounts, /onOmniContext\(\{ active_filters: Object\.keys\(activeFilters\)\.length \? activeFilters : undefined, visible_record_ids: visibleRecordIds \}\)/)
+  assert.match(intelligence, /signals\.slice\(0, 50\)\.map\(signal => signal\.id\)/)
+  assert.match(intelligence, /onOmniContext\(\{ visible_record_ids: visibleRecordIds \}\)/)
+  assert.match(actions, /action_status: 'ACTIVE'/)
+  assert.match(actions, /market: industry/)
+  assert.match(actions, /visible\.slice\(0, 50\)\.map\(item => item\.id\)/)
+  assert.match(actions, /onOmniContext\(\{ active_filters: Object\.keys\(activeFilters\)\.length \? activeFilters : undefined, visible_record_ids: visibleRecordIds \}\)/)
+  assert.match(today, /visibleRecordIds = useMemo\(\(\) => \[\.\.\.alerts\.map\(alert => alert\.id\), \.\.\.priority\.map\(signal => signal\.id\)\]/)
+})
+
+test('shell clears stale list, detail, and passive entity context across surface changes', () => {
+  assert.match(app, /const navigate = \(id: Surface\) => \{ if \(id !== surface \|\| \(id === 'accounts' && detail\)\) \{ clearSelectedEvent\(\); clearMapSelection\(\); clearSelectedAction\(\); clearViewContext\(\); setDetail\(undefined\) \}; setSurface\(id\) \}/)
+  assert.match(app, /clearViewContext\(\); setDetail\(await api\.account\(id\)\); setSurface\('accounts'\)/)
+  assert.match(app, /active_filters: omniSurface === 'ACCOUNT_DETAIL' \|\| omniSurface === 'MAP' \? undefined : viewContext\.active_filters/)
+  assert.match(app, /visible_record_ids: omniSurface === 'ACCOUNT_DETAIL' \|\| omniSurface === 'MAP' \? undefined : viewContext\.visible_record_ids/)
 })
 
 test('curated public evidence is never labeled as synthetic demo', () => {

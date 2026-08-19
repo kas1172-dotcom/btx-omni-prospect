@@ -33,6 +33,19 @@ Actions sends the currently selected governed work-item `id` as
 `selected_action_id`; it clears on navigation. Omni does not yet interpret
 that action context semantically.
 
+| Surface | Current selection | Active filters | Bounded visible IDs |
+| --- | --- | --- | --- |
+| Today | none | none | rendered alert and intelligence IDs, in display order |
+| Accounts | Account Detail only | `account_scope` and canonical `market` when active | filtered/searched account IDs |
+| Account Detail | canonical account | none | not supplied |
+| Intelligence | canonical event | none currently exposed | rendered canonical event IDs |
+| Map | canonical account/facility | none currently exposed | not supplied |
+| Actions | canonical work item | priority, canonical `market`, and `action_status` when active | filtered work-item IDs |
+
+Visible IDs are canonical and deterministically limited to the first 50
+records represented by the current surface. Route changes clear passive entity,
+filter, and list context; browser-session conversation history remains separate.
+
 ## Decisioning rules
 
 `Account Attractiveness v1` is a deterministic, intrinsic 0–100 structural

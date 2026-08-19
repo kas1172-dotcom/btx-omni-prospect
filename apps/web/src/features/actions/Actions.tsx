@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Account, Alert, Signal, WorkItem } from '../../types/api'
+import type { Account, Alert, OmniContext, Signal, WorkItem } from '../../types/api'
 import { api } from '../../api/client'
 import { Empty, Panel, State } from '../../components/UI'
 import './actions.css'
@@ -17,7 +17,7 @@ const sortPriority = <T extends { priority: string }>(items: T[]) => [...items].
 const sortAlerts = (items: Alert[]) => [...items].sort((left, right) => (priorityRank[left.severity] ?? 9) - (priorityRank[right.severity] ?? 9))
 const sourceValidation = (state?: string) => state === 'BROWSER_VERIFIED' ? 'Browser verified' : state === 'AUTOMATION_BLOCKED' ? 'Automated validation blocked' : state ? 'Source validation needs research' : 'No public event linked'
 
-export function Actions({ items, onItem, alerts, accounts, signals, warning, onAccount, onActionSelect }: { items: WorkItem[]; onItem: (item: WorkItem) => void; alerts: Alert[]; accounts: Account[]; signals: Signal[]; warning: string; onAccount: (id: string) => void; onActionSelect: (id?: string) => void }) {
+export function Actions({ items, onItem, alerts, accounts, signals, warning, onAccount, onActionSelect, onOmniContext }: { items: WorkItem[]; onItem: (item: WorkItem) => void; alerts: Alert[]; accounts: Account[]; signals: Signal[]; warning: string; onAccount: (id: string) => void; onActionSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
   const [notice, setNotice] = useState('')
   const [selectedId, setSelectedId] = useState<string>()
   const [query, setQuery] = useState('')
@@ -31,15 +31,18 @@ export function Actions({ items, onItem, alerts, accounts, signals, warning, onA
   const industries = useMemo(() => [...new Set(accounts.flatMap(account => account.industries))].sort(), [accounts])
   const name = (id: string) => accountById.get(id)?.name ?? 'Unknown account'
   const event = (accountId: string) => signalByAccount.get(accountId)
-  const matches = (item: WorkItem) => {
+  const visible = useMemo(() => sortPriority(items.filter(item => {
     const account = accountById.get(item.account_id)
-    const text = `${name(item.account_id)} ${item.summary} ${item.notes ?? ''}`.toLowerCase()
+    const text = `${account?.name ?? 'Unknown account'} ${item.summary} ${item.notes ?? ''}`.toLowerCase()
     return (priority === 'ALL' || item.priority === priority) && (industry === 'ALL' || account?.industries.includes(industry)) && (status === 'ALL' || (status === 'ACTIVE' ? !['COMPLETED', 'DISMISSED'].includes(item.status) : item.status === status)) && text.includes(query.toLowerCase())
-  }
-  const visible = sortPriority(items.filter(matches))
+  })), [accountById, industry, items, priority, query, status])
+  const activeFilters = useMemo(() => ({ ...(priority === 'ALL' ? {} : { priority }), ...(industry === 'ALL' ? {} : { market: industry }), ...(status === 'ACTIVE' ? { action_status: 'ACTIVE' } : status === 'ALL' ? {} : { action_status: status }) }), [industry, priority, status])
+  const visibleRecordIds = useMemo(() => visible.slice(0, 50).map(item => item.id), [visible])
   const selected = items.find(item => item.id === selectedId) ?? visible[0]
   useEffect(() => { onActionSelect(selected?.id) }, [onActionSelect, selected?.id])
   useEffect(() => () => onActionSelect(undefined), [onActionSelect])
+  useEffect(() => { onOmniContext({ active_filters: Object.keys(activeFilters).length ? activeFilters : undefined, visible_record_ids: visibleRecordIds }) }, [activeFilters, onOmniContext, visibleRecordIds])
+  useEffect(() => () => onOmniContext({}), [onOmniContext])
   const create = async (alert: Alert) => {
     try {
       const item = await api.createAction({ account_id: alert.account_id, summary: alert.recommended_action, notes: alert.trigger_reason, evidence_ids: alert.evidence_ids, idempotency_key: `ui-${alert.id}`, actor_id: 'development-demo-user', priority: alert.severity })
