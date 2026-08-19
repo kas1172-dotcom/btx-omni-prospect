@@ -1,7 +1,5 @@
 from enum import StrEnum
-
 from fastapi import APIRouter, Depends
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from btx_omni.api.accounts import get_runtime
