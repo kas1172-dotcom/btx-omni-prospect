@@ -80,6 +80,26 @@ remain usable.
    would require approved connected data, access controls, retrieval governance,
    model-provider approval, and durable conversation policy before production use.
 
+## Phase 7 seller-scenario acceptance matrix
+
+The curated SAMPLE environment is exercised through the real browser path with
+these intentionally bounded scenario anchors. Public company and Intelligence
+facts remain source-backed; score, quote, CRM, workflow, and internal
+relationship context remain SAMPLE.
+
+| Seller scenario | Canonical anchor | Expected seller path / truth boundary |
+| --- | --- | --- |
+| Southwest trip planning | Boeing, TSMC Arizona, Blue Origin, Symbotic | Map and Account 360 expose sourced locations only; proximity is descriptive, not ownership or a relationship. |
+| Medical Device whitespace | Medtronic | Account 360 shows limited coverage and missing context without manufacturing commercial history. |
+| Defense award + quote history | Lockheed Martin | Account, Intelligence, and quote-related Omni reads retain public-event versus SAMPLE-commercial separation. |
+| Semiconductor expansion | Intel | Curated public CHIPS signal is shown with its source-validation limitation. |
+| Dormant customer reactivation | Applied Materials | Existing SAMPLE commercial/workflow context is labelled simulated. |
+| Quote follow-up | GE Aerospace | Quote/RFQ answers use only canonical SAMPLE quote records. |
+| Cross-BU conflict / overlap | Boeing | Existing canonical alert/workflow context is visible without changing the rule or creating work through Omni. |
+| Strong external signal + weak internal history | Rocket Lab USA | Public signal and incomplete internal coverage stay distinct. |
+| Strong internal history + weak external signal | Applied Materials | SAMPLE commercial history does not turn limited public evidence into a stronger external claim. |
+| Missing, unresolved, or conflicting evidence | Symbotic / curated unresolved records | Missing and unresolved states remain explicit; controlled conflicting-evidence coverage stays in automated tests rather than altering the public fixture. |
+
 ## Future Monitor worker contract
 
 Monitor collection remains disabled in the seller UI. Before a manual operator
