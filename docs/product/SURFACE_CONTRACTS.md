@@ -71,6 +71,18 @@ geographic proximity are never treated as a relationship or warm introduction.
 Omni can suggest validation, but is read-only and cannot create tasks, contacts,
 CRM records, or relationship edges.
 
+Explicit page-summary questions (for example, `What matters most on this
+page?`) use the typed current surface, its active filters, and its bounded
+canonical visible IDs. Today, Accounts, Intelligence, and Actions summarize
+only supplied visible records; Account Detail summarizes its selected account;
+Map summarizes only its selected account or facility and otherwise reports
+that no focused canonical map record is available. This deterministic route
+does not read the DOM, screenshots, or the unbounded backend universe. More
+specific event, facility, action, relationship, cross-account, and general
+questions retain their respective routes. Public records remain source-backed;
+commercial alerts, scores, and workflow state are labelled as the current
+SAMPLE commercial dataset where material.
+
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |
 | Today | none | none | rendered alert and intelligence IDs, in display order |

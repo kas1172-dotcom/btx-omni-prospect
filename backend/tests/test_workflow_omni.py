@@ -8,6 +8,7 @@ from btx_omni.integrations.hubspot.contracts import (
     CrmProviderState,
     SampleHubSpotAdapter,
 )
+from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.assistant.orchestration import OmniOrchestrator
 from btx_omni.modules.intelligence.signals import (
     RawSignal,
@@ -420,4 +421,87 @@ def test_omni_relationship_routing_preserves_account_and_unrelated_routes() -> N
     assert "Defense researched account(s) with open quotes" in cross_account.content
     assert "Account Attractiveness" in score.content
     assert "Deterministic governed answer for Boeing" in named_account.content
+    assert "curated public-company universe" in general.content
+
+
+def test_omni_screen_summaries_respect_today_and_accounts_visible_scope() -> None:
+    sample = build_sample_environment()
+    event = OmniOrchestrator._sample_event_records(sample)[0]
+    work, item = create_selected_work_item()
+    alert = CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes, observed_at=NOW, orders=sample.orders)[0]
+    omni = OmniOrchestrator()
+    today = omni.answer(
+        sample,
+        account_id=None,
+        question="What matters most on this page?",
+        observed_at=NOW,
+        context={"surface": "TODAY", "visible_record_ids": [alert.id, event["id"], item.id]},
+        intelligence_events=(event,),
+        work_items=work.list(),
+    )
+    accounts = omni.answer(
+        sample,
+        account_id=None,
+        question="What should I pay attention to here?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNTS", "active_filters": {"market": "Defense"}, "visible_record_ids": ["boeing", "lockheed-martin"]},
+    )
+    assert alert.type.value in today.content and event["title"] in today.content and item.summary in today.content
+    assert today.context_used == {"surface": "TODAY"}
+    assert "Boeing" in accounts.content and "Lockheed Martin" in accounts.content
+    assert "Northrop Grumman" not in accounts.content
+    assert accounts.context_used == {"surface": "ACCOUNTS", "filters": {"market": "Defense"}}
+    assert "current SAMPLE commercial dataset" in accounts.content
+
+
+def test_omni_screen_summaries_use_selected_and_visible_canonical_context() -> None:
+    sample = build_sample_environment()
+    event_records = OmniOrchestrator._sample_event_records(sample)
+    selected_event = event_id_for(sample, "boeing")
+    work, item = create_selected_work_item()
+    omni = OmniOrchestrator()
+    account_detail = omni.answer(
+        sample, account_id=None, question="Summarize this screen.", observed_at=NOW,
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "boeing"}, intelligence_events=event_records,
+    )
+    intelligence = omni.answer(
+        sample, account_id=None, question="What are the most important things here?", observed_at=NOW,
+        context={"surface": "INTELLIGENCE", "selected_event_id": selected_event, "active_filters": {"market": "Defense"}, "visible_record_ids": [selected_event]}, intelligence_events=event_records,
+    )
+    actions = omni.answer(
+        sample, account_id=None, question="What should I focus on?", observed_at=NOW,
+        context={"surface": "ACTIONS", "selected_action_id": item.id, "visible_record_ids": [item.id]}, work_items=work.list(),
+    )
+    assert "Account Detail summary for Boeing" in account_detail.content
+    assert account_detail.context_used == {"surface": "ACCOUNT_DETAIL", "account_id": "boeing"}
+    assert "Current Intelligence view" in intelligence.content and "Selected event:" in intelligence.content
+    assert intelligence.context_used == {"surface": "INTELLIGENCE", "filters": {"market": "Defense"}, "event_id": selected_event}
+    assert "Current Actions view" in actions.content and "Selected action:" in actions.content
+    assert actions.context_used == {"surface": "ACTIONS", "action_id": item.id}
+
+
+def test_omni_screen_summary_map_empty_invalid_and_specific_route_protection() -> None:
+    sample = build_sample_environment()
+    event_id = event_id_for(sample, "boeing")
+    work, item = create_selected_work_item()
+    facility_id = public_facility_id_for(sample, "boeing")
+    omni = OmniOrchestrator()
+    map_facility = omni.answer(
+        sample, account_id=None, question="Give me the key takeaways from this page.", observed_at=NOW,
+        context={"surface": "MAP", "selected_facility_id": facility_id},
+    )
+    map_empty = omni.answer(sample, account_id=None, question="What matters most on this page?", observed_at=NOW, context={"surface": "MAP"})
+    invalid = omni.answer(sample, account_id=None, question="Summarize this screen.", observed_at=NOW, context={"surface": "ACCOUNTS", "visible_record_ids": ["unknown-account"]})
+    event_question = omni.answer(sample, account_id=None, question="Why does this matter?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": event_id}, intelligence_events=OmniOrchestrator._sample_event_records(sample))
+    action_question = omni.answer(sample, account_id=None, question="Why was this created?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=work.list())
+    relationship = omni.answer(sample, account_id=None, question="How are we connected to this company?", observed_at=NOW, context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"})
+    cross_account = omni.answer(sample, account_id=None, question="Which Defense accounts have open quotes?", observed_at=NOW, context={"surface": "ACCOUNTS", "visible_record_ids": ["boeing"]})
+    general = omni.answer(sample, account_id=None, question="What is an RFQ?", observed_at=NOW, context={"surface": "ACCOUNTS", "visible_record_ids": ["boeing"]})
+    assert "Canonical researched facility" in map_facility.content and map_facility.context_used["facility_id"] == facility_id
+    assert "Map has no selected canonical account or facility" in map_empty.content
+    assert "none of the supplied account IDs resolved" in invalid.content
+    assert "Source-backed Intelligence event" in event_question.content
+    assert item.summary in action_question.content
+    assert "Spirit AeroSystems --PARENT_CHILD--> Boeing" in relationship.content
+    assert "Defense researched account(s) with open quotes" in cross_account.content
     assert "curated public-company universe" in general.content

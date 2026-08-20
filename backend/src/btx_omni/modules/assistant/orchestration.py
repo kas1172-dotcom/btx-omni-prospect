@@ -89,6 +89,16 @@ class OmniOrchestrator:
                 account_id=account_id,
                 context=product_context,
             )
+        if self._is_screen_summary_question(query):
+            event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
+            return self._screen_summary_answer(
+                environment,
+                question=query,
+                observed_at=observed_at,
+                context=product_context,
+                intelligence_events=event_records,
+                work_items=work_items,
+            )
         session_account_id = product_context.get("session_account_id")
         session_id = session_account_id if isinstance(session_account_id, str) else None
         account = next((item for item in accounts if item.id == (account_id or session_id)), None)
@@ -186,6 +196,15 @@ class OmniOrchestrator:
             "connected", "relationship", "relationships",
             "warm path", "route into", "who could introduce", "do we know anyone connected",
             "programs connect", "companies are related", "related?", "introduction task",
+        ))
+
+    @staticmethod
+    def _is_screen_summary_question(question: str) -> bool:
+        """Only explicit page/view phrasing opts into current-screen scope."""
+        return any(phrase in question for phrase in (
+            "what matters most on this page", "what should i pay attention to here",
+            "summarize this screen", "what are the most important things here",
+            "what should i focus on", "key takeaways from this page",
         ))
 
     @staticmethod
@@ -704,6 +723,243 @@ class OmniOrchestrator:
             tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name if account else None,
             context_used=context_used,
         )
+
+    @staticmethod
+    def _summary_context(context: Mapping[str, object], *, selected_key: str | None = None) -> dict[str, object]:
+        """Return only current UI context that actually bounded a summary."""
+        used: dict[str, object] = {}
+        surface = context.get("surface")
+        if isinstance(surface, str):
+            used["surface"] = surface
+        filters = context.get("active_filters")
+        if isinstance(filters, Mapping) and filters:
+            used["filters"] = dict(filters)
+        if selected_key:
+            selected = context.get(selected_key)
+            if isinstance(selected, str):
+                field = selected_key.removeprefix("selected_")
+                used[field] = selected
+        return used
+
+    @staticmethod
+    def _visible_ids(context: Mapping[str, object]) -> tuple[str, ...]:
+        values = context.get("visible_record_ids")
+        if not isinstance(values, (list, tuple)):
+            return ()
+        return tuple(value for value in values[:50] if isinstance(value, str))
+
+    def _screen_summary_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        question: str,
+        observed_at,
+        context: Mapping[str, object],
+        intelligence_events: Iterable[Mapping[str, object]],
+        work_items: Iterable[object],
+    ) -> OmniResponse:
+        """Summarize a supplied, bounded product view without reading the rendered UI."""
+        surface = context.get("surface")
+        if not isinstance(surface, str):
+            return self._empty_screen_summary("the current view does not identify a canonical surface", context)
+        visible_ids = self._visible_ids(context)
+        if surface == "TODAY":
+            return self._today_screen_summary(environment, observed_at, context, intelligence_events, work_items, visible_ids)
+        if surface == "ACCOUNTS":
+            return self._accounts_screen_summary(environment, observed_at, context, visible_ids)
+        if surface == "ACCOUNT_DETAIL":
+            return self._account_detail_screen_summary(environment, observed_at, context, intelligence_events)
+        if surface == "INTELLIGENCE":
+            return self._intelligence_screen_summary(context, intelligence_events, visible_ids)
+        if surface == "MAP":
+            return self._map_screen_summary(environment, observed_at, context)
+        if surface == "ACTIONS":
+            return self._actions_screen_summary(environment, context, work_items, visible_ids)
+        return self._empty_screen_summary(f"the current surface '{surface}' is not supported", context)
+
+    def _empty_screen_summary(self, reason: str, context: Mapping[str, object]) -> OmniResponse:
+        return OmniResponse(
+            f"I don't have any canonical records in the current view context to summarize because {reason}. Omni does not inspect the DOM, screenshots, or an unbounded backend universe.",
+            "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+            ("No resolvable canonical records were supplied for the current screen summary.",), None, (), None,
+            context_used=self._summary_context(context),
+        )
+
+    def _today_screen_summary(self, environment: SampleEnvironment, observed_at, context: Mapping[str, object], intelligence_events: Iterable[Mapping[str, object]], work_items: Iterable[object], visible_ids: tuple[str, ...]) -> OmniResponse:
+        if not visible_ids:
+            return self._empty_screen_summary("Today did not supply visible record IDs", context)
+        alerts = {item.id: item for item in CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)}
+        events = {str(item.get("id")): item for item in intelligence_events if isinstance(item.get("id"), str)}
+        actions = {getattr(item, "id", ""): item for item in work_items}
+        accounts = {item.id: item for item in environment.accounts}
+        lines = ["Current Today view, using only the supplied visible records:"]
+        citations: list[str] = []
+        links: list[OmniCitation] = []
+        unresolved: list[str] = []
+        count = 0
+        for record_id in visible_ids:
+            if count == 5:
+                break
+            if record_id in alerts:
+                alert = alerts[record_id]
+                account = accounts.get(alert.account_id)
+                lines.append(f"Commercial alert: {account.legal_name if account else alert.account_id} — {alert.type.value}: {alert.trigger_reason}. Recommended focus: {alert.recommended_action}")
+                citations.extend(alert.evidence_ids)
+            elif record_id in events:
+                event = events[record_id]
+                lines.append(f"Intelligence: {event.get('title') or record_id}; relevance: {event.get('relevance_explanation') or 'not stated'}.")
+                citations.extend(str(value) for value in event.get("evidence_ids", ()))
+                if isinstance(event.get("source_url"), str):
+                    links.append(OmniCitation(str(event.get("title") or "Intelligence event"), str(event["source_url"])))
+            elif record_id in actions:
+                action = actions[record_id]
+                lines.append(f"Governed action: {getattr(action, 'summary', record_id)}; priority {getattr(action, 'priority', 'unavailable')}; status {getattr(getattr(action, 'status', None), 'value', getattr(action, 'status', 'unavailable'))}.")
+                citations.extend(getattr(action, "evidence_ids", ()))
+            else:
+                unresolved.append(record_id)
+                continue
+            count += 1
+        if count == 0:
+            return self._empty_screen_summary("none of Today’s supplied visible IDs resolved to canonical records", context)
+        missing = [f"{len(unresolved)} supplied Today record ID(s) could not be resolved." ] if unresolved else []
+        lines.append("Commercial alerts and governed actions are from the current SAMPLE commercial dataset; public Intelligence remains source-backed. Omni is read-only.")
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(missing), None, tuple(dict.fromkeys(links)), None, context_used=self._summary_context(context))
+
+    def _accounts_screen_summary(self, environment: SampleEnvironment, observed_at, context: Mapping[str, object], visible_ids: tuple[str, ...]) -> OmniResponse:
+        if not visible_ids:
+            return self._empty_screen_summary("Accounts did not supply visible account IDs", context)
+        accounts = {item.id: item for item in environment.accounts}
+        alerts = CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders)
+        alerts_by_account: dict[str, list[object]] = {}
+        for alert in alerts:
+            alerts_by_account.setdefault(alert.account_id, []).append(alert)
+        lines = ["Current Accounts view, using only the supplied visible accounts:"]
+        citations: list[str] = []
+        unresolved: list[str] = []
+        count = 0
+        for account_id in visible_ids:
+            account = accounts.get(account_id)
+            if account is None:
+                unresolved.append(account_id)
+                continue
+            if count == 5:
+                break
+            score_text = "no canonical score input"
+            if account.id in environment.scoring_inputs:
+                score = calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), evidence_ids=(), calculated_at=observed_at)
+                score_text = f"attractiveness {score.score if score.score is not None else 'insufficient data'} (coverage {score.coverage})"
+            account_alerts = alerts_by_account.get(account.id, [])
+            alert_text = f"; alert {account_alerts[0].type.value}" if account_alerts else ""
+            lines.append(f"{account.legal_name}: {score_text}{alert_text}.")
+            if account.provenance:
+                citations.append(account.provenance.source_record_id)
+            citations.extend(value for alert in account_alerts for value in alert.evidence_ids)
+            count += 1
+        if count == 0:
+            return self._empty_screen_summary("none of the supplied account IDs resolved", context)
+        missing = [f"{len(unresolved)} supplied account ID(s) could not be resolved."] if unresolved else []
+        lines.append("Attractiveness and commercial alerts use existing deterministic services; commercial context is the current SAMPLE commercial dataset.")
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(missing), "Review the visible Account 360 records before acting.", (), None, context_used=self._summary_context(context))
+
+    def _account_detail_screen_summary(self, environment: SampleEnvironment, observed_at, context: Mapping[str, object], intelligence_events: Iterable[Mapping[str, object]]) -> OmniResponse:
+        selected_id = context.get("selected_account_id")
+        account = next((item for item in environment.accounts if item.id == selected_id), None) if isinstance(selected_id, str) else None
+        if account is None:
+            return self._empty_screen_summary("Account Detail has no selected canonical account", context)
+        alerts = [item for item in CommercialAlertEngine().evaluate(environment.commercial_contexts, environment.quotes, observed_at=observed_at, orders=environment.orders) if item.account_id == account.id]
+        events = [item for item in intelligence_events if item.get("account_id") == account.id][:3]
+        citations = [account.provenance.source_record_id] if account.provenance else []
+        lines = [f"Account Detail summary for {account.legal_name}."]
+        if account.id in environment.scoring_inputs:
+            score = calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), evidence_ids=(), calculated_at=observed_at)
+            lines.append(f"Existing deterministic attractiveness: {score.score if score.score is not None else 'insufficient data'} with coverage {score.coverage}.")
+        else:
+            lines.append("No canonical attractiveness input is mapped to this account.")
+        if alerts:
+            lines.append("Current governed commercial alerts: " + ", ".join(alert.type.value for alert in alerts[:3]) + ".")
+            citations.extend(value for alert in alerts for value in alert.evidence_ids)
+        if events:
+            lines.append("Recent canonical Intelligence: " + "; ".join(str(event.get("title") or event.get("id")) for event in events) + ".")
+            citations.extend(str(value) for event in events for value in event.get("evidence_ids", ()))
+        else:
+            lines.append("No canonical Intelligence records are represented for this account in the supplied Monitor read.")
+        lines.append("Public identity and Intelligence are source-backed; score, commercial alerts, and workflow context are from the current SAMPLE commercial dataset.")
+        return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION), (), alerts[0].recommended_action if alerts else None, (), account.legal_name, context_used=self._summary_context(context, selected_key="selected_account_id"))
+
+    def _intelligence_screen_summary(self, context: Mapping[str, object], intelligence_events: Iterable[Mapping[str, object]], visible_ids: tuple[str, ...]) -> OmniResponse:
+        if not visible_ids:
+            return self._empty_screen_summary("Intelligence did not supply visible event IDs", context)
+        events = {str(item.get("id")): item for item in intelligence_events if isinstance(item.get("id"), str)}
+        selected = context.get("selected_event_id")
+        lines = ["Current Intelligence view, using only the supplied visible events:"]
+        citations: list[str] = []
+        links: list[OmniCitation] = []
+        unresolved: list[str] = []
+        count = 0
+        for event_id in visible_ids:
+            event = events.get(event_id)
+            if event is None:
+                unresolved.append(event_id)
+                continue
+            if count == 5:
+                break
+            focused = "Selected event: " if event_id == selected else ""
+            resolution = str(event.get("resolution_state") or "UNRESOLVED")
+            lines.append(f"{focused}{event.get('title') or event_id} — {event.get('kind') or 'INTELLIGENCE_EVENT'}, {resolution}; relevance: {event.get('relevance_explanation') or 'not stated'}.")
+            citations.extend(str(value) for value in event.get("evidence_ids", ()))
+            if isinstance(event.get("source_url"), str):
+                links.append(OmniCitation(str(event.get("title") or "Intelligence event"), str(event["source_url"])))
+            count += 1
+        if count == 0:
+            return self._empty_screen_summary("none of the supplied Intelligence event IDs resolved", context)
+        missing = [f"{len(unresolved)} supplied Intelligence event ID(s) could not be resolved."] if unresolved else []
+        lines.append("These are source-backed canonical Monitor records. Unresolved account, program, or facility links remain unresolved; Omni does not infer them.")
+        selected_key = "selected_event_id" if isinstance(selected, str) and selected in events and selected in visible_ids else None
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.CANONICAL_FACT) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(missing), None, tuple(dict.fromkeys(links)), None, context_used=self._summary_context(context, selected_key=selected_key))
+
+    def _map_screen_summary(self, environment: SampleEnvironment, observed_at, context: Mapping[str, object]) -> OmniResponse:
+        facility_id = context.get("selected_facility_id")
+        if isinstance(facility_id, str):
+            return self._selected_facility_answer(environment, facility_id=facility_id, question="why does this facility matter", observed_at=observed_at, context=context)
+        account_id = context.get("selected_account_id")
+        account = next((item for item in environment.accounts if item.id == account_id), None) if isinstance(account_id, str) else None
+        if account is None:
+            return self._empty_screen_summary("Map has no selected canonical account or facility", context)
+        return OmniResponse(
+            f"Map focus: {account.legal_name} ({account.id}), a canonical researched account in {primary_market_label(account.industries)}. This summary describes only the selected map account; Omni does not infer map-wide priority, relationships, or event geography from proximity.",
+            account.id, (account.provenance.source_record_id,) if account.provenance else (), (AssistantProvenance.CANONICAL_FACT,), (), None, (), account.legal_name,
+            context_used=self._summary_context(context, selected_key="selected_account_id"),
+        )
+
+    def _actions_screen_summary(self, environment: SampleEnvironment, context: Mapping[str, object], work_items: Iterable[object], visible_ids: tuple[str, ...]) -> OmniResponse:
+        if not visible_ids:
+            return self._empty_screen_summary("Actions did not supply visible work-item IDs", context)
+        items = {getattr(item, "id", ""): item for item in work_items}
+        accounts = {item.id: item for item in environment.accounts}
+        selected = context.get("selected_action_id")
+        lines = ["Current Actions view, using only the supplied visible governed work items:"]
+        citations: list[str] = []
+        unresolved: list[str] = []
+        count = 0
+        for action_id in visible_ids:
+            item = items.get(action_id)
+            if item is None:
+                unresolved.append(action_id)
+                continue
+            if count == 5:
+                break
+            account = accounts.get(getattr(item, "account_id", ""))
+            focused = "Selected action: " if action_id == selected else ""
+            status = getattr(getattr(item, "status", None), "value", getattr(item, "status", "unavailable"))
+            lines.append(f"{focused}{getattr(item, 'summary', action_id)} — priority {getattr(item, 'priority', 'unavailable')}, status {status}, account {account.legal_name if account else getattr(item, 'account_id', 'unresolved')}.")
+            citations.extend(getattr(item, "evidence_ids", ()))
+            count += 1
+        if count == 0:
+            return self._empty_screen_summary("none of the supplied work-item IDs resolved in the current session", context)
+        missing = [f"{len(unresolved)} supplied work-item ID(s) could not be resolved in the current session."] if unresolved else []
+        lines.append("Actions are governed, session-only SAMPLE workflow state. Omni reports them read-only and does not execute or reprioritize work.")
+        selected_key = "selected_action_id" if isinstance(selected, str) and selected in items and selected in visible_ids else None
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(missing), None, (), None, context_used=self._summary_context(context, selected_key=selected_key))
 
     @staticmethod
     def _unscoped_answer(environment: SampleEnvironment, *, observed_at, question: str) -> OmniResponse:

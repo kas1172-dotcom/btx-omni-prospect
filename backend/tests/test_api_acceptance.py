@@ -149,6 +149,28 @@ async def test_omni_resolves_relationship_questions_through_the_canonical_servic
 
 
 @pytest.mark.asyncio
+async def test_omni_summarizes_only_the_current_canonical_screen_view() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        response = await client.post(
+            "/api/omni",
+            json={
+                "question": "What matters most on this page?",
+                "context": {
+                    "surface": "ACCOUNTS",
+                    "active_filters": {"market": "Defense"},
+                    "visible_record_ids": ["boeing", "lockheed-martin"],
+                },
+            },
+        )
+    payload = response.json()
+    assert response.status_code == 200
+    assert "Current Accounts view" in payload["content"]
+    assert "Boeing" in payload["content"] and "Lockheed Martin" in payload["content"]
+    assert "Northrop Grumman" not in payload["content"]
+    assert payload["context_used"] == {"surface": "ACCOUNTS", "filters": {"market": "Defense"}}
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")
