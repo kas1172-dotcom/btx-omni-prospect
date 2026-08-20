@@ -56,8 +56,18 @@ class OmniOrchestrator:
         query = question.casefold().strip()
         accounts = list(environment.accounts)
         product_context = context or {}
-        if "open quote" in query:
-            return self._unscoped_answer(environment, observed_at=observed_at, question=query)
+        cross_intent = self._cross_account_intent(query)
+        if cross_intent:
+            event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
+            return self._cross_account_answer(
+                environment,
+                intent=cross_intent,
+                question=query,
+                observed_at=observed_at,
+                context=product_context,
+                intelligence_events=event_records,
+                work_items=work_items,
+            )
         selected_event_id = product_context.get("selected_event_id")
         if isinstance(selected_event_id, str) and self._is_event_question(query):
             event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
@@ -206,6 +216,35 @@ class OmniOrchestrator:
             "summarize this screen", "what are the most important things here",
             "what should i focus on", "key takeaways from this page",
         ))
+
+    @staticmethod
+    def _cross_account_intent(question: str) -> str | None:
+        """Recognize a deliberately small family of deterministic multi-account reads."""
+        has_intelligence = any(phrase in question for phrase in (
+            "recent intelligence", "intelligence events", "have intelligence",
+            "external signals", "new external signals", "relevant intelligence",
+        ))
+        has_actions = any(phrase in question for phrase in (
+            "open actions", "open action", "work waiting", "pending work item",
+            "pending seller work", "open seller actions", "signals and actions",
+        ))
+        if has_intelligence and has_actions:
+            return "INTELLIGENCE_OPEN_ACTIONS"
+        if question.startswith("compare ") or "which has the higher attractiveness score" in question or "which has the higher score" in question:
+            return "COMPARE"
+        if any(phrase in question for phrase in (
+            "highest scores", "top accounts by attractiveness", "prospects score highest",
+            "strongest attractiveness score", "top scored accounts", "highest attractiveness",
+            "highest score", "strongest score",
+        )):
+            return "SCORE_RANKING"
+        if has_actions:
+            return "OPEN_ACTIONS"
+        if has_intelligence:
+            return "INTELLIGENCE"
+        if any(phrase in question for phrase in ("open quote", "quote history", "rfq activity")):
+            return "QUOTES"
+        return None
 
     @staticmethod
     def _accounts_named_in(question: str, environment: SampleEnvironment) -> tuple[object, ...]:
@@ -723,6 +762,249 @@ class OmniOrchestrator:
             tuple(dict.fromkeys(missing)), action, tuple(dict.fromkeys(citation_links)), account.legal_name if account else None,
             context_used=context_used,
         )
+
+    @staticmethod
+    def _cross_account_market(context: Mapping[str, object], question: str) -> tuple[str | None, dict[str, object], tuple[str, ...]]:
+        """Use only exact canonical market values from the question or typed UI filter."""
+        markets = ("Aerospace", "Defense", "Semiconductor", "Space Exploration", "Energy", "Medical")
+        explicit = next((market for market in markets if market.casefold() in question), None)
+        if explicit:
+            return explicit, {}, ()
+        filters = context.get("active_filters")
+        if not isinstance(filters, Mapping) or not filters:
+            return None, {}, ()
+        market = filters.get("market")
+        if isinstance(market, str) and market in markets:
+            return market, {"filters": {"market": market}}, ()
+        if market is not None:
+            return None, {}, ("The supplied market filter is unsupported for this query and was not fuzzy-matched.",)
+        return None, {}, ()
+
+    @staticmethod
+    def _canonical_scores(environment: SampleEnvironment, observed_at) -> list[tuple[object, object]]:
+        """Read existing deterministic scoring outputs; this does not add Omni scoring logic."""
+        scores: list[tuple[object, object]] = []
+        for account in environment.accounts:
+            if account.id not in environment.scoring_inputs:
+                continue
+            result = calculate_account_attractiveness(
+                AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
+                evidence_ids=(account.provenance.source_record_id,) if account.provenance else (),
+                calculated_at=observed_at,
+            )
+            if result.score is not None:
+                scores.append((account, result))
+        return scores
+
+    @staticmethod
+    def _open_work_items(work_items: Iterable[object]) -> tuple[object, ...]:
+        return tuple(
+            item for item in work_items
+            if getattr(getattr(item, "status", None), "value", getattr(item, "status", "")) not in {"COMPLETED", "DISMISSED"}
+        )
+
+    def _cross_account_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        intent: str,
+        question: str,
+        observed_at,
+        context: Mapping[str, object],
+        intelligence_events: Iterable[Mapping[str, object]],
+        work_items: Iterable[object],
+    ) -> OmniResponse:
+        """Compose bounded canonical cross-account reads; no query DSL or independent decisioning."""
+        if intent == "COMPARE":
+            return self._compare_accounts_answer(environment, question, observed_at)
+        market, context_used, filter_missing = self._cross_account_market(context, question)
+        researched = [account for account in environment.accounts if account.research_account_id and (market is None or market in account.industries)]
+        account_by_id = {account.id: account for account in researched}
+        canonical_account_ids = {account.id for account in environment.accounts}
+        missing = list(filter_missing)
+        citations: list[str] = []
+        links: list[OmniCitation] = []
+
+        if intent == "SCORE_RANKING":
+            scored = [(account, result) for account, result in self._canonical_scores(environment, observed_at) if account.id in account_by_id]
+            scored.sort(key=lambda item: (-item[1].score, item[0].legal_name.casefold(), item[0].id))
+            unavailable = [account for account in researched if account.id not in {candidate.id for candidate, _ in scored}]
+            if unavailable:
+                missing.append(f"{len(unavailable)} matching account(s) have no available canonical attractiveness score.")
+            if not scored:
+                return self._cross_empty_answer("No matching accounts have an available canonical attractiveness score.", context_used, missing)
+            selected = scored[:5]
+            lines = [f"Ranked by the existing canonical Account Attractiveness score{f' for {market}' if market else ''}:"]
+            for account, score in selected:
+                lines.append(f"{account.legal_name}: {score.score} (coverage {score.coverage}).")
+                if account.provenance:
+                    citations.append(account.provenance.source_record_id)
+            lines.append("Scores use the established deterministic scoring service and current SAMPLE commercial inputs; Omni does not add a separate priority score.")
+            return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(missing), "Review the listed Account 360 records before acting.", (), None, context_used=context_used)
+
+        open_items = self._open_work_items(work_items)
+        actions_by_account: dict[str, list[object]] = {}
+        for item in open_items:
+            if getattr(item, "account_id", None) in account_by_id:
+                actions_by_account.setdefault(item.account_id, []).append(item)
+            elif getattr(item, "account_id", None) not in canonical_account_ids:
+                missing.append(f"Open work item {getattr(item, 'id', 'unknown')} has no canonical account in this query scope.")
+
+        events_by_account: dict[str, list[Mapping[str, object]]] = {}
+        for event in intelligence_events:
+            account_id = event.get("account_id")
+            if isinstance(account_id, str) and account_id in account_by_id:
+                events_by_account.setdefault(account_id, []).append(event)
+            elif event.get("account_id") is None:
+                missing.append("A canonical Intelligence event is unresolved to an account and was not attached to a cross-account result.")
+
+        if intent == "OPEN_ACTIONS":
+            return self._open_actions_cross_answer(account_by_id, actions_by_account, context_used, missing)
+        if intent == "INTELLIGENCE":
+            return self._intelligence_cross_answer(account_by_id, events_by_account, context_used, missing)
+        if intent == "INTELLIGENCE_OPEN_ACTIONS":
+            matching = sorted(
+                (
+                    (account_by_id[account_id], events_by_account[account_id], actions_by_account[account_id])
+                    for account_id in events_by_account.keys() & actions_by_account.keys()
+                ),
+                key=lambda item: (item[0].legal_name.casefold(), item[0].id),
+            )
+            if not matching:
+                return self._cross_empty_answer("No canonical accounts appear in both the current Intelligence and open-work sets.", context_used, missing)
+            lines = ["Accounts appearing in both canonical Intelligence and open governed work sets:"]
+            citations = []
+            links = []
+            for account, events, actions in matching[:5]:
+                event = max(events, key=self._event_sort_key)
+                action = min(actions, key=self._work_sort_key)
+                lines.append(f"{account.legal_name}: Intelligence '{event.get('title') or event.get('id')}' and {len(actions)} open work item(s), including {getattr(action, 'summary', action.id)}.")
+                citations.extend(str(value) for value in event.get("evidence_ids", ()))
+                citations.extend(getattr(action, "evidence_ids", ()))
+                if isinstance(event.get("source_url"), str):
+                    links.append(OmniCitation(str(event.get("title") or "Intelligence event"), str(event["source_url"])))
+            lines.append("This is a set intersection only; it does not establish that an Intelligence event caused a work item. Work items are session-only SAMPLE workflow state; public Intelligence remains source-backed.")
+            return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), None, tuple(dict.fromkeys(links)), None, context_used=context_used)
+
+        assert intent == "QUOTES"
+        return self._quotes_cross_answer(environment, researched, market, question, context_used, missing)
+
+    @staticmethod
+    def _event_sort_key(event: Mapping[str, object]) -> tuple[str, str]:
+        observed = event.get("observed_at")
+        value = observed.isoformat() if hasattr(observed, "isoformat") else str(observed or "")
+        return value, str(event.get("id") or "")
+
+    @staticmethod
+    def _work_sort_key(item: object) -> tuple[int, str, str]:
+        priority = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+        created = getattr(item, "created_at", None)
+        return priority.get(getattr(item, "priority", ""), 9), str(created or ""), str(getattr(item, "id", ""))
+
+    def _open_actions_cross_answer(self, account_by_id: Mapping[str, object], actions_by_account: Mapping[str, list[object]], context_used: dict[str, object], missing: list[str]) -> OmniResponse:
+        selected = sorted(
+            ((account_by_id[account_id], items) for account_id, items in actions_by_account.items()),
+            key=lambda item: (self._work_sort_key(min(item[1], key=self._work_sort_key)), item[0].legal_name.casefold(), item[0].id),
+        )[:5]
+        if not selected:
+            return self._cross_empty_answer("No matching accounts have open governed work items.", context_used, missing)
+        citations: list[str] = []
+        lines = ["Accounts with current open governed work items:"]
+        for account, items in selected:
+            lead = min(items, key=self._work_sort_key)
+            status = getattr(getattr(lead, "status", None), "value", getattr(lead, "status", "unavailable"))
+            lines.append(f"{account.legal_name}: {len(items)} open item(s); highest existing priority {getattr(lead, 'priority', 'unavailable')}, status {status}; {getattr(lead, 'summary', lead.id)}.")
+            citations.extend(getattr(lead, "evidence_ids", ()))
+        lines.append("This reads current session-only SAMPLE workflow state. Omni does not reprioritize, transition, or create work items.")
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), None, (), None, context_used=context_used)
+
+    def _intelligence_cross_answer(self, account_by_id: Mapping[str, object], events_by_account: Mapping[str, list[Mapping[str, object]]], context_used: dict[str, object], missing: list[str]) -> OmniResponse:
+        selected = sorted(
+            ((account_by_id[account_id], events) for account_id, events in events_by_account.items()),
+            key=lambda item: (self._event_sort_key(max(item[1], key=self._event_sort_key)), item[0].legal_name.casefold(), item[0].id),
+            reverse=True,
+        )[:5]
+        if not selected:
+            return self._cross_empty_answer("No matching accounts have canonical Intelligence records associated with them.", context_used, missing)
+        citations: list[str] = []
+        links: list[OmniCitation] = []
+        lines = ["Accounts with canonical source-backed Intelligence records, ordered by the available canonical event date:"]
+        for account, events in selected:
+            latest = max(events, key=self._event_sort_key)
+            state = latest.get("evidence_state") or "MISSING"
+            lines.append(f"{account.legal_name}: {latest.get('title') or latest.get('id')} (evidence {state}; {len(events)} canonical event(s)).")
+            citations.extend(str(value) for value in latest.get("evidence_ids", ()))
+            if isinstance(latest.get("source_url"), str):
+                links.append(OmniCitation(str(latest.get("title") or "Intelligence event"), str(latest["source_url"])))
+            if str(state) != EvidenceState.CONFIRMED.value:
+                missing.append(f"{account.legal_name}'s listed Intelligence evidence is {state}, not confirmed.")
+        lines.append("Unresolved events are excluded rather than attached by similarity; no event geography or Monitor relevance is inferred or recomputed.")
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.CANONICAL_FACT) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), None, tuple(dict.fromkeys(links)), None, context_used=context_used)
+
+    def _quotes_cross_answer(self, environment: SampleEnvironment, researched: list[object], market: str | None, question: str, context_used: dict[str, object], missing: list[str]) -> OmniResponse:
+        account_by_id = {account.id: account for account in researched}
+        open_only = "open quote" in question
+        quote_ids = {
+            quote.account_id for quote in environment.quotes
+            if quote.account_id in account_by_id and (not open_only or quote.status.value == "OPEN")
+        }
+        matches = sorted((account_by_id[account_id] for account_id in quote_ids), key=lambda account: (account.legal_name.casefold(), account.id))[:5]
+        label = "open quotes" if open_only else "quote/RFQ history"
+        if not matches:
+            return self._cross_empty_answer(f"No matching researched accounts have canonical {label} in the current SAMPLE dataset.", context_used, missing)
+        scope = f" {market}" if market else ""
+        lines = [f"The current SAMPLE commercial dataset contains {len(matches)}{scope} researched account(s) with {label}: {', '.join(account.legal_name for account in matches)}."]
+        lines.append("Quote status is simulated BTX commercial context; company identity and market classification are researched public data. No RFQ numbers or capability claims are inferred.")
+        return OmniResponse(" ".join(lines), "", (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(dict.fromkeys(missing)), "Review the matching Account 360 record before acting.", (), None, context_used=context_used)
+
+    def _compare_accounts_answer(self, environment: SampleEnvironment, question: str, observed_at) -> OmniResponse:
+        accounts = self._comparison_accounts_named(question, environment)
+        if len(accounts) != 2:
+            return OmniResponse(
+                "I need exactly two canonical researched account names or governed aliases for a comparison. Omni does not resolve partial or fuzzy company references.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("Exactly two canonical account identities were not resolved for comparison.",), None, (), None,
+            )
+        lines = [f"Canonical comparison: {accounts[0].legal_name} and {accounts[1].legal_name}."]
+        citations: list[str] = []
+        for account in accounts:
+            score_text = "unavailable"
+            if account.id in environment.scoring_inputs:
+                score = calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), evidence_ids=(), calculated_at=observed_at)
+                score_text = str(score.score) if score.score is not None else "insufficient data"
+            quote_count = sum(1 for quote in environment.quotes if quote.account_id == account.id)
+            lines.append(f"{account.legal_name}: existing attractiveness {score_text}; canonical quote-history records {quote_count}.")
+            if account.provenance:
+                citations.append(account.provenance.source_record_id)
+        if "higher" in question and all(account.id in environment.scoring_inputs for account in accounts):
+            scores = {
+                account.id: calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), evidence_ids=(), calculated_at=observed_at).score
+                for account in accounts
+            }
+            if scores[accounts[0].id] != scores[accounts[1].id]:
+                winner = max(accounts, key=lambda account: (scores[account.id], account.legal_name.casefold()))
+                lines.append(f"For the requested attractiveness-score dimension only, {winner.legal_name} is higher.")
+            else:
+                lines.append("For the requested attractiveness-score dimension, the existing canonical scores are tied.")
+        lines.append("Attractiveness and quote history are current SAMPLE commercial context; this is factual comparison, not a combined score or independent priority recommendation.")
+        return OmniResponse(" ".join(lines), "", tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION), (), None, (), None, context_used={"account_id": accounts[0].id, "related_account_id": accounts[1].id})
+
+    @staticmethod
+    def _comparison_accounts_named(question: str, environment: SampleEnvironment) -> tuple[object, ...]:
+        """Resolve exact canonical names/aliases and preserve the explicit question order."""
+        resolved: list[tuple[int, object]] = []
+        for account in environment.accounts:
+            names = [account.legal_name]
+            if account.public_identity:
+                names.extend(alias.value for alias in account.public_identity.aliases)
+            positions = [question.find(name.casefold()) for name in names if question.find(name.casefold()) >= 0]
+            if positions:
+                resolved.append((min(positions), account))
+        return tuple(account for _, account in sorted(resolved, key=lambda item: (item[0], item[1].id)))
+
+    @staticmethod
+    def _cross_empty_answer(content: str, context_used: dict[str, object], missing: list[str]) -> OmniResponse:
+        return OmniResponse(content, "", (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.MISSING_UNAVAILABLE), tuple(dict.fromkeys(missing or [content])), None, (), None, context_used=context_used)
 
     @staticmethod
     def _summary_context(context: Mapping[str, object], *, selected_key: str | None = None) -> dict[str, object]:

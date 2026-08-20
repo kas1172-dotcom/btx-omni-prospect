@@ -9,7 +9,10 @@ from btx_omni.integrations.hubspot.contracts import (
     SampleHubSpotAdapter,
 )
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
-from btx_omni.modules.assistant.orchestration import OmniOrchestrator
+from btx_omni.modules.assistant.orchestration import (
+    AssistantProvenance,
+    OmniOrchestrator,
+)
 from btx_omni.modules.intelligence.signals import (
     RawSignal,
     SignalKind,
@@ -504,4 +507,75 @@ def test_omni_screen_summary_map_empty_invalid_and_specific_route_protection() -
     assert item.summary in action_question.content
     assert "Spirit AeroSystems --PARENT_CHILD--> Boeing" in relationship.content
     assert "Defense researched account(s) with open quotes" in cross_account.content
+    assert "curated public-company universe" in general.content
+
+
+def test_omni_cross_account_score_ranking_uses_canonical_scores_filters_and_bounds() -> None:
+    sample = build_sample_environment()
+    omni = OmniOrchestrator()
+    ranked = omni.answer(sample, account_id=None, question="Which accounts have the highest attractiveness scores?", observed_at=NOW)
+    filtered = omni.answer(
+        sample,
+        account_id=None,
+        question="Which accounts have the highest scores?",
+        observed_at=NOW,
+        context={"surface": "ACCOUNTS", "active_filters": {"market": "Defense"}},
+    )
+    unsupported = omni.answer(
+        sample,
+        account_id=None,
+        question="Which accounts have the highest scores?",
+        observed_at=NOW,
+        context={"active_filters": {"market": "Robotics"}},
+    )
+    assert "Ranked by the existing canonical Account Attractiveness score" in ranked.content
+    assert ranked.content.count("coverage") <= 5
+    assert "Boeing" in filtered.content and "Intel" not in filtered.content
+    assert filtered.context_used == {"filters": {"market": "Defense"}}
+    assert "unsupported for this query" in unsupported.missingness[0]
+    assert unsupported.context_used == {}
+
+
+def test_omni_cross_account_work_intelligence_intersection_and_zero_results_are_read_only() -> None:
+    sample = build_sample_environment()
+    event_id = event_id_for(sample, "boeing")
+    event = next(item for item in OmniOrchestrator._sample_event_records(sample) if item["id"] == event_id)
+    work, item = create_selected_work_item()
+    closed = work.create(account_id="lockheed-martin", summary="Closed work", evidence_ids=("ev-closed",), idempotency_key="closed-cross-account", actor_id="seller", occurred_at=NOW)
+    work.transition(closed.id, WorkStatus.COMPLETED, actor_id="seller", occurred_at=NOW)
+    omni = OmniOrchestrator()
+    before = work.list()
+    actions = omni.answer(sample, account_id=None, question="Which accounts have open actions?", observed_at=NOW, work_items=work.list())
+    intelligence = omni.answer(sample, account_id=None, question="Which accounts have Intelligence?", observed_at=NOW, intelligence_events=(event,))
+    intersection = omni.answer(sample, account_id=None, question="Which accounts have both recent Intelligence and open actions?", observed_at=NOW, intelligence_events=(event,), work_items=work.list())
+    zero = omni.answer(sample, account_id=None, question="Which accounts have both recent Intelligence and open actions?", observed_at=NOW, intelligence_events=(event,), work_items=())
+    assert item.summary in actions.content and "Closed work" not in actions.content
+    assert event["title"] in intelligence.content and "source-backed" in intelligence.content
+    assert "Boeing" in intersection.content and "does not establish" in intersection.content
+    assert "No canonical accounts appear in both" in zero.content
+    assert work.list() == before
+
+
+def test_omni_cross_account_quotes_comparison_and_route_protection() -> None:
+    sample = build_sample_environment()
+    event_id = event_id_for(sample, "boeing")
+    work, item = create_selected_work_item()
+    omni = OmniOrchestrator()
+    quotes = omni.answer(sample, account_id=None, question="Which Defense accounts have open quotes?", observed_at=NOW)
+    history = omni.answer(sample, account_id=None, question="Where do we have quote history?", observed_at=NOW)
+    comparison = omni.answer(sample, account_id=None, question="Compare Boeing and Lockheed Martin.", observed_at=NOW)
+    unresolved = omni.answer(sample, account_id=None, question="Compare Boeing and Lockheed.", observed_at=NOW)
+    event_route = omni.answer(sample, account_id=None, question="Why does this matter?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": event_id}, intelligence_events=OmniOrchestrator._sample_event_records(sample))
+    action_route = omni.answer(sample, account_id=None, question="Why was this created?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=work.list())
+    screen_route = omni.answer(sample, account_id=None, question="Summarize this screen.", observed_at=NOW, context={"surface": "ACCOUNTS", "visible_record_ids": ["boeing"]})
+    general = omni.answer(sample, account_id=None, question="What is an RFQ?", observed_at=NOW)
+    assert "Defense researched account(s) with open quotes" in quotes.content and "SAMPLE commercial dataset" in quotes.content
+    assert quotes.citations == () and AssistantProvenance.DETERMINISTIC_DERIVATION in quotes.provenance
+    assert "quote/RFQ history" in history.content
+    assert "Canonical comparison: Boeing and Lockheed Martin" in comparison.content
+    assert comparison.context_used == {"account_id": "boeing", "related_account_id": "lockheed-martin"}
+    assert "exactly two canonical" in unresolved.content
+    assert "Source-backed Intelligence event" in event_route.content
+    assert item.summary in action_route.content
+    assert "Current Accounts view" in screen_route.content
     assert "curated public-company universe" in general.content

@@ -171,6 +171,22 @@ async def test_omni_summarizes_only_the_current_canonical_screen_view() -> None:
 
 
 @pytest.mark.asyncio
+async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        response = await client.post(
+            "/api/omni",
+            json={
+                "question": "Which accounts have the highest scores?",
+                "context": {"surface": "ACCOUNTS", "active_filters": {"market": "Defense"}},
+            },
+        )
+    payload = response.json()
+    assert response.status_code == 200
+    assert "Ranked by the existing canonical Account Attractiveness score" in payload["content"]
+    assert payload["context_used"] == {"filters": {"market": "Defense"}}
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

@@ -83,6 +83,17 @@ questions retain their respective routes. Public records remain source-backed;
 commercial alerts, scores, and workflow state are labelled as the current
 SAMPLE commercial dataset where material.
 
+Omni also supports a bounded deterministic cross-account family: ranking by
+the existing Account Attractiveness output; accounts with open governed work;
+accounts with canonical Intelligence; their set intersection; open quote or
+quote-history presence; exact canonical two-account comparisons; and exact
+canonical market filters. Results are capped at five and use stable canonical
+ordering. Omni does not add a prioritization score, fuzzy-match entities,
+recalculate Monitor relevance, or infer relationships/geography. Cross-account
+commercial and workflow facts remain the current SAMPLE dataset; Intelligence
+continues to use source-backed canonical events. Conversation precedence and
+multi-turn context remain deferred to Phase 6B.4.
+
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |
 | Today | none | none | rendered alert and intelligence IDs, in display order |
