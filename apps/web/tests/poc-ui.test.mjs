@@ -60,6 +60,9 @@ test('Omni provides session-only deterministic chat with optional context and sa
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
   assert.match(map, /Map controls/)
+  assert.match(map, /Map layers/)
+  assert.match(map, /Clear filters/)
+  assert.doesNotMatch(map, /Current customers|Top 100/)
   assert.match(map, /Account quick view/)
   assert.match(mapCanvas, /maplibregl\.Map/)
   assert.match(mapCanvas, /clusterRadius/)

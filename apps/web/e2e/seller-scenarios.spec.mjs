@@ -4,7 +4,7 @@ test.describe.configure({ mode: 'serial' })
 
 async function navigate(page, name) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name }).click()
-  await expect(page.locator('.page-title h1')).toHaveText(name)
+  await expect(page.locator('.page-title h1')).toHaveText(name === 'Map' ? 'Tactical Map' : name)
 }
 
 async function openOmni(page) {
@@ -93,6 +93,13 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
 
   // A canonical Map facility is selected in the UI; no ownership is inferred from location.
   await navigate(page, 'Map')
+  await page.getByRole('button', { name: 'Map layers' }).click()
+  await expect(page.getByRole('region', { name: 'Map controls' })).toBeVisible()
+  await page.getByRole('button', { name: 'All researched companies' }).click()
+  await expect(page.locator('.map-toolbar-status')).toContainText('All researched')
+  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(page.locator('.map-toolbar-status')).toHaveText('Curated scenarios · All')
+  await page.getByRole('button', { name: 'Close' }).click()
   const researchedFacilities = page.locator('.map-layout .detail-stack .card-list button.line')
   await expect(researchedFacilities.first()).toBeVisible()
   await researchedFacilities.first().click()
