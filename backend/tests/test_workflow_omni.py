@@ -579,3 +579,63 @@ def test_omni_cross_account_quotes_comparison_and_route_protection() -> None:
     assert item.summary in action_route.content
     assert "Current Accounts view" in screen_route.content
     assert "curated public-company universe" in general.content
+
+
+def test_omni_conversation_event_precedence_continuity_and_staleness() -> None:
+    sample = build_sample_environment()
+    events = OmniOrchestrator._sample_event_records(sample)
+    first_event = event_id_for(sample, "boeing")
+    second_event = next(event["id"] for event in events if event["id"] != first_event)
+    omni = OmniOrchestrator()
+    first = omni.answer(sample, account_id=None, question="Why does this matter?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": first_event}, intelligence_events=events)
+    continued = omni.answer(sample, account_id=None, question="Which account is it tied to?", observed_at=NOW, context={"surface": "ACCOUNTS", "conversation_referent": first.conversation_referent}, intelligence_events=events)
+    superseded = omni.answer(sample, account_id=None, question="Why is this important?", observed_at=NOW, context={"surface": "INTELLIGENCE", "selected_event_id": second_event, "conversation_referent": first.conversation_referent}, intelligence_events=events)
+    stale = omni.answer(sample, account_id=None, question="Which account is it tied to?", observed_at=NOW, context={"conversation_referent": {"event_id": "missing-event", "route": "EVENT"}}, intelligence_events=events)
+    assert first.conversation_referent == {"event_id": first_event, "account_id": "boeing", "route": "EVENT"}
+    assert "Resolved organization: Boeing" in continued.content and continued.context_used["context_source"] == "conversation"
+    assert superseded.context_used["event_id"] == second_event and superseded.context_used.get("context_source") is None
+    assert "no longer resolves" in stale.content
+
+
+def test_omni_conversation_facility_action_account_and_cleared_screen_context() -> None:
+    sample = build_sample_environment()
+    facility_id = public_facility_id_for(sample, "boeing")
+    work, item = create_selected_work_item()
+    omni = OmniOrchestrator()
+    facility = omni.answer(sample, account_id=None, question="Tell me about this facility.", observed_at=NOW, context={"surface": "MAP", "selected_facility_id": facility_id})
+    owned = omni.answer(sample, account_id=None, question="Which account owns it?", observed_at=NOW, context={"surface": "ACCOUNTS", "conversation_referent": facility.conversation_referent})
+    screen = omni.answer(sample, account_id=None, question="Summarize this screen.", observed_at=NOW, context={"surface": "ACCOUNTS", "visible_record_ids": ["lockheed-martin"], "conversation_referent": facility.conversation_referent})
+    action = omni.answer(sample, account_id=None, question="Why was this created?", observed_at=NOW, context={"surface": "ACTIONS", "selected_action_id": item.id}, work_items=work.list())
+    action_follow = omni.answer(sample, account_id=None, question="Which account is it for?", observed_at=NOW, context={"conversation_referent": action.conversation_referent}, work_items=work.list())
+    account = omni.answer(sample, account_id=None, question="Tell me about Boeing.", observed_at=NOW)
+    account_follow = omni.answer(sample, account_id=None, question="Does it have open actions?", observed_at=NOW, context={"conversation_referent": account.conversation_referent}, work_items=work.list())
+    intelligence_follow = omni.answer(sample, account_id=None, question="Any Intelligence?", observed_at=NOW, context={"conversation_referent": account_follow.conversation_referent}, work_items=work.list())
+    assert "Canonical parent account: Boeing" in owned.content and owned.context_used["context_source"] == "conversation"
+    assert "Current Accounts view" in screen.content and "Boeing headquarters" not in screen.content
+    assert "Canonical account: Boeing" in action_follow.content and action_follow.context_used["context_source"] == "conversation"
+    assert "Canonical account follow-up for Boeing" in account_follow.content and "Current open governed work items: 1" in account_follow.content
+    assert "Canonical account follow-up for Boeing" in intelligence_follow.content and "source-backed Intelligence" in intelligence_follow.content
+
+
+def test_omni_conversation_comparison_relationship_and_ambiguity_are_bounded() -> None:
+    sample = build_sample_environment()
+    work, _item = create_selected_work_item()
+    omni = OmniOrchestrator()
+    comparison = omni.answer(sample, account_id=None, question="Compare Boeing and Lockheed Martin.", observed_at=NOW)
+    score = omni.answer(sample, account_id=None, question="Which one has the higher score?", observed_at=NOW, context={"conversation_referent": comparison.conversation_referent}, work_items=work.list())
+    actions = omni.answer(sample, account_id=None, question="Which one has more open actions?", observed_at=NOW, context={"conversation_referent": comparison.conversation_referent}, work_items=work.list())
+    explicit = omni.answer(sample, account_id=None, question="Tell me about Northrop Grumman.", observed_at=NOW, context={"conversation_referent": comparison.conversation_referent})
+    ambiguous = omni.answer(sample, account_id=None, question="What about the other one?", observed_at=NOW, context={"conversation_referent": comparison.conversation_referent})
+    other = omni.answer(sample, account_id=None, question="What about the other one?", observed_at=NOW, context={"conversation_referent": {"account_id": "boeing", "comparison_account_ids": ["boeing", "lockheed-martin"], "route": "COMPARISON"}})
+    relationship = omni.answer(sample, account_id=None, question="How are we connected to this company?", observed_at=NOW, context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spirit-aerosystems"})
+    warmer = omni.answer(sample, account_id=None, question="Is there a warmer path?", observed_at=NOW, context={"conversation_referent": relationship.conversation_referent})
+    global_query = omni.answer(sample, account_id=None, question="Which Defense accounts have the highest scores?", observed_at=NOW, context={"conversation_referent": comparison.conversation_referent})
+    assert comparison.conversation_referent == {"comparison_account_ids": ["boeing", "lockheed-martin"], "route": "COMPARISON"}
+    assert "attractiveness-score dimension" in score.content and score.context_used["context_source"] == "conversation"
+    assert "open governed work item" in actions.content and actions.context_used["context_source"] == "conversation"
+    assert "Deterministic governed answer for Northrop Grumman" in explicit.content
+    assert "can't determine a unique conversational referent" in ambiguous.content
+    assert "Deterministic governed answer for Lockheed Martin" in other.content and other.context_used["context_source"] == "conversation"
+    assert relationship.conversation_referent["relationship_account_ids"] == ["spirit-aerosystems"]
+    assert "Canonical relationship path" in warmer.content and warmer.context_used["context_source"] == "conversation"
+    assert "Ranked by the existing canonical" in global_query.content and global_query.conversation_referent is None

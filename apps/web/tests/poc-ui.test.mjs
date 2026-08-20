@@ -103,6 +103,9 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(app, /selected_event_id: surface === 'intelligence' \? selectedEventId : undefined/)
   assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
   assert.match(drawer, /\{ \.\.\.context, session_account_id/)
+  assert.match(drawer, /conversationReferent/)
+  assert.match(drawer, /conversation_referent: conversationReferent/)
+  assert.match(drawer, /setConversationReferent\(response\.conversation_referent/)
 })
 
 test('Map selection sends canonical account and facility context without inventing BTX account identity', () => {

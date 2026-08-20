@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 
 from btx_omni.domain.common import EvidenceState
@@ -46,17 +46,70 @@ class OmniResponse:
     source_of_record: bool = False
     public_research_permitted: bool = False
     context_used: dict[str, object] = field(default_factory=dict)
+    conversation_referent: dict[str, object] | None = None
 
 
 class OmniOrchestrator:
     """No SQL, tools, writes, or source authority: only supplied POC facts."""
 
     def answer(self, environment: SampleEnvironment, *, account_id: str | None, question: str, observed_at, context: dict[str, object] | None = None, intelligence_events: Iterable[Mapping[str, object]] | None = None, work_items: Iterable[object] = ()) -> OmniResponse:
+        """Resolve bounded typed continuation before executing the existing deterministic routes."""
+        event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
+        work_records = tuple(work_items)
+        resolved_context, conversation_used = self._resolve_conversation_context(
+            environment,
+            question=question.casefold().strip(),
+            context=context or {},
+            intelligence_events=event_records,
+            work_items=work_records,
+        )
+        response = self._answer_current(
+            environment,
+            account_id=account_id,
+            question=question,
+            observed_at=observed_at,
+            context=resolved_context,
+            intelligence_events=event_records,
+            work_items=work_records,
+        )
+        return self._attach_conversation_referent(
+            environment,
+            response=response,
+            question=question.casefold().strip(),
+            conversation_used=conversation_used,
+        )
+
+    def _answer_current(self, environment: SampleEnvironment, *, account_id: str | None, question: str, observed_at, context: dict[str, object] | None = None, intelligence_events: Iterable[Mapping[str, object]] | None = None, work_items: Iterable[object] = ()) -> OmniResponse:
         """Bounded deterministic retrieval fallback; it never presents itself as model output."""
         query = question.casefold().strip()
         accounts = list(environment.accounts)
         product_context = context or {}
+        if product_context.get("_conversation_ambiguity"):
+            return OmniResponse(
+                "I can't determine a unique conversational referent for 'the other one'. Name a canonical account or compare exactly two accounts first.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("Conversational reference is ambiguous; no canonical entity was selected.",), None, (), None,
+            )
+        if product_context.get("_conversation_stale"):
+            return OmniResponse(
+                "The prior conversational referent no longer resolves through the current canonical read model, so Omni will not reconstruct it from assistant text.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("Conversational referent is unavailable or stale.",), None, (), None,
+            )
+        selected_account_id = product_context.get("selected_account_id")
+        if isinstance(selected_account_id, str) and self._is_account_follow_up_question(query):
+            return self._account_follow_up_answer(
+                environment,
+                account_id=selected_account_id,
+                question=query,
+                observed_at=observed_at,
+                work_items=work_items,
+                context=product_context,
+            )
         cross_intent = self._cross_account_intent(query)
+        comparison_ids = product_context.get("_conversation_comparison_ids")
+        if isinstance(comparison_ids, tuple) and len(comparison_ids) == 2 and self._is_comparison_follow_up(query):
+            return self._comparison_follow_up_answer(environment, comparison_ids, query, observed_at, work_items)
         if cross_intent:
             event_records = tuple(intelligence_events) if intelligence_events is not None else self._sample_event_records(environment)
             return self._cross_account_answer(
@@ -179,6 +232,8 @@ class OmniOrchestrator:
         return any(phrase in question for phrase in (
             "what happened", "why does this matter", "what does this mean", "who is this about",
             "what evidence", "evidence supports", "is this actionable", "this award", "this event",
+            "which account is it tied", "what company is it tied", "which account is associated",
+            "where did this come from", "why is this important",
         ))
 
     @staticmethod
@@ -187,6 +242,7 @@ class OmniOrchestrator:
             "this facility", "what is this facility", "who owns this facility",
             "which account is this facility", "what do we know about this location",
             "evidence supports this facility", "facility record", "btx context for this facility",
+            "which account owns it", "what account owns it",
         ))
 
     @staticmethod
@@ -197,6 +253,7 @@ class OmniOrchestrator:
             "review before acting", "what account is this for", "what should i do next",
             "is this action still valid", "what would happen if i act",
             "execute this action", "complete this action", "go ahead and execute",
+            "which account is it for", "what evidence supports it",
         ))
 
     @staticmethod
@@ -205,8 +262,261 @@ class OmniOrchestrator:
             "how are we connected", "how are these companies connected",
             "connected", "relationship", "relationships",
             "warm path", "route into", "who could introduce", "do we know anyone connected",
-            "programs connect", "companies are related", "related?", "introduction task",
+            "programs connect", "companies are related", "related?", "introduction task", "warmer path",
         ))
+
+    @staticmethod
+    def _is_account_follow_up_question(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "does it have open actions", "does that account have open actions",
+            "any intelligence", "what about its open actions", "does it have quote history",
+            "does that account have quote history",
+        ))
+
+    @staticmethod
+    def _is_comparison_follow_up(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "which one has the higher score", "which one scores higher",
+            "which one has more open actions", "which has more open actions",
+        ))
+
+    @staticmethod
+    def _is_conversational_follow_up(question: str) -> bool:
+        return any(phrase in question for phrase in (
+            "what about it", "why does that matter", "why is this important",
+            "which account is it tied", "what company is it tied", "which account is associated",
+            "where did this come from", "which account owns it", "what account owns it",
+            "which account is it for", "what evidence supports it", "does it have open actions",
+            "does that account have open actions", "any intelligence", "does it have quote history",
+            "does that account have quote history", "warmer path", "what about the other one",
+            "which one has the higher score", "which one scores higher", "which one has more open actions",
+        ))
+
+    def _resolve_conversation_context(
+        self,
+        environment: SampleEnvironment,
+        *,
+        question: str,
+        context: Mapping[str, object],
+        intelligence_events: Iterable[Mapping[str, object]],
+        work_items: Iterable[object],
+    ) -> tuple[dict[str, object], dict[str, str]]:
+        """Apply explicit > current UI > typed conversation > surface/filter > fallback."""
+        resolved = dict(context)
+        referent = context.get("conversation_referent")
+        if not isinstance(referent, Mapping):
+            return resolved, {}
+        # Explicit current-turn entity/query families never inherit old entity scope.
+        if (
+            self._accounts_named_in(question, environment)
+            or (
+                self._cross_account_intent(question)
+                and not self._is_comparison_follow_up(question)
+                and not self._is_account_follow_up_question(question)
+            )
+            or self._is_screen_summary_question(question)
+            or not self._is_conversational_follow_up(question)
+        ):
+            return resolved, {}
+        used: dict[str, str] = {}
+        current_selected = {
+            "event_id": resolved.get("selected_event_id"),
+            "facility_id": resolved.get("selected_facility_id"),
+            "action_id": resolved.get("selected_action_id"),
+            "account_id": resolved.get("selected_account_id"),
+        }
+        # Current UI selection wins when it supplies the same semantic type.
+        if isinstance(current_selected["event_id"], str) and self._is_event_question(question):
+            return resolved, {}
+        if isinstance(current_selected["facility_id"], str) and self._is_facility_question(question):
+            return resolved, {}
+        if isinstance(current_selected["action_id"], str) and self._is_action_question(question):
+            return resolved, {}
+        if isinstance(current_selected["account_id"], str) and self._is_account_follow_up_question(question):
+            return resolved, {}
+
+        account_ids = {account.id for account in environment.accounts}
+        event_ids = {str(event.get("id")) for event in intelligence_events if isinstance(event.get("id"), str)}
+        facility_ids = {facility.id for facility in environment.public_facilities} | {facility.id for facility in environment.btx_facilities}
+        action_ids = {getattr(item, "id", "") for item in work_items}
+        event_id = referent.get("event_id")
+        facility_id = referent.get("facility_id")
+        action_id = referent.get("action_id")
+        account_id = referent.get("account_id")
+        comparison = referent.get("comparison_account_ids")
+        relationship = referent.get("relationship_account_ids")
+
+        if self._is_comparison_follow_up(question) and isinstance(comparison, (list, tuple)) and len(comparison) == 2 and all(isinstance(item, str) and item in account_ids for item in comparison):
+            resolved["_conversation_comparison_ids"] = tuple(comparison)
+            used["comparison"] = ",".join(comparison)
+            return resolved, used
+        if "other one" in question:
+            if isinstance(comparison, (list, tuple)) and len(comparison) == 2 and isinstance(account_id, str) and account_id in comparison:
+                other = comparison[1] if comparison[0] == account_id else comparison[0]
+                resolved["session_account_id"] = other
+                used["account_id"] = other
+                return resolved, used
+            resolved["_conversation_ambiguity"] = True
+            return resolved, {}
+        if isinstance(event_id, str) and event_id in event_ids and self._is_event_question(question):
+            resolved["selected_event_id"] = event_id
+            used["event_id"] = event_id
+            return resolved, used
+        if isinstance(event_id, str) and self._is_event_question(question):
+            resolved["_conversation_stale"] = True
+            return resolved, {}
+        if isinstance(facility_id, str) and facility_id in facility_ids and self._is_facility_question(question):
+            resolved["selected_facility_id"] = facility_id
+            used["facility_id"] = facility_id
+            return resolved, used
+        if isinstance(facility_id, str) and self._is_facility_question(question):
+            resolved["_conversation_stale"] = True
+            return resolved, {}
+        if isinstance(action_id, str) and action_id in action_ids and self._is_action_question(question):
+            resolved["selected_action_id"] = action_id
+            used["action_id"] = action_id
+            return resolved, used
+        if isinstance(action_id, str) and self._is_action_question(question):
+            resolved["_conversation_stale"] = True
+            return resolved, {}
+        if isinstance(account_id, str) and account_id in account_ids and self._is_account_follow_up_question(question):
+            resolved["selected_account_id"] = account_id
+            used["account_id"] = account_id
+            return resolved, used
+        if isinstance(account_id, str) and self._is_account_follow_up_question(question):
+            resolved["_conversation_stale"] = True
+            return resolved, {}
+        if isinstance(facility_id, str) and facility_id in facility_ids and "that account" in question:
+            facility = next((item for item in environment.public_facilities if item.id == facility_id), None)
+            if facility and facility.account_id in account_ids:
+                resolved["selected_account_id"] = facility.account_id
+                used["account_id"] = facility.account_id
+                return resolved, used
+        if isinstance(relationship, (list, tuple)) and relationship and all(isinstance(item, str) and item in account_ids for item in relationship) and self._is_relationship_question(question):
+            resolved["selected_account_id"] = relationship[0]
+            used["account_id"] = relationship[0]
+        return resolved, used
+
+    def _attach_conversation_referent(self, environment: SampleEnvironment, *, response: OmniResponse, question: str, conversation_used: Mapping[str, str]) -> OmniResponse:
+        """Emit only typed canonical IDs from a successful route; assistant prose is never read."""
+        used = dict(response.context_used)
+        if (
+            conversation_used
+            and any(used.get(field) == value for field, value in conversation_used.items() if field != "comparison")
+        ) or (conversation_used.get("comparison") and used.get("comparison_account_ids")):
+            used["context_source"] = "conversation"
+        route: str | None = None
+        referent: dict[str, object] = {}
+        if self._is_screen_summary_question(question) or (
+            self._cross_account_intent(question)
+            and self._cross_account_intent(question) != "COMPARE"
+            and not self._is_comparison_follow_up(question)
+            and not conversation_used
+        ):
+            return replace(response, context_used=used, conversation_referent=None)
+        if "event_id" in used:
+            event_id = used["event_id"]
+            if isinstance(event_id, str):
+                referent["event_id"] = event_id
+                route = "EVENT"
+        if "facility_id" in used:
+            facility_id = used["facility_id"]
+            if isinstance(facility_id, str):
+                referent["facility_id"] = facility_id
+                route = "FACILITY"
+        if "action_id" in used:
+            action_id = used["action_id"]
+            if isinstance(action_id, str):
+                referent["action_id"] = action_id
+                route = "ACTION"
+        account_id = used.get("account_id")
+        if isinstance(account_id, str) and any(account.id == account_id for account in environment.accounts):
+            referent["account_id"] = account_id
+            route = route or "ACCOUNT"
+        related = used.get("related_account_id")
+        if isinstance(account_id, str) and isinstance(related, str):
+            if self._is_relationship_question(question):
+                referent["relationship_account_ids"] = [account_id, related]
+                route = "RELATIONSHIP"
+            elif self._cross_account_intent(question) == "COMPARE" or self._is_comparison_follow_up(question):
+                referent.pop("account_id", None)
+                referent["comparison_account_ids"] = [account_id, related]
+                route = "COMPARISON"
+        elif isinstance(account_id, str) and self._is_relationship_question(question):
+            referent["relationship_account_ids"] = [account_id]
+            route = "RELATIONSHIP"
+        if route:
+            referent["route"] = route
+        return replace(response, context_used=used, conversation_referent=referent or None)
+
+    def _account_follow_up_answer(self, environment: SampleEnvironment, *, account_id: str, question: str, observed_at, work_items: Iterable[object], context: Mapping[str, object]) -> OmniResponse:
+        account = next((item for item in environment.accounts if item.id == account_id), None)
+        context_used: dict[str, object] = {"account_id": account_id}
+        if context.get("surface"):
+            context_used["surface"] = str(context["surface"])
+        if account is None:
+            return OmniResponse(
+                "I can't resolve the account referent to a current canonical account. I will not reconstruct it from earlier assistant text.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,), ("Conversational account referent is unavailable or stale.",), None, (), None,
+                context_used=context_used,
+            )
+        lines = [f"Canonical account follow-up for {account.legal_name}."]
+        citations: list[str] = []
+        missing: list[str] = []
+        if "open actions" in question:
+            items = [item for item in self._open_work_items(work_items) if getattr(item, "account_id", None) == account.id]
+            if items:
+                lines.append(f"Current open governed work items: {len(items)}; highest existing priority is {min(items, key=self._work_sort_key).priority}.")
+                citations.extend(value for item in items for value in getattr(item, "evidence_ids", ()))
+            else:
+                lines.append("No open governed work items are present for this account in the current session.")
+            lines.append("Workflow facts are current session-only SAMPLE state; Omni is read-only.")
+        elif "intelligence" in question:
+            events = [event for event in self._sample_event_records(environment) if event.get("account_id") == account.id]
+            if events:
+                latest = max(events, key=self._event_sort_key)
+                lines.append(f"Canonical source-backed Intelligence: {latest.get('title') or latest.get('id')}; evidence {latest.get('evidence_state') or 'MISSING'}.")
+                citations.extend(str(value) for value in latest.get("evidence_ids", ()))
+            else:
+                lines.append("No canonical Intelligence event is currently associated with this account.")
+            lines.append("No event geography or account association is inferred beyond the canonical Monitor read.")
+        else:
+            quotes = [quote for quote in environment.quotes if quote.account_id == account.id]
+            lines.append(f"Canonical quote-history records: {len(quotes)}.")
+            lines.append("Quote history is current SAMPLE commercial context; Omni does not infer capability or production truth from it.")
+        return OmniResponse(" ".join(lines), account.id, tuple(dict.fromkeys(citations)), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION) + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()), tuple(missing), None, (), account.legal_name, context_used=context_used)
+
+    def _comparison_follow_up_answer(self, environment: SampleEnvironment, account_ids: tuple[str, str], question: str, observed_at, work_items: Iterable[object]) -> OmniResponse:
+        accounts = tuple(next((account for account in environment.accounts if account.id == account_id), None) for account_id in account_ids)
+        if any(account is None for account in accounts):
+            return OmniResponse(
+                "I can't resolve both canonical accounts from the stored comparison referent, so I won't recreate the pair from prior prose.",
+                "", (), (AssistantProvenance.MISSING_UNAVAILABLE,), ("Comparison referent is unavailable or stale.",), None, (), None,
+            )
+        first, second = accounts
+        assert first is not None and second is not None
+        context_used = {"account_id": first.id, "related_account_id": second.id, "comparison_account_ids": [first.id, second.id]}
+        if "score" in question:
+            scores = {
+                account.id: calculate_account_attractiveness(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), evidence_ids=(), calculated_at=observed_at).score
+                if account.id in environment.scoring_inputs else None
+                for account in (first, second)
+            }
+            if None in scores.values():
+                return OmniResponse("One or both accounts lack an available canonical attractiveness score, so Omni cannot compare that dimension.", "", (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.MISSING_UNAVAILABLE), ("A comparison account has no canonical score.",), None, (), None, context_used=context_used)
+            if scores[first.id] == scores[second.id]:
+                content = f"For the existing attractiveness-score dimension, {first.legal_name} and {second.legal_name} are tied at {scores[first.id]}."
+            else:
+                winner = first if scores[first.id] > scores[second.id] else second
+                content = f"For the existing attractiveness-score dimension only, {winner.legal_name} is higher: {first.legal_name} {scores[first.id]}; {second.legal_name} {scores[second.id]}."
+            return OmniResponse(content + " Scores use current SAMPLE commercial inputs; Omni did not create a combined priority metric.", "", (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION), (), None, (), None, context_used=context_used)
+        counts = {account.id: len([item for item in self._open_work_items(work_items) if getattr(item, "account_id", None) == account.id]) for account in (first, second)}
+        if counts[first.id] == counts[second.id]:
+            content = f"Both compared accounts have {counts[first.id]} open governed work item(s) in the current session."
+        else:
+            winner = first if counts[first.id] > counts[second.id] else second
+            content = f"{winner.legal_name} has more open governed work items: {first.legal_name} {counts[first.id]}; {second.legal_name} {counts[second.id]}."
+        return OmniResponse(content + " This is a read-only count of session-only SAMPLE workflow state, not a priority score.", "", (), (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION), (), None, (), None, context_used=context_used)
 
     @staticmethod
     def _is_screen_summary_question(question: str) -> bool:
@@ -254,7 +564,7 @@ class OmniOrchestrator:
             names = [account.legal_name]
             if account.public_identity:
                 names.extend(field.value for field in account.public_identity.aliases)
-            if any(name.casefold() in question for name in names):
+            if any(re.search(rf"(?<!\w){re.escape(name.casefold())}(?!\w)", question) for name in names):
                 matches.append(account)
         return tuple(matches)
 

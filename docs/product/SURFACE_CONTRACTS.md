@@ -91,8 +91,24 @@ canonical market filters. Results are capped at five and use stable canonical
 ordering. Omni does not add a prioritization score, fuzzy-match entities,
 recalculate Monitor relevance, or infer relationships/geography. Cross-account
 commercial and workflow facts remain the current SAMPLE dataset; Intelligence
-continues to use source-backed canonical events. Conversation precedence and
-multi-turn context remain deferred to Phase 6B.4.
+continues to use source-backed canonical events.
+
+## Omni conversational continuation
+
+Omni uses a bounded typed `conversation_referent` rather than treating prior
+assistant prose or the display-only `prior_turns` transcript as semantic
+authority. It carries only canonical account, event, facility, action, ordered
+two-account comparison, or relationship endpoint IDs plus a route label. The
+precedence policy is explicit: current-turn named entities and global/screen
+queries first; then current relevant UI selection; then a valid canonical
+conversational referent; then current surface/filter context; then safe
+fallback. A newer selection of the same type supersedes an older referent.
+Cleared UI selection may still permit a narrow explicit follow-up, but never
+overrides a new screen summary or global query. Missing canonical IDs and
+ambiguous “other one” references fail safely. The browser retains this bounded
+state for its session and sends it with the next request; the backend remains
+stateless, revalidates IDs against canonical reads, performs no prose parsing,
+and remains read-only.
 
 | Surface | Current selection | Active filters | Bounded visible IDs |
 | --- | --- | --- | --- |

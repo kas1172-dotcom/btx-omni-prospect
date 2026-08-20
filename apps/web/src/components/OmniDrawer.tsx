@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
-import type { OmniContext, OmniResponse } from '../types/api'
+import type { OmniContext, OmniConversationReferent, OmniResponse } from '../types/api'
 import './omni-drawer.css'
 
 type Message = { role: 'user' | 'assistant'; text: string; response?: OmniResponse }
@@ -20,6 +20,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sessionAccount, setSessionAccount] = useState<SessionAccount>()
+  const [conversationReferent, setConversationReferent] = useState<OmniConversationReferent>()
   const [clearedAccountId, setClearedAccountId] = useState<string>()
   const opener = useRef<HTMLButtonElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
@@ -33,7 +34,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   useEffect(() => { conversation.current?.scrollTo({ top: conversation.current.scrollHeight, behavior: 'smooth' }) }, [messages, loading])
 
   const close = () => setOpen(false)
-  const clearContext = () => { setClearedAccountId(accountId ?? 'SESSION'); setSessionAccount(undefined) }
+  const clearContext = () => { setClearedAccountId(accountId ?? 'SESSION'); setSessionAccount(undefined); setConversationReferent(undefined) }
   const ask = async (starter?: string) => {
     const text = (starter ?? question).trim()
     if (!text || loading) return
@@ -43,8 +44,9 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     setLoading(true)
     setError('')
     try {
-      const response = await api.omni(activeAccount?.id, text, { ...context, session_account_id: sessionAccount?.id, prior_turns: history })
+      const response = await api.omni(activeAccount?.id, text, { ...context, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
       if (response.account_id && response.account_name) setSessionAccount({ id: response.account_id, name: response.account_name })
+      setConversationReferent(response.conversation_referent ?? undefined)
       setMessages(old => [...old, { role: 'assistant', text: response.content, response }])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Omni is unavailable. Your message was not sent.')

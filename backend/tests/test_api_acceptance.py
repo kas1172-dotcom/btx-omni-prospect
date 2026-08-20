@@ -187,6 +187,28 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
 
 
 @pytest.mark.asyncio
+async def test_omni_accepts_bounded_typed_conversation_referents() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        signals = await client.get("/api/intelligence")
+        event = next(item for item in signals.json()["signals"] if item["account_id"] == "boeing")
+        response = await client.post(
+            "/api/omni",
+            json={
+                "question": "Which account is it tied to?",
+                "context": {
+                    "surface": "ACCOUNTS",
+                    "conversation_referent": {"event_id": event["id"], "account_id": "boeing", "route": "EVENT"},
+                },
+            },
+        )
+    payload = response.json()
+    assert response.status_code == 200
+    assert payload["context_used"]["event_id"] == event["id"]
+    assert payload["context_used"]["context_source"] == "conversation"
+    assert payload["conversation_referent"]["event_id"] == event["id"]
+
+
+@pytest.mark.asyncio
 async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> None:
     monkeypatch.setenv("BTX_MONITOR_MODE", "disabled")
     monkeypatch.setenv("BTX_MONITOR_DURABLE_STATE_ENABLED", "false")

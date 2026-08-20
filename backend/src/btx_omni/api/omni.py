@@ -20,6 +20,19 @@ class OmniSurface(StrEnum):
     ACTIONS = "ACTIONS"
 
 
+class OmniConversationReferent(BaseModel):
+    """Bounded canonical continuation state; never derived from assistant prose."""
+
+    model_config = ConfigDict(extra="forbid")
+    account_id: str | None = None
+    event_id: str | None = None
+    facility_id: str | None = None
+    action_id: str | None = None
+    comparison_account_ids: list[str] = Field(default_factory=list, max_length=2)
+    relationship_account_ids: list[str] = Field(default_factory=list, max_length=2)
+    route: str | None = Field(default=None, max_length=48)
+
+
 class OmniContext(BaseModel):
     """Bounded passive product context; distinct from the user's explicit scope."""
 
@@ -35,6 +48,7 @@ class OmniContext(BaseModel):
     active_filters: dict[str, str | list[str]] = Field(default_factory=dict, max_length=12)
     visible_record_ids: list[str] = Field(default_factory=list, max_length=50)
     prior_turns: str | None = Field(default=None, max_length=1600)
+    conversation_referent: OmniConversationReferent | None = None
 
     @field_validator("surface", mode="before")
     @classmethod
