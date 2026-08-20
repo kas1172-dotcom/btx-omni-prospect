@@ -45,6 +45,16 @@ test('Account 360 distinguishes public evidence from simulated BTX context', () 
   assert.match(accounts, /Curated scenarios/)
 })
 
+test('Account 360 renders only read-only canonical relationship paths', () => {
+  assert.match(client, /relationships: \(accountId: string\) => request<AccountRelationships>\(`\/accounts\/\$\{accountId\}\/relationships\?depth=2`\)/)
+  assert.match(accounts, /Relationship Intelligence/)
+  assert.match(accounts, /READ ONLY · canonical paths/)
+  assert.match(accounts, /Public professional-contact research remains separate/)
+  assert.match(accounts, /No canonical direct relationship records are available/)
+  assert.match(accounts, /api\.relationships\(accountId\)/)
+  assert.doesNotMatch(accounts, /Review relationship paths|validated warm paths|Request intro/)
+})
+
 test('Omni provides session-only deterministic chat with optional context and safe keyboard behavior', () => {
   const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
   assert.match(drawer, /No account selected/)

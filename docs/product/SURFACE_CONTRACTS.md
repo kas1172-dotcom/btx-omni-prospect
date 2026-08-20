@@ -9,6 +9,7 @@ calculate commercial decision logic.
 | Today | `GET /api/today` | public intelligence, commercial alerts, recommended actions | Monitor projection and `CommercialAlertEngine` | Public signals are source-backed; alerts/actions are SAMPLE commercial context |
 | Accounts | `GET /api/accounts` | identity, markets, relationship, attractiveness, commercial state | canonical account + scoring inputs + commercial context | Identity/markets are researched; score/context are simulated BTX inputs |
 | Account Detail | `GET /api/accounts/{id}` | Account 360, score factors/gaps, quotes, orders, CRM, alerts, intelligence | canonical account, public facilities, commercial adapters, scoring and alerts | Explicit public/BTX truth categories are returned |
+| Account 360 Relationship Intelligence | `GET /api/accounts/{id}/relationships?depth=2` | bounded canonical direct relationship paths, relationship type/direction, validation/evidence state, provenance | `RelationshipIntelligenceService` | Read-only semantic paths only; public contact research is not a commercial relationship, and missing paths remain missing |
 | Intelligence | `GET /api/intelligence` | event, source URL/date, account/program/facility resolution, relevance | Monitor observation/event projection | Public-source evidence; unresolved entities stay unresolved |
 | Map | `GET /api/map` | canonical account/facility/BTX/intelligence geometry | researched locations and safely resolved monitor facilities | No generated geography; proximity is seller planning only |
 | Actions | `GET/POST /api/actions` | evidence-backed, idempotent local work items and audit | governed work service | Session-only SAMPLE workflow; no autonomous CRM writes |
@@ -70,6 +71,13 @@ SAMPLE CRM/commercial hops, and BTX context distinct; market similarity and
 geographic proximity are never treated as a relationship or warm introduction.
 Omni can suggest validation, but is read-only and cannot create tasks, contacts,
 CRM records, or relationship edges.
+
+Account 360 uses the same read-only `RelationshipIntelligenceService` contract
+for its Relationship Intelligence panel. It renders bounded direct canonical
+paths using the service-provided direction, evidence state, presentation state,
+and provenance. It does not construct a client-side graph, infer warm paths or
+introductions, promote public professional-contact research into a commercial
+relationship, or treat an empty result as evidence of real-world absence.
 
 Explicit page-summary questions (for example, `What matters most on this
 page?`) use the typed current surface, its active filters, and its bounded

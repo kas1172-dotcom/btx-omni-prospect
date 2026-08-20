@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Account, Account360, OmniContext, Signal } from '../../types/api'
+import { api } from '../../api/client'
+import type { Account, Account360, AccountRelationships, OmniContext, RelationshipPath, Signal } from '../../types/api'
 import { Empty, Panel, State } from '../../components/UI'
 import './accounts.css'
 
@@ -29,6 +30,52 @@ export function Accounts({ accounts, detail, onSelect, onBack, onOmniContext }: 
 function Signals({ items }: { items: Signal[] }) { return items.length ? <div className="card-list">{items.map(item => <div className="line" key={item.id}><span><strong>{item.title}</strong><small>{item.evidence_state} · publicly curated evidence</small></span><a href={item.source_url} target="_blank" rel="noreferrer">Source</a></div>)}</div> : <Empty>No curated public event is available.</Empty> }
 
 const humanize = (value: string) => value.replaceAll('_', ' ')
+
+function RelationshipPathRow({ path }: { path: RelationshipPath }) {
+  const hop = path.hops[0]
+  const provenance = hop?.provenance
+  const sourceReference = provenance?.source_record_id ?? hop?.source_ids?.[0]
+
+  return <article className="relationship-path-row">
+    <div className="relationship-path-heading">
+      <span className="relationship-path-kind">{path.target_entity.kind}</span>
+      <strong>{path.target_entity.name}</strong>
+      <div className="relationship-path-states"><State value={path.presentation_state} /><State value={path.overall_evidence_state} /></div>
+    </div>
+    {hop && <p className="relationship-path-direction">{path.source_entity.name} <span>→</span> {humanize(hop.relationship_type)} <span>→</span> {path.target_entity.name}</p>}
+    {path.narrative && <p className="relationship-path-narrative">{path.narrative}</p>}
+    <div className="relationship-path-provenance">
+      <span>{provenance?.classification === 'INTERNAL_COMMERCIAL' ? 'SAMPLE internal commercial context' : 'Canonical relationship evidence'}</span>
+      {sourceReference && <small>Record: {sourceReference}</small>}
+      {provenance?.source_url && <a href={provenance.source_url} target="_blank" rel="noreferrer">Source</a>}
+    </div>
+  </article>
+}
+
+function RelationshipIntelligence({ accountId }: { accountId: string }) {
+  const [relationships, setRelationships] = useState<AccountRelationships>()
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    void api.relationships(accountId).then(result => {
+      if (active) setRelationships(result)
+    }).catch(() => {
+      if (active) setError(true)
+    })
+    return () => { active = false }
+  }, [accountId])
+
+  const directPaths = relationships?.direct_relationships.slice(0, 8) ?? []
+  return <Panel title="Relationship Intelligence" action={<span className="panel-kicker">READ ONLY · canonical paths</span>}>
+    <p className="workspace-intro relationship-intelligence-intro">Only canonical relationship records are shown. Public professional-contact research remains separate and does not establish a relationship path or introduction.</p>
+    {!relationships && !error && <p className="relationship-intelligence-loading">Loading canonical relationship records…</p>}
+    {error && <Empty>Canonical relationship records could not be loaded for this account. No relationship conclusion is shown.</Empty>}
+    {relationships && directPaths.length === 0 && <Empty>No canonical direct relationship records are available for this account. This does not establish a real-world absence.</Empty>}
+    {directPaths.length > 0 && <div className="relationship-path-list">{directPaths.map(path => <RelationshipPathRow key={path.path_id} path={path} />)}</div>}
+    {relationships && relationships.direct_relationships.length > directPaths.length && <p className="relationship-intelligence-bound">Showing the first {directPaths.length} of {relationships.direct_relationships.length} direct canonical paths. This view does not infer additional paths.</p>}
+  </Panel>
+}
 
 function AccountDetail({ detail }: { detail?: Account360 }) {
   if (!detail) return <Panel title="Account 360"><Empty>Select a company to view public evidence, simulated BTX context, and uncertainty.</Empty></Panel>
@@ -83,6 +130,10 @@ function AccountDetail({ detail }: { detail?: Account360 }) {
         {!score.exclusion_reason && availableFactors.length === 0 && <Empty>No canonical score factors are currently available.</Empty>}
         {score.missingness.length > 0 && <p className="truth-note">Missingness: {score.missingness.join(', ')}</p>}
       </Panel>
+    </div>
+
+    <div className="account-workspace-relationship">
+      <RelationshipIntelligence key={detail.account.id} accountId={detail.account.id} />
     </div>
   </section>
 }

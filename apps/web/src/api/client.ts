@@ -1,4 +1,4 @@
-import type { Account, Account360, Alert, BtxMapFacility, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, PublicLocation, Signal, WorkItem } from '../types/api'
+import type { Account, Account360, AccountRelationships, Alert, BtxMapFacility, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, PublicLocation, Signal, WorkItem } from '../types/api'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -10,6 +10,7 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
 export const api = {
   accounts: () => request<{ accounts: Account[] }>('/accounts'),
   account: (id: string) => request<Account360>(`/accounts/${id}`),
+  relationships: (accountId: string) => request<AccountRelationships>(`/accounts/${accountId}/relationships?depth=2`),
   today: () => request<{ priority_intelligence: Signal[]; commercial_alerts: Alert[]; recommended_actions: Array<{ account_id: string; action: string; evidence_ids: string[] }> }>('/today'),
   intelligence: () => request<{ signals: Signal[] }>('/intelligence'),
   map: (industry?: string) => request<{ layers: string[]; accounts: MapRecord[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : '')),
