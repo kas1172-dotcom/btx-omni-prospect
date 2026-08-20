@@ -1,0 +1,67 @@
+.today-surface { max-width: 1480px; }
+
+.today-title { display: grid; gap: 4px; max-width: 720px; }
+
+.today-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.today-summary-card {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 16px;
+  background: var(--surface-selected);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-panel);
+}
+
+.today-summary-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-secondary); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.today-summary-card > strong { color: var(--text-primary); font-size: 30px; line-height: 1; letter-spacing: -.04em; }
+.today-summary-card > small { color: var(--text-tertiary); line-height: 1.25; }
+
+.today-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.today-workspace > .panel { min-height: 460px; }
+.today-card-list { gap: 10px; }
+
+.today-card {
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface-elevated);
+}
+
+.today-card-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.today-card-topline > small { color: var(--text-tertiary); font-size: 12px; font-weight: 600; text-align: right; }
+.today-card-topline .truth-row { justify-content: flex-end; }
+.today-card-copy { display: grid; gap: 6px; }
+.today-card-copy h3 { color: var(--text-primary); font-size: 15px; line-height: 1.25; }
+.today-card-copy p { color: var(--text-secondary); line-height: 1.45; }
+.today-card-footer { display: grid; gap: 10px; padding-top: 11px; border-top: 1px solid var(--border-default); }
+.today-card-footer > small { color: var(--text-tertiary); font-size: 11px; }
+.today-card-footer .card-actions { justify-content: flex-start; }
+
+.today-priority-card { border-left: 3px solid var(--accent-primary); }
+.today-signal-card { border-left: 3px solid var(--status-info); }
+
+@media (max-width: 980px) {
+  .today-workspace { grid-template-columns: 1fr; }
+  .today-workspace > .panel { min-height: auto; }
+}
+
+@media (max-width: 680px) {
+  .today-summary-grid { grid-template-columns: 1fr; }
+  .today-summary-card { min-height: 96px; }
+  .today-card-topline { display: grid; }
+  .today-card-topline > small { text-align: left; }
+  .today-card-topline .truth-row { justify-content: flex-start; }
+}
