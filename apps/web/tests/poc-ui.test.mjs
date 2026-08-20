@@ -56,6 +56,10 @@ test('Omni provides session-only deterministic chat with optional context and sa
   assert.match(drawer, /Deterministic fallback—not model-generated advice/)
   assert.match(drawer, /cannot write to CRM/)
   assert.match(drawer, /aria-modal="true"/)
+  assert.match(drawer, /triggerStorageKey/)
+  assert.match(drawer, /setPointerCapture/)
+  assert.match(drawer, /dragThreshold/)
+  assert.match(drawer, /clampTriggerPosition/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {

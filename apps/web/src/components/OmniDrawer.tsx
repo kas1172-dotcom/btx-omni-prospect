@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
 import type { OmniContext, OmniConversationReferent, OmniResponse } from '../types/api'
 import './omni-drawer.css'
@@ -12,6 +12,16 @@ const starters = [
   'Explain this score and its gaps.',
   'What public evidence supports this action?',
 ]
+const triggerStorageKey = 'btx-omni-trigger-position'
+const triggerMargin = 14
+const dragThreshold = 6
+type TriggerPosition = { x: number; y: number }
+
+const clampTriggerPosition = (position: TriggerPosition, element?: HTMLElement | null): TriggerPosition => {
+  const width = element?.offsetWidth ?? 132
+  const height = element?.offsetHeight ?? 52
+  return { x: Math.min(Math.max(triggerMargin, position.x), Math.max(triggerMargin, window.innerWidth - width - triggerMargin)), y: Math.min(Math.max(triggerMargin, position.y), Math.max(triggerMargin, window.innerHeight - height - triggerMargin)) }
+}
 
 export function OmniDrawer({ accountId, accountName, context }: { accountId?: string; accountName?: string; context: OmniContext }) {
   const [open, setOpen] = useState(false)
@@ -22,9 +32,12 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const [sessionAccount, setSessionAccount] = useState<SessionAccount>()
   const [conversationReferent, setConversationReferent] = useState<OmniConversationReferent>()
   const [clearedAccountId, setClearedAccountId] = useState<string>()
+  const [triggerPosition, setTriggerPosition] = useState<TriggerPosition>()
   const opener = useRef<HTMLButtonElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
   const conversation = useRef<HTMLDivElement>(null)
+  const drag = useRef<{ start: TriggerPosition; origin: TriggerPosition; moved: boolean } | undefined>(undefined)
+  const suppressClick = useRef(false)
   const activeAccount = useMemo(() => accountId && clearedAccountId !== accountId ? { id: accountId, name: accountName ?? 'Selected account' } : !accountId && clearedAccountId !== 'SESSION' ? sessionAccount : undefined, [accountId, accountName, clearedAccountId, sessionAccount])
 
   useEffect(() => {
@@ -32,6 +45,17 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     else opener.current?.focus()
   }, [open])
   useEffect(() => { conversation.current?.scrollTo({ top: conversation.current.scrollHeight, behavior: 'smooth' }) }, [messages, loading])
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(triggerStorageKey)
+      if (saved) setTriggerPosition(clampTriggerPosition(JSON.parse(saved), opener.current))
+    } catch { window.localStorage.removeItem(triggerStorageKey) }
+  }, [])
+  useEffect(() => {
+    const clamp = () => setTriggerPosition(current => current ? clampTriggerPosition(current, opener.current) : current)
+    window.addEventListener('resize', clamp)
+    return () => window.removeEventListener('resize', clamp)
+  }, [])
 
   const close = () => setOpen(false)
   const clearContext = () => { setClearedAccountId(accountId ?? 'SESSION'); setSessionAccount(undefined); setConversationReferent(undefined) }
@@ -57,11 +81,37 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void ask() }
   }
+  const persistTriggerPosition = (position: TriggerPosition) => {
+    setTriggerPosition(position)
+    window.localStorage.setItem(triggerStorageKey, JSON.stringify(position))
+  }
+  const onTriggerPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    drag.current = { start: { x: event.clientX, y: event.clientY }, origin: triggerPosition ?? { x: bounds.left, y: bounds.top }, moved: false }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+  const onTriggerPointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!drag.current) return
+    const deltaX = event.clientX - drag.current.start.x
+    const deltaY = event.clientY - drag.current.start.y
+    if (!drag.current.moved && Math.hypot(deltaX, deltaY) < dragThreshold) return
+    drag.current.moved = true
+    event.preventDefault()
+    persistTriggerPosition(clampTriggerPosition({ x: drag.current.origin.x + deltaX, y: drag.current.origin.y + deltaY }, event.currentTarget))
+  }
+  const onTriggerPointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!drag.current) return
+    suppressClick.current = drag.current.moved
+    drag.current = undefined
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+  const openDrawer = () => { if (suppressClick.current) { suppressClick.current = false; return }; setOpen(true) }
   return <>
-    <button className="omni-launch" ref={opener} onClick={() => setOpen(true)} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
+    <button className={`omni-launch ${triggerPosition ? 'omni-launch-positioned' : ''}`} ref={opener} style={triggerPosition ? { left: triggerPosition.x, top: triggerPosition.y, right: 'auto', bottom: 'auto' } : undefined} onClick={openDrawer} onPointerDown={onTriggerPointerDown} onPointerMove={onTriggerPointerMove} onPointerUp={onTriggerPointerUp} onPointerCancel={onTriggerPointerUp} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
     {open && <div className="drawer-backdrop" onClick={close}>
       <aside className="omni-drawer" role="dialog" aria-modal="true" aria-labelledby="omni-title" onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') close() }}>
-        <header><div><span className="eyebrow">Read-only deterministic POC assistant · {context.surface}</span><h2 id="omni-title">Omni</h2></div><button onClick={close} aria-label="Close Omni">×</button></header>
+        <header><div><span className="eyebrow">Product intelligence</span><h2 id="omni-title">✦ Omni</h2></div><button onClick={close} aria-label="Close Omni">×</button></header>
         <div className="context-ribbon"><span>Context</span><strong>{activeAccount?.name ?? 'No account selected'}</strong>{activeAccount ? <button onClick={clearContext}>Clear</button> : accountId ? <button onClick={() => setClearedAccountId(undefined)}>Use selected account</button> : <small>Ask generally or open an Account 360 record.</small>}</div>
         <p className="muted omni-boundary">Grounded only in local POC read models. Public evidence is sourced; BTX commercial, CRM, quote, scoring, and workflow context is simulated. Omni cannot write to CRM.</p>
         <div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => void ask(prompt)} disabled={loading}>{prompt}</button>)}</div>
