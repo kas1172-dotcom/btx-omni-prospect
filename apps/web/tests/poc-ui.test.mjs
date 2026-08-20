@@ -33,6 +33,8 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(app, /map\.intelligence/)
   assert.match(map, /geographically linked intelligence/)
   assert.match(map, /No current intelligence event has verified event or canonical-facility coordinates/)
+  assert.match(app, /Promise\.all\(\[api\.accounts\(\), api\.today\(\), api\.intelligence\(\), api\.map\(\), api\.actions\(\)\]\)/)
+  assert.match(app, /void api\.monitor\(\)\.then\(setMonitor\)\.catch/)
 })
 
 test('Account 360 distinguishes public evidence from simulated BTX context', () => {
