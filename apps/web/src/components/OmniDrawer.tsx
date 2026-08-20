@@ -22,6 +22,11 @@ const clampTriggerPosition = (position: TriggerPosition, element?: HTMLElement |
   const height = element?.offsetHeight ?? 52
   return { x: Math.min(Math.max(triggerMargin, position.x), Math.max(triggerMargin, window.innerWidth - width - triggerMargin)), y: Math.min(Math.max(triggerMargin, position.y), Math.max(triggerMargin, window.innerHeight - height - triggerMargin)) }
 }
+const dockTriggerPosition = (position: TriggerPosition, element?: HTMLElement | null): TriggerPosition => {
+  const clamped = clampTriggerPosition(position, element)
+  const width = element?.offsetWidth ?? 132
+  return { x: Math.max(triggerMargin, window.innerWidth - width - triggerMargin), y: clamped.y }
+}
 
 export function OmniDrawer({ accountId, accountName, context }: { accountId?: string; accountName?: string; context: OmniContext }) {
   const [open, setOpen] = useState(false)
@@ -103,6 +108,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const onTriggerPointerUp = (event: PointerEvent<HTMLButtonElement>) => {
     if (!drag.current) return
     suppressClick.current = drag.current.moved
+    if (drag.current.moved) persistTriggerPosition(dockTriggerPosition({ x: event.clientX - drag.current.start.x + drag.current.origin.x, y: event.clientY - drag.current.start.y + drag.current.origin.y }, event.currentTarget))
     drag.current = undefined
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
   }
@@ -114,7 +120,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
         <header><div><span className="eyebrow">Product intelligence</span><h2 id="omni-title">✦ Omni</h2></div><button onClick={close} aria-label="Close Omni">×</button></header>
         <div className="context-ribbon"><span>Context</span><strong>{activeAccount?.name ?? 'No account selected'}</strong>{activeAccount ? <button onClick={clearContext}>Clear</button> : accountId ? <button onClick={() => setClearedAccountId(undefined)}>Use selected account</button> : <small>Ask generally or open an Account 360 record.</small>}</div>
         <p className="muted omni-boundary">Grounded only in local POC read models. Public evidence is sourced; BTX commercial, CRM, quote, scoring, and workflow context is simulated. Omni cannot write to CRM.</p>
-        <div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => void ask(prompt)} disabled={loading}>{prompt}</button>)}</div>
+        {!messages.length && <div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => void ask(prompt)} disabled={loading}>{prompt}</button>)}</div>}
         <div className="conversation" ref={conversation} aria-live="polite" aria-label="Omni conversation">
           {!messages.length && !loading && <div className="omni-empty"><strong>Start a seller conversation</strong><p>Ask about the curated public-company universe, a company’s public evidence, a score gap, an action, or nearby map context.</p></div>}
           {messages.map((message, index) => <article className={`message ${message.role}`} key={`${message.role}-${index}`}><strong>{message.role === 'user' ? 'You' : 'Omni'}</strong><p>{message.text}</p>{message.response && <ResponseDetails response={message.response} />}</article>)}
