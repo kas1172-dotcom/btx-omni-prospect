@@ -2,12 +2,25 @@
 
 ## Purpose and source
 
-This is the Phase 8 visual-convergence baseline for Phase 9. It was created
-from direct inspection of the current Figma file `QPWPGGDAxEtzG6a69Nsr68`, Page
-1, including the `01 - CORE PRODUCT SCREENS` section and the current
-`Command Center - desktop` frame (`4:7`). The current desktop frame establishes
-the intended dark workspace, left navigation, top bar, compact KPI cards,
-evidence-oriented panels, status chips, and floating Omni trigger.
+This is the Phase 8A visual-convergence baseline for Phase 9. It was created
+from direct Figma design-context inspection of the current file
+`QPWPGGDAxEtzG6a69Nsr68`, Page 1. The inspected current nodes are:
+
+- `Command Center - desktop` (`4:7`), including shell, sidebar, top bar, and
+  collapsed Omni trigger;
+- `Intelligence Monitor — desktop` (`4:205`);
+- `Account Portfolio — desktop` (`4:370`);
+- `Account Workspace — full detail concept` (`21:245`);
+- `Tactical Map — desktop` (`13:2`);
+- `Actions - desktop` (`11:5`); and
+- `ai-assistant-drawer` (`11:326`).
+
+The shared treatments were also directly inspected in context: the global
+search control (`4:42`), a KPI/card panel (`4:50`), READY status chip (`4:45`),
+selected navigation control (`4:17`), and Map Layers filter (`30:6`). The
+current Figma establishes the intended dark workspace, left navigation, top
+bar, compact KPI cards, evidence-oriented panels, status chips, and floating
+Omni trigger.
 
 Figma is authoritative for the approved visual direction described here. The
 running application remains authoritative for behavior, canonical IDs, current
@@ -45,9 +58,9 @@ into application logic or static UI content.
 | Intelligence | `Intelligence Feed - desktop` / `intelligence` in `01 - CORE PRODUCT SCREENS` | `features/intelligence/Intelligence.tsx` | ADOPT WITH FUNCTIONAL PRESERVATION | Preserve event selection, source URLs, evidence/validation state, unresolved associations, and typed selected-event Omni context. Do not turn an example signal into a runtime fact. |
 | Map | `Tactical Map - desktop` / `tactical-map` in `01 - CORE PRODUCT SCREENS` | `features/map/Map.tsx`, `features/map/MapCanvas.tsx` | ADOPT WITH FUNCTIONAL PRESERVATION | Figma can guide controls, cards, and map framing. MapLibre, verified facilities, supported markers, selected facility/account state, and no inferred event geography remain mandatory. |
 | Actions | `Actions - desktop` / `actions` in `01 - CORE PRODUCT SCREENS` | `features/actions/Actions.tsx` | ADOPT WITH FUNCTIONAL PRESERVATION | Preserve governed queue/detail behavior, active filters, canonical work-item identity, evidence, session-only disclosure, preview/confirmation gating, and no autonomous Omni writes. |
-| Monitor | No current top-level Monitor desktop frame identified in the inspected core Figma navigation | `features/monitor/Monitor.tsx` | DO NOT ADOPT | Monitor is an accepted runtime surface absent from the Figma core baseline. Do not remove, hide, or restyle it from an unrelated Figma screen; a future Figma catch-up frame needs a separate decision. |
+| Monitor | `Intelligence Monitor — desktop` (`4:205`) | `features/monitor/Monitor.tsx` | ADOPT WITH FUNCTIONAL PRESERVATION | Adopt the shell, source-status, filter, and evidence-list presentation. Do **not** adopt its `RUN NEW MONITOR` control or static examples: accepted runtime Monitor remains fail-closed, curated/live distinctions remain explicit, and no schedule or collection is started from the UI. |
 | Omni collapsed | `ai-trigger` (`131:2`) on `Command Center - desktop` | `components/OmniDrawer.tsx` (`omni-launch`) | ADOPT WITH FUNCTIONAL PRESERVATION | Adopt the floating trigger treatment while preserving the always-available, accessible drawer entry point. |
-| Omni expanded | `ai-assistant-open` in `01 - CORE PRODUCT SCREENS` | `components/OmniDrawer.tsx` | ADOPT WITH FUNCTIONAL PRESERVATION | Adopt visual hierarchy only. Preserve read-only boundary, citations/missingness/recommendation fields, typed context, browser-held referent, and no assistant-text entity parsing. |
+| Omni expanded | `ai-assistant-drawer` (`11:326`) | `components/OmniDrawer.tsx` | ADOPT WITH FUNCTIONAL PRESERVATION | Adopt visual hierarchy only. Preserve read-only boundary, citations/missingness/recommendation fields, typed context, browser-held referent, and no assistant-text entity parsing. |
 | Map opportunity concept | `concept-map-opportunity` in `03 - CONCEPT` | No matching accepted surface | DEFER | Do not turn this concept into new opportunity behavior during Phase 9 without a separately approved product scope. |
 | Relationship Intelligence visual UI | `concept-relationship-network`, `Account Portfolio Matrix`, and `List Matrix` in `03 - CONCEPT` | Relationship semantics only: backend service and Omni route | DEFER | This is explicitly Phase 9B. Do not build a graph canvas, relationship matrix, or introduction workflow as part of generic Phase 9 convergence. |
 | Auth and settings concepts | `Auth` and `settings-nav-row` (`78:2`) | Development POC shell only | DO NOT ADOPT | There is no accepted production authentication/settings scope. Do not imply identity, permissions, or settings behavior from static Figma treatments. |
@@ -58,9 +71,9 @@ into application logic or static UI content.
 - **Shell:** the Figma baseline is a sidebar desktop workspace, while the current
   application uses a top navigation bar. Phase 9 may converge the shell visually
   but must retain every accepted surface and context-clearing behavior.
-- **Monitor:** the application has an accepted Monitor surface and truthful
-  curated/live-status language; the current Figma core screen set does not
-  provide a matching top-level Monitor frame.
+- **Monitor:** Figma has `Intelligence Monitor — desktop` (`4:205`), but its
+  run-control treatment cannot become runtime behavior. The app's fail-closed
+  Monitor status, curated preview distinction, and no-scheduler boundary win.
 - **Static examples:** the Figma command-center frame contains placeholder-like
   KPI values, scores, account examples, owners, due dates, and action text. The
   app must render current canonical records, never these values as facts.
@@ -73,6 +86,10 @@ into application logic or static UI content.
 - **Relationship graph:** Figma visualizes a relationship network, but its
   visual UI is deferred. Existing relationship evidence can remain available
   through Omni until Phase 9B.
+- **Controls:** Figma Map examples include static `Current customers` and
+  `Top 100` filters, and Actions includes static quick CRM/export controls.
+  Phase 9 may adopt control styling only; unsupported filters, exports, and
+  actions cannot be implied or added through visual convergence.
 
 ## Functional-preservation requirements for Phase 9
 
@@ -95,6 +112,9 @@ The following are non-negotiable during visual convergence:
 - Omni's free-form use, typed surface/selection/filter/visible-ID context,
   truthful `context_used`, bounded typed conversational referent, citations,
   and read-only boundary.
+- Account Workspace's Figma Relationship tab is visual structure only until
+  Phase 9B; it cannot expose a graph, introduction, or unsupported relationship
+  action during ordinary Account 360 convergence.
 
 ## Deferred boundaries
 
