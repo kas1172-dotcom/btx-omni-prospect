@@ -8,6 +8,7 @@ type SegmentFilter = 'ALL' | MapAccountSegment
 const segmentLabel: Record<SegmentFilter, string> = {
   ALL: 'All accounts',
   CURRENT_CLIENT: 'Current clients',
+  DORMANT_CUSTOMER: 'Dormant customers',
   PROSPECT: 'Prospects',
   UNKNOWN: 'Unknown / no internal history',
 }

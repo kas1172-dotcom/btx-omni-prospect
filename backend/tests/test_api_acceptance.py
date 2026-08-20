@@ -58,9 +58,11 @@ async def test_map_projects_existing_sample_commercial_segments_without_public_i
     records = {item["account_id"]: item for item in response.json()["accounts"]}
     assert response.status_code == 200
     assert records["lockheed-martin"]["account_segment"] == "CURRENT_CLIENT"
+    assert records["applied-materials"]["account_segment"] == "DORMANT_CUSTOMER"
     assert records["anduril-industries"]["account_segment"] == "PROSPECT"
-    assert _account_segment(account_id="intel", commercial_account_ids=set(), prospect_account_ids=set()) == "UNKNOWN"
-    assert all(item["account_segment"] in {"CURRENT_CLIENT", "PROSPECT"} for item in records.values())
+    assert _account_segment(account_id="intel", active_client_account_ids=set(), dormant_customer_account_ids=set(), prospect_account_ids=set()) == "UNKNOWN"
+    assert _account_segment(account_id="public-only", active_client_account_ids=set(), dormant_customer_account_ids=set(), prospect_account_ids=set()) == "UNKNOWN"
+    assert {item["account_segment"] for item in records.values()} <= {"CURRENT_CLIENT", "DORMANT_CUSTOMER", "PROSPECT", "UNKNOWN"}
 
 
 @pytest.mark.asyncio

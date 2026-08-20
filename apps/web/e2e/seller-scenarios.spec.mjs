@@ -58,6 +58,19 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
   await page.getByRole('button', { name: 'Clear filters' }).click()
   await expect(page.locator('.map-toolbar-status')).toHaveText('Curated scenarios · All')
   await expect(page.getByRole('button', { name: 'Map account marker: Anduril Industries' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'All researched companies' }).click()
+  await page.getByRole('button', { name: 'Semiconductor', exact: true }).click()
+  await page.getByRole('button', { name: 'Dormant customers' }).click()
+  await expect(page.locator('.map-toolbar-status')).toHaveText('All researched · Semiconductor · Dormant customers')
+  await expect(page.locator('.map-stage-status')).toContainText('1 mapped accounts')
+  const applied = page.getByRole('button', { name: 'Map account marker: Applied Materials' })
+  await expect(applied).toBeVisible()
+  await page.getByRole('button', { name: 'Close' }).click()
+
+  await page.getByRole('button', { name: 'Map layers' }).click()
+  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(page.locator('.map-toolbar-status')).toHaveText('Curated scenarios · All')
 })
 
 test('Phase 7 seller scenarios remain coherent across real product surfaces', async ({ page }) => {

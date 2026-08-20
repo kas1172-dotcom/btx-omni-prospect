@@ -47,4 +47,5 @@ class PocRuntime:
 
     @staticmethod
     def observed_at() -> datetime:
-        return datetime(2026, 1, 1, tzinfo=UTC)
+        # The curated SAMPLE commercial snapshot and its governed alerts are anchored here.
+        return datetime(2026, 8, 31, tzinfo=UTC)

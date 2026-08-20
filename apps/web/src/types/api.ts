@@ -5,7 +5,7 @@ export interface Alert { id: string; account_id: string; type: string; severity:
 export interface Signal { id: string; kind: string; title: string; source_url: string; account_id?: string; program_name?: string; evidence_state: string; resolution_state?: string; data_mode?: string; observed_at?: string; source_tier?: string; source_validation_state?: string; relevance_explanation: string; evidence_ids: string[] }
 export interface WorkItem { id: string; account_id: string; status: string; summary: string; owner_id?: string; priority: string; due_date?: string; notes?: string; evidence_ids: string[] }
 export interface Coordinates { latitude: string; longitude: string }
-export type MapAccountSegment = 'CURRENT_CLIENT' | 'PROSPECT' | 'UNKNOWN'
+export type MapAccountSegment = 'CURRENT_CLIENT' | 'DORMANT_CUSTOMER' | 'PROSPECT' | 'UNKNOWN'
 export interface MapRecord { id: string; entity_type: 'ACCOUNT'; account_id: string; name: string; industry: string; primary_markets: string[]; relationship: Relationship; account_segment: MapAccountSegment; is_rich_scenario?: boolean; coordinates: Coordinates; deep_account: boolean; nearest_btx_facility: { id: string; name: string } | null; proximity_input: string | null; location_truth_state: string }
 export interface PublicLocation { id: string; entity_type: 'FACILITY'; account_id: string; facility_id: string; name: string; primary_markets: string[]; city: string; region: string; country: string; location_type: string; truth_state: string; coordinates: Coordinates; source_url?: string }
 export interface BtxMapFacility { id: string; entity_type: 'BTX_FACILITY'; facility_id: string; business_unit_id: string; name: string; city: string; region: string; coordinates: Coordinates; source_url?: string }

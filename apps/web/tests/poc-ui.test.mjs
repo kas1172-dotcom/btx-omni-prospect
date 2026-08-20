@@ -64,6 +64,7 @@ test('map and action interactions remain touch-accessible and confirmation-safe'
   assert.match(map, /Clear filters/)
   assert.match(map, /Account segment/)
   assert.match(map, /Current clients/)
+  assert.match(map, /Dormant customers/)
   assert.match(map, /Unknown \/ no internal history/)
   assert.match(map, /account_segment/)
   assert.doesNotMatch(map, /Current customers|Top 100/)
