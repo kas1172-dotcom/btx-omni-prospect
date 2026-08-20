@@ -1,1 +1,52 @@
-:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #e7edf7; background: #09101a; font-synthesis: none; --app-background:#09101a; --workspace-surface:#101b2a; --elevated-surface:#14243a; --selected-surface:#172f48; --interactive-hover:#17263a; --modal-surface:#0d1827; --border:#283d56; } * { box-sizing: border-box; } body { margin: 0; min-width: 320px; background: radial-gradient(circle at top right, #15263c, #09101a 45rem); } button, input, select, textarea { font: inherit; } button { cursor: pointer; } button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:2px solid #9cdbff; outline-offset:2px; } button:disabled { cursor:not-allowed; opacity:.55; } a { color: #83c5ff; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #edf5fb;
+  background: #0b1a28;
+  font-synthesis: none;
+  --surface-workspace: #0b1a28;
+  --surface-base: #070c12;
+  --surface-card: #10283a;
+  --surface-elevated: #142f43;
+  --surface-selected: #1c3f57;
+  --surface-overlay: #010305;
+  --border-default: #3c6279;
+  --border-strong: #416a80;
+  --accent-primary: #4bb8d4;
+  --accent-primary-hover: #70cbe1;
+  --text-primary: #edf5fb;
+  --text-secondary: #a8bdce;
+  --text-tertiary: #93a8bd;
+  --text-on-accent: #04101a;
+  --status-success: #58c6a2;
+  --status-warning: #efb950;
+  --status-danger: #f38a94;
+  --status-info: #83c5ff;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --shadow-overlay: 0 18px 48px rgb(1 3 5 / 38%);
+  --app-background: var(--surface-workspace);
+  --workspace-surface: var(--surface-card);
+  --elevated-surface: var(--surface-elevated);
+  --selected-surface: var(--surface-selected);
+  --interactive-hover: #17364a;
+  --modal-surface: #0d1827;
+  --border: var(--border-default);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: radial-gradient(circle at top right, #17354b, var(--surface-workspace) 48rem);
+}
+
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--status-info); outline-offset: 2px; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+a { color: var(--status-info); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
