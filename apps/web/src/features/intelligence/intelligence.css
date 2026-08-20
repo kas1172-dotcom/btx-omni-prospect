@@ -1,0 +1,29 @@
+.intelligence-surface { max-width: 1480px; }
+.intelligence-title { display: grid; gap: 4px; max-width: 780px; }
+
+.intelligence-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 20px; }
+.intelligence-summary-grid article { display: grid; gap: 7px; min-height: 100px; padding: 15px 16px; background: var(--surface-selected); border: 1px solid var(--border-strong); border-radius: var(--radius-panel); }
+.intelligence-summary-grid span { color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.intelligence-summary-grid strong { color: var(--text-primary); font-size: 28px; line-height: 1; letter-spacing: -.045em; }
+.intelligence-summary-grid small { color: var(--text-tertiary); line-height: 1.3; }
+
+.intelligence-signal-list { display: grid; gap: 10px; }
+.intelligence-signal { gap: 12px; padding: 16px; background: var(--surface-elevated); border-color: var(--border-default); }
+.intelligence-signal.selected { border-color: var(--accent-primary); box-shadow: inset 3px 0 0 var(--accent-primary); }
+.intelligence-signal-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.intelligence-signal-head > div:first-child { display: grid; gap: 5px; min-width: 0; }
+.intelligence-signal h3 { color: var(--text-primary); font-size: 18px; }
+.intelligence-signal-head small, .intelligence-validation, .intelligence-next-step { color: var(--text-tertiary); font-size: 11px; }
+.intelligence-states { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.intelligence-event { margin: 0; color: var(--text-secondary); line-height: 1.45; }
+.intelligence-event strong { color: var(--text-primary); }
+.intelligence-evidence { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.intelligence-evidence span { display: grid; gap: 4px; padding: 10px 11px; color: var(--text-secondary); background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-control); font-size: 12px; line-height: 1.4; }
+.intelligence-evidence strong { color: var(--text-tertiary); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
+.intelligence-actions { margin-top: 0; }
+
+@media (max-width: 680px) {
+  .intelligence-summary-grid, .intelligence-evidence { grid-template-columns: 1fr; }
+  .intelligence-signal-head { display: grid; }
+  .intelligence-states { justify-content: flex-start; }
+}
