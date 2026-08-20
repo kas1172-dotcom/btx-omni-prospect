@@ -49,7 +49,13 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     if (open) window.setTimeout(() => input.current?.focus(), 0)
     else opener.current?.focus()
   }, [open])
-  useEffect(() => { conversation.current?.scrollTo({ top: conversation.current.scrollHeight, behavior: 'smooth' }) }, [messages, loading])
+  useEffect(() => {
+    const transcript = conversation.current
+    if (!transcript) return
+    const userTurns = transcript.querySelectorAll<HTMLElement>('.message.user')
+    const currentUserTurn = userTurns.item(userTurns.length - 1)
+    if (currentUserTurn) transcript.scrollTo({ top: Math.max(0, currentUserTurn.offsetTop - 4), behavior: 'auto' })
+  }, [messages, loading])
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(triggerStorageKey)

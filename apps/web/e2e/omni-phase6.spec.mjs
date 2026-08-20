@@ -118,3 +118,14 @@ test('Omni trigger docks safely after dragging and preserves normal activation',
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeVisible()
 })
+
+test('Omni replaces prompt starters with a readable current exchange', async ({ page }) => {
+  await page.goto('/')
+  await openOmni(page)
+  await expect(page.getByLabel('Prompt starters')).toBeVisible()
+  const result = await ask(page, 'Which accounts have open quotes?')
+  await expect(page.getByLabel('Prompt starters')).toBeHidden()
+  await expect(page.locator('.conversation .message.user').last()).toContainText('Which accounts have open quotes?')
+  await expect(page.locator('.conversation .message.assistant').last()).toContainText(result.body.content.slice(0, 48))
+  await expect(page.locator('.omni-compose')).toBeVisible()
+})
