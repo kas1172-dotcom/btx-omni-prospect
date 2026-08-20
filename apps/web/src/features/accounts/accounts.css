@@ -144,6 +144,10 @@
 .account-workspace-relationship .panel { display: grid; gap: 12px; }
 .account-workspace-relationship .panel-head { margin-bottom: 0; }
 .relationship-intelligence-intro { max-width: 760px; }
+.relationship-view-toggle { display: flex; flex-wrap: wrap; gap: 6px; }
+.relationship-view-toggle button { min-height: 32px; padding: 6px 10px; color: var(--text-secondary); background: var(--surface-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-control); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.relationship-view-toggle button:hover, .relationship-view-toggle button:focus-visible { color: var(--text-primary); border-color: var(--border-strong); }
+.relationship-view-toggle button.selected { color: var(--surface-base); background: var(--accent-primary); border-color: var(--accent-primary); }
 .relationship-intelligence-loading, .relationship-intelligence-bound { margin: 0; color: var(--text-tertiary); font-size: 12px; line-height: 1.45; }
 .relationship-path-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .relationship-path-row { display: grid; gap: 8px; min-width: 0; padding: 12px; background: var(--surface-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-control); }
@@ -157,6 +161,17 @@
 .relationship-path-provenance { display: flex; flex-wrap: wrap; gap: 5px 10px; padding-top: 8px; color: var(--text-tertiary); border-top: 1px solid var(--border-default); font-size: 10px; line-height: 1.3; }
 .relationship-path-provenance small { color: inherit; overflow-wrap: anywhere; }
 .relationship-path-provenance a { color: var(--accent-primary); font-weight: 700; }
+.relationship-chain-list { display: grid; gap: 10px; }
+.relationship-chain { display: grid; gap: 10px; padding: 12px; background: var(--surface-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-control); }
+.relationship-chain-heading { display: grid; gap: 4px; }
+.relationship-chain-heading > strong { color: var(--text-primary); font-size: 14px; }
+.relationship-chain-heading > strong span, .relationship-chain-hop-direction > span { color: var(--accent-primary); font-weight: 700; }
+.relationship-chain-hops { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.relationship-chain-hop { display: grid; gap: 6px; padding: 10px; background: var(--surface-card); border-left: 2px solid var(--accent-primary); border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+.relationship-chain-hop-direction { display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; color: var(--text-secondary); font-size: 12px; line-height: 1.4; }
+.relationship-chain-hop-direction strong { color: var(--text-primary); }
+.relationship-chain-hop-direction em { color: var(--accent-primary); font-size: 11px; font-style: normal; font-weight: 700; text-transform: uppercase; }
+.relationship-chain-hop-meta { display: flex; flex-wrap: wrap; gap: 5px 8px; align-items: center; color: var(--text-tertiary); font-size: 10px; }
 
 @media (max-width: 980px) {
   .account-layout-portfolio, .account-layout-detail { grid-template-columns: 1fr; }

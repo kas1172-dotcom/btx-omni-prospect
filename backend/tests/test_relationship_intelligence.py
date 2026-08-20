@@ -53,6 +53,7 @@ def test_source_less_explicit_edges_need_validation_even_if_the_legacy_state_is_
     geographic = next(path for path in result["direct_relationships"] if path["hops"][0].relationship_type == "GEOGRAPHIC_CLUSTER_REVERSE")
     assert geographic["overall_evidence_state"] is EvidenceState.CONFIRMED
     assert geographic["presentation_state"] == "needs_validation"
+    assert geographic["hops"][0].presentation_state == "needs_validation"
 
 
 def test_evidence_presentation_mapping_is_deterministic() -> None:
@@ -70,3 +71,5 @@ async def test_account_relationship_api_is_typed_and_bounded() -> None:
     payload = response.json()
     assert payload["account"]["kind"] == "account" and payload["max_depth"] == 2
     assert any(path["presentation_state"] == "validated" for path in payload["paths"])
+    multi_hop = next(path for path in payload["paths"] if len(path["hops"]) == 2)
+    assert multi_hop["path_id"] and all(hop["presentation_state"] for hop in multi_hop["hops"])

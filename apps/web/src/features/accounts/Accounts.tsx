@@ -52,9 +52,30 @@ function RelationshipPathRow({ path }: { path: RelationshipPath }) {
   </article>
 }
 
+function RelationshipPathChain({ path }: { path: RelationshipPath }) {
+  return <article className="relationship-chain">
+    <div className="relationship-chain-heading">
+      <span className="relationship-path-kind">Canonical {path.hops.length}-hop path</span>
+      <strong>{path.source_entity.name} <span>→</span> {path.target_entity.name}</strong>
+    </div>
+    <ol className="relationship-chain-hops">
+      {path.hops.map((hop, index) => {
+        const sourceReference = hop.provenance?.source_record_id ?? hop.source_ids?.[0]
+        const evidenceLabel = hop.provenance?.classification === 'INTERNAL_COMMERCIAL' ? 'SAMPLE internal commercial evidence' : 'Public/canonical relationship evidence'
+        return <li key={`${path.path_id}:${index}`} className="relationship-chain-hop">
+          <div className="relationship-chain-hop-direction"><strong>{hop.from_entity.name}</strong><span>→</span><em>{humanize(hop.relationship_type)}</em><span>→</span><strong>{hop.to_entity.name}</strong></div>
+          <div className="relationship-chain-hop-meta"><span>{hop.from_entity.kind} → {hop.to_entity.kind}</span><State value={hop.presentation_state} /><State value={hop.evidence_state} /></div>
+          <div className="relationship-path-provenance"><span>{evidenceLabel}</span>{sourceReference && <small>Record: {sourceReference}</small>}{hop.provenance?.source_url && <a href={hop.provenance.source_url} target="_blank" rel="noreferrer">Source</a>}</div>
+        </li>
+      })}
+    </ol>
+  </article>
+}
+
 function RelationshipIntelligence({ accountId }: { accountId: string }) {
   const [relationships, setRelationships] = useState<AccountRelationships>()
   const [error, setError] = useState(false)
+  const [view, setView] = useState<'direct' | 'paths'>('direct')
 
   useEffect(() => {
     let active = true
@@ -67,13 +88,21 @@ function RelationshipIntelligence({ accountId }: { accountId: string }) {
   }, [accountId])
 
   const directPaths = relationships?.direct_relationships.slice(0, 8) ?? []
+  const multiHopPaths = relationships?.paths.filter(path => path.hops.length > 1).slice(0, 6) ?? []
   return <Panel title="Relationship Intelligence" action={<span className="panel-kicker">READ ONLY · canonical paths</span>}>
     <p className="workspace-intro relationship-intelligence-intro">Only canonical relationship records are shown. Public professional-contact research remains separate and does not establish a relationship path or introduction.</p>
+    <div className="relationship-view-toggle" role="tablist" aria-label="Relationship Intelligence view">
+      <button role="tab" aria-selected={view === 'direct'} className={view === 'direct' ? 'selected' : ''} onClick={() => setView('direct')}>Direct relationships</button>
+      <button role="tab" aria-selected={view === 'paths'} className={view === 'paths' ? 'selected' : ''} onClick={() => setView('paths')}>Relationship paths</button>
+    </div>
     {!relationships && !error && <p className="relationship-intelligence-loading">Loading canonical relationship records…</p>}
     {error && <Empty>Canonical relationship records could not be loaded for this account. No relationship conclusion is shown.</Empty>}
-    {relationships && directPaths.length === 0 && <Empty>No canonical direct relationship records are available for this account. This does not establish a real-world absence.</Empty>}
-    {directPaths.length > 0 && <div className="relationship-path-list">{directPaths.map(path => <RelationshipPathRow key={path.path_id} path={path} />)}</div>}
-    {relationships && relationships.direct_relationships.length > directPaths.length && <p className="relationship-intelligence-bound">Showing the first {directPaths.length} of {relationships.direct_relationships.length} direct canonical paths. This view does not infer additional paths.</p>}
+    {relationships && view === 'direct' && directPaths.length === 0 && <Empty>No canonical direct relationship records are available for this account. This does not establish a real-world absence.</Empty>}
+    {view === 'direct' && directPaths.length > 0 && <div className="relationship-path-list">{directPaths.map(path => <RelationshipPathRow key={path.path_id} path={path} />)}</div>}
+    {relationships && view === 'direct' && relationships.direct_relationships.length > directPaths.length && <p className="relationship-intelligence-bound">Showing the first {directPaths.length} of {relationships.direct_relationships.length} direct canonical paths. This view does not infer additional paths.</p>}
+    {relationships && view === 'paths' && multiHopPaths.length === 0 && <Empty>No canonical multi-hop relationship paths are available for this account. This does not establish a real-world absence.</Empty>}
+    {view === 'paths' && multiHopPaths.length > 0 && <div className="relationship-chain-list">{multiHopPaths.map(path => <RelationshipPathChain key={path.path_id} path={path} />)}</div>}
+    {relationships && view === 'paths' && relationships.paths.filter(path => path.hops.length > 1).length > multiHopPaths.length && <p className="relationship-intelligence-bound">Showing the first {multiHopPaths.length} canonical multi-hop paths returned by the service. This view does not infer additional paths.</p>}
   </Panel>
 }
 

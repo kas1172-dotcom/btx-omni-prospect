@@ -52,6 +52,10 @@ test('Account 360 renders only read-only canonical relationship paths', () => {
   assert.match(accounts, /Public professional-contact research remains separate/)
   assert.match(accounts, /No canonical direct relationship records are available/)
   assert.match(accounts, /api\.relationships\(accountId\)/)
+  assert.match(accounts, /Direct relationships/)
+  assert.match(accounts, /Relationship paths/)
+  assert.match(accounts, /No canonical multi-hop relationship paths are available/)
+  assert.match(accounts, /hop\.presentation_state/)
   assert.doesNotMatch(accounts, /Review relationship paths|validated warm paths|Request intro/)
 })
 

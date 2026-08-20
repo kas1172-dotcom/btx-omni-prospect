@@ -26,6 +26,7 @@ class RelationshipHop:
     source_ids: tuple[str, ...] = ()
     narrative: str | None = None
     derived: bool = False
+    presentation_state: str = "unusable"
 
 
 def presentation_state(evidence: EvidenceState) -> str:
@@ -36,6 +37,12 @@ def presentation_state(evidence: EvidenceState) -> str:
         EvidenceState.MISSING: "unusable",
         EvidenceState.CONFLICTING: "unusable",
     }[evidence]
+
+
+def _hop_presentation_state(evidence: EvidenceState, source_ids: tuple[str, ...], derived: bool) -> str:
+    if evidence is EvidenceState.CONFIRMED and not derived and not source_ids:
+        return "needs_validation"
+    return presentation_state(evidence)
 
 
 def _path_presentation_state(hops: tuple[RelationshipHop, ...], evidence: EvidenceState) -> str:
@@ -83,9 +90,10 @@ class RelationshipIntelligenceService:
         return self.entities[(kind, id)]
 
     def _add(self, result: list[RelationshipHop], source: RelationshipEntity, relationship_type: str, target: RelationshipEntity, evidence_state: EvidenceState, provenance: Provenance | None, *, source_ids: tuple[str, ...] = (), narrative: str | None = None, derived: bool = True, reverse_type: str | None = None) -> None:
-        result.append(RelationshipHop(source, relationship_type, target, evidence_state, provenance, source_ids, narrative, derived))
+        label = _hop_presentation_state(evidence_state, source_ids, derived)
+        result.append(RelationshipHop(source, relationship_type, target, evidence_state, provenance, source_ids, narrative, derived, label))
         if reverse_type:
-            result.append(RelationshipHop(target, reverse_type, source, evidence_state, provenance, source_ids, narrative, derived))
+            result.append(RelationshipHop(target, reverse_type, source, evidence_state, provenance, source_ids, narrative, derived, label))
 
     def _logical_hops(self) -> tuple[RelationshipHop, ...]:
         result: list[RelationshipHop] = []
