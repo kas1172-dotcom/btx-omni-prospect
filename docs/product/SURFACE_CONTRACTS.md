@@ -17,7 +17,7 @@ calculate commercial decision logic.
 ## Omni context
 
 `context` is typed and optional: `surface` (`TODAY`, `ACCOUNTS`,
-`ACCOUNT_DETAIL`, `INTELLIGENCE`, `MAP`, `ACTIONS`), selected event/facility/
+`ACCOUNT_DETAIL`, `INTELLIGENCE`, `MAP`, `ACTIONS`, `MONITOR`), selected event/facility/
 program/action/account IDs, bounded filters, visible IDs, and prior turns.
 Top-level `account_id` is explicit request scope; `selected_account_id` is
 current UI selection; `session_account_id` is conversational continuity.
@@ -82,6 +82,11 @@ specific event, facility, action, relationship, cross-account, and general
 questions retain their respective routes. Public records remain source-backed;
 commercial alerts, scores, and workflow state are labelled as the current
 SAMPLE commercial dataset where material.
+
+Monitor sends the typed `MONITOR` surface rather than masquerading as Today.
+It currently supplies no bounded seller-visible record IDs, so a Monitor screen
+summary explicitly reports that limitation while retaining truthful
+`context_used.surface`; global queries remain unscoped.
 
 Omni also supports a bounded deterministic cross-account family: ranking by
 the existing Account Attractiveness output; accounts with open governed work;

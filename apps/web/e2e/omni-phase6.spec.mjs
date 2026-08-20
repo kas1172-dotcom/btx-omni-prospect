@@ -129,3 +129,17 @@ test('Omni replaces prompt starters with a readable current exchange', async ({ 
   await expect(page.locator('.conversation .message.assistant').last()).toContainText(result.body.content.slice(0, 48))
   await expect(page.locator('.omni-compose')).toBeVisible()
 })
+
+test('Monitor sends its truthful typed surface without scoping global Omni queries', async ({ page }) => {
+  await page.goto('/')
+  await navigate(page, 'Monitor')
+  await openOmni(page)
+  const monitor = await ask(page, 'What am I looking at?')
+  expect(monitor.request.context.surface).toBe('MONITOR')
+  expect(monitor.body.context_used.surface).toBe('MONITOR')
+  expect(monitor.body.content).toContain('Monitor exposes status and provenance')
+  const global = await ask(page, 'Which accounts have the highest scores?')
+  expect(global.request.context.surface).toBe('MONITOR')
+  expect(global.body.context_used.surface).toBeUndefined()
+  expect(global.body.context_used.account_id).toBeUndefined()
+})

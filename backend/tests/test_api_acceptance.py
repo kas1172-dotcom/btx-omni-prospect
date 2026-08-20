@@ -106,12 +106,17 @@ async def test_omni_typed_context_is_bounded_and_backwards_compatible() -> None:
         intelligence_context = await client.post("/api/omni", json={"question": "What matters most here?", "context": {"surface": "INTELLIGENCE", "selected_event_id": "event-123", "active_filters": {"market": "Defense"}, "visible_record_ids": ["event-123", "event-456"]}})
         map_context = await client.post("/api/omni", json={"question": "What matters here?", "context": {"surface": "MAP", "selected_account_id": "boeing", "selected_facility_id": "facility-123"}})
         action_context = await client.post("/api/omni", json={"question": "Why was this created?", "context": {"surface": "ACTIONS", "selected_action_id": "work-item-123"}})
+        monitor_context = await client.post("/api/omni", json={"question": "What am I looking at?", "context": {"surface": "MONITOR"}})
+        monitor_global = await client.post("/api/omni", json={"question": "Which accounts have the highest scores?", "context": {"surface": "MONITOR"}})
         legacy = await client.post("/api/omni", json={"question": "Why is this account attractive?", "context": {"surface": "accounts", "session_account_id": "boeing", "prior_turns": "user: Boeing"}})
         invalid_surface = await client.post("/api/omni", json={"question": "x", "context": {"surface": "settings"}})
         oversized = await client.post("/api/omni", json={"question": "x", "context": {"visible_record_ids": [str(value) for value in range(51)]}})
-    assert typed.status_code == legacy.status_code == intelligence_context.status_code == map_context.status_code == action_context.status_code == 200
+    assert typed.status_code == legacy.status_code == intelligence_context.status_code == map_context.status_code == action_context.status_code == monitor_context.status_code == monitor_global.status_code == 200
     assert typed.json()["context_used"] == {"account_id": "boeing", "surface": "ACCOUNT_DETAIL"}
     assert legacy.json()["context_used"] == {"account_id": "boeing", "surface": "ACCOUNTS"}
+    assert monitor_context.json()["context_used"] == {"surface": "MONITOR"}
+    assert "Monitor exposes status and provenance" in monitor_context.json()["content"]
+    assert monitor_global.json()["context_used"] == {}
     assert invalid_surface.status_code == oversized.status_code == 422
 
 

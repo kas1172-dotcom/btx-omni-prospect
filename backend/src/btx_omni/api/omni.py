@@ -18,6 +18,7 @@ class OmniSurface(StrEnum):
     INTELLIGENCE = "INTELLIGENCE"
     MAP = "MAP"
     ACTIONS = "ACTIONS"
+    MONITOR = "MONITOR"
 
 
 class OmniConversationReferent(BaseModel):

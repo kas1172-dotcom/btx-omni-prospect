@@ -1369,6 +1369,11 @@ class OmniOrchestrator:
             return self._map_screen_summary(environment, observed_at, context)
         if surface == "ACTIONS":
             return self._actions_screen_summary(environment, context, work_items, visible_ids)
+        if surface == "MONITOR":
+            return self._empty_screen_summary(
+                "Monitor exposes status and provenance, but no bounded seller-visible records for a summary",
+                context,
+            )
         return self._empty_screen_summary(f"the current surface '{surface}' is not supported", context)
 
     def _empty_screen_summary(self, reason: str, context: Mapping[str, object]) -> OmniResponse:
