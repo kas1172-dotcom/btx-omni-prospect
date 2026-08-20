@@ -31,17 +31,17 @@ async function closeOmni(page) {
 
 test('Phase 7 seller scenarios remain coherent across real product surfaces', async ({ page }) => {
   const scenarioAccounts = [
-    ['Southwest geographic trip planning', 'Boeing', 'boeing'],
-    ['Southwest geographic trip planning', 'TSMC', 'tsmc-arizona'],
-    ['Southwest geographic trip planning', 'Blue Origin', 'blue-origin'],
+    ['Southwest geographic trip planning', 'Anduril', 'anduril-industries'],
+    ['Southwest geographic trip planning', 'Rocket Lab', 'rocket-lab-usa'],
+    ['Southwest geographic trip planning', 'General Atomics', 'general-atomics'],
     ['Medical Device whitespace', 'Medtronic', 'medtronic'],
     ['Defense award and quote history', 'Lockheed', 'lockheed-martin'],
     ['Semiconductor expansion', 'Intel', 'intel'],
     ['Dormant customer reactivation', 'Applied Materials', 'applied-materials'],
     ['Quote follow-up', 'GE Aerospace', 'ge-aerospace'],
     ['Cross-BU conflict or overlap', 'Boeing', 'boeing'],
-    ['Strong external signal with weak internal history', 'Rocket Lab', 'rocket-lab-usa'],
-    ['Strong internal history with weak external signal', 'Applied Materials', 'applied-materials'],
+    ['Strong external signal with weak internal history', 'Intel', 'intel'],
+    ['Strong internal history with weak external signal', 'Lam Research', 'lam-research'],
     ['Missing or unresolved evidence', 'Symbotic', 'symbotic'],
   ]
 
@@ -55,6 +55,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
 
   // The full curated scenario roster is discoverable through the actual Accounts UI.
   await navigate(page, 'Accounts')
+  await page.locator('.filters select').selectOption('ALL')
   const search = page.getByPlaceholder('Search company, industry, or location')
   for (const [scenario, account] of scenarioAccounts) {
     await search.fill(account)

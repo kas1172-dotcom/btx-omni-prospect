@@ -89,16 +89,16 @@ relationship context remain SAMPLE.
 
 | Seller scenario | Canonical anchor | Expected seller path / truth boundary |
 | --- | --- | --- |
-| Southwest trip planning | Boeing, TSMC Arizona, Blue Origin, Symbotic | Map and Account 360 expose sourced locations only; proximity is descriptive, not ownership or a relationship. |
-| Medical Device whitespace | Medtronic | Account 360 shows limited coverage and missing context without manufacturing commercial history. |
+| Southwest trip planning | Anduril Industries, Rocket Lab USA, General Atomics | Sourced Southern California facilities support a bounded geographic itinerary; proximity remains descriptive, not ownership or a relationship. |
+| Medical Device whitespace | Medtronic | Account 360 shows limited simulated score coverage and missing fit context; it does not convert the SEC filing into a sales signal. |
 | Defense award + quote history | Lockheed Martin | Account, Intelligence, and quote-related Omni reads retain public-event versus SAMPLE-commercial separation. |
 | Semiconductor expansion | Intel | Curated public CHIPS signal is shown with its source-validation limitation. |
-| Dormant customer reactivation | Applied Materials | Existing SAMPLE commercial/workflow context is labelled simulated. |
-| Quote follow-up | GE Aerospace | Quote/RFQ answers use only canonical SAMPLE quote records. |
+| Dormant customer reactivation | Applied Materials | A deliberately stale SAMPLE booking date drives deterministic customer-inactivity review; it is never presented as production BTX activity. |
+| Quote follow-up | GE Aerospace | An open, follow-up-aged SAMPLE quote drives the canonical quote-follow-up alert. |
 | Cross-BU conflict / overlap | Boeing | Existing canonical alert/workflow context is visible without changing the rule or creating work through Omni. |
-| Strong external signal + weak internal history | Rocket Lab USA | Public signal and incomplete internal coverage stay distinct. |
-| Strong internal history + weak external signal | Applied Materials | SAMPLE commercial history does not turn limited public evidence into a stronger external claim. |
-| Missing, unresolved, or conflicting evidence | Symbotic / curated unresolved records | Missing and unresolved states remain explicit; controlled conflicting-evidence coverage stays in automated tests rather than altering the public fixture. |
+| Strong external signal + weak internal history | Intel | The public CHIPS expansion signal is retained, while the SAMPLE environment intentionally has no commercial context for Intel. |
+| Strong internal history + weak external signal | Lam Research | Meaningful SAMPLE commercial history is present, but no curated public Intelligence scenario is attached. |
+| Missing, unresolved, or conflicting evidence | Symbotic / Intel | Symbotic's scoring exclusion and Intel's automation-blocked official source remain explicit; controlled conflicts stay in deterministic test coverage. |
 
 ## Future Monitor worker contract
 

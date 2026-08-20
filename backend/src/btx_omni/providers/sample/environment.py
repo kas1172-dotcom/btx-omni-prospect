@@ -45,7 +45,7 @@ from btx_omni.providers.research.scenarios import SCENARIOS as RICH_SCENARIOS
 from btx_omni.providers.research.scenarios import RichScenario
 
 ROLE_FAMILIES = ("procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations")
-SCENARIOS = ("southwest-trip", "medical-whitespace", "defense-award-quote", "semiconductor-expansion", "dormant-customer", "quote-follow-up", "cross-bu-conflict", "needs-research", "bookings-decline", "crm-inactivity", "intelligence-commercial-context")
+SCENARIOS = ("southwest-trip", "medical-whitespace", "defense-award-quote", "semiconductor-expansion", "dormant-customer", "quote-follow-up", "cross-bu-conflict", "strong-external-weak-internal", "strong-internal-weak-external", "missing-unresolved-conflicting")
 
 
 @dataclass(frozen=True)
@@ -114,7 +114,18 @@ def build_sample_environment() -> SampleEnvironment:
     active_bu_by_account: dict[str, set[str]] = {}
     for context in contexts: active_bu_by_account.setdefault(context.account_id, set()).add(context.business_unit)
     accounts = tuple(replace(item, relationship=AccountRelationship.PUBLIC_MARKET, business_units=tuple(sorted(active_bu_by_account.get(item.id, ())))) for item in accounts)
-    scenario_accounts = {"southwest-trip": ("boeing", "tsmc-arizona", "blue-origin", "symbotic"), "medical-whitespace": ("medtronic",), "defense-award-quote": ("lockheed-martin",), "semiconductor-expansion": ("intel",), "dormant-customer": ("applied-materials",), "quote-follow-up": ("ge-aerospace",), "cross-bu-conflict": ("boeing",), "needs-research": ("rocket-lab-usa",), "bookings-decline": ("applied-materials",), "crm-inactivity": ("intel",), "intelligence-commercial-context": ("intel",)}
+    scenario_accounts = {
+        "southwest-trip": ("anduril-industries", "rocket-lab-usa", "general-atomics"),
+        "medical-whitespace": ("medtronic",),
+        "defense-award-quote": ("lockheed-martin",),
+        "semiconductor-expansion": ("intel",),
+        "dormant-customer": ("applied-materials",),
+        "quote-follow-up": ("ge-aerospace",),
+        "cross-bu-conflict": ("boeing",),
+        "strong-external-weak-internal": ("intel",),
+        "strong-internal-weak-external": ("lam-research",),
+        "missing-unresolved-conflicting": ("symbotic", "intel"),
+    }
     scoring_inputs = {account_id: scenario.simulated_score_inputs for account_id, scenario in rich_scenarios.items() if scenario.simulated_score_inputs}
     public_signals = tuple(PublicScenarioSignal(scenario.event.source_id, account_id, scenario.event.source_url, primary_market_label(accounts_by_id[account_id].industries), accounts_by_id[account_id].provenance) for account_id, scenario in rich_scenarios.items())
     quote = next(item for item in quotes if item.account_id == "lockheed-martin" and item.line_items)
