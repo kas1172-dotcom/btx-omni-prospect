@@ -464,15 +464,15 @@ def test_omni_screen_summaries_use_selected_and_visible_canonical_context() -> N
     work, item = create_selected_work_item()
     omni = OmniOrchestrator()
     account_detail = omni.answer(
-        sample, account_id=None, question="Summarize this screen.", observed_at=NOW,
+        sample, account_id=None, question="Give me the highlights from this view.", observed_at=NOW,
         context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "boeing"}, intelligence_events=event_records,
     )
     intelligence = omni.answer(
-        sample, account_id=None, question="What are the most important things here?", observed_at=NOW,
+        sample, account_id=None, question="What should I know from this screen?", observed_at=NOW,
         context={"surface": "INTELLIGENCE", "selected_event_id": selected_event, "active_filters": {"market": "Defense"}, "visible_record_ids": [selected_event]}, intelligence_events=event_records,
     )
     actions = omni.answer(
-        sample, account_id=None, question="What should I focus on?", observed_at=NOW,
+        sample, account_id=None, question="Summarize this page.", observed_at=NOW,
         context={"surface": "ACTIONS", "selected_action_id": item.id, "visible_record_ids": [item.id]}, work_items=work.list(),
     )
     assert "Account Detail summary for Boeing" in account_detail.content
@@ -490,7 +490,7 @@ def test_omni_screen_summary_map_empty_invalid_and_specific_route_protection() -
     facility_id = public_facility_id_for(sample, "boeing")
     omni = OmniOrchestrator()
     map_facility = omni.answer(
-        sample, account_id=None, question="Give me the key takeaways from this page.", observed_at=NOW,
+        sample, account_id=None, question="What am I looking at?", observed_at=NOW,
         context={"surface": "MAP", "selected_facility_id": facility_id},
     )
     map_empty = omni.answer(sample, account_id=None, question="What matters most on this page?", observed_at=NOW, context={"surface": "MAP"})

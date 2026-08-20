@@ -525,6 +525,8 @@ class OmniOrchestrator:
             "what matters most on this page", "what should i pay attention to here",
             "summarize this screen", "what are the most important things here",
             "what should i focus on", "key takeaways from this page",
+            "summarize this page", "highlights from this view",
+            "what should i know from this screen", "what am i looking at",
         ))
 
     @staticmethod
