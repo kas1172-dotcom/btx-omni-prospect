@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from btx_omni.api.map import _account_segment
 from btx_omni.app import create_app
 from btx_omni.core.config import get_settings
 
@@ -48,6 +49,18 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     assert stale_omni.json()["recommended_action"]
     assert "CROSS_BU_COORDINATION" in cross_bu.json()["content"]
     assert external.json()["citations"] and conflict.json()["citations"]
+
+
+@pytest.mark.asyncio
+async def test_map_projects_existing_sample_commercial_segments_without_public_inference() -> None:
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
+        response = await client.get("/api/map")
+    records = {item["account_id"]: item for item in response.json()["accounts"]}
+    assert response.status_code == 200
+    assert records["lockheed-martin"]["account_segment"] == "CURRENT_CLIENT"
+    assert records["anduril-industries"]["account_segment"] == "PROSPECT"
+    assert _account_segment(account_id="intel", commercial_account_ids=set(), prospect_account_ids=set()) == "UNKNOWN"
+    assert all(item["account_segment"] in {"CURRENT_CLIENT", "PROSPECT"} for item in records.values())
 
 
 @pytest.mark.asyncio

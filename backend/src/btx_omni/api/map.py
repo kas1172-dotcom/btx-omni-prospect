@@ -19,6 +19,15 @@ def _coordinates(latitude: Decimal | None, longitude: Decimal | None) -> dict[st
     return {"latitude": str(latitude), "longitude": str(longitude)}
 
 
+def _account_segment(*, account_id: str, commercial_account_ids: set[str], prospect_account_ids: set[str]) -> str:
+    """Expose the existing SAMPLE commercial classification without public inference."""
+    if account_id in commercial_account_ids:
+        return "CURRENT_CLIENT"
+    if account_id in prospect_account_ids:
+        return "PROSPECT"
+    return "UNKNOWN"
+
+
 @router.get("")
 def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runtime)) -> dict:
     sample = runtime.environment()
@@ -28,6 +37,11 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
     selected_accounts = tuple(account for account in sample.accounts if not industry or industry in account.industries)
     selected_ids = {account.id for account in selected_accounts}
     commercial_accounts = {item.account_id for item in sample.commercial_contexts}
+    prospect_accounts = {
+        item.account_id
+        for item in sample.crm_companies
+        if item.properties and item.properties.get("btx_customer_segment_console_enriched") == "PROSPECT"
+    }
     account_points = []
     for account in selected_accounts:
         candidates = tuple(facility for facility in facilities if facility.account_id == account.id)
@@ -36,7 +50,7 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
             continue
         nearest = min(btx_facilities, key=lambda item: abs(location.latitude - item.latitude) + abs(location.longitude - item.longitude), default=None)
         proximity = abs(location.latitude - nearest.latitude) + abs(location.longitude - nearest.longitude) if nearest else None
-        account_points.append({"id": f"account:{account.id}", "entity_type": "ACCOUNT", "account_id": account.id, "name": account.legal_name, "primary_markets": account.industries, "industry": primary_market_label(account.industries), "relationship": account.relationship, "is_rich_scenario": account.id in sample.rich_scenarios, "coordinates": _coordinates(location.latitude, location.longitude), "location_truth_state": location.verification_state, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in commercial_accounts else "UNAVAILABLE", "nearest_btx_facility": {"id": nearest.id, "name": nearest.name} if nearest else None, "proximity_input": str(proximity) if proximity is not None else None, "deep_account": account.id in commercial_accounts})
+        account_points.append({"id": f"account:{account.id}", "entity_type": "ACCOUNT", "account_id": account.id, "name": account.legal_name, "primary_markets": account.industries, "industry": primary_market_label(account.industries), "relationship": account.relationship, "account_segment": _account_segment(account_id=account.id, commercial_account_ids=commercial_accounts, prospect_account_ids=prospect_accounts), "is_rich_scenario": account.id in sample.rich_scenarios, "coordinates": _coordinates(location.latitude, location.longitude), "location_truth_state": location.verification_state, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in commercial_accounts else "UNAVAILABLE", "nearest_btx_facility": {"id": nearest.id, "name": nearest.name} if nearest else None, "proximity_input": str(proximity) if proximity is not None else None, "deep_account": account.id in commercial_accounts})
     facility_points = [{"id": f"facility:{facility.id}", "entity_type": "FACILITY", "account_id": facility.account_id, "facility_id": facility.id, "name": facility.name, "primary_markets": accounts[facility.account_id].industries, "city": facility.city, "region": facility.region, "country": facility.country, "location_type": facility.facility_type, "truth_state": facility.verification_state, "coordinates": _coordinates(facility.latitude, facility.longitude), "source_url": facility.source_url, "provenance": facility.provenance} for facility in facilities if facility.account_id in selected_ids]
     btx_points = [{"id": f"btx-facility:{facility.id}", "entity_type": "BTX_FACILITY", "facility_id": facility.id, "business_unit_id": facility.business_unit_id, "name": facility.name, "city": facility.city, "region": facility.region, "country": facility.country, "coordinates": _coordinates(facility.latitude, facility.longitude), "source_url": facility.source_url, "source_type": facility.source_type, "truth_state": facility.verification_state, "verification_state": facility.verification_state, "provenance": facility.provenance} for facility in btx_facilities]
     facility_coordinates = {facility.id: _coordinates(facility.latitude, facility.longitude) for facility in facilities}

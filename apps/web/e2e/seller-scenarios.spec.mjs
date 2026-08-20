@@ -29,6 +29,37 @@ async function closeOmni(page) {
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeHidden()
 }
 
+test('Tactical Map composes canonical industry and SAMPLE commercial segment filters', async ({ page }) => {
+  await page.goto('/')
+  await navigate(page, 'Map')
+  await page.getByRole('button', { name: 'Map layers' }).click()
+  await page.getByRole('button', { name: 'All researched companies' }).click()
+  await page.getByRole('button', { name: 'Defense', exact: true }).click()
+  await page.getByRole('button', { name: 'Current clients' }).click()
+  await expect(page.locator('.map-toolbar-status')).toHaveText('All researched · Defense · Current clients')
+  await page.waitForTimeout(2200)
+  await expect(page.getByRole('button', { name: 'Map account marker: Lockheed Martin' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Map account marker: Anduril Industries' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Prospects' }).click()
+  await expect(page.locator('.map-toolbar-status')).toHaveText('All researched · Defense · Prospects')
+  await expect(page.getByRole('button', { name: 'Map account marker: Lockheed Martin' })).toHaveCount(0)
+  const anduril = page.getByRole('button', { name: 'Map facility marker: Anduril Industries headquarters' })
+  await expect(anduril).toBeVisible()
+  await page.getByRole('button', { name: 'Close' }).click()
+  await anduril.click()
+  await expect(anduril).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Anduril Industries' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Map layers' }).click()
+  await page.getByRole('button', { name: 'Unknown / no internal history' }).click()
+  await expect(page.locator('.map-stage-status')).toContainText('0 mapped accounts')
+  await expect(page.getByText('No matching mapped records exist for the selected market, coverage, and account-segment filters.')).toBeVisible()
+  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(page.locator('.map-toolbar-status')).toHaveText('Curated scenarios · All')
+  await expect(page.getByRole('button', { name: 'Map account marker: Anduril Industries' })).toBeVisible()
+})
+
 test('Phase 7 seller scenarios remain coherent across real product surfaces', async ({ page }) => {
   const scenarioAccounts = [
     ['Southwest geographic trip planning', 'Anduril', 'anduril-industries'],
