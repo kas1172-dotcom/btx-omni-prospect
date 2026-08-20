@@ -34,4 +34,10 @@
 .maplibregl-ctrl-attrib { font-size: 10px; }
 .maplibregl-ctrl-group { overflow: hidden; border: 1px solid #40667c; border-radius: 7px; box-shadow: 0 6px 18px #0008; }
 .maplibregl-ctrl-group button { background-color: #0b1a28; }
+.map-dom-marker { width: 14px; height: 14px; padding: 0; border: 2px solid #d9f6ff; border-radius: 50%; box-shadow: 0 0 0 2px #07131e99, 0 3px 8px #000a; cursor: pointer; }
+.map-dom-marker-account { background: #4bb8d4; }
+.map-dom-marker-facility { width: 12px; height: 12px; background: #67d6a0; }
+.map-dom-marker-btx { width: 16px; height: 16px; background: #f0b54d; }
+.map-dom-marker-intelligence { width: 12px; height: 12px; background: #e56b6f; }
+.map-dom-marker.selected { outline: 3px solid #b7f4ff; outline-offset: 3px; transform: scale(1.18); }
 @media (max-width: 760px) { .map-stage { min-height: 55dvh; } .map-toolbar { top: 10px; left: 10px; max-width: calc(100% - 20px); } .map-toolbar-status { max-width: 155px; } .map-controls-panel { top: 54px; left: 10px; width: min(420px, calc(100% - 20px)); } .map-stage-status { bottom: 10px; left: 10px; max-width: calc(100% - 20px); } .map-stage-hint { display: none; } .map-layout { grid-template-columns: 1fr; } .map-quick-view { position: static; } }

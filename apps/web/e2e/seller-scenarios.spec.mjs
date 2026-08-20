@@ -100,6 +100,13 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   await page.getByRole('button', { name: 'Clear filters' }).click()
   await expect(page.locator('.map-toolbar-status')).toHaveText('Curated scenarios · All')
   await page.getByRole('button', { name: 'Close' }).click()
+  const andurilMarker = page.getByRole('button', {
+    name: 'Map facility marker: Anduril Industries headquarters',
+  })
+  await expect(andurilMarker).toBeVisible()
+  await andurilMarker.click()
+  await expect(andurilMarker).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Anduril Industries' })).toBeVisible()
   const researchedFacilities = page.locator('.map-layout .detail-stack .card-list button.line')
   await expect(researchedFacilities.first()).toBeVisible()
   await researchedFacilities.first().click()
