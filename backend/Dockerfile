@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 COPY backend/pyproject.toml backend/uv.lock backend/README.md ./
 COPY backend/src ./src
+COPY docs/research /docs/research
 RUN uv sync --frozen --no-dev
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./
