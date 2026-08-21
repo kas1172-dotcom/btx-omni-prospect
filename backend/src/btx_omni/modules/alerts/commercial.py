@@ -5,8 +5,8 @@ from datetime import datetime
 
 from btx_omni.domain.alerts import CommercialAlert, CommercialAlertKind
 from btx_omni.domain.commercial import CommercialContext
-from btx_omni.domain.quotes import CommercialQuote, QuoteStatus
 from btx_omni.domain.orders import Order
+from btx_omni.domain.quotes import CommercialQuote, QuoteStatus
 
 
 class CommercialAlertEngine:

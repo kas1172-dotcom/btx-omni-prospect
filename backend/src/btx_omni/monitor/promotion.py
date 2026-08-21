@@ -12,7 +12,10 @@ from btx_omni.domain.common import DataMode
 from btx_omni.domain.markets import PRIMARY_MARKETS
 from btx_omni.monitor.contracts import OrganizationCandidate, ProgramCandidate
 from btx_omni.monitor.ontology import CandidateReviewState, ResolutionState
-from btx_omni.monitor.repository import _organization_candidate_from_row, _program_candidate_from_row
+from btx_omni.monitor.repository import (
+    _organization_candidate_from_row,
+    _program_candidate_from_row,
+)
 from btx_omni.persistence.durable_accounts import DurablePublicProspect
 from btx_omni.persistence.durable_programs import DurableCanonicalProgram
 from btx_omni.persistence.models import (

@@ -32,12 +32,12 @@ from btx_omni.monitor.ontology import (
     SellerRelevanceState,
 )
 from btx_omni.persistence.models import (
+    monitor_candidate_promotion_audits,
     monitor_collection_runs,
     monitor_event_clusters,
     monitor_events,
     monitor_observations,
     monitor_organization_candidates,
-    monitor_candidate_promotion_audits,
     monitor_program_candidate_promotion_audits,
     monitor_program_candidates,
     monitor_rejected_observations,

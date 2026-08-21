@@ -278,9 +278,12 @@ not currently run — worth asking about.
   `BTX_MONITOR_OPERATOR_TOKEN` and `BTX_MONITOR_MODE=live`.
 - No approved public-Intelligence → Account Attractiveness factor derivation
   policy. Eligible public events remain Intelligence; they do not change scores.
-- Organization/Program Candidate persistence exists, as does durable canonical
-  public-Prospect Account composition. Human-governed Candidate promotion and
-  Program Candidate promotion are not implemented.
+- Organization/Program Candidate persistence and durable canonical
+  public-Prospect Account/Program composition exist. Human-governed Candidate
+  and Program Candidate promotion are implemented only through explicit,
+  confirmed server-side commands with final exact conflict checks; Monitor
+  collection never promotes automatically. Public-Intelligence scoring policy
+  and seller-visible greenfield prioritization remain deferred.
 - External Top 100 ranking authority/data is unresolved; no Top 100 Map layer is
   implemented. Component-type Map filtering remains deferred.
 - MapLibre remains the map engine. A canonical Account receives no Map pin without
@@ -299,9 +302,10 @@ not currently run — worth asking about.
 3. `backend/src/btx_omni/core/provenance.py`, `classification.py`,
    `domain/common.py` — the vocabulary everything else builds on.
 4. `backend/src/btx_omni/api/runtime.py` — how it all gets wired at startup.
-5. `backend/src/btx_omni/monitor/candidates.py` and
-   `backend/src/btx_omni/persistence/durable_accounts.py` — the review-only
-   candidate and durable canonical-Prospect foundations.
+5. `backend/src/btx_omni/monitor/candidates.py`,
+   `backend/src/btx_omni/monitor/promotion.py`, and
+   `backend/src/btx_omni/persistence/durable_accounts.py` — governed candidate
+   review/promotion and durable canonical-Prospect foundations.
 6. `backend/src/btx_omni/modules/alerts/commercial.py` — small, self-contained,
    good example of the deterministic-rules pattern used throughout.
 7. `backend/src/btx_omni/modules/assistant/orchestration.py` — the biggest

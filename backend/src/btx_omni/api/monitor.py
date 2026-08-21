@@ -10,13 +10,13 @@ from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.markets import primary_market_label
-from btx_omni.monitor.sources import REGISTRY
 from btx_omni.monitor.promotion import (
     CandidatePromotionError,
     CandidatePromotionService,
     ProgramCandidatePromotionError,
     ProgramCandidatePromotionService,
 )
+from btx_omni.monitor.sources import REGISTRY
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 

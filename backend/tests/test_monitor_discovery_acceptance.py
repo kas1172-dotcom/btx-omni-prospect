@@ -11,7 +11,10 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.app import create_app
 from btx_omni.core.config import Settings
-from btx_omni.modules.scoring.account_attractiveness import AccountAttractivenessInputs, calculate_account_attractiveness
+from btx_omni.modules.scoring.account_attractiveness import (
+    AccountAttractivenessInputs,
+    calculate_account_attractiveness,
+)
 from btx_omni.monitor.ontology import CandidateReviewState, ResolutionState
 from btx_omni.monitor.sources import FdaAdapter, UsaSpendingAdapter
 from btx_omni.persistence.models import metadata

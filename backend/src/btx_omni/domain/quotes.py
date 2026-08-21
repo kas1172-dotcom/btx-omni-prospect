@@ -43,7 +43,7 @@ class CommercialQuote:
     component_class_ids: tuple[str, ...] = ()
     paperless_account_id: str | None = None
     paperless_contact_id: str | None = None
-    line_items: tuple["CommercialQuoteLineItem", ...] = ()
+    line_items: tuple[CommercialQuoteLineItem, ...] = ()
 
 
 @dataclass(frozen=True)

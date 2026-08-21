@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import date
 
 from btx_omni.core.classification import Classification
-from btx_omni.domain.quotes import CommercialQuote, CommercialQuoteLineItem, PaperlessAccount, QuoteStatus
+from btx_omni.domain.quotes import (
+    CommercialQuote,
+    CommercialQuoteLineItem,
+    PaperlessAccount,
+    QuoteStatus,
+)
 from btx_omni.providers.research._catalog_support import document, source_provenance
 
 _STATUS = {"OUTSTANDING": QuoteStatus.OPEN, "CONVERTED": QuoteStatus.WON, "LOST": QuoteStatus.LOST, "EXPIRED": QuoteStatus.EXPIRED, "CANCELLED": QuoteStatus.CANCELLED}
@@ -22,7 +26,7 @@ def load_paperless_quotes(*, accounts_by_id: dict[str, object], business_unit_id
             raise ValueError(f"quote {row['paperless_quote_id']} has unknown status")
         provenance = source_provenance(row, classification=Classification.INTERNAL_COMMERCIAL)
         account_key = f"paperless-{account_id}"
-        paperless_accounts.setdefault(account_key, PaperlessAccount(account_key, account_id, getattr(accounts_by_id[account_id], "legal_name"), provenance))
+        paperless_accounts.setdefault(account_key, PaperlessAccount(account_key, account_id, accounts_by_id[account_id].legal_name, provenance))
         lines = []
         for item in row["line_items"]:
             if item["component_class_id"] not in component_ids:

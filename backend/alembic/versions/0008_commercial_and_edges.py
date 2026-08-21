@@ -3,8 +3,9 @@
 Revision ID: 0008_commercial_and_edges
 Revises: 0007_usaspending_relevance_state
 """
-from alembic import op
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+
+from alembic import op
 
 revision = "0008_commercial_and_edges"
 down_revision = "0007_usaspending_relevance_state"

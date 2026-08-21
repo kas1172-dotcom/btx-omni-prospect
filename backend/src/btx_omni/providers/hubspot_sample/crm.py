@@ -24,5 +24,5 @@ def load_crm(*, account_ids: set[str], business_unit_ids: set[str], program_ids:
         deals.append(CrmDeal(row["hs_object_id"], row["associated_hs_company_id"], props.get("btx_business_unit_console_enriched"), source_provenance(row, classification=Classification.INTERNAL_COMMERCIAL), row["research_account_id"], props.get("btx_program_id_console_enriched"), props))
     for row in payload["activities"]:
         if row["research_account_id"] not in account_ids or row["associated_hs_company_id"] not in company_ids: raise ValueError("CRM activity has unknown foreign key")
-        activities.append(CrmActivity(row["hs_object_id"], row["associated_hs_company_id"], datetime.fromisoformat(row["properties"]["hs_engagement_timestamp"].replace("Z", "+00:00")), source_provenance(row, classification=Classification.INTERNAL_COMMERCIAL), row["research_account_id"], row["properties"]))
+        activities.append(CrmActivity(row["hs_object_id"], row["associated_hs_company_id"], datetime.fromisoformat(row["properties"]["hs_engagement_timestamp"]), source_provenance(row, classification=Classification.INTERNAL_COMMERCIAL), row["research_account_id"], row["properties"]))
     return tuple(companies), tuple(contacts), tuple(deals), tuple(activities)
