@@ -10,7 +10,7 @@ MapTiler is the production MapLibre style provider for the POC: it has a stable 
 
 ## Runtime variables
 
-Backend secrets are set in Fly, never committed: `DATABASE_URL`, `ANTHROPIC_API_KEY`, and `BTX_SAM_API_KEY` when SAM.gov is enabled. The backend environment also requires `BTX_FRONTEND_ORIGINS`, `BTX_MONITOR_MODE=live`, `BTX_MONITOR_DURABLE_STATE_ENABLED=true`, `BTX_AI_PROVIDER=anthropic`, and `BTX_ANTHROPIC_MODEL=claude-sonnet-5`. If the configured durable database is unavailable, Monitor state must remain unavailable/degraded; it must not silently fall back to in-memory durable state.
+Backend secrets are set in Fly, never committed: `DATABASE_URL`, `ANTHROPIC_API_KEY`, `BTX_SAM_API_KEY` when SAM.gov is enabled, and `BTX_MONITOR_OPERATOR_TOKEN` for protected manual Monitor collection. The backend environment also requires `BTX_FRONTEND_ORIGINS`, `BTX_MONITOR_MODE=live`, `BTX_MONITOR_DURABLE_STATE_ENABLED=true`, `BTX_AI_PROVIDER=anthropic`, and `BTX_ANTHROPIC_MODEL=claude-sonnet-5`. If the configured durable database is unavailable, Monitor state must remain unavailable/degraded; it must not silently fall back to in-memory durable state.
 
 Frontend public variables are `VITE_API_BASE_URL`, `VITE_DATA_MODE=SAMPLE`, `VITE_AUTH_MODE=development`, `VITE_MAP_STYLE_URL`, and `VITE_MAP_API_KEY`. Browser keys must be domain-restricted.
 
