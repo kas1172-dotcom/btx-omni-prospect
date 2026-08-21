@@ -2,6 +2,7 @@ from collections.abc import Generator
 from functools import lru_cache
 
 from sqlalchemy import Engine, create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from btx_omni.core.config import Settings
@@ -13,7 +14,13 @@ class Base(DeclarativeBase):
 
 def create_database_engine(settings: Settings) -> Engine:
     """Create the application's SQLAlchemy engine without opening a connection."""
-    return create_engine(settings.database_url, pool_pre_ping=True)
+    options: dict[str, object] = {"pool_pre_ping": True}
+    if make_url(settings.database_url).get_backend_name() == "postgresql":
+        # Durable Monitor availability is optional at local startup. Bound an
+        # unavailable PostgreSQL handshake so the existing degraded health path
+        # can report it instead of blocking the application indefinitely.
+        options["connect_args"] = {"connect_timeout": 3}
+    return create_engine(settings.database_url, **options)
 
 
 def create_session_factory(settings: Settings) -> sessionmaker[Session]:

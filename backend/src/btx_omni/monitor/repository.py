@@ -8,14 +8,22 @@ from decimal import Decimal
 
 from sqlalchemy import Engine, delete, insert, select
 
+from btx_omni.core.classification import Classification, SensitivityTag
+from btx_omni.core.provenance import Provenance
+from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.monitor.contracts import (
     CollectionRun,
+    EntityResolution,
     EventCluster,
+    EventEvidence,
     IntelligenceEvent,
+    NormalizedClaim,
+    ProgramResolution,
     RejectedObservation,
     SourceHealth,
     SourceObservation,
 )
+from btx_omni.monitor.ontology import EventType, ResolutionState, SellerRelevanceState
 from btx_omni.persistence.models import (
     monitor_collection_runs,
     monitor_event_clusters,
@@ -39,6 +47,95 @@ def _json(value: object) -> str:
             return sorted(item)
         raise TypeError(f"unsupported Monitor persistence value: {type(item).__name__}")
     return json.dumps(asdict(value) if hasattr(value, "__dataclass_fields__") else value, default=encode, sort_keys=True)
+
+
+def _timestamp(value: str | None) -> datetime | None:
+    return datetime.fromisoformat(value) if value else None
+
+
+def _event_from_payload(payload: str) -> IntelligenceEvent:
+    """Restore the canonical event exactly as it was persisted.
+
+    Hydration deliberately deserializes the stored canonical payload; it does
+    not repeat entity, program, or relevance resolution at runtime startup.
+    """
+    value = json.loads(payload)
+    provenance = value["provenance"]
+    return IntelligenceEvent(
+        id=value["id"],
+        event_type=EventType(value["event_type"]),
+        subject_entities=tuple(
+            EntityResolution(
+                item["mention"],
+                item.get("canonical_account_id"),
+                ResolutionState(item["state"]),
+                item["method"],
+                item["confidence_basis"],
+                tuple(item.get("candidate_account_ids", ())),
+            )
+            for item in value["subject_entities"]
+        ),
+        related_entities=tuple(
+            EntityResolution(
+                item["mention"],
+                item.get("canonical_account_id"),
+                ResolutionState(item["state"]),
+                item["method"],
+                item["confidence_basis"],
+                tuple(item.get("candidate_account_ids", ())),
+            )
+            for item in value["related_entities"]
+        ),
+        program=ProgramResolution(
+            value["program"].get("mention"),
+            value["program"].get("canonical_program_id"),
+            ResolutionState(value["program"]["state"]),
+            value["program"]["method"],
+            value["program"]["confidence_basis"],
+        ),
+        geography=value.get("geography"),
+        event_date=_timestamp(value.get("event_date")),
+        amount=Decimal(value["amount"]) if value.get("amount") is not None else None,
+        currency=value.get("currency"),
+        claims=tuple(
+            NormalizedClaim(
+                item["predicate"],
+                item["value"],
+                tuple(item["evidence_ids"]),
+                item["extraction_method"],
+                item["extraction_confidence"],
+            )
+            for item in value["claims"]
+        ),
+        evidence=tuple(
+            EventEvidence(item["evidence_id"], tuple(item["claim_predicates"]), item["role"])
+            for item in value["evidence"]
+        ),
+        provenance=Provenance(
+            provenance["source_system"],
+            provenance["source_record_id"],
+            provenance.get("source_url"),
+            _timestamp(provenance["observed_at"]),  # type: ignore[arg-type]
+            _timestamp(provenance["recorded_at"]),  # type: ignore[arg-type]
+            Classification(provenance["classification"]),
+            EvidenceState(provenance["evidence_state"]),
+            DataMode(provenance["data_mode"]),
+            provenance["synthetic"],
+            frozenset(SensitivityTag(item) for item in provenance.get("sensitivity_tags", ())),
+            tuple(provenance.get("missing_fields", ())),
+        ),
+        source_confidence_basis=value["source_confidence_basis"],
+        extraction_confidence_basis=value["extraction_confidence_basis"],
+        entity_resolution_confidence_basis=value["entity_resolution_confidence_basis"],
+        corroboration_strength=value["corroboration_strength"],
+        resolution_state=ResolutionState(value["resolution_state"]),
+        initiative_id=value.get("initiative_id"),
+        supersedes_event_id=value.get("supersedes_event_id"),
+        seller_relevance_state=SellerRelevanceState(value.get("seller_relevance_state", SellerRelevanceState.UNRESOLVED)),
+        markets=tuple(value.get("markets", ())),
+        recency_state=value.get("recency_state", "UNKNOWN"),
+        canonical_facility_id=value.get("canonical_facility_id"),
+    )
 
 
 class MonitorRepository:
@@ -76,6 +173,14 @@ class MonitorRepository:
                 "events": tuple(dict(row) for row in connection.execute(select(monitor_events).order_by(monitor_events.c.updated_at.desc()).limit(100)).mappings()),
                 "rejected": tuple(dict(row) for row in connection.execute(select(monitor_rejected_observations).order_by(monitor_rejected_observations.c.rejected_at.desc()).limit(20)).mappings()),
             }
+
+    def events(self) -> tuple[IntelligenceEvent, ...]:
+        """Return durable canonical Monitor events as typed domain records."""
+        with self.engine.connect() as connection:
+            payloads = connection.execute(
+                select(monitor_events.c.event_payload).order_by(monitor_events.c.updated_at.desc())
+            ).scalars()
+            return tuple(_event_from_payload(payload) for payload in payloads)
 
     def source_content_hash(self, source_id: str, source_record_id: str) -> str | None:
         with self.engine.connect() as connection:

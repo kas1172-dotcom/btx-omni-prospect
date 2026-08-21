@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.config import Settings
 from btx_omni.modules.work.service import WorkService
@@ -39,6 +40,13 @@ class PocRuntime:
             watch_profiles=usa_profiles,
             catalog=MonitorCatalog(self.sample.watch_profiles, self.sample.programs, self.sample.facilities),
         )
+        if repository:
+            try:
+                self.monitor.hydrate_events()
+            except SQLAlchemyError:
+                # The Monitor health route retains the existing durable-state
+                # unavailable/degraded behavior; do not fabricate live events.
+                pass
 
     def environment(self) -> SampleEnvironment:
         if self.settings.data_mode.upper() != "SAMPLE":

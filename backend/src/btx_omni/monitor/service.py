@@ -113,6 +113,11 @@ class MonitorService:
             return None
         return self.repository.snapshot()
 
+    def hydrate_events(self) -> None:
+        """Replace transient event state with the durable canonical snapshot."""
+        if self.repository:
+            self.events = {event.id: event for event in self.repository.events()}
+
     def source_state(self, *, source_id: str, last_success_at: datetime | None, now: datetime) -> str:
         if last_success_at is None:
             return "UNAVAILABLE"

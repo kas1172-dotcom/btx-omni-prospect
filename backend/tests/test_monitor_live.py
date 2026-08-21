@@ -15,6 +15,11 @@ from btx_omni.api.monitor import operational_collect
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.app import create_app
 from btx_omni.core.config import Settings
+from btx_omni.modules.scoring.account_attractiveness import (
+    AccountAttractivenessInputs,
+    calculate_account_attractiveness,
+)
+from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.packs import PACKS
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
@@ -147,3 +152,115 @@ def test_live_monitor_event_projects_through_canonical_intelligence_contract() -
     live = [item for item in intelligence_signals(runtime) if item.get("data_mode") == "CONNECTED"]
 
     assert not live
+
+
+def _durable_runtime(tmp_path) -> PocRuntime:
+    settings = Settings(
+        _env_file=None,
+        monitor_mode="live",
+        monitor_durable_state_enabled=True,
+        database_url=f"sqlite:///{tmp_path / 'monitor-restart.db'}",
+    )
+    engine = create_engine(settings.database_url)
+    metadata.create_all(engine)
+    return PocRuntime(settings)
+
+
+def _fda(payload: dict) -> FdaAdapter:
+    return FdaAdapter(fake_get({"results": [payload]}))
+
+
+def test_durable_monitor_events_rehydrate_after_runtime_restart_without_scoring_change(tmp_path) -> None:
+    initial = _durable_runtime(tmp_path)
+    initial.monitor.registry["fda_openfda"] = _fda(
+        {"k_number": "K-RESTART-MEDTRONIC", "device_name": "Medtronic device approval", "decision_date": "2026-08-15"}
+    )
+    score_before = calculate_account_attractiveness(
+        AccountAttractivenessInputs(initial.sample.scoring_inputs["medtronic"]),
+        evidence_ids=("medtronic-public-identity",),
+        calculated_at=initial.observed_at(),
+    )
+    sample_commercial = tuple(
+        (item.account_id, item.business_unit, item.ttm_revenue_minor, item.ttm_bookings_minor)
+        for item in initial.sample.commercial_contexts
+    )
+    initial.monitor.collect("fda_openfda")
+    before_restart = [item for item in intelligence_signals(initial) if item.get("data_mode") == "CONNECTED"]
+
+    restarted = PocRuntime(initial.settings)
+    after_restart = [item for item in intelligence_signals(restarted) if item.get("data_mode") == "CONNECTED"]
+    score_after = calculate_account_attractiveness(
+        AccountAttractivenessInputs(restarted.sample.scoring_inputs["medtronic"]),
+        evidence_ids=("medtronic-public-identity",),
+        calculated_at=restarted.observed_at(),
+    )
+
+    assert len(before_restart) == len(after_restart) == 1
+    assert before_restart[0]["id"] == after_restart[0]["id"]
+    assert after_restart[0]["account_id"] == "medtronic"
+    assert after_restart[0]["source_url"] and after_restart[0]["provenance"].source_record_id == "K-RESTART-MEDTRONIC"
+    assert len(restarted.monitor.events) == 1
+    restarted.monitor.hydrate_events()
+    assert len(restarted.monitor.events) == 1
+    assert score_before.score == score_after.score
+    assert tuple(
+        (item.account_id, item.business_unit, item.ttm_revenue_minor, item.ttm_bookings_minor)
+        for item in restarted.sample.commercial_contexts
+    ) == sample_commercial
+
+
+def test_durable_restart_rehydrates_but_excludes_noneligible_events(tmp_path) -> None:
+    initial = _durable_runtime(tmp_path)
+    repository = initial.monitor.repository
+    assert repository is not None
+    sample = initial.sample
+    services = (
+        MonitorService(
+            initial.settings,
+            {"resolved": _fda({"k_number": "K-RESOLVED", "device_name": "Medtronic device approval", "decision_date": "2026-08-15"})},
+            repository=repository,
+            watch_profiles=sample.watch_profiles,
+            catalog=initial.monitor.catalog,
+        ),
+        MonitorService(
+            initial.settings,
+            {"unresolved": _fda({"k_number": "K-UNRESOLVED", "device_name": "Unknown device approval", "decision_date": "2026-08-15"})},
+            repository=repository,
+            watch_profiles=sample.watch_profiles,
+            catalog=initial.monitor.catalog,
+        ),
+        MonitorService(
+            initial.settings,
+            {"rejected": _fda({"k_number": "K-REJECTED", "device_name": "Medtronic charity award", "decision_date": "2026-08-15"})},
+            repository=repository,
+            watch_profiles=sample.watch_profiles,
+            catalog=initial.monitor.catalog,
+        ),
+        MonitorService(
+            initial.settings,
+            {"ambiguous": _fda({"k_number": "K-AMBIGUOUS", "device_name": "Acme Systems device approval", "decision_date": "2026-08-15"})},
+            repository=repository,
+            watch_profiles=(
+                AccountWatchProfile("one", "Acme One", aliases=("Acme Systems",)),
+                AccountWatchProfile("two", "Acme Two", aliases=("Acme Systems",)),
+            ),
+            catalog=MonitorCatalog(
+                (
+                    AccountWatchProfile("one", "Acme One", aliases=("Acme Systems",)),
+                    AccountWatchProfile("two", "Acme Two", aliases=("Acme Systems",)),
+                ),
+                sample.programs,
+                sample.facilities,
+            ),
+        ),
+    )
+    for service, source_id in zip(services, ("resolved", "unresolved", "rejected", "ambiguous"), strict=True):
+        service.collect(source_id)
+
+    restarted = PocRuntime(initial.settings)
+    projected = [item for item in intelligence_signals(restarted) if item.get("data_mode") == "CONNECTED"]
+    states = {event.id: event.seller_relevance_state.value for event in restarted.monitor.events.values()}
+
+    assert len(restarted.monitor.events) == 4
+    assert len(projected) == 1 and projected[0]["account_id"] == "medtronic"
+    assert set(states.values()) == {"RESOLVED_ELIGIBLE", "UNRESOLVED", "REJECTED", "AMBIGUOUS"}
