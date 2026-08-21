@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import Engine, delete, insert, select
@@ -18,17 +18,26 @@ from btx_omni.monitor.contracts import (
     EventEvidence,
     IntelligenceEvent,
     NormalizedClaim,
+    OrganizationCandidate,
+    ProgramCandidate,
     ProgramResolution,
     RejectedObservation,
     SourceHealth,
     SourceObservation,
 )
-from btx_omni.monitor.ontology import EventType, ResolutionState, SellerRelevanceState
+from btx_omni.monitor.ontology import (
+    CandidateReviewState,
+    EventType,
+    ResolutionState,
+    SellerRelevanceState,
+)
 from btx_omni.persistence.models import (
     monitor_collection_runs,
     monitor_event_clusters,
     monitor_events,
     monitor_observations,
+    monitor_organization_candidates,
+    monitor_program_candidates,
     monitor_rejected_observations,
     monitor_source_health,
     monitor_source_versions,
@@ -51,6 +60,11 @@ def _json(value: object) -> str:
 
 def _timestamp(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
+
+
+def _database_timestamp(value: datetime) -> datetime:
+    """Restore SQLite's timezone-less DATETIME values as their persisted UTC instants."""
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value
 
 
 def _event_from_payload(payload: str) -> IntelligenceEvent:
@@ -138,11 +152,45 @@ def _event_from_payload(payload: str) -> IntelligenceEvent:
     )
 
 
+def _provenance_from_payload(value: dict) -> Provenance:
+    return Provenance(
+        value["source_system"],
+        value["source_record_id"],
+        value.get("source_url"),
+        _timestamp(value["observed_at"]),  # type: ignore[arg-type]
+        _timestamp(value["recorded_at"]),  # type: ignore[arg-type]
+        Classification(value["classification"]),
+        EvidenceState(value["evidence_state"]),
+        DataMode(value["data_mode"]),
+        value["synthetic"],
+        frozenset(SensitivityTag(item) for item in value.get("sensitivity_tags", ())),
+        tuple(value.get("missing_fields", ())),
+    )
+
+
+def _organization_candidate_from_row(row: dict) -> OrganizationCandidate:
+    return OrganizationCandidate(
+        row["id"], row["identity_key"], row["source_name"], row["normalized_name"],
+        tuple(tuple(item) for item in json.loads(row["source_identifiers"])), row["verified_domain"], row["canonical_industry"],
+        _provenance_from_payload(json.loads(row["provenance"])), tuple(json.loads(row["event_ids"])),
+        tuple(json.loads(row["observation_ids"])), ResolutionState(row["resolution_state"]), CandidateReviewState(row["review_state"]),
+        row["resolution_reason"], tuple(json.loads(row["candidate_account_ids"])), _database_timestamp(row["created_at"]), _database_timestamp(row["observed_at"]),
+    )
+
+
+def _program_candidate_from_row(row: dict) -> ProgramCandidate:
+    return ProgramCandidate(
+        row["id"], row["identity_key"], row["source_name"], row["organization_candidate_id"], row["canonical_account_id"],
+        EventType(row["event_type"]), _provenance_from_payload(json.loads(row["provenance"])), tuple(json.loads(row["event_ids"])),
+        ResolutionState(row["resolution_state"]), CandidateReviewState(row["review_state"]), _database_timestamp(row["created_at"]), _database_timestamp(row["observed_at"]),
+    )
+
+
 class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
 
-    def persist_snapshot(self, *, run: CollectionRun, health: SourceHealth, observations: tuple[SourceObservation, ...], events: tuple[IntelligenceEvent, ...], clusters: tuple[EventCluster, ...], rejected: tuple[RejectedObservation, ...]) -> None:
+    def persist_snapshot(self, *, run: CollectionRun, health: SourceHealth, observations: tuple[SourceObservation, ...], events: tuple[IntelligenceEvent, ...], clusters: tuple[EventCluster, ...], rejected: tuple[RejectedObservation, ...], organization_candidates: tuple[OrganizationCandidate, ...] = (), program_candidates: tuple[ProgramCandidate, ...] = ()) -> None:
         with self.engine.begin() as connection:
             connection.execute(insert(monitor_collection_runs).values(id=run.id, source_id=run.source_id, started_at=run.started_at, completed_at=run.completed_at, cursor=_json(run.cursor) if run.cursor else None, records_seen=run.records_seen, records_new=run.records_new, records_changed=run.records_changed, records_rejected=run.records_rejected, events_created=run.events_created, events_matched=run.events_matched, failures=_json(run.failures), latency_ms=run.latency_ms))
             connection.execute(delete(monitor_source_health).where(monitor_source_health.c.source_id == health.source_id))
@@ -164,6 +212,12 @@ class MonitorRepository:
                 identifier = f"{run.id}:{item.observation_id}"
                 connection.execute(delete(monitor_rejected_observations).where(monitor_rejected_observations.c.id == identifier))
                 connection.execute(insert(monitor_rejected_observations).values(id=identifier, collection_run_id=run.id, source_id=run.source_id, observation_id=item.observation_id, state=item.state.value, reason=item.reason, evidence_id=item.evidence_id, rejected_at=item.rejected_at))
+            for item in organization_candidates:
+                connection.execute(delete(monitor_organization_candidates).where(monitor_organization_candidates.c.id == item.id))
+                connection.execute(insert(monitor_organization_candidates).values(id=item.id, identity_key=item.identity_key, source_name=item.source_name, normalized_name=item.normalized_name, source_identifiers=_json(item.source_identifiers), verified_domain=item.verified_domain, canonical_industry=item.canonical_industry, provenance=_json(item.provenance), event_ids=_json(item.event_ids), observation_ids=_json(item.observation_ids), resolution_state=item.resolution_state.value, review_state=item.review_state.value, resolution_reason=item.resolution_reason, candidate_account_ids=_json(item.candidate_account_ids), created_at=item.created_at, observed_at=item.observed_at, updated_at=run.completed_at or run.started_at))
+            for item in program_candidates:
+                connection.execute(delete(monitor_program_candidates).where(monitor_program_candidates.c.id == item.id))
+                connection.execute(insert(monitor_program_candidates).values(id=item.id, identity_key=item.identity_key, source_name=item.source_name, organization_candidate_id=item.organization_candidate_id, canonical_account_id=item.canonical_account_id, event_type=item.event_type.value, provenance=_json(item.provenance), event_ids=_json(item.event_ids), resolution_state=item.resolution_state.value, review_state=item.review_state.value, created_at=item.created_at, observed_at=item.observed_at, updated_at=run.completed_at or run.started_at))
 
     def snapshot(self) -> dict[str, tuple[dict, ...]]:
         with self.engine.connect() as connection:
@@ -181,6 +235,22 @@ class MonitorRepository:
                 select(monitor_events.c.event_payload).order_by(monitor_events.c.updated_at.desc())
             ).scalars()
             return tuple(_event_from_payload(payload) for payload in payloads)
+
+    def organization_candidate(self, identity_key: str) -> OrganizationCandidate | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(select(monitor_organization_candidates).where(monitor_organization_candidates.c.identity_key == identity_key)).mappings().one_or_none()
+        return _organization_candidate_from_row(dict(row)) if row else None
+
+    def program_candidate(self, identity_key: str) -> ProgramCandidate | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(select(monitor_program_candidates).where(monitor_program_candidates.c.identity_key == identity_key)).mappings().one_or_none()
+        return _program_candidate_from_row(dict(row)) if row else None
+
+    def candidates(self) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...]]:
+        with self.engine.connect() as connection:
+            organizations = tuple(_organization_candidate_from_row(dict(row)) for row in connection.execute(select(monitor_organization_candidates).order_by(monitor_organization_candidates.c.created_at)).mappings())
+            programs = tuple(_program_candidate_from_row(dict(row)) for row in connection.execute(select(monitor_program_candidates).order_by(monitor_program_candidates.c.created_at)).mappings())
+        return organizations, programs
 
     def source_content_hash(self, source_id: str, source_record_id: str) -> str | None:
         with self.engine.connect() as connection:

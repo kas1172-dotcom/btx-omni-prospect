@@ -34,6 +34,15 @@ def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, s
     if len(identifier_matches) == 1:
         profile = identifier_matches[0]
         return EntityResolution(mention, profile.canonical_account_id, ResolutionState.RESOLVED, "source_native_identifier_exact", "exact governed identifier")
+    if len(identifier_matches) > 1:
+        return EntityResolution(
+            mention,
+            None,
+            ResolutionState.AMBIGUOUS,
+            "source_native_identifier_collision",
+            "multiple governed accounts match supplied exact source identifiers",
+            tuple(profile.canonical_account_id for profile in identifier_matches),
+        )
     matches = [profile for profile in profiles if normalized in {profile.legal_name.casefold(), *(alias.casefold() for alias in profile.aliases), *(subsidiary.casefold() for subsidiary in profile.subsidiaries)}]
     if len(matches) == 1:
         return EntityResolution(mention, matches[0].canonical_account_id, ResolutionState.RESOLVED, "governed_alias_exact", "exact legal name, alias, or subsidiary")

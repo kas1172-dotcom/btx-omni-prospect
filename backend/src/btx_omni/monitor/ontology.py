@@ -46,6 +46,15 @@ class SellerRelevanceState(StrEnum):
     REJECTED = "REJECTED"
 
 
+class CandidateReviewState(StrEnum):
+    """Governed review state for a non-canonical public identity."""
+
+    PENDING_REVIEW = "PENDING_REVIEW"
+    AMBIGUOUS = "AMBIGUOUS"
+    REJECTED = "REJECTED"
+    READY_FOR_PROMOTION = "READY_FOR_PROMOTION"
+
+
 class RejectionState(StrEnum):
     NOT_RELEVANT = "NOT_RELEVANT"
     NO_ENTITY_MATCH = "NO_ENTITY_MATCH"

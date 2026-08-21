@@ -7,12 +7,14 @@ from datetime import UTC, datetime
 from btx_omni.core.classification import Classification
 from btx_omni.core.provenance import Provenance
 from btx_omni.domain.common import DataMode, EvidenceState
+from btx_omni.monitor.candidates import explicit_program_mention
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.contracts import (
     EntityResolution,
     EventEvidence,
     IntelligenceEvent,
     NormalizedClaim,
+    ProgramResolution,
     SourceObservation,
 )
 from btx_omni.monitor.ontology import EventType, ResolutionState
@@ -46,6 +48,15 @@ def normalize_structured_observation(
     subjects = (EntityResolution(subject_mention, None, ResolutionState.UNRESOLVED, "structured_source", "source record subject is supplied by source-specific normalizer"),) if subject_mention else catalog.resolve_subjects(source_text)
     resolution = subjects[0].state if len(subjects) == 1 else ResolutionState.AMBIGUOUS
     program = catalog.resolve_program(source_text)
+    source_program = explicit_program_mention(observation)
+    if source_program and program.canonical_program_id is None:
+        program = ProgramResolution(
+            source_program,
+            None,
+            program.state,
+            "source_structured_program_name",
+            "source record explicitly supplies this program name; no canonical Program was resolved",
+        )
     markets = classify_markets(source_text, source_markets=source_markets)
     freshness = recency_state(observation.source_published_at, now=now)
     claim = NormalizedClaim("source_title", observation.title, (observation.raw_evidence.id,), "deterministic_structured_mapping", "preserved source field")

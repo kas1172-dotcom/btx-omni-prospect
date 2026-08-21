@@ -8,6 +8,7 @@ from decimal import Decimal
 from btx_omni.core.provenance import Provenance
 from btx_omni.domain.common import require_aware
 from btx_omni.monitor.ontology import (
+    CandidateReviewState,
     EventType,
     RejectionState,
     ResolutionState,
@@ -200,3 +201,51 @@ class RejectedObservation:
     reason: str
     evidence_id: str
     rejected_at: datetime
+
+
+@dataclass(frozen=True)
+class OrganizationCandidate:
+    """A source-backed public organization that is not a canonical Account."""
+
+    id: str
+    identity_key: str
+    source_name: str
+    normalized_name: str
+    source_identifiers: tuple[tuple[str, str], ...]
+    verified_domain: str | None
+    canonical_industry: str | None
+    provenance: Provenance
+    event_ids: tuple[str, ...]
+    observation_ids: tuple[str, ...]
+    resolution_state: ResolutionState
+    review_state: CandidateReviewState
+    resolution_reason: str
+    candidate_account_ids: tuple[str, ...]
+    created_at: datetime
+    observed_at: datetime
+
+    def __post_init__(self) -> None:
+        require_aware(self.created_at, "created_at")
+        require_aware(self.observed_at, "observed_at")
+
+
+@dataclass(frozen=True)
+class ProgramCandidate:
+    """Explicit public program evidence that is not yet a canonical Program."""
+
+    id: str
+    identity_key: str
+    source_name: str
+    organization_candidate_id: str | None
+    canonical_account_id: str | None
+    event_type: EventType
+    provenance: Provenance
+    event_ids: tuple[str, ...]
+    resolution_state: ResolutionState
+    review_state: CandidateReviewState
+    created_at: datetime
+    observed_at: datetime
+
+    def __post_init__(self) -> None:
+        require_aware(self.created_at, "created_at")
+        require_aware(self.observed_at, "observed_at")

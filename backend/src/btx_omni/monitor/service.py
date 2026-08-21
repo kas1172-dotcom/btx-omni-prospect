@@ -7,6 +7,10 @@ from time import perf_counter
 from uuid import uuid4
 
 from btx_omni.core.config import Settings
+from btx_omni.monitor.candidates import (
+    organization_candidate_for,
+    program_candidate_for,
+)
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.clustering import cluster_event, cluster_key, observation_changed
 from btx_omni.monitor.contracts import (
@@ -50,6 +54,8 @@ class MonitorService:
             observations = adapter.collect(run_id=run_id, settings=self.settings, limit=limit)
             created = changed = new = rejected_count = 0
             persisted_events: list[IntelligenceEvent] = []
+            organization_candidates = []
+            program_candidates = []
             for observation in observations:
                 if source_id == "usaspending":
                     usa_decision = normalize_usaspending_observation(observation, profiles=self.watch_profiles, catalog=self.catalog, now=started)
@@ -72,6 +78,29 @@ class MonitorService:
                 self.observations[observation.id] = observation
                 self.events[candidate.event.id] = candidate.event
                 persisted_events.append(candidate.event)
+                organization_candidate = None
+                if self.repository:
+                    organization_candidate = organization_candidate_for(candidate.event, observation)
+                    if organization_candidate:
+                        organization_candidate = organization_candidate_for(
+                            candidate.event,
+                            observation,
+                            existing=self.repository.organization_candidate(organization_candidate.identity_key),
+                        )
+                        organization_candidates.append(organization_candidate)
+                    program_candidate = program_candidate_for(
+                        candidate.event,
+                        observation,
+                        organization_candidate=organization_candidate,
+                    )
+                    if program_candidate:
+                        program_candidate = program_candidate_for(
+                            candidate.event,
+                            observation,
+                            organization_candidate=organization_candidate,
+                            existing=self.repository.program_candidate(program_candidate.identity_key),
+                        )
+                        program_candidates.append(program_candidate)
                 version_key = (observation.source_identity.source_system, observation.source_identity.source_record_id)
                 previous = self.source_versions.get(version_key)
                 persisted_hash = self.repository.source_content_hash(*version_key) if previous is None and self.repository else None
@@ -93,7 +122,7 @@ class MonitorService:
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.FAILED, started, None, SOURCE_HEALTH_WARNING, str(exc))
         self.runs.append(run)
         if self.repository:
-            self.repository.persist_snapshot(run=run, health=self.health[source_id], observations=tuple(observations) if 'observations' in locals() else (), events=tuple(persisted_events) if 'persisted_events' in locals() else (), clusters=tuple(self.clusters.values()), rejected=tuple(self.rejected))
+            self.repository.persist_snapshot(run=run, health=self.health[source_id], observations=tuple(observations) if 'observations' in locals() else (), events=tuple(persisted_events) if 'persisted_events' in locals() else (), clusters=tuple(self.clusters.values()), rejected=tuple(self.rejected), organization_candidates=tuple(organization_candidates) if 'organization_candidates' in locals() else (), program_candidates=tuple(program_candidates) if 'program_candidates' in locals() else ())
         return run
 
     def collect_all(self, *, source_ids: tuple[str, ...] | None = None, limit: int = 10) -> tuple[CollectionRun, ...]:

@@ -2,6 +2,7 @@ import hmac
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.api.accounts import get_runtime
@@ -11,6 +12,19 @@ from btx_omni.domain.markets import primary_market_label
 from btx_omni.monitor.sources import REGISTRY
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
+
+
+@router.get("/candidates")
+def monitor_candidates(runtime: PocRuntime = Depends(get_runtime)) -> dict:
+    """Read-only review contract for non-canonical Monitor identities."""
+    if not runtime.monitor.repository:
+        raise HTTPException(503, "Organization candidates require durable Monitor state.")
+    organizations, programs = runtime.monitor.repository.candidates()
+    return {
+        "organization_candidates": jsonable_encoder(organizations),
+        "program_candidates": jsonable_encoder(programs),
+        "promotion_note": "Candidates are review-only. This endpoint does not create canonical Accounts or Programs.",
+    }
 
 
 @router.get("/sources")
