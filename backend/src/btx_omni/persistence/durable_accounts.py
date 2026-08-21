@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 
-from sqlalchemy import Engine, delete, insert, select
+from sqlalchemy import Connection, Engine, delete, insert, select
 
 from btx_omni.core.classification import Classification
 from btx_omni.core.provenance import Provenance
@@ -176,6 +176,7 @@ class DurablePublicAccountRepository:
         self, *, legal_name: str, industries: tuple[str, ...], provenance: Provenance, aliases: tuple[str, ...] = (),
         domain: str | None = None, source_identifiers: tuple[tuple[str, str], ...] = (), originating_candidate_id: str | None = None,
         curated_accounts: tuple[CanonicalAccount, ...] = (), created_at: datetime | None = None,
+        promoted_at: datetime | None = None, promotion_provenance: Provenance | None = None, connection: Connection | None = None,
     ) -> DurablePublicProspect:
         if not legal_name.strip() or not industries or not set(industries) <= PRIMARY_MARKETS:
             raise ValueError("durable public prospects require an evidence-backed legal name and canonical industry.")
@@ -195,9 +196,17 @@ class DurablePublicAccountRepository:
             ("procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations"), provenance,
             "DURABLE_PUBLIC_PROSPECT", identity, None, None, None, None, (), (),
         )
-        result = DurablePublicProspect(account, identity_key, tuple(sorted(source_identifiers)), originating_candidate_id, now)
+        result = DurablePublicProspect(account, identity_key, tuple(sorted(source_identifiers)), originating_candidate_id, now, promoted_at, promotion_provenance)
         profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, source_native_identifiers=tuple(field.source_native_identifier for field in item.public_identity.source_native_identifiers if field.source_native_identifier)) for item in curated_accounts)
-        existing = self.accounts()
+        if connection is None:
+            existing = self.accounts()
+        else:
+            rows = connection.execute(select(durable_public_accounts).order_by(durable_public_accounts.c.id)).mappings()
+            existing = tuple(DurablePublicProspect(
+                _account_from_payload(row["account_payload"]), row["identity_key"], tuple(tuple(item) for item in json.loads(row["source_identifiers"])),
+                row["originating_candidate_id"], _timestamp(row["created_at"]), _timestamp(row["promoted_at"]) if row["promoted_at"] else None,
+                _provenance(json.loads(row["promotion_provenance"])) if row["promotion_provenance"] else None,
+            ) for row in rows)
         existing_by_key = {item.identity_key: item for item in existing}
         if identity_key in existing_by_key:
             matched = existing_by_key[identity_key]
@@ -211,11 +220,16 @@ class DurablePublicAccountRepository:
         )
         if any(item.state.value in {"RESOLVED", "AMBIGUOUS"} for item in resolutions) or account.id in {item.id for item in curated_accounts}:
             raise ValueError("exact canonical identity collision prevents durable prospect creation.")
-        with self.engine.begin() as connection:
-            connection.execute(delete(durable_public_accounts).where(durable_public_accounts.c.id == account.id))
-            connection.execute(insert(durable_public_accounts).values(
+        def persist(target: Connection) -> None:
+            target.execute(delete(durable_public_accounts).where(durable_public_accounts.c.id == account.id))
+            target.execute(insert(durable_public_accounts).values(
                 id=account.id, identity_key=identity_key, legal_name=legal_name, domain=domain, industries=json.dumps(account.industries),
                 account_payload=_account_payload(account), source_identifiers=json.dumps(source_identifiers), originating_candidate_id=originating_candidate_id,
-                created_at=now, promoted_at=None, promotion_provenance=None,
+                created_at=now, promoted_at=promoted_at, promotion_provenance=json.dumps(_provenance_payload(promotion_provenance)) if promotion_provenance else None,
             ))
+        if connection is None:
+            with self.engine.begin() as target:
+                persist(target)
+        else:
+            persist(connection)
         return result

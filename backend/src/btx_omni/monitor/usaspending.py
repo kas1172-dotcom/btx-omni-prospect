@@ -123,7 +123,11 @@ def normalize_usaspending_observation(
         subject_entities=(resolution,),
         resolution_state=resolution.state,
         recency_state=recency_state(observation.source_published_at, now=clock),
-        markets=(catalog.markets_for_account(resolution.canonical_account_id) if catalog else candidate.event.markets),
+        markets=(
+            catalog.markets_for_account(resolution.canonical_account_id)
+            if catalog and resolution.canonical_account_id
+            else candidate.event.markets
+        ),
     )
     action_date = observation.source_published_at
     award_code = str(payload.get("Award Type Code") or payload.get("Award Type") or "A").upper().strip()

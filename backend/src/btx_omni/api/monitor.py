@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.api.accounts import get_runtime
@@ -10,8 +11,13 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.markets import primary_market_label
 from btx_omni.monitor.sources import REGISTRY
+from btx_omni.monitor.promotion import CandidatePromotionError, CandidatePromotionService
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
+
+
+class CandidatePromotionRequest(BaseModel):
+    confirmed: bool = False
 
 
 @router.get("/candidates")
@@ -24,6 +30,21 @@ def monitor_candidates(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         "organization_candidates": jsonable_encoder(organizations),
         "program_candidates": jsonable_encoder(programs),
         "promotion_note": "Candidates are review-only. This endpoint does not create canonical Accounts or Programs.",
+    }
+
+
+@router.post("/candidates/{candidate_id}/promote")
+def promote_candidate(candidate_id: str, request: CandidatePromotionRequest, runtime: PocRuntime = Depends(get_runtime)) -> dict:
+    """An explicit POC operator action; this is never called by Monitor collection."""
+    try:
+        result = CandidatePromotionService().promote(runtime, candidate_id, confirmed=request.confirmed)
+    except CandidatePromotionError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {
+        "candidate": jsonable_encoder(result.candidate),
+        "account": jsonable_encoder(result.account.account),
+        "created": result.created,
+        "confirmation_required": True,
     }
 
 

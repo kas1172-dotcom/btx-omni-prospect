@@ -53,6 +53,7 @@ class CandidateReviewState(StrEnum):
     AMBIGUOUS = "AMBIGUOUS"
     REJECTED = "REJECTED"
     READY_FOR_PROMOTION = "READY_FOR_PROMOTION"
+    PROMOTED = "PROMOTED"
 
 
 class RejectionState(StrEnum):

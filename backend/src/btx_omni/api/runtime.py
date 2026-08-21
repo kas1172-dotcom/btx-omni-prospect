@@ -30,41 +30,16 @@ class PocRuntime:
     work: WorkService = field(default_factory=WorkService)
     monitor: MonitorService = field(init=False)
     durable_accounts: DurablePublicAccountRepository | None = field(init=False, default=None)
+    _curated_sample: SampleEnvironment = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        self._curated_sample = self.sample
         engine = create_database_engine(self.settings) if self.settings.monitor_durable_state_enabled else None
         repository = MonitorRepository(engine) if engine else None
         self.durable_accounts = DurablePublicAccountRepository(engine) if engine else None
         if self.durable_accounts:
             try:
-                persisted = tuple(item.account for item in self.durable_accounts.accounts())
-                ids = {item.id for item in self.sample.accounts}
-                if ids & {item.id for item in persisted}:
-                    raise ValueError("durable Account ID collides with the curated canonical universe.")
-                durable_profiles = tuple(
-                    AccountWatchProfile(
-                        item.id,
-                        item.legal_name,
-                        aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (),
-                        domain=item.domain,
-                        source_native_identifiers=tuple(
-                            field.source_native_identifier
-                            for field in item.public_identity.source_native_identifiers
-                            if field.source_native_identifier
-                        ) if item.public_identity else (),
-                        industries=item.industries,
-                    )
-                    for item in persisted
-                )
-                self.sample = replace(
-                    self.sample,
-                    accounts=(*self.sample.accounts, *persisted),
-                    identity_map={
-                        **self.sample.identity_map,
-                        **{f"public:{item.legal_name.casefold()}": item.id for item in persisted},
-                    },
-                    watch_profiles=(*self.sample.watch_profiles, *durable_profiles),
-                )
+                self.refresh_durable_accounts()
             except SQLAlchemyError:
                 self.durable_accounts = None
         usa_profiles = targeted_profiles(self.sample.watch_profiles, rich_account_ids=set(self.sample.rich_scenarios))
@@ -84,6 +59,42 @@ class PocRuntime:
                 # The Monitor health route retains the existing durable-state
                 # unavailable/degraded behavior; do not fabricate live events.
                 pass
+
+    def refresh_durable_accounts(self) -> None:
+        """Recompose the one canonical Account universe after a durable write."""
+        if not self.durable_accounts:
+            return
+        persisted = tuple(item.account for item in self.durable_accounts.accounts())
+        ids = {item.id for item in self._curated_sample.accounts}
+        if ids & {item.id for item in persisted}:
+            raise ValueError("durable Account ID collides with the curated canonical universe.")
+        durable_profiles = tuple(
+            AccountWatchProfile(
+                item.id,
+                item.legal_name,
+                aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (),
+                domain=item.domain,
+                source_native_identifiers=tuple(
+                    field.source_native_identifier
+                    for field in item.public_identity.source_native_identifiers
+                    if field.source_native_identifier
+                ) if item.public_identity else (),
+                industries=item.industries,
+            )
+            for item in persisted
+        )
+        self.sample = replace(
+            self._curated_sample,
+            accounts=(*self._curated_sample.accounts, *persisted),
+            identity_map={
+                **self._curated_sample.identity_map,
+                **{f"public:{item.legal_name.casefold()}": item.id for item in persisted},
+            },
+            watch_profiles=(*self._curated_sample.watch_profiles, *durable_profiles),
+        )
+        if hasattr(self, "monitor"):
+            self.monitor.watch_profiles = self.sample.watch_profiles
+            self.monitor.catalog = MonitorCatalog(self.sample.watch_profiles, self.sample.programs, self.sample.facilities)
 
     def environment(self) -> SampleEnvironment:
         if self.settings.data_mode.upper() != "SAMPLE":

@@ -37,6 +37,7 @@ from btx_omni.persistence.models import (
     monitor_events,
     monitor_observations,
     monitor_organization_candidates,
+    monitor_candidate_promotion_audits,
     monitor_program_candidates,
     monitor_rejected_observations,
     monitor_source_health,
@@ -168,13 +169,15 @@ def _provenance_from_payload(value: dict) -> Provenance:
     )
 
 
-def _organization_candidate_from_row(row: dict) -> OrganizationCandidate:
+def _organization_candidate_from_row(row: dict, promotion: dict | None = None) -> OrganizationCandidate:
     return OrganizationCandidate(
         row["id"], row["identity_key"], row["source_name"], row["normalized_name"],
         tuple(tuple(item) for item in json.loads(row["source_identifiers"])), row["verified_domain"], row["canonical_industry"],
         _provenance_from_payload(json.loads(row["provenance"])), tuple(json.loads(row["event_ids"])),
         tuple(json.loads(row["observation_ids"])), ResolutionState(row["resolution_state"]), CandidateReviewState(row["review_state"]),
         row["resolution_reason"], tuple(json.loads(row["candidate_account_ids"])), _database_timestamp(row["created_at"]), _database_timestamp(row["observed_at"]),
+        promotion["canonical_account_id"] if promotion else None, _database_timestamp(promotion["promoted_at"]) if promotion else None,
+        _provenance_from_payload(json.loads(promotion["promotion_provenance"])) if promotion else None,
     )
 
 
@@ -239,7 +242,14 @@ class MonitorRepository:
     def organization_candidate(self, identity_key: str) -> OrganizationCandidate | None:
         with self.engine.connect() as connection:
             row = connection.execute(select(monitor_organization_candidates).where(monitor_organization_candidates.c.identity_key == identity_key)).mappings().one_or_none()
-        return _organization_candidate_from_row(dict(row)) if row else None
+            promotion = connection.execute(select(monitor_candidate_promotion_audits).where(monitor_candidate_promotion_audits.c.candidate_id == row["id"])).mappings().one_or_none() if row else None
+        return _organization_candidate_from_row(dict(row), dict(promotion) if promotion else None) if row else None
+
+    def organization_candidate_by_id(self, candidate_id: str) -> OrganizationCandidate | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(select(monitor_organization_candidates).where(monitor_organization_candidates.c.id == candidate_id)).mappings().one_or_none()
+            promotion = connection.execute(select(monitor_candidate_promotion_audits).where(monitor_candidate_promotion_audits.c.candidate_id == candidate_id)).mappings().one_or_none() if row else None
+        return _organization_candidate_from_row(dict(row), dict(promotion) if promotion else None) if row else None
 
     def program_candidate(self, identity_key: str) -> ProgramCandidate | None:
         with self.engine.connect() as connection:
@@ -248,7 +258,8 @@ class MonitorRepository:
 
     def candidates(self) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...]]:
         with self.engine.connect() as connection:
-            organizations = tuple(_organization_candidate_from_row(dict(row)) for row in connection.execute(select(monitor_organization_candidates).order_by(monitor_organization_candidates.c.created_at)).mappings())
+            promotions = {row["candidate_id"]: dict(row) for row in connection.execute(select(monitor_candidate_promotion_audits)).mappings()}
+            organizations = tuple(_organization_candidate_from_row(dict(row), promotions.get(row["id"])) for row in connection.execute(select(monitor_organization_candidates).order_by(monitor_organization_candidates.c.created_at)).mappings())
             programs = tuple(_program_candidate_from_row(dict(row)) for row in connection.execute(select(monitor_program_candidates).order_by(monitor_program_candidates.c.created_at)).mappings())
         return organizations, programs
 
