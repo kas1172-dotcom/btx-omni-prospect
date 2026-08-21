@@ -527,6 +527,7 @@ class OmniOrchestrator:
             "what should i focus on", "key takeaways from this page",
             "summarize this page", "highlights from this view",
             "what should i know from this screen", "what am i looking at",
+            "what monitor context is active",
         ))
 
     @staticmethod
