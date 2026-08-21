@@ -250,7 +250,12 @@ class ProgramCandidate:
     review_state: CandidateReviewState
     created_at: datetime
     observed_at: datetime
+    promoted_program_id: str | None = None
+    promoted_at: datetime | None = None
+    promotion_provenance: Provenance | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.created_at, "created_at")
         require_aware(self.observed_at, "observed_at")
+        if self.promoted_at is not None:
+            require_aware(self.promoted_at, "promoted_at")

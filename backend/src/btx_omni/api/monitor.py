@@ -11,7 +11,12 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.markets import primary_market_label
 from btx_omni.monitor.sources import REGISTRY
-from btx_omni.monitor.promotion import CandidatePromotionError, CandidatePromotionService
+from btx_omni.monitor.promotion import (
+    CandidatePromotionError,
+    CandidatePromotionService,
+    ProgramCandidatePromotionError,
+    ProgramCandidatePromotionService,
+)
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 
@@ -43,6 +48,21 @@ def promote_candidate(candidate_id: str, request: CandidatePromotionRequest, run
     return {
         "candidate": jsonable_encoder(result.candidate),
         "account": jsonable_encoder(result.account.account),
+        "created": result.created,
+        "confirmation_required": True,
+    }
+
+
+@router.post("/program-candidates/{candidate_id}/promote")
+def promote_program_candidate(candidate_id: str, request: CandidatePromotionRequest, runtime: PocRuntime = Depends(get_runtime)) -> dict:
+    """An explicit POC operator action; this is never called by Monitor collection."""
+    try:
+        result = ProgramCandidatePromotionService().promote(runtime, candidate_id, confirmed=request.confirmed)
+    except ProgramCandidatePromotionError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {
+        "candidate": jsonable_encoder(result.candidate),
+        "program": jsonable_encoder(result.program.program),
         "created": result.created,
         "confirmation_required": True,
     }
