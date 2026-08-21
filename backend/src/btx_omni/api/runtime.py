@@ -17,6 +17,7 @@ from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
 from btx_omni.monitor.usaspending import recipient_query_names, targeted_profiles
 from btx_omni.persistence.database import create_database_engine
 from btx_omni.persistence.durable_accounts import DurablePublicAccountRepository
+from btx_omni.persistence.durable_programs import DurableCanonicalProgramRepository
 from btx_omni.providers.sample.environment import (
     SampleEnvironment,
     build_sample_environment,
@@ -30,6 +31,7 @@ class PocRuntime:
     work: WorkService = field(default_factory=WorkService)
     monitor: MonitorService = field(init=False)
     durable_accounts: DurablePublicAccountRepository | None = field(init=False, default=None)
+    durable_programs: DurableCanonicalProgramRepository | None = field(init=False, default=None)
     _curated_sample: SampleEnvironment = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -37,11 +39,13 @@ class PocRuntime:
         engine = create_database_engine(self.settings) if self.settings.monitor_durable_state_enabled else None
         repository = MonitorRepository(engine) if engine else None
         self.durable_accounts = DurablePublicAccountRepository(engine) if engine else None
-        if self.durable_accounts:
+        self.durable_programs = DurableCanonicalProgramRepository(engine) if engine else None
+        if self.durable_accounts and self.durable_programs:
             try:
-                self.refresh_durable_accounts()
+                self.refresh_durable_catalog()
             except SQLAlchemyError:
                 self.durable_accounts = None
+                self.durable_programs = None
         usa_profiles = targeted_profiles(self.sample.watch_profiles, rich_account_ids=set(self.sample.rich_scenarios))
         registry = dict(REGISTRY)
         registry["usaspending"] = UsaSpendingAdapter(recipient_names=recipient_query_names(usa_profiles))
@@ -61,13 +65,23 @@ class PocRuntime:
                 pass
 
     def refresh_durable_accounts(self) -> None:
-        """Recompose the one canonical Account universe after a durable write."""
-        if not self.durable_accounts:
+        """Compatibility name for callers refreshing the durable canonical catalog."""
+        self.refresh_durable_catalog()
+
+    def refresh_durable_catalog(self) -> None:
+        """Recompose the one canonical Account and Program universe after a durable write."""
+        if not self.durable_accounts or not self.durable_programs:
             return
         persisted = tuple(item.account for item in self.durable_accounts.accounts())
+        durable_programs = tuple(item.program for item in self.durable_programs.programs())
         ids = {item.id for item in self._curated_sample.accounts}
         if ids & {item.id for item in persisted}:
             raise ValueError("durable Account ID collides with the curated canonical universe.")
+        curated_program_ids = {item.id for item in self._curated_sample.programs}
+        if curated_program_ids & {item.id for item in durable_programs}:
+            raise ValueError("durable Program ID collides with the curated canonical universe.")
+        if {item.name.casefold() for item in self._curated_sample.programs} & {item.name.casefold() for item in durable_programs}:
+            raise ValueError("durable Program name collides with the curated canonical universe.")
         durable_profiles = tuple(
             AccountWatchProfile(
                 item.id,
@@ -86,6 +100,7 @@ class PocRuntime:
         self.sample = replace(
             self._curated_sample,
             accounts=(*self._curated_sample.accounts, *persisted),
+            programs=(*self._curated_sample.programs, *durable_programs),
             identity_map={
                 **self._curated_sample.identity_map,
                 **{f"public:{item.legal_name.casefold()}": item.id for item in persisted},
