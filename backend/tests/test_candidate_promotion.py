@@ -13,12 +13,15 @@ from btx_omni.monitor.resolution import resolve_entity
 from btx_omni.monitor.sources import UsaSpendingAdapter
 from btx_omni.persistence.models import metadata, monitor_organization_candidates
 
+_OPERATOR_HEADERS = {"X-BTX-Monitor-Operator-Token": "test-operator-token"}
+
 
 def _runtime(tmp_path) -> PocRuntime:
     settings = Settings(
         _env_file=None,
         monitor_mode="live",
         monitor_durable_state_enabled=True,
+        monitor_operator_token="test-operator-token",
         database_url=f"sqlite:///{tmp_path / 'candidate-promotion.db'}",
     )
     metadata.create_all(create_engine(settings.database_url))
@@ -65,11 +68,14 @@ def test_confirmed_candidate_promotion_is_atomic_idempotent_and_runtime_visible(
     assert not [account for account in runtime.sample.accounts if account.legal_name == candidate.source_name]
 
     client = _client(runtime)
-    missing_confirmation = client.post(f"/api/monitor/candidates/{candidate.id}/promote", json={"confirmed": False})
+    assert client.post(f"/api/monitor/candidates/{candidate.id}/promote", json={"confirmed": True}).status_code == 403
+    assert client.post(f"/api/monitor/candidates/{candidate.id}/promote", headers={"X-BTX-Monitor-Operator-Token": "wrong"}, json={"confirmed": True}).status_code == 403
+    assert not [account for account in runtime.sample.accounts if account.legal_name == candidate.source_name]
+    missing_confirmation = client.post(f"/api/monitor/candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": False})
     assert missing_confirmation.status_code == 409
     assert not [account for account in runtime.sample.accounts if account.legal_name == candidate.source_name]
 
-    response = client.post(f"/api/monitor/candidates/{candidate.id}/promote", json={"confirmed": True})
+    response = client.post(f"/api/monitor/candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert response.status_code == 200
     account_id = response.json()["account"]["id"]
     account = next(item for item in runtime.environment().accounts if item.id == account_id)
@@ -90,7 +96,7 @@ def test_confirmed_candidate_promotion_is_atomic_idempotent_and_runtime_visible(
     assert detail.json()["account_attractiveness"]["score"] is None
     assert omni.json()["context_used"]["account_id"] == account_id
 
-    repeat = client.post(f"/api/monitor/candidates/{candidate.id}/promote", json={"confirmed": True})
+    repeat = client.post(f"/api/monitor/candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert repeat.status_code == 200
     assert repeat.json()["created"] is False
     assert repeat.json()["account"]["id"] == account_id
@@ -120,5 +126,5 @@ def test_candidate_promotion_rejects_terminal_and_conflicted_identity_states(tmp
             connection.execute(update(monitor_organization_candidates).where(
                 monitor_organization_candidates.c.id == candidate.id
             ).values(review_state=state.value))
-        response = client.post(f"/api/monitor/candidates/{candidate.id}/promote", json={"confirmed": True})
+        response = client.post(f"/api/monitor/candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
         assert response.status_code == 409

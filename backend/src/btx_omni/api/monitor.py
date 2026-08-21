@@ -25,6 +25,23 @@ class CandidatePromotionRequest(BaseModel):
     confirmed: bool = False
 
 
+def require_operator_token(runtime: PocRuntime, operator_token: str | None) -> None:
+    """Guard durable operational writes; the token never enters browser state."""
+    configured = runtime.settings.monitor_operator_token
+    if not configured:
+        raise HTTPException(503, "Operational mutation is unavailable: BTX_MONITOR_OPERATOR_TOKEN is not configured.")
+    if not operator_token or not hmac.compare_digest(operator_token, configured):
+        raise HTTPException(403, "Operational mutation authorization failed.")
+
+
+def operator_runtime(
+    runtime: PocRuntime = Depends(get_runtime),
+    operator_token: str | None = Header(default=None, alias="X-BTX-Monitor-Operator-Token"),
+) -> PocRuntime:
+    require_operator_token(runtime, operator_token)
+    return runtime
+
+
 @router.get("/candidates")
 def monitor_candidates(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     """Read-only review contract for non-canonical Monitor identities."""
@@ -39,7 +56,7 @@ def monitor_candidates(runtime: PocRuntime = Depends(get_runtime)) -> dict:
 
 
 @router.post("/candidates/{candidate_id}/promote")
-def promote_candidate(candidate_id: str, request: CandidatePromotionRequest, runtime: PocRuntime = Depends(get_runtime)) -> dict:
+def promote_candidate(candidate_id: str, request: CandidatePromotionRequest, runtime: PocRuntime = Depends(operator_runtime)) -> dict:
     """An explicit POC operator action; this is never called by Monitor collection."""
     try:
         result = CandidatePromotionService().promote(runtime, candidate_id, confirmed=request.confirmed)
@@ -54,7 +71,7 @@ def promote_candidate(candidate_id: str, request: CandidatePromotionRequest, run
 
 
 @router.post("/program-candidates/{candidate_id}/promote")
-def promote_program_candidate(candidate_id: str, request: CandidatePromotionRequest, runtime: PocRuntime = Depends(get_runtime)) -> dict:
+def promote_program_candidate(candidate_id: str, request: CandidatePromotionRequest, runtime: PocRuntime = Depends(operator_runtime)) -> dict:
     """An explicit POC operator action; this is never called by Monitor collection."""
     try:
         result = ProgramCandidatePromotionService().promote(runtime, candidate_id, confirmed=request.confirmed)
@@ -133,11 +150,7 @@ def collect(source_id: str, runtime: PocRuntime = Depends(get_runtime)) -> dict:
 
 @router.post("/internal/collect/{source_id}", include_in_schema=False)
 def operational_collect(source_id: str, runtime: PocRuntime = Depends(get_runtime), operator_token: str | None = Header(default=None, alias="X-BTX-Monitor-Operator-Token")) -> dict:
-    configured = runtime.settings.monitor_operator_token
-    if not configured:
-        raise HTTPException(503, "Operational collection is unavailable: BTX_MONITOR_OPERATOR_TOKEN is not configured.")
-    if not operator_token or not hmac.compare_digest(operator_token, configured):
-        raise HTTPException(403, "Operational collection authorization failed.")
+    require_operator_token(runtime, operator_token)
     if not runtime.settings.monitor_durable_state_enabled:
         raise HTTPException(503, "Operational collection is unavailable: durable Monitor state is not enabled.")
     if source_id not in REGISTRY:
@@ -148,11 +161,7 @@ def operational_collect(source_id: str, runtime: PocRuntime = Depends(get_runtim
 
 @router.post("/internal/collect", include_in_schema=False)
 def operational_collect_all(runtime: PocRuntime = Depends(get_runtime), operator_token: str | None = Header(default=None, alias="X-BTX-Monitor-Operator-Token")) -> dict:
-    configured = runtime.settings.monitor_operator_token
-    if not configured:
-        raise HTTPException(503, "Operational collection is unavailable: BTX_MONITOR_OPERATOR_TOKEN is not configured.")
-    if not operator_token or not hmac.compare_digest(operator_token, configured):
-        raise HTTPException(403, "Operational collection authorization failed.")
+    require_operator_token(runtime, operator_token)
     if not runtime.settings.monitor_durable_state_enabled:
         raise HTTPException(503, "Operational collection is unavailable: durable Monitor state is not enabled.")
     runs = runtime.monitor.collect_all()

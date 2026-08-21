@@ -11,12 +11,15 @@ from btx_omni.monitor.ontology import CandidateReviewState, ResolutionState
 from btx_omni.monitor.sources import UsaSpendingAdapter
 from btx_omni.persistence.models import metadata, monitor_program_candidates
 
+_OPERATOR_HEADERS = {"X-BTX-Monitor-Operator-Token": "test-operator-token"}
+
 
 def _runtime(tmp_path) -> PocRuntime:
     settings = Settings(
         _env_file=None,
         monitor_mode="live",
         monitor_durable_state_enabled=True,
+        monitor_operator_token="test-operator-token",
         database_url=f"sqlite:///{tmp_path / 'program-candidate-promotion.db'}",
     )
     metadata.create_all(create_engine(settings.database_url))
@@ -62,16 +65,19 @@ def test_confirmed_program_candidate_promotion_is_atomic_idempotent_and_runtime_
     scoring_before = dict(runtime.sample.scoring_inputs)
     client = _client(runtime)
     assert runtime.monitor.catalog.resolve_program(candidate.source_name).state is ResolutionState.UNRESOLVED
+    assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True}).status_code == 403
+    assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers={"X-BTX-Monitor-Operator-Token": "wrong"}, json={"confirmed": True}).status_code == 403
+    assert runtime.monitor.catalog.resolve_program(candidate.source_name).state is ResolutionState.UNRESOLVED
 
-    missing_confirmation = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": False})
+    missing_confirmation = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": False})
     assert missing_confirmation.status_code == 409
     assert runtime.monitor.catalog.resolve_program(candidate.source_name).state is ResolutionState.UNRESOLVED
 
-    account_response = client.post(f"/api/monitor/candidates/{organization.id}/promote", json={"confirmed": True})
+    account_response = client.post(f"/api/monitor/candidates/{organization.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert account_response.status_code == 200
     nexus_id = account_response.json()["account"]["id"]
 
-    response = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True})
+    response = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert response.status_code == 200
     program_id = response.json()["program"]["id"]
     program = next(item for item in runtime.environment().programs if item.id == program_id)
@@ -90,7 +96,7 @@ def test_confirmed_program_candidate_promotion_is_atomic_idempotent_and_runtime_
     assert programs[0].review_state is CandidateReviewState.PROMOTED
     assert programs[0].promoted_program_id == program_id
 
-    repeat = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True})
+    repeat = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert repeat.status_code == 200
     assert repeat.json()["created"] is False
     assert repeat.json()["program"]["id"] == program_id
@@ -115,10 +121,10 @@ def test_program_candidate_promotion_rejects_terminal_and_insufficient_states(tm
             connection.execute(update(monitor_program_candidates).where(
                 monitor_program_candidates.c.id == candidate.id
             ).values(review_state=state.value))
-        assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True}).status_code == 409
+        assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True}).status_code == 409
 
     with engine.begin() as connection:
         connection.execute(update(monitor_program_candidates).where(
             monitor_program_candidates.c.id == candidate.id
         ).values(review_state=CandidateReviewState.PENDING_REVIEW.value, source_name=""))
-    assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True}).status_code == 409
+    assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True}).status_code == 409

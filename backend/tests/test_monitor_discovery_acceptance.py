@@ -19,12 +19,15 @@ from btx_omni.monitor.ontology import CandidateReviewState, ResolutionState
 from btx_omni.monitor.sources import FdaAdapter, UsaSpendingAdapter
 from btx_omni.persistence.models import metadata
 
+_OPERATOR_HEADERS = {"X-BTX-Monitor-Operator-Token": "test-operator-token"}
+
 
 def _runtime(tmp_path) -> PocRuntime:
     settings = Settings(
         _env_file=None,
         monitor_mode="live",
         monitor_durable_state_enabled=True,
+        monitor_operator_token="test-operator-token",
         database_url=f"sqlite:///{tmp_path / 'phase-9c10-acceptance.db'}",
     )
     metadata.create_all(create_engine(settings.database_url))
@@ -112,9 +115,9 @@ def test_net_new_monitor_discovery_requires_governed_promotions_and_rehydrates(t
     assert organization.review_state is CandidateReviewState.PENDING_REVIEW
     assert candidate.review_state is CandidateReviewState.PENDING_REVIEW
     assert not any(account.legal_name == "Nexus Quantum Systems, Inc." for account in runtime.environment().accounts)
-    assert client.post(f"/api/monitor/candidates/{organization.id}/promote", json={"confirmed": False}).status_code == 409
+    assert client.post(f"/api/monitor/candidates/{organization.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": False}).status_code == 409
 
-    account_promotion = client.post(f"/api/monitor/candidates/{organization.id}/promote", json={"confirmed": True})
+    account_promotion = client.post(f"/api/monitor/candidates/{organization.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert account_promotion.status_code == 200
     nexus_id = account_promotion.json()["account"]["id"]
     account = client.get(f"/api/accounts/{nexus_id}").json()
@@ -124,12 +127,12 @@ def test_net_new_monitor_discovery_requires_governed_promotions_and_rehydrates(t
     assert client.post("/api/omni", json={"question": "What is this account?", "context": {"surface": "ACCOUNT_DETAIL", "selected_account_id": nexus_id}}).status_code == 200
     assert not any(point["account_id"] == nexus_id for point in client.get("/api/map").json()["accounts"])
 
-    program_promotion = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True})
+    program_promotion = client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True})
     assert program_promotion.status_code == 200
     program_id = program_promotion.json()["program"]["id"]
     assert runtime.monitor.catalog.resolve_program("Aurora Fabrication Vehicle").canonical_program_id == program_id
-    assert client.post(f"/api/monitor/candidates/{organization.id}/promote", json={"confirmed": True}).json()["created"] is False
-    assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", json={"confirmed": True}).json()["created"] is False
+    assert client.post(f"/api/monitor/candidates/{organization.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True}).json()["created"] is False
+    assert client.post(f"/api/monitor/program-candidates/{candidate.id}/promote", headers=_OPERATOR_HEADERS, json={"confirmed": True}).json()["created"] is False
 
     runtime.monitor.registry["usaspending"] = _nexus("9C10-NEXUS-2")
     runtime.monitor.collect("usaspending")
