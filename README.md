@@ -59,6 +59,13 @@ decisioning state; the POC's SAMPLE provider supplies the shaped commercial
 environment. See [architecture documentation](docs/architecture/) for repository
 and GitHub setup guidance.
 
+## Engineering review
+
+For a reviewer who is new to the project, start with the concise
+[Engineering Review Guide](REVIEWER_GUIDE.md). It explains the actual POC
+implementation, intentional boundaries, suggested reading order, and the
+questions where architectural feedback is most valuable.
+
 ## Local development
 
 Prerequisites:
