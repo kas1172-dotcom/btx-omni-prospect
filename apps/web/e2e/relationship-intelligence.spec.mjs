@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
 
 async function openAccount(page, query, accountId) {
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Accounts' }).click()
-  await expect(page.locator('.page-title h1')).toHaveText('Accounts')
-  await page.getByPlaceholder('Search company, industry, or location').fill(query)
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
+  await page.getByPlaceholder('Search Customer, industry, or location').fill(query)
   const relationshipResponse = page.waitForResponse(response => response.url().endsWith(`/api/accounts/${accountId}/relationships?depth=2`))
   await page.locator('.account-row').filter({ hasText: query }).first().click()
   const response = await relationshipResponse
@@ -11,7 +11,7 @@ async function openAccount(page, query, accountId) {
   return response.json()
 }
 
-test('Account 360 presents only canonical read-only Relationship Intelligence paths', async ({ page }) => {
+test('Customer 360 presents only canonical read-only Relationship Intelligence paths', async ({ page }) => {
   await page.goto('/')
   const lockheedRelationships = await openAccount(page, 'Lockheed', 'lockheed-martin')
   expect(lockheedRelationships.account.id).toBe('lockheed-martin')
@@ -32,7 +32,7 @@ test('Account 360 presents only canonical read-only Relationship Intelligence pa
   await expect(relationshipPanel).toContainText(canonicalMultiHop.hops[0].relationship_type.replaceAll('_', ' '))
   await expect(relationshipPanel).toContainText('Canonical 2-hop path')
 
-  const switcher = page.getByLabel('Switch account')
+  const switcher = page.getByLabel('Switch Customer')
   await switcher.fill('Symbotic')
   const symboticResponse = page.waitForResponse(response => response.url().endsWith('/api/accounts/symbotic/relationships?depth=2'))
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
@@ -40,6 +40,6 @@ test('Account 360 presents only canonical read-only Relationship Intelligence pa
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
   await expect(relationshipPanel).toContainText('Only canonical relationship records are shown.')
   await relationshipPanel.getByRole('tab', { name: 'Relationship paths' }).click()
-  await expect(relationshipPanel).toContainText('No canonical multi-hop relationship paths are available for this account.')
+  await expect(relationshipPanel).toContainText('No canonical multi-hop relationship paths are available for this Customer.')
   await expect(relationshipPanel.locator('.relationship-path-row')).toHaveCount(0)
 })

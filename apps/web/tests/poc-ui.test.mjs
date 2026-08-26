@@ -14,7 +14,7 @@ const today = readFileSync(new URL('../src/features/today/Today.tsx', import.met
 const monitor = readFileSync(new URL('../src/features/monitor/Monitor.tsx', import.meta.url), 'utf8')
 
 test('canonical navigation and mobile core flow are present', () => {
-  for (const surface of ['Today', 'Accounts', 'Intelligence', 'Map', 'Actions', 'OmniDrawer']) assert.match(app, new RegExp(surface))
+  for (const surface of ['Today', 'Customers & Prospects', 'Intelligence', 'Map', 'Actions', 'OmniDrawer']) assert.match(app, new RegExp(surface))
   assert.match(app, /onAccount=\{id => void select\(id\)\}/)
 })
 
@@ -37,15 +37,15 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(app, /void api\.monitor\(\)\.then\(setMonitor\)\.catch/)
 })
 
-test('Account 360 distinguishes public evidence from simulated BTX context', () => {
+test('Customer 360 distinguishes public evidence from simulated BTX context', () => {
   assert.match(accounts, /Public professional contact research/)
   assert.match(accounts, /Simulated BTX commercial context/)
-  assert.match(accounts, /Account Attractiveness · POC simulation/)
+  assert.match(accounts, /Customer Attractiveness · POC simulation/)
   assert.match(accounts, /Coverage/)
   assert.match(accounts, /Curated scenarios/)
 })
 
-test('Account 360 renders only read-only canonical relationship paths', () => {
+test('Customer 360 renders only read-only canonical relationship paths', () => {
   assert.match(client, /relationships: \(accountId: string\) => request<AccountRelationships>\(`\/accounts\/\$\{accountId\}\/relationships\?depth=2`\)/)
   assert.match(accounts, /Relationship Intelligence/)
   assert.match(accounts, /READ ONLY · canonical paths/)
@@ -61,7 +61,7 @@ test('Account 360 renders only read-only canonical relationship paths', () => {
 
 test('Omni provides session-only deterministic chat with optional context and safe keyboard behavior', () => {
   const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
-  assert.match(drawer, /No account selected/)
+  assert.match(drawer, /No Customer selected/)
   assert.match(drawer, /Clear/)
   assert.match(drawer, /What should I review today\?/)
   assert.match(drawer, /Shift\+Enter for a new line/)
@@ -80,13 +80,14 @@ test('map and action interactions remain touch-accessible and confirmation-safe'
   assert.match(map, /Map controls/)
   assert.match(map, /Map layers/)
   assert.match(map, /Clear filters/)
-  assert.match(map, /Account segment/)
-  assert.match(map, /Current clients/)
+  assert.match(map, /Customer relationship/)
+  assert.match(map, /Customers & Prospects/)
+  assert.match(map, /Customer/)
   assert.match(map, /Dormant customers/)
   assert.match(map, /Unknown \/ no internal history/)
   assert.match(map, /account_segment/)
   assert.doesNotMatch(map, /Current customers|Top 100/)
-  assert.match(map, /Account quick view/)
+  assert.match(map, /Customer quick view/)
   assert.match(mapCanvas, /maplibregl\.Map/)
   assert.match(mapCanvas, /clusterRadius/)
   assert.match(mapCanvas, /account-clusters/)
@@ -139,7 +140,7 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(drawer, /setConversationReferent\(response\.conversation_referent/)
 })
 
-test('Map selection sends canonical account and facility context without inventing BTX account identity', () => {
+test('Map selection sends canonical Customer and facility context without inventing BTX Customer identity', () => {
   assert.match(map, /selectAccount = \(accountId: string\)/)
   assert.match(map, /selectFacility = \(facilityId: string, accountId\?: string\)/)
   assert.match(map, /selectFacility\(location\.facility_id, location\.account_id\)/)
@@ -192,7 +193,7 @@ test('Monitor keeps inactive collection separate from curated public preview sig
   assert.match(monitor, /Curated POC signal preview/)
   assert.match(monitor, /CURATED PUBLIC · NOT LIVE INGESTION/)
   assert.match(monitor, /no scheduler or live collector is running/)
-  assert.match(monitor, /Open Account 360/)
+  assert.match(monitor, /Open Customer 360/)
   assert.match(monitor, /Source freshness/)
   assert.match(monitor, /Last successful check/)
   assert.match(monitor, /No resolved, evidence-backed live events are seller-visible/)

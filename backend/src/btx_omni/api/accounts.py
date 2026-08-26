@@ -46,7 +46,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     sample = runtime.environment()
     account = next((item for item in sample.accounts if item.id == account_id), None)
     if account is None:
-        raise HTTPException(404, "Canonical account not found.")
+        raise HTTPException(404, "Canonical Customer not found.")
     observed = runtime.observed_at()
     contexts = [item for item in sample.commercial_contexts if item.account_id == account_id]
     paperless_accounts = [item for item in sample.paperless_accounts if item.canonical_account_id == account_id]
@@ -71,4 +71,4 @@ def account_relationships(account_id: str, depth: int = Query(default=2, ge=1, l
     try:
         return RelationshipIntelligenceService(runtime.environment()).account_relationships(account_id, depth=depth)
     except KeyError as exc:
-        raise HTTPException(404, "Canonical account not found.") from exc
+        raise HTTPException(404, "Canonical Customer not found.") from exc

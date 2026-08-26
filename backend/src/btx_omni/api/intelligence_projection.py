@@ -36,7 +36,7 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
             "resolution_state": event.resolution_state,
             "data_mode": event.provenance.data_mode,
             "observed_at": event.event_date or event.provenance.observed_at,
-            "relevance_explanation": (f"Live public {event.event_type.value}; " + ("linked to a canonical account." if subject and subject.canonical_account_id else "entity remains unresolved; no account relationship is implied.")),
+            "relevance_explanation": (f"Live public {event.event_type.value}; " + ("linked to a canonical Customer." if subject and subject.canonical_account_id else "entity remains unresolved; no Customer relationship is implied.")),
             "evidence_ids": tuple(item.evidence_id for item in event.evidence),
             "source_tier": event.source_confidence_basis,
             "provenance": event.provenance,

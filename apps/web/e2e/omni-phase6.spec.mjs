@@ -70,7 +70,7 @@ test('Phase 6 Omni browser acceptance preserves typed context, continuity, and i
   await closeOmni(page)
 
   // Leaving Intelligence clears its passive event selection before an Accounts summary.
-  await navigate(page, 'Accounts')
+  await navigate(page, 'Customers & Prospects')
   await openOmni(page)
   const cleared = await ask(page, 'Summarize this screen.')
   expect(cleared.request.context.selected_event_id).toBeUndefined()
