@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const app = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8')
-const styles = readFileSync(new URL('../src/design/app.css', import.meta.url), 'utf8')
+const mobileStyles = readFileSync(new URL('../src/design/mobile.css', import.meta.url), 'utf8')
+const omniStyles = readFileSync(new URL('../src/components/omni-drawer.css', import.meta.url), 'utf8')
 const client = readFileSync(new URL('../src/api/client.ts', import.meta.url), 'utf8')
 const map = readFileSync(new URL('../src/features/map/Map.tsx', import.meta.url), 'utf8')
 const mapCanvas = readFileSync(new URL('../src/features/map/MapCanvas.tsx', import.meta.url), 'utf8')
@@ -24,9 +25,10 @@ test('frontend uses only canonical Omni Prospect API routes', () => {
 })
 
 test('mobile-first layout prevents horizontal overflow and exposes an Omni drawer', () => {
-  assert.match(styles, /overflow-x:\s*clip/)
-  assert.match(styles, /@media\(max-width:760px\)/)
-  assert.match(styles, /\.omni-drawer\{width:100%/)
+  assert.match(mobileStyles, /grid-template-columns:\s*repeat\(5,/)
+  assert.match(mobileStyles, /safe-area-inset-bottom/)
+  assert.match(mobileStyles, /--touch-target/)
+  assert.match(omniStyles, /\.omni-drawer\{/)
 })
 
 test('live Monitor observations use the canonical intelligence and map surfaces', () => {
