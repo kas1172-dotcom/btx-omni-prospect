@@ -1,5 +1,6 @@
 import { type KeyboardEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
+import { Button, Drawer, IconButton, Textarea } from './UI'
 import type { OmniContext, OmniConversationReferent, OmniResponse } from '../types/api'
 import './omni-drawer.css'
 
@@ -121,9 +122,8 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const openDrawer = () => { if (suppressClick.current) { suppressClick.current = false; return }; setOpen(true) }
   return <>
     <button className={`omni-launch ${triggerPosition ? 'omni-launch-positioned' : ''}`} ref={opener} style={triggerPosition ? { left: triggerPosition.x, top: triggerPosition.y, right: 'auto', bottom: 'auto' } : undefined} onClick={openDrawer} onPointerDown={onTriggerPointerDown} onPointerMove={onTriggerPointerMove} onPointerUp={onTriggerPointerUp} onPointerCancel={onTriggerPointerUp} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
-    {open && <div className="drawer-backdrop" onClick={close}>
-      <aside className="omni-drawer" role="dialog" aria-modal="true" aria-labelledby="omni-title" onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') close() }}>
-        <header><div><span className="eyebrow">Product intelligence</span><h2 id="omni-title">✦ Omni</h2></div><button onClick={close} aria-label="Close Omni">×</button></header>
+    <Drawer open={open} onClose={close} titleId="omni-title" className="omni-drawer">
+        <header><div><span className="eyebrow">Product intelligence</span><h2 id="omni-title">✦ Omni</h2></div><IconButton onClick={close} label="Close Omni">×</IconButton></header>
         <div className="context-ribbon"><span>Customer context</span><strong>{activeAccount?.name ?? 'No Customer selected'}</strong>{activeAccount ? <button onClick={clearContext}>Clear</button> : accountId ? <button onClick={() => setClearedAccountId(undefined)}>Use selected Customer</button> : <small>Ask generally or open a Customer 360 record.</small>}</div>
         <p className="muted omni-boundary">Grounded only in local POC read models. Public evidence is sourced; BTX commercial, CRM, quote, scoring, and workflow context is simulated. Omni cannot write to CRM.</p>
         {!messages.length && <div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => void ask(prompt)} disabled={loading}>{prompt}</button>)}</div>}
@@ -132,11 +132,10 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
           {messages.map((message, index) => <article className={`message ${message.role}`} key={`${message.role}-${index}`}><strong>{message.role === 'user' ? 'You' : 'Omni'}</strong><p>{message.text}</p>{message.response && <ResponseDetails response={message.response} />}</article>)}
           {loading && <div className="message assistant pending"><strong>Omni</strong><p>Checking governed POC context…</p></div>}
         </div>
-        <form className="omni-compose" onSubmit={event => { event.preventDefault(); void ask() }}><label htmlFor="omni-message">Message</label><textarea id="omni-message" ref={input} value={question} onChange={event => setQuestion(event.target.value)} onKeyDown={onKeyDown} placeholder="Ask about a Customer, public event, score, action, or geography" rows={3} /><div><small>Enter to send · Shift+Enter for a new line</small><button className="primary" disabled={loading || !question.trim()} type="submit">{loading ? 'Checking…' : 'Send'}</button></div></form>
+        <form className="omni-compose" onSubmit={event => { event.preventDefault(); void ask() }}><Textarea label="Message" id="omni-message" ref={input} value={question} onChange={event => setQuestion(event.target.value)} onKeyDown={onKeyDown} placeholder="Ask about a Customer, public event, score, action, or geography" rows={3} /><div><small>Enter to send · Shift+Enter for a new line</small><Button variant="primary" disabled={loading || !question.trim()} type="submit">{loading ? 'Checking…' : 'Send'}</Button></div></form>
         {error && <p className="error" role="alert">{error}</p>}
         <p className="omni-session">Conversation is retained only in this browser session and clears when this page is refreshed. Deterministic fallback—not model-generated advice.</p>
-      </aside>
-    </div>}
+    </Drawer>
   </>
 }
 
