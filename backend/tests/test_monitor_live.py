@@ -14,7 +14,7 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.monitor import operational_collect
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.app import create_app
-from btx_omni.core.config import Settings
+from btx_omni.core.config import Settings, get_settings
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
     calculate_account_attractiveness,
@@ -126,7 +126,9 @@ def test_durable_monitor_persists_runs_versions_events_and_failures() -> None:
     assert service.source_state(source_id="fda", last_success_at=datetime.now(UTC) - timedelta(hours=49), now=datetime.now(UTC)) == "STALE"
 
 
-def test_monitor_registry_endpoint_is_internal_observability() -> None:
+def test_monitor_registry_endpoint_is_internal_observability(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("BTX_MONITOR_OPERATOR_TOKEN", raising=False)
+    get_settings.cache_clear()
     client = TestClient(create_app())
     response = client.get("/api/monitor/sources")
     assert response.status_code == 200
@@ -134,7 +136,17 @@ def test_monitor_registry_endpoint_is_internal_observability() -> None:
     health = client.get("/api/monitor/health")
     assert health.status_code == 200 and {"sources", "last_runs", "clusters", "rejected_observations"} <= set(health.json())
     assert client.post("/api/monitor/collect/fda_openfda").status_code == 403
-    assert client.post("/api/monitor/internal/collect/fda_openfda").status_code == 403
+    assert client.post("/api/monitor/internal/collect/fda_openfda").status_code == 503
+
+    monkeypatch.setenv("BTX_MONITOR_OPERATOR_TOKEN", "configured-but-private")
+    get_settings.cache_clear()
+    configured_client = TestClient(create_app())
+    assert configured_client.post("/api/monitor/internal/collect/fda_openfda").status_code == 403
+    assert configured_client.post(
+        "/api/monitor/internal/collect/fda_openfda",
+        headers={"X-BTX-Monitor-Operator-Token": "wrong-token"},
+    ).status_code == 403
+    get_settings.cache_clear()
     assert all(item["data_mode"] == "CURATED_PUBLIC" for item in health.json()["curated_preview"])
 
 
