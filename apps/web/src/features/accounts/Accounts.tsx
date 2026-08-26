@@ -1,168 +1,112 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from '../../api/client'
 import type { Account, Account360, AccountRelationships, OmniContext, RelationshipPath, Signal } from '../../types/api'
-import { Empty, FilterChip, Panel, SearchInput, SelectInput, State, StatTile } from '../../components/UI'
+import { Button, Disclosure, Empty, EvidenceSource, FilterChip, FilterTrigger, MetadataRow, MobileListRow, Notice, Panel, ResponsiveTable, SearchInput, SelectInput, SortableHeader, State, StatTile, StatusBadge } from '../../components/UI'
 import './accounts.css'
 
-function PortfolioSummary({ label, value, detail }: { label: string; value: number; detail: string }) {
-  return <StatTile className="portfolio-summary-card" label={label} value={value} detail={detail} />
+type Scope = 'RICH' | 'ALL'
+type Classification = 'ALL' | 'CUSTOMER' | 'PROSPECT' | 'UNAVAILABLE'
+type SortKey = 'name' | 'attractiveness' | 'priority' | 'industry'
+type SortDirection = 'ascending' | 'descending'
+const priorityRank: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 }
+const humanize = (value: string) => value.replaceAll('_', ' ')
+const accountName = (item: Account) => item.name ?? item.legal_name ?? item.id
+const primaryIndustry = (item: Account) => item.industries[0] ?? 'Industry unavailable'
+const classification = (item: Account): Exclude<Classification, 'ALL'> => item.relationship === 'CURRENT_CUSTOMER' || item.relationship === 'FORMER_CUSTOMER' ? 'CUSTOMER' : item.relationship === 'TARGET' ? 'PROSPECT' : 'UNAVAILABLE'
+const classificationLabel = (item: Account) => classification(item) === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(classification(item).toLowerCase())
+const score = (item: Account) => item.attractiveness == null ? null : Number(item.attractiveness)
+// Coverage remains explicit in the attractiveness rationale metadata below.
+
+function compareAccounts(a: Account, b: Account, key: SortKey, direction: SortDirection) {
+  let result: number
+  if (key === 'attractiveness') {
+    const left = score(a); const right = score(b)
+    result = left == null && right == null ? 0 : left == null ? 1 : right == null ? -1 : left - right
+  } else if (key === 'priority') {
+    const left = a.prospect_research_priority?.toUpperCase(); const right = b.prospect_research_priority?.toUpperCase()
+    result = left == null && right == null ? 0 : left == null ? 1 : right == null ? -1 : (priorityRank[left] ?? 0) - (priorityRank[right] ?? 0)
+  } else {
+    const left = key === 'name' ? accountName(a) : primaryIndustry(a)
+    const right = key === 'name' ? accountName(b) : primaryIndustry(b)
+    result = left.localeCompare(right, undefined, { sensitivity: 'base' })
+  }
+  if (result === 0) result = accountName(a).localeCompare(accountName(b), undefined, { sensitivity: 'base' })
+  return direction === 'ascending' ? result : -result
 }
 
-export function Accounts({ accounts, detail, onSelect, onBack, onOmniContext }: { accounts: Account[]; detail?: Account360; onSelect: (id: string) => void; onBack: () => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
+function Portfolio({ accounts, onSelect, onOmniContext }: { accounts: Account[]; onSelect: (id: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('RICH')
+  const [scope, setScope] = useState<Scope>('RICH')
   const [industry, setIndustry] = useState('ALL')
-  const industries = [...new Set(accounts.flatMap(item => item.industries))]
-  const shown = useMemo(() => accounts.filter(item => (filter === 'RICH' ? item.is_rich_scenario : true) && (industry === 'ALL' || item.industries.includes(industry)) && `${item.name} ${item.industries.join(' ')} ${item.location?.state ?? ''}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => Number(Boolean(b.is_rich_scenario)) - Number(Boolean(a.is_rich_scenario))), [accounts, filter, industry, query])
-  const activeFilters = useMemo(() => ({ ...(filter === 'RICH' ? { account_scope: 'RICH' } : {}), ...(industry === 'ALL' ? {} : { market: industry }) }), [filter, industry])
+  const [entity, setEntity] = useState<Classification>('ALL')
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('ascending')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const industries = useMemo(() => [...new Set(accounts.flatMap(item => item.industries))].sort(), [accounts])
+  const classifications = useMemo(() => new Set(accounts.map(classification)), [accounts])
+  const shown = useMemo(() => accounts
+    .filter(item => scope === 'ALL' || item.is_rich_scenario)
+    .filter(item => industry === 'ALL' || item.industries.includes(industry))
+    .filter(item => entity === 'ALL' || classification(item) === entity)
+    .filter(item => `${accountName(item)} ${item.industries.join(' ')} ${item.location?.city ?? ''} ${item.location?.state ?? ''} ${item.prospect_research_priority ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => compareAccounts(a.item, b.item, sortKey, sortDirection) || a.index - b.index)
+    .map(({ item }) => item), [accounts, entity, industry, query, scope, sortDirection, sortKey])
+  const activeFilters = useMemo(() => ({ ...(scope === 'RICH' ? { account_scope: 'RICH' } : {}), ...(industry === 'ALL' ? {} : { market: industry }), ...(entity === 'ALL' ? {} : { classification: entity }) }), [entity, industry, scope])
   const visibleRecordIds = useMemo(() => shown.slice(0, 50).map(account => account.id), [shown])
-  const scoredCount = useMemo(() => shown.filter(account => account.attractiveness !== null && account.attractiveness !== undefined).length, [shown])
-  const selectAccount = (id: string) => { setQuery(''); onSelect(id) }
-
+  const hasFilters = scope !== 'ALL' || industry !== 'ALL' || entity !== 'ALL'
+  const clearFilters = () => { setScope('ALL'); setIndustry('ALL'); setEntity('ALL') }
+  const sortBy = (key: SortKey) => { if (sortKey === key) setSortDirection(value => value === 'ascending' ? 'descending' : 'ascending'); else { setSortKey(key); setSortDirection(key === 'name' || key === 'industry' ? 'ascending' : 'descending') } }
+  const direction = (key: SortKey) => sortKey === key ? sortDirection : 'none'
   useEffect(() => { onOmniContext({ active_filters: Object.keys(activeFilters).length ? activeFilters : undefined, visible_record_ids: visibleRecordIds }) }, [activeFilters, onOmniContext, visibleRecordIds])
   useEffect(() => () => onOmniContext({}), [onOmniContext])
-
-  if (detail) return <div className="surface account-detail-surface"><div className="account-workspace-navigation"><button className="account-workspace-back" onClick={onBack}>← Customer Portfolio</button><div className="account-switcher"><input placeholder="Search Customer, industry, or location" value={query} onChange={event => setQuery(event.target.value)} aria-label="Switch Customer" />{query && <div className="account-switch-results">{shown.slice(0, 6).map(item => <button className="account-row account-switch-result" key={item.id} onClick={() => selectAccount(item.id)}><span><strong>{item.name}</strong><small>{item.industries.join(' / ') || 'Industry unavailable'}</small></span><State value={item.truth_state ?? 'UNAVAILABLE'} /></button>)}</div>}</div></div><AccountDetail detail={detail} /></div>
-
-  return <div className="surface accounts-surface"><div className="page-title accounts-title"><span className="eyebrow">Curated Customer and Prospect scenarios</span><h1>Customers & Prospects</h1><p>Every Customer or Prospect is a researched organization. Start with the curated scenarios or browse the full researched universe.</p></div><div className="portfolio-summary-grid" aria-label="Customer Portfolio summary"><PortfolioSummary label="Current portfolio" value={shown.length} detail="Canonical Customers and Prospects in the current view" /><PortfolioSummary label="Curated scenarios" value={shown.filter(account => account.is_rich_scenario).length} detail="Seller-scenario Customers and Prospects in this view" /><PortfolioSummary label="Scores available" value={scoredCount} detail="Canonical Customer Attractiveness outputs" /></div><div className={`account-layout ${detail ? 'account-layout-detail' : 'account-layout-portfolio'}`}><Panel title="Customer Portfolio" action={<span className="panel-kicker">{shown.length} Customers and Prospects · current canonical order</span>}><div className="portfolio-controls"><div className="filters"><SearchInput aria-label="Search Customers and Prospects" placeholder="Search Customer, industry, or location" value={query} onChange={event => setQuery(event.target.value)} /><SelectInput aria-label="Customer scope" value={filter} onChange={event => setFilter(event.target.value)}><option value="RICH">Curated scenarios</option><option value="ALL">All researched Customers and Prospects</option></SelectInput></div><div className="chips filter-chips" aria-label="Industry filters"><FilterChip selected={industry === 'ALL'} onClick={() => setIndustry('ALL')}>All industries</FilterChip>{industries.map(value => <FilterChip selected={industry === value} key={value} onClick={() => setIndustry(value)}>{value}</FilterChip>)}</div></div><div className="portfolio-column-headings" aria-hidden="true"><span>Customer</span><span>Attractiveness</span><span>Evidence state</span></div><div className="account-list portfolio-list">{shown.map(item => <button className="account-row portfolio-row" key={item.id} onClick={() => selectAccount(item.id)}><span className="portfolio-account"><strong>{item.name}</strong><small>{item.industries.join(' / ') || 'Industry unavailable'}{item.location?.city && item.location?.state ? ` · ${item.location.city}, ${item.location.state}` : ''}</small><small>{item.prospect_rationale ?? 'No additional research rationale is available.'}</small></span><span className="portfolio-score"><small>Customer Attractiveness</small><strong>{item.attractiveness ?? '—'}</strong></span><State value={item.truth_state ?? 'UNAVAILABLE'} /></button>)}</div></Panel>{detail && <AccountDetail detail={detail} />}</div></div>
+  return <div className="surface accounts-surface">
+    <header className="page-title accounts-title"><span className="eyebrow">Customer portfolio</span><h1>Customers &amp; Prospects</h1><p>Prioritize researched Customers and Prospects using canonical identity, supported classifications, and governed Customer Attractiveness.</p></header>
+    <div className="portfolio-summary-grid" aria-label="Customer Portfolio summary"><StatTile label="Current view" value={shown.length} detail="Customers and Prospects matching this view" /><StatTile label="Curated scenarios" value={shown.filter(item => item.is_rich_scenario).length} detail="Governed seller scenarios in this view" /><StatTile label="Scores available" value={shown.filter(item => score(item) != null).length} detail="Deterministic attractiveness outputs" /></div>
+    <Panel className="portfolio-panel" title="Customer Portfolio" action={<span className="panel-kicker">{shown.length} results</span>}>
+      <div className="portfolio-toolbar"><SearchInput aria-label="Search Customers and Prospects" placeholder="Search Customer, industry, or location" value={query} onChange={event => setQuery(event.target.value)} /><FilterTrigger active={hasFilters} aria-controls="portfolio-filters" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(value => !value)}>Filters{hasFilters ? ` (${Object.keys(activeFilters).length})` : ''}</FilterTrigger><SelectInput className="portfolio-sort-select" aria-label="Sort Customers and Prospects" value={`${sortKey}:${sortDirection}`} onChange={event => { const [key, order] = event.target.value.split(':') as [SortKey, SortDirection]; setSortKey(key); setSortDirection(order) }}><option value="name:ascending">Name A–Z</option><option value="name:descending">Name Z–A</option><option value="attractiveness:descending">Attractiveness high–low</option><option value="attractiveness:ascending">Attractiveness low–high</option><option value="priority:descending">Priority high–low</option><option value="industry:ascending">Industry A–Z</option></SelectInput></div>
+      <div id="portfolio-filters" className={`portfolio-filter-panel ${filtersOpen ? 'open' : ''}`}>
+        <div className="portfolio-filter-field filters"><span>Scope</span><SelectInput aria-label="Customer scope" value={scope} onChange={event => setScope(event.target.value as Scope)}><option value="RICH">Curated scenarios</option><option value="ALL">All researched Customers and Prospects</option></SelectInput></div>
+        <FilterGroup label="Classification"><FilterChip selected={entity === 'ALL'} onClick={() => setEntity('ALL')}>All classifications</FilterChip>{classifications.has('CUSTOMER') && <FilterChip selected={entity === 'CUSTOMER'} onClick={() => setEntity('CUSTOMER')}>Customer</FilterChip>}{classifications.has('PROSPECT') && <FilterChip selected={entity === 'PROSPECT'} onClick={() => setEntity('PROSPECT')}>Prospect</FilterChip>}{classifications.has('UNAVAILABLE') && <FilterChip selected={entity === 'UNAVAILABLE'} onClick={() => setEntity('UNAVAILABLE')}>Classification unavailable</FilterChip>}</FilterGroup>
+        <FilterGroup label="Industry"><FilterChip selected={industry === 'ALL'} onClick={() => setIndustry('ALL')}>All industries</FilterChip>{industries.map(value => <FilterChip selected={industry === value} key={value} onClick={() => setIndustry(value)}>{value}</FilterChip>)}</FilterGroup>
+      </div>
+      {hasFilters && <div className="portfolio-active-filters" aria-label="Active Portfolio filters"><span>Applied</span>{scope === 'RICH' && <FilterChip selected onClear={() => setScope('ALL')}>Curated scenarios</FilterChip>}{entity !== 'ALL' && <FilterChip selected onClear={() => setEntity('ALL')}>{entity === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(entity.toLowerCase())}</FilterChip>}{industry !== 'ALL' && <FilterChip selected onClear={() => setIndustry('ALL')}>{industry}</FilterChip>}<Button variant="ghost" onClick={clearFilters}>Clear all filters</Button></div>}
+      <ResponsiveTable label="Customers and Prospects" header={<><SortableHeader direction={direction('name')} onClick={() => sortBy('name')}>Customer</SortableHeader><div role="columnheader">Classification</div><SortableHeader direction={direction('industry')} onClick={() => sortBy('industry')}>Industry</SortableHeader><SortableHeader direction={direction('attractiveness')} onClick={() => sortBy('attractiveness')}>Attractiveness</SortableHeader><SortableHeader direction={direction('priority')} onClick={() => sortBy('priority')}>Priority</SortableHeader><div role="columnheader">Evidence</div></>}>{shown.map(item => <button type="button" role="row" className="ui-table-row interactive account-row portfolio-table-row" key={item.id} onClick={() => onSelect(item.id)}><span role="cell" className="portfolio-name"><strong>{accountName(item)}</strong><small>{item.location?.city && item.location?.state ? `${item.location.city}, ${item.location.state}` : 'Location unavailable'}</small></span><span role="cell"><StatusBadge value={classification(item)} kind="entity" label={classificationLabel(item)} /></span><span role="cell">{primaryIndustry(item)}</span><strong role="cell">{item.attractiveness ?? 'Unavailable'}</strong><span role="cell">{item.prospect_research_priority ? humanize(item.prospect_research_priority) : 'Unavailable'}</span><span role="cell"><State value={item.truth_state ?? 'UNAVAILABLE'} /></span></button>)}</ResponsiveTable>
+      <div className="portfolio-mobile-list" aria-label="Customers and Prospects mobile list">{shown.map(item => <MobileListRow key={item.id} title={accountName(item)} metadata={<>{classificationLabel(item)} · {primaryIndustry(item)}</>} tertiary={<>Attractiveness {item.attractiveness ?? 'unavailable'} · Priority {item.prospect_research_priority ? humanize(item.prospect_research_priority) : 'unavailable'} · {humanize(item.truth_state ?? 'UNAVAILABLE')}</>} onClick={() => onSelect(item.id)} />)}</div>
+      {shown.length === 0 && <Empty>No Customers or Prospects match the current search and filters. Clear filters or try a different search.</Empty>}
+    </Panel>
+  </div>
 }
 
-function Signals({ items }: { items: Signal[] }) { return items.length ? <div className="card-list">{items.map(item => <div className="line" key={item.id}><span><strong>{item.title}</strong><small>{item.evidence_state} · publicly curated evidence</small></span><a href={item.source_url} target="_blank" rel="noreferrer">Source</a></div>)}</div> : <Empty>No curated public event is available.</Empty> }
-
-const humanize = (value: string) => value.replaceAll('_', ' ')
+function FilterGroup({ label, children }: { label: string; children: ReactNode }) { return <div className="portfolio-filter-field"><span>{label}</span><div className="chips">{children}</div></div> }
+export function Accounts(props: { accounts: Account[]; detail?: Account360; onSelect: (id: string) => void; onBack: () => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) { return props.detail ? <CustomerDetail accounts={props.accounts} detail={props.detail} onSelect={props.onSelect} onBack={props.onBack} /> : <Portfolio accounts={props.accounts} onSelect={props.onSelect} onOmniContext={props.onOmniContext} /> }
+function Signals({ items }: { items: Signal[] }) { return items.length ? <div className="evidence-list">{items.map(item => <EvidenceSource key={item.id} title={item.title} source={item.source_tier ?? 'Public source'} date={item.observed_at} evidenceState={item.evidence_state} validationState={item.source_validation_state} url={item.source_url} detail={item.relevance_explanation} />)}</div> : <Empty>No curated public event is available.</Empty> }
 
 function RelationshipPathRow({ path }: { path: RelationshipPath }) {
-  const hop = path.hops[0]
-  const provenance = hop?.provenance
-  const sourceReference = provenance?.source_record_id ?? hop?.source_ids?.[0]
-
-  return <article className="relationship-path-row">
-    <div className="relationship-path-heading">
-      <span className="relationship-path-kind">{path.target_entity.kind}</span>
-      <strong>{path.target_entity.name}</strong>
-      <div className="relationship-path-states"><State value={path.presentation_state} /><State value={path.overall_evidence_state} /></div>
-    </div>
-    {hop && <p className="relationship-path-direction">{path.source_entity.name} <span>→</span> {humanize(hop.relationship_type)} <span>→</span> {path.target_entity.name}</p>}
-    {path.narrative && <p className="relationship-path-narrative">{path.narrative}</p>}
-    <div className="relationship-path-provenance">
-      <span>{provenance?.classification === 'INTERNAL_COMMERCIAL' ? 'SAMPLE internal commercial context' : 'Canonical relationship evidence'}</span>
-      {sourceReference && <small>Record: {sourceReference}</small>}
-      {provenance?.source_url && <a href={provenance.source_url} target="_blank" rel="noreferrer">Source</a>}
-    </div>
-  </article>
+  const hop = path.hops[0]; const provenance = hop?.provenance; const sourceReference = provenance?.source_record_id ?? hop?.source_ids?.[0]
+  return <article className="relationship-path-row"><div className="relationship-path-heading"><span className="relationship-path-kind">{path.target_entity.kind}</span><strong>{path.target_entity.name}</strong><div className="relationship-path-states"><State value={path.presentation_state} /><State value={path.overall_evidence_state} /></div></div>{hop && <p className="relationship-path-direction">{path.source_entity.name} <span>→</span> {humanize(hop.relationship_type)} <span>→</span> {path.target_entity.name}</p>}{path.narrative && <p className="relationship-path-narrative">{path.narrative}</p>}<div className="relationship-path-provenance"><span>{provenance?.classification === 'INTERNAL_COMMERCIAL' ? 'SAMPLE internal commercial context' : 'Canonical relationship evidence'}</span>{sourceReference && <small>Record: {sourceReference}</small>}{provenance?.source_url && <a href={provenance.source_url} target="_blank" rel="noreferrer">Source</a>}</div></article>
 }
-
-function RelationshipPathChain({ path }: { path: RelationshipPath }) {
-  return <article className="relationship-chain">
-    <div className="relationship-chain-heading">
-      <span className="relationship-path-kind">Canonical {path.hops.length}-hop path</span>
-      <strong>{path.source_entity.name} <span>→</span> {path.target_entity.name}</strong>
-    </div>
-    <ol className="relationship-chain-hops">
-      {path.hops.map((hop, index) => {
-        const sourceReference = hop.provenance?.source_record_id ?? hop.source_ids?.[0]
-        const evidenceLabel = hop.provenance?.classification === 'INTERNAL_COMMERCIAL' ? 'SAMPLE internal commercial evidence' : 'Public/canonical relationship evidence'
-        return <li key={`${path.path_id}:${index}`} className="relationship-chain-hop">
-          <div className="relationship-chain-hop-direction"><strong>{hop.from_entity.name}</strong><span>→</span><em>{humanize(hop.relationship_type)}</em><span>→</span><strong>{hop.to_entity.name}</strong></div>
-          <div className="relationship-chain-hop-meta"><span>{hop.from_entity.kind} → {hop.to_entity.kind}</span><State value={hop.presentation_state} /><State value={hop.evidence_state} /></div>
-          <div className="relationship-path-provenance"><span>{evidenceLabel}</span>{sourceReference && <small>Record: {sourceReference}</small>}{hop.provenance?.source_url && <a href={hop.provenance.source_url} target="_blank" rel="noreferrer">Source</a>}</div>
-        </li>
-      })}
-    </ol>
-  </article>
-}
+function RelationshipPathChain({ path }: { path: RelationshipPath }) { return <article className="relationship-chain"><div className="relationship-chain-heading"><span className="relationship-path-kind">Canonical {path.hops.length}-hop path</span><strong>{path.source_entity.name} <span>→</span> {path.target_entity.name}</strong></div><ol className="relationship-chain-hops">{path.hops.map((hop, index) => { const sourceReference = hop.provenance?.source_record_id ?? hop.source_ids?.[0]; return <li key={`${path.path_id}:${index}`} className="relationship-chain-hop"><div className="relationship-chain-hop-direction"><strong>{hop.from_entity.name}</strong><span>→</span><em>{humanize(hop.relationship_type)}</em><span>→</span><strong>{hop.to_entity.name}</strong></div><div className="relationship-chain-hop-meta"><span>{hop.from_entity.kind} → {hop.to_entity.kind}</span><State value={hop.presentation_state} /><State value={hop.evidence_state} /></div><div className="relationship-path-provenance"><span>{hop.provenance?.classification === 'INTERNAL_COMMERCIAL' ? 'SAMPLE internal commercial evidence' : 'Public/canonical relationship evidence'}</span>{sourceReference && <small>Record: {sourceReference}</small>}{hop.provenance?.source_url && <a href={hop.provenance.source_url} target="_blank" rel="noreferrer">Source</a>}</div></li> })}</ol></article> }
 
 function RelationshipIntelligence({ accountId }: { accountId: string }) {
-  const [relationships, setRelationships] = useState<AccountRelationships>()
-  const [error, setError] = useState(false)
-  const [view, setView] = useState<'direct' | 'paths'>('direct')
-
-  useEffect(() => {
-    let active = true
-    void api.relationships(accountId).then(result => {
-      if (active) setRelationships(result)
-    }).catch(() => {
-      if (active) setError(true)
-    })
-    return () => { active = false }
-  }, [accountId])
-
-  const directPaths = relationships?.direct_relationships.slice(0, 8) ?? []
-  const multiHopPaths = relationships?.paths.filter(path => path.hops.length > 1).slice(0, 6) ?? []
-  return <Panel title="Relationship Intelligence" action={<span className="panel-kicker">READ ONLY · canonical paths</span>}>
-    <p className="workspace-intro relationship-intelligence-intro">Only canonical relationship records are shown. Public professional-contact research remains separate and does not establish a relationship path or introduction.</p>
-    <div className="relationship-view-toggle" role="tablist" aria-label="Relationship Intelligence view">
-      <button role="tab" aria-selected={view === 'direct'} className={view === 'direct' ? 'selected' : ''} onClick={() => setView('direct')}>Direct relationships</button>
-      <button role="tab" aria-selected={view === 'paths'} className={view === 'paths' ? 'selected' : ''} onClick={() => setView('paths')}>Relationship paths</button>
-    </div>
-    {!relationships && !error && <p className="relationship-intelligence-loading">Loading canonical relationship records…</p>}
-    {error && <Empty>Canonical relationship records could not be loaded for this Customer. No relationship conclusion is shown.</Empty>}
-    {relationships && view === 'direct' && directPaths.length === 0 && <Empty>No canonical direct relationship records are available for this Customer. This does not establish a real-world absence.</Empty>}
-    {view === 'direct' && directPaths.length > 0 && <div className="relationship-path-list">{directPaths.map(path => <RelationshipPathRow key={path.path_id} path={path} />)}</div>}
-    {relationships && view === 'direct' && relationships.direct_relationships.length > directPaths.length && <p className="relationship-intelligence-bound">Showing the first {directPaths.length} of {relationships.direct_relationships.length} direct canonical paths. This view does not infer additional paths.</p>}
-    {relationships && view === 'paths' && multiHopPaths.length === 0 && <Empty>No canonical multi-hop relationship paths are available for this Customer. This does not establish a real-world absence.</Empty>}
-    {view === 'paths' && multiHopPaths.length > 0 && <div className="relationship-chain-list">{multiHopPaths.map(path => <RelationshipPathChain key={path.path_id} path={path} />)}</div>}
-    {relationships && view === 'paths' && relationships.paths.filter(path => path.hops.length > 1).length > multiHopPaths.length && <p className="relationship-intelligence-bound">Showing the first {multiHopPaths.length} canonical multi-hop paths returned by the service. This view does not infer additional paths.</p>}
-  </Panel>
+  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(false); const [view, setView] = useState<'direct' | 'paths'>('direct')
+  useEffect(() => { let active = true; void api.relationships(accountId).then(result => { if (active) setRelationships(result) }).catch(() => { if (active) setError(true) }); return () => { active = false } }, [accountId])
+  const direct = relationships?.direct_relationships.slice(0, 8) ?? []; const paths = relationships?.paths.filter(path => path.hops.length > 1).slice(0, 6) ?? []
+  return <div className="relationship-content"><p className="workspace-intro relationship-intelligence-intro">Only canonical relationship records are shown. Public professional-contact research remains separate and does not establish a relationship path or introduction.</p><div className="relationship-view-toggle" role="tablist" aria-label="Relationship Intelligence view"><button role="tab" aria-selected={view === 'direct'} className={view === 'direct' ? 'selected' : ''} onClick={() => setView('direct')}>Direct relationships</button><button role="tab" aria-selected={view === 'paths'} className={view === 'paths' ? 'selected' : ''} onClick={() => setView('paths')}>Relationship paths</button></div>{!relationships && !error && <p className="relationship-intelligence-loading">Loading canonical relationship records…</p>}{error && <Empty>Canonical relationship records could not be loaded for this Customer. No relationship conclusion is shown.</Empty>}{relationships && view === 'direct' && direct.length === 0 && <Empty>No canonical direct relationship records are available for this Customer. This does not establish a real-world absence.</Empty>}{view === 'direct' && direct.length > 0 && <div className="relationship-path-list">{direct.map(path => <RelationshipPathRow key={path.path_id} path={path} />)}</div>}{relationships && view === 'paths' && paths.length === 0 && <Empty>No canonical multi-hop relationship paths are available for this Customer. This does not establish a real-world absence.</Empty>}{view === 'paths' && paths.length > 0 && <div className="relationship-chain-list">{paths.map(path => <RelationshipPathChain key={path.path_id} path={path} />)}</div>}</div>
 }
 
-function AccountDetail({ detail }: { detail?: Account360 }) {
-  if (!detail) return <Panel title="Customer 360"><Empty>Select a Customer to view public evidence, simulated BTX context, and uncertainty.</Empty></Panel>
-
-  const score = detail.account_attractiveness
-  const name = detail.account.name ?? detail.account.legal_name ?? detail.account.id
-  const availableFactors = score.factors.filter(factor => !factor.missing)
-
-  return <section className="account-workspace" aria-label={`${name} Customer workspace`}>
-    <header className="account-workspace-header">
-      <div className="account-workspace-heading"><span className="eyebrow">Customers & Prospects / Customer 360 workspace</span><h2>{name}<small> / Customer 360</small></h2><p>{detail.account.industries.join(' · ') || 'Industry unavailable'} · Public research and governed SAMPLE commercial context</p></div>
-      <div className="account-workspace-states"><State value={detail.truth_categories.public} /><State value={detail.truth_categories.btx} /></div>
-    </header>
-
-    <section className="account-decision-zone" aria-label="Customer decision support">
-      <div className="account-score-summary"><span>Customer Attractiveness</span><strong>{score.score ?? '—'}</strong><State value={score.status} /></div>
-      <div><span className="eyebrow">Why it matters</span><p>{detail.reason_for_attention ?? 'No current reason for attention is available.'}</p></div>
-      <div><span className="eyebrow">Recommended review</span><p>{detail.recommended_next_step ?? 'No governed next step is currently available.'}</p></div>
-    </section>
-
-    <div className="account-workspace-grid">
-      <Panel title="Public evidence & geography" action={<State value={detail.public_identity_state} />}>
-        <div className="workspace-fact"><span>Public relationship</span><strong>{detail.public_relationship?.state ?? 'UNAVAILABLE'}</strong><small>{detail.public_relationship?.basis ?? 'No public relationship basis is currently available.'}</small></div>
-        {detail.public_facilities.length > 0 ? <div className="card-list">{detail.public_facilities.map(facility => <div className="line" key={facility.id}><span><strong>{facility.name}</strong><small>{facility.city}, {facility.region} · {facility.verification_state}</small></span>{facility.source_url && <a href={facility.source_url} target="_blank" rel="noreferrer">Source</a>}</div>)}</div> : <Empty>Public location has not yet been verified for this Customer. No map pin is shown.</Empty>}
-      </Panel>
-
-      <Panel title="Public professional contact research" action={<span className="panel-kicker">{detail.public_contacts.length} public records</span>}>
-        <p className="workspace-intro">Only legitimate public professional contacts and channels are shown.</p>
-        {detail.public_contacts.length ? <div className="card-list">{detail.public_contacts.map(contact => <div className="line" key={`${contact.contact_type}-${contact.name}`}><span><strong>{contact.name ?? contact.role_family}</strong><small>{contact.title_or_function ?? contact.role_family} · {contact.verification_state}</small></span>{contact.source_url && <a href={contact.source_url} target="_blank" rel="noreferrer">Source</a>}</div>)}</div> : <Empty>{`Role-family target: ${detail.account.contact_role_families?.join(', ') ?? 'procurement / engineering'}`}</Empty>}
-      </Panel>
-
-      <Panel title="Commercial position" action={<State value="SAMPLE" />}>
-        <p className="workspace-intro"><strong>Simulated BTX commercial context.</strong> Quotes, matching, ownership, and workflow context are POC simulation—not BTX-connected records.</p>
-        <div className="workspace-metrics"><span><strong>{detail.prism_commercial_context.length}</strong> commercial context records</span><span><strong>{detail.paperless_quotes.length}</strong> quote records</span><span><strong>{detail.matching.length}</strong> matching records</span></div>
-        {detail.paperless_quotes.length ? <div className="card-list">{detail.paperless_quotes.map(quote => <div className="line" key={quote.id}><span><strong>{quote.id}</strong><small>Quoted {quote.quoted_at}</small></span><State value={quote.status} /></div>)}</div> : <Empty>No SAMPLE quote history is available.</Empty>}
-      </Panel>
-
-      <Panel title="What needs attention" action={<span className="panel-kicker">{detail.alerts.length} governed alerts</span>}>
-        {detail.alerts.length ? <div className="card-list">{detail.alerts.map(alert => <div className="workspace-attention" key={alert.id}><State value={alert.severity} /><strong>{humanize(alert.type)}</strong><p>{alert.trigger_reason}</p><small>{alert.recommended_action}</small></div>)}</div> : <Empty>No governed alert is currently open for this Customer.</Empty>}
-      </Panel>
-    </div>
-
-    <div className="account-workspace-lower">
-      <Panel title="Signals, health & rationale" action={<span className="panel-kicker">Public intelligence</span>}>
-        <div className="workspace-rationale"><span className="eyebrow">Why this Customer is advancing</span><p>{detail.prospect_rationale ?? detail.reason_for_attention ?? 'No research rationale is currently available.'}</p></div>
-        <Signals items={detail.intelligence} />
-      </Panel>
-
-      <Panel title="Attractiveness rationale" action={<State value={score.status} />}>
-        <p className="workspace-intro"><strong>Customer Attractiveness · POC simulation</strong> · Coverage {Number(score.coverage) * 100}% · canonical simulated BTX-only scoring; external industry rank is separate.</p>
-        {score.exclusion_reason ? <p className="truth-note">{score.exclusion_reason}</p> : <div className="factor-list">{score.factors.map(factor => <div className="factor-row" key={factor.name}><span><strong>{humanize(factor.name)}</strong><small>{factor.missing ? 'Missing canonical input' : `Canonical contribution ${factor.contribution ?? '—'}`}</small>{factor.gaps.length > 0 && <small>{factor.gaps.join(', ')}</small>}</span><strong>{factor.score ?? '—'}</strong></div>)}</div>}
-        {!score.exclusion_reason && availableFactors.length === 0 && <Empty>No canonical score factors are currently available.</Empty>}
-        {score.missingness.length > 0 && <p className="truth-note">Missingness: {score.missingness.join(', ')}</p>}
-      </Panel>
-    </div>
-
-    <div className="account-workspace-relationship">
-      <RelationshipIntelligence key={detail.account.id} accountId={detail.account.id} />
-    </div>
-  </section>
+function useMobileCustomerLayout() { const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches); useEffect(() => { const media = window.matchMedia('(max-width: 760px)'); const update = () => setMobile(media.matches); media.addEventListener('change', update); return () => media.removeEventListener('change', update) }, []); return mobile }
+function CustomerSection({ title, summary, children, defaultOpen = false, className = '' }: { title: string; summary?: string; children: ReactNode; defaultOpen?: boolean; className?: string }) { const mobile = useMobileCustomerLayout(); return <div className={`customer-section ${className}`}>{mobile ? <Disclosure title={<span>{title}{summary && <small>{summary}</small>}</span>} defaultOpen={defaultOpen}>{children}</Disclosure> : <Panel title={title} action={summary ? <span className="panel-kicker">{summary}</span> : undefined}>{children}</Panel>}</div> }
+function CustomerDetail({ accounts, detail, onSelect, onBack }: { accounts: Account[]; detail: Account360; onSelect: (id: string) => void; onBack: () => void }) {
+  const [switchQuery, setSwitchQuery] = useState(''); const attractiveness = detail.account_attractiveness; const name = accountName(detail.account); const availableFactors = attractiveness.factors.filter(factor => !factor.missing)
+  const switchResults = switchQuery ? accounts.filter(item => `${accountName(item)} ${item.industries.join(' ')}`.toLowerCase().includes(switchQuery.toLowerCase())).slice(0, 6) : []
+  const choose = (id: string) => { setSwitchQuery(''); onSelect(id) }
+  return <div className="surface account-detail-surface"><div className="account-workspace-navigation"><Button className="account-workspace-back" variant="ghost" onClick={onBack}>← Customers &amp; Prospects</Button><div className="account-switcher"><SearchInput aria-label="Switch Customer" placeholder="Search Customer, industry, or location" value={switchQuery} onChange={event => setSwitchQuery(event.target.value)} />{switchResults.length > 0 && <div className="account-switch-results" role="listbox" aria-label="Customer switcher results">{switchResults.map(item => <button type="button" role="option" aria-selected="false" className="account-row account-switch-result" key={item.id} onClick={() => choose(item.id)}><span><strong>{accountName(item)}</strong><small>{item.industries.join(' / ') || 'Industry unavailable'}</small></span><State value={item.truth_state ?? 'UNAVAILABLE'} /></button>)}</div>}</div></div><section className="account-workspace" aria-label={`${name} Customer workspace`}>
+    <header className="account-workspace-header"><div className="account-workspace-heading"><span className="eyebrow">Customers &amp; Prospects / Customer 360</span><h1>{name}</h1><p>{detail.account.industries.join(' · ') || 'Industry unavailable'}</p></div><div className="account-workspace-states"><StatusBadge value={classification(detail.account)} kind="entity" label={classificationLabel(detail.account)} /><State value={detail.truth_categories.public} /><State value={detail.truth_categories.btx} /></div></header>
+    <section className="account-decision-zone" aria-label="Customer decision summary"><StatTile label="Attractiveness" value={attractiveness.score ?? 'Unavailable'} detail={humanize(attractiveness.status)} /><StatTile label="Research priority" value={detail.prospect_research_priority ? humanize(detail.prospect_research_priority) : 'Unavailable'} detail="Canonical research priority" /><div className="account-why"><span className="eyebrow">Why this Customer matters</span><p>{detail.reason_for_attention ?? 'No current reason for attention is available.'}</p><strong>Next review</strong><p>{detail.recommended_next_step ?? 'No governed next step is currently available.'}</p></div></section>
+    <div className="account-primary-grid"><CustomerSection className="attention-section" title="What needs attention" summary={`${detail.alerts.length} governed alerts`} defaultOpen>{detail.alerts.length ? <div className="card-list">{detail.alerts.map(alert => <div className="workspace-attention" key={alert.id}><State value={alert.severity} /><strong>{humanize(alert.type)}</strong><p>{alert.trigger_reason}</p><small>{alert.recommended_action}</small></div>)}</div> : <Empty>No governed alert is currently open for this Customer.</Empty>}</CustomerSection><CustomerSection title="Commercial context" summary="SAMPLE"><Notice title="Simulated BTX commercial context">Quotes, ownership, matching, and workflow context are POC simulation—not BTX-connected records.</Notice><div className="workspace-metrics"><span><strong>{detail.prism_commercial_context.length}</strong> commercial records</span><span><strong>{detail.paperless_quotes.length}</strong> quote records</span><span><strong>{detail.matching.length}</strong> matching records</span></div>{detail.paperless_quotes.length ? <div className="card-list">{detail.paperless_quotes.map(quote => <div className="line" key={quote.id}><span><strong>{quote.id}</strong><small>Quoted {quote.quoted_at}</small></span><State value={quote.status} /></div>)}</div> : <Empty>No SAMPLE quote history is available.</Empty>}</CustomerSection></div>
+    <div className="account-secondary-grid"><CustomerSection title="Recent intelligence" summary="Public evidence"><Signals items={detail.intelligence} /></CustomerSection><CustomerSection title="Public professional contact research" summary={`${detail.public_contacts.length} records`}>{detail.public_contacts.length ? <div className="evidence-list">{detail.public_contacts.map(contact => <EvidenceSource key={`${contact.contact_type}-${contact.name ?? contact.role_family}`} title={contact.name ?? contact.role_family} source="Public professional research" evidenceState={contact.verification_state} url={contact.source_url} detail={contact.title_or_function ?? contact.role_family} />)}</div> : <Empty>{`No verified public contact is available. Role-family target: ${detail.account.contact_role_families?.join(', ') ?? 'procurement / engineering'}.`}</Empty>}</CustomerSection><CustomerSection title="Public identity & geography" summary={humanize(detail.public_identity_state)}><MetadataRow label="Public relationship" value={humanize(detail.public_relationship?.state ?? 'UNAVAILABLE')} /><p className="workspace-intro">{detail.public_relationship?.basis ?? 'No public relationship basis is currently available.'}</p>{detail.public_facilities.length ? <div className="evidence-list">{detail.public_facilities.map(facility => <EvidenceSource key={facility.id} title={facility.name} source={`${facility.city}, ${facility.region}`} evidenceState={facility.verification_state} url={facility.source_url} detail={facility.facility_type} />)}</div> : <Empty>Public location has not yet been verified for this Customer. No map pin is shown.</Empty>}</CustomerSection><CustomerSection title="Attractiveness rationale & missingness" summary={humanize(attractiveness.status)}><Notice title="Customer Attractiveness · POC simulation">Deterministic canonical simulated BTX-only inputs; this is not an external industry rank.</Notice>{attractiveness.exclusion_reason ? <p className="truth-note">{attractiveness.exclusion_reason}</p> : <div className="factor-list">{attractiveness.factors.map(factor => <div className="factor-row" key={factor.name}><span><strong>{humanize(factor.name)}</strong><small>{factor.missing ? 'Missing canonical input' : `Canonical contribution ${factor.contribution ?? 'Unavailable'}`}</small>{factor.gaps.length > 0 && <small>{factor.gaps.join(', ')}</small>}</span><strong>{factor.score ?? '—'}</strong></div>)}</div>}{!attractiveness.exclusion_reason && availableFactors.length === 0 && <Empty>No canonical score factors are currently available.</Empty>}{attractiveness.missingness.length > 0 ? <Notice tone="warning" title="Missing inputs">{attractiveness.missingness.join(', ')}</Notice> : <MetadataRow label="Input coverage" value={`${Number(attractiveness.coverage) * 100}%`} />}</CustomerSection></div>
+    <CustomerSection className="account-workspace-relationship" title="Relationship Intelligence" summary="READ ONLY · canonical paths"><RelationshipIntelligence key={detail.account.id} accountId={detail.account.id} /></CustomerSection>
+    <CustomerSection title="Evidence & provenance" summary={humanize(detail.provenance.evidence_state)}><EvidenceSource title="Canonical Customer record" source={detail.provenance.source_record_id} evidenceState={detail.provenance.evidence_state} detail={detail.missingness.length ? `Missingness: ${detail.missingness.join(', ')}` : 'No additional projection missingness reported.'} /></CustomerSection>
+  </section></div>
 }

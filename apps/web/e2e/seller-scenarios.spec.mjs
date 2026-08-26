@@ -121,7 +121,8 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   // Defense award + quote-history scenario: Account Detail and Omni use the same exact ID.
   await search.fill('Lockheed')
   await page.locator('.account-row').filter({ hasText: 'Lockheed' }).first().click()
-  await expect(page.getByText(/Lockheed.*Customer 360/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
+  await expect(page.getByText(/Customers & Prospects \/ Customer 360/)).toBeVisible()
   await openOmni(page)
   const detail = await ask(page, 'Tell me about this account.')
   expect(detail.request.context.surface).toBe('ACCOUNT_DETAIL')
