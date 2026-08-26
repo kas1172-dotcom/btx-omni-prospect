@@ -170,13 +170,13 @@ test('list surfaces publish only their current filters and bounded canonical vis
   assert.match(accounts, /market: industry/)
   assert.match(accounts, /shown\.slice\(0, 50\)\.map\(account => account\.id\)/)
   assert.match(accounts, /onOmniContext\(\{ active_filters: Object\.keys\(activeFilters\)\.length \? activeFilters : undefined, visible_record_ids: visibleRecordIds \}\)/)
-  assert.match(intelligence, /signals\.slice\(0, 50\)\.map\(signal => signal\.id\)/)
-  assert.match(intelligence, /onOmniContext\(\{ visible_record_ids: visibleRecordIds \}\)/)
+  assert.match(intelligence, /visible\.slice\(0, 50\)\.map\(signal => signal\.id\)/)
+  assert.match(intelligence, /onOmniContext\(\{ active_filters: Object\.keys\(activeFilters\)\.length \? activeFilters : undefined, visible_record_ids: visibleRecordIds \}\)/)
   assert.match(actions, /action_status: 'ACTIVE'/)
   assert.match(actions, /market: industry/)
   assert.match(actions, /visible\.slice\(0, 50\)\.map\(item => item\.id\)/)
   assert.match(actions, /onOmniContext\(\{ active_filters: Object\.keys\(activeFilters\)\.length \? activeFilters : undefined, visible_record_ids: visibleRecordIds \}\)/)
-  assert.match(today, /visibleRecordIds = useMemo\(\(\) => \[\.\.\.alerts\.map\(alert => alert\.id\), \.\.\.priority\.map\(signal => signal\.id\)\]/)
+  assert.match(today, /visibleRecordIds = useMemo\(\(\) => \[\.\.\.alerts\.map\(alert => alert\.id\), \.\.\.prioritySignals\.map\(signal => signal\.id\)\]/)
 })
 
 test('shell clears stale list, detail, and passive entity context across surface changes', () => {
