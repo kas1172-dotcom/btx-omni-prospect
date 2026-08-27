@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     monitor_durable_state_enabled: bool = False
     monitor_operator_token: str | None = None
     monitor_stale_after_hours: int = 48
+    action_salesperson_token: str = "development-salesperson"
+    action_manager_token: str = "development-manager"
     ai_provider: str = "anthropic"
     anthropic_api_key: str | None = Field(
         default=None,

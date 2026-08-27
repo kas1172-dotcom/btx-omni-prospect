@@ -161,14 +161,17 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   expect(facilityB.body.context_used.facility_id).toBe(facilityB.request.context.selected_facility_id)
   await closeOmni(page)
 
-  // The normal Actions UI may create a session-only item; Omni then remains read-only.
+  // A governed Suggestion converts to one durable Action; Omni remains read-only.
   await navigate(page, 'Actions')
   const actionPosts = []
   page.on('request', request => {
     if (request.method() === 'POST' && /\/api\/actions(?:\/|$)/.test(new URL(request.url()).pathname)) actionPosts.push(request.url())
   })
-  await page.getByRole('button', { name: 'Add to queue' }).first().click()
-  await expect(page.locator('.action-choice.selected')).toBeVisible()
+  await page.getByRole('button', { name: 'Suggested' }).click()
+  const createSuggested = page.locator('.suggestion-card').getByRole('button', { name: 'Create Action' }).first()
+  if (await createSuggested.count()) await createSuggested.click()
+  else await page.getByRole('button', { name: 'My Actions' }).click()
+  await expect(page.locator('.action-row.selected')).toBeVisible()
   const postsAfterUiCreation = actionPosts.length
   await openOmni(page)
   const action = await ask(page, 'Why was this created?')

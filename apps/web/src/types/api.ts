@@ -3,7 +3,14 @@ export type Relationship = 'PUBLIC_MARKET' | 'CURRENT_CUSTOMER' | 'FORMER_CUSTOM
 export interface Account { id: string; name?: string; legal_name?: string; relationship: Relationship; industries: string[]; secondary_classifications?: string[]; domain?: string; contact_role_families?: string[]; public_research_state?: string; public_identity_state?: string; public_relationship_state?: string; prospect_research_priority?: string; prospect_rationale?: string; is_rich_scenario?: boolean; truth_state?: string; attractiveness?: string; business_unit?: string; commercial_context_state?: string; location?: { city?: string; state?: string; country?: string }; provenance?: string }
 export interface Alert { id: string; account_id: string; type: string; severity: string; trigger_reason: string; recommended_action: string; evidence_ids: string[]; status: string }
 export interface Signal { id: string; kind: string; title: string; source_url: string; account_id?: string; program_name?: string; evidence_state: string; resolution_state?: string; data_mode?: string; observed_at?: string; source_tier?: string; source_validation_state?: string; relevance_explanation: string; evidence_ids: string[] }
-export interface WorkItem { id: string; account_id: string; status: string; summary: string; owner_id?: string; priority: string; due_date?: string; notes?: string; evidence_ids: string[] }
+export type ActionStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED'
+export type ActionPriority = 'HIGH' | 'MEDIUM' | 'LOW'
+export type ApprovalStatus = 'NOT_REQUIRED' | 'PENDING' | 'APPROVED' | 'REJECTED'
+export interface Action { id: string; account_id: string; title: string; description?: string; owner_id?: string; priority: ActionPriority; due_date?: string; status: ActionStatus; approval_status: ApprovalStatus; source_suggestion_id?: string; evidence_ids: string[]; created_by: string; created_at: string; updated_at: string }
+export type WorkItem = Action
+export interface Suggestion { id: string; account_id: string; title: string; rationale: string; priority: ActionPriority; evidence_ids: string[]; source: string; observed_at: string; dismissed: boolean; converted_action_id?: string }
+export interface Principal { user_id: string; display_name: string; role: 'SALESPERSON' | 'MANAGER' }
+export interface ActionHistoryEvent { id: number; action_id: string; actor_id: string; event: string; occurred_at: string; metadata: Record<string, unknown> }
 export interface Coordinates { latitude: string; longitude: string }
 export type MapAccountSegment = 'CURRENT_CLIENT' | 'DORMANT_CUSTOMER' | 'PROSPECT' | 'UNKNOWN'
 export interface MapRecord { id: string; entity_type: 'ACCOUNT'; account_id: string; name: string; industry: string; primary_markets: string[]; relationship: Relationship; account_segment: MapAccountSegment; is_rich_scenario?: boolean; coordinates: Coordinates; deep_account: boolean; nearest_btx_facility: { id: string; name: string } | null; proximity_input: string | null; location_truth_state: string }

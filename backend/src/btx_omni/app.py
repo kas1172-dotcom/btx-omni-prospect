@@ -24,8 +24,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[origin.strip() for origin in settings.frontend_origins.split(",") if origin.strip()],
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
-        allow_headers=["content-type"],
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["content-type", "x-btx-principal-token"],
     )
 
     global runtime

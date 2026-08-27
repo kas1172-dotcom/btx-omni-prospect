@@ -1,64 +1,91 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 
 from btx_omni.domain.common import require_aware
 
 
-class ActionState(StrEnum):
-    PROPOSED = "PROPOSED"
-    APPROVED = "APPROVED"
-    DISMISSED = "DISMISSED"
+class ActionStatus(StrEnum):
+    OPEN = "OPEN"
+    IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
+    CANCELED = "CANCELED"
 
 
-class ActionType(StrEnum):
-    REVIEW = "REVIEW"
-    ASSIGN = "ASSIGN"
-    APPROVE = "APPROVE"
-    DISMISS = "DISMISS"
-    FOLLOW_UP = "FOLLOW_UP"
-    CRM_ACTION = "CRM_ACTION"
+class ActionPriority(StrEnum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
+class ApprovalStatus(StrEnum):
+    NOT_REQUIRED = "NOT_REQUIRED"
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class PrincipalRole(StrEnum):
+    SALESPERSON = "SALESPERSON"
+    MANAGER = "MANAGER"
 
 
 @dataclass(frozen=True)
-class WorkItem:
-    """Backend work queue item; it does not imply a top-level POC surface."""
-
-    id: str
-    account_id: str
-    summary: str
-    state: ActionState
-    evidence_ids: tuple[str, ...]
-    owner_id: str | None = None
+class Principal:
+    user_id: str
+    display_name: str
+    role: PrincipalRole
 
 
 @dataclass(frozen=True)
-class GovernedAction:
+class Action:
     id: str
     account_id: str
-    action_type: ActionType
-    state: ActionState
-    summary: str
+    title: str
+    description: str | None
+    owner_id: str | None
+    priority: ActionPriority
+    due_date: date | None
+    status: ActionStatus
+    approval_status: ApprovalStatus
+    source_suggestion_id: str | None
     evidence_ids: tuple[str, ...]
-    idempotency_key: str
+    created_by: str
     created_at: datetime
-    requires_human_confirmation: bool
+    updated_at: datetime
+    completed_at: datetime | None = None
+    canceled_at: datetime | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.created_at, "created_at")
-        if not self.evidence_ids:
-            raise ValueError("governed actions require evidence")
+        require_aware(self.updated_at, "updated_at")
+        if self.completed_at:
+            require_aware(self.completed_at, "completed_at")
+        if self.canceled_at:
+            require_aware(self.canceled_at, "canceled_at")
+        if not self.title.strip():
+            raise ValueError("Action title is required.")
+
+    @property
+    def summary(self) -> str:
+        """Read compatibility for the bounded Omni contract during convergence."""
+        return self.title
+
+    @property
+    def notes(self) -> str | None:
+        return self.description
 
 
 @dataclass(frozen=True)
 class ActionAuditEvent:
+    id: int | None
     action_id: str
     actor_id: str
     event: str
     occurred_at: datetime
+    metadata: dict[str, object]
 
     def __post_init__(self) -> None:
         require_aware(self.occurred_at, "occurred_at")

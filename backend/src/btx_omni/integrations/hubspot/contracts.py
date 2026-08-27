@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from typing import Protocol
 
 from btx_omni.domain.crm import CrmActivity, CrmCompany, CrmContact, CrmDeal
 
@@ -36,6 +37,14 @@ class CrmActionPreview:
     confirmed: bool = False
     executed: bool = False
     unavailable_reason: str | None = None
+
+
+class CrmWritePort(Protocol):
+    """Provider-neutral boundary for explicit, governed CRM operations."""
+
+    def preview_action(self, action_id: str, account_id: str, operation: str, payload: dict[str, str]) -> CrmActionPreview: ...
+
+    def execute_action(self, preview: CrmActionPreview) -> CrmActionPreview: ...
 
 
 class SampleHubSpotAdapter:
