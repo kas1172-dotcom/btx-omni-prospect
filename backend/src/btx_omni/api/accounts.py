@@ -4,6 +4,9 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.matching.commercial import match_component_to_quote
+from btx_omni.modules.relationships.presentation import (
+    SellerRelationshipPresentationService,
+)
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
@@ -69,6 +72,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
 @router.get("/{account_id}/relationships")
 def account_relationships(account_id: str, depth: int = Query(default=2, ge=1, le=4), runtime: PocRuntime = Depends(get_runtime)) -> dict:
     try:
-        return RelationshipIntelligenceService(runtime.environment()).account_relationships(account_id, depth=depth)
+        result = RelationshipIntelligenceService(runtime.environment()).account_relationships(account_id, depth=depth)
+        return {**result, **SellerRelationshipPresentationService().present(result)}
     except KeyError as exc:
         raise HTTPException(404, "Canonical Customer not found.") from exc

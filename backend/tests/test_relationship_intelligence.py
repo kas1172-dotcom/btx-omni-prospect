@@ -3,6 +3,10 @@ from httpx import ASGITransport, AsyncClient
 
 from btx_omni.app import create_app
 from btx_omni.domain.common import EvidenceState
+from btx_omni.modules.relationships.presentation import (
+    SellerRelationshipPresentationService,
+    seller_relationship_semantics,
+)
 from btx_omni.modules.relationships.service import (
     RelationshipIntelligenceService,
     presentation_state,
@@ -62,6 +66,42 @@ def test_evidence_presentation_mapping_is_deterministic() -> None:
     assert presentation_state(EvidenceState.MISSING) == presentation_state(EvidenceState.CONFLICTING) == "unusable"
 
 
+def test_seller_relationship_policy_is_deterministic_and_bounded() -> None:
+    label, why, move = seller_relationship_semantics("SHARED_PROGRAM")
+    assert label == "Shared program"
+    assert "canonically associated" in why
+    assert move == "Inspect the shared program evidence before using it to shape outreach."
+    assert not any(term in f"{label} {why} {move}".lower() for term in ("warm", "introduction", "strong", "confidence"))
+
+    reverse = seller_relationship_semantics("PARENT_CHILD_REVERSE")
+    assert reverse == seller_relationship_semantics("PARENT_CHILD")
+    fallback = seller_relationship_semantics("UNRECOGNIZED_CANONICAL_TYPE")
+    assert fallback[0] == "Recorded relationship"
+    assert "Inspect the evidence" in fallback[2]
+
+
+def test_seller_projection_preserves_raw_paths_and_evidence_without_strength() -> None:
+    raw = RelationshipIntelligenceService(build_sample_environment()).account_relationships("lockheed-martin", depth=2)
+    raw_path_ids = [path["path_id"] for path in raw["paths"]]
+    projected = SellerRelationshipPresentationService().present(raw)
+    assert [path["path_id"] for path in raw["paths"]] == raw_path_ids
+    assert len(projected["seller_direct_relationships"]) == len(raw["direct_relationships"])
+    assert len(projected["seller_paths"]) == len(raw["paths"])
+    direct = projected["seller_direct_relationships"][0]
+    multi_hop = next(path for path in projected["seller_paths"] if not path["direct"])
+    for path in (direct, multi_hop):
+        assert path["summary"] and path["connection_label"] and path["why_it_matters"]
+        assert path["suggested_move"]
+        assert path["evidence"]
+        assert all("evidence_state" in item and "source_record_id" in item for item in path["evidence"])
+        assert "strength" not in path and "confidence" not in path
+        assert "warm" not in path["suggested_move"].lower()
+        assert "introduction" not in path["suggested_move"].lower()
+    assert direct["direct"] is True and direct["step_count"] == 1
+    assert multi_hop["direct"] is False and multi_hop["step_count"] == 2
+    assert all(step["display_name"] not in {"quote", "order"} for path in projected["seller_paths"] for step in path["steps"])
+
+
 @pytest.mark.asyncio
 async def test_account_relationship_api_is_typed_and_bounded() -> None:
     async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://test") as client:
@@ -73,3 +113,8 @@ async def test_account_relationship_api_is_typed_and_bounded() -> None:
     assert any(path["presentation_state"] == "validated" for path in payload["paths"])
     multi_hop = next(path for path in payload["paths"] if len(path["hops"]) == 2)
     assert multi_hop["path_id"] and all(hop["presentation_state"] for hop in multi_hop["hops"])
+    assert len(payload["seller_direct_relationships"]) == len(payload["direct_relationships"])
+    assert len(payload["seller_paths"]) == len(payload["paths"])
+    assert "relationship_type" in payload["paths"][0]["hops"][0]
+    assert "connection_label" in payload["seller_paths"][0]
+    assert "strength" not in payload["seller_paths"][0]
