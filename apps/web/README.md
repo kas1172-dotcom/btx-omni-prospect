@@ -1,5 +1,11 @@
 # React + TypeScript + Vite
 
+## Google Maps browser configuration
+
+Map V2 uses the Google Maps JavaScript API through a provider-neutral marker model. Set `VITE_GOOGLE_MAPS_API_KEY` in local/deployment configuration and optionally set `VITE_GOOGLE_MAPS_MAP_ID` (the local default is Google's `DEMO_MAP_ID`). The browser key is public by nature and must be restricted to approved HTTP referrers and to the Maps JavaScript API. Configure billing and quotas in the owning Google Cloud project and manage production values through deployment secrets/configuration; never commit a credential.
+
+Routine Playwright coverage uses `VITE_MAP_TEST_MODE=true`, a deterministic non-production renderer seam, and does not call Google or incur billable traffic. Customer and facility overlays remain application-controlled; they are not uploaded to Google data-driven datasets. Google Maps configuration is independent from any future Gemini integration.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

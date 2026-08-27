@@ -1,0 +1,20 @@
+import type { BtxMapFacility, Coordinates, MapAccountSegment, MapIntelligence, MapRecord, PublicLocation } from '../../types/api'
+
+export type MapMarkerKind = 'customer' | 'prospect' | 'public-facility' | 'btx-facility' | 'intelligence'
+export type MapLayer = 'customers' | 'prospects' | 'public-facilities' | 'btx-facilities' | 'intelligence'
+export type MapSelection = { markerId: string; kind: MapMarkerKind; accountId?: string; facilityId?: string; eventId?: string }
+export type MapMarker = { id: string; kind: MapMarkerKind; label: string; accessibleLabel: string; latitude: number; longitude: number; accountId?: string; facilityId?: string; eventId?: string }
+export type MapFilters = { coverage: 'RICH' | 'ALL'; industries: string[]; relationships: MapAccountSegment[]; layers: MapLayer[] }
+export const ALL_MAP_LAYERS: MapLayer[] = ['customers', 'prospects', 'public-facilities', 'btx-facilities', 'intelligence']
+export const validCoordinates = (value: Coordinates | null | undefined): value is Coordinates => Boolean(value && Number.isFinite(Number(value.latitude)) && Number.isFinite(Number(value.longitude)) && Math.abs(Number(value.latitude)) <= 90 && Math.abs(Number(value.longitude)) <= 180)
+export const relationshipKind = (record: MapRecord): 'customer' | 'prospect' => record.account_segment === 'PROSPECT' ? 'prospect' : 'customer'
+export function filterMapRecords(records: MapRecord[], filters: MapFilters) { return records.filter(record => (filters.coverage === 'ALL' || record.is_rich_scenario) && (!filters.industries.length || filters.industries.some(industry => record.primary_markets.includes(industry))) && (!filters.relationships.length || filters.relationships.includes(record.account_segment))) }
+export function buildMapMarkers(records: MapRecord[], publicLocations: PublicLocation[], btxFacilities: BtxMapFacility[], signals: MapIntelligence[], layers: MapLayer[]): MapMarker[] {
+  const enabled = new Set(layers); const markers: MapMarker[] = []
+  for (const record of records) { if (!validCoordinates(record.coordinates)) continue; const kind = relationshipKind(record); if (!enabled.has(kind === 'customer' ? 'customers' : 'prospects')) continue; markers.push({ id: `account:${record.account_id}`, kind, label: record.name, accessibleLabel: `${kind === 'customer' ? 'Customer' : 'Prospect'} marker: ${record.name}`, latitude: Number(record.coordinates.latitude), longitude: Number(record.coordinates.longitude), accountId: record.account_id }) }
+  if (enabled.has('public-facilities')) for (const facility of publicLocations) if (validCoordinates(facility.coordinates)) markers.push({ id: `facility:${facility.facility_id}`, kind: 'public-facility', label: facility.name, accessibleLabel: `Public facility marker: ${facility.name}`, latitude: Number(facility.coordinates.latitude), longitude: Number(facility.coordinates.longitude), accountId: facility.account_id, facilityId: facility.facility_id })
+  if (enabled.has('btx-facilities')) for (const facility of btxFacilities) if (validCoordinates(facility.coordinates)) markers.push({ id: `btx:${facility.facility_id}`, kind: 'btx-facility', label: facility.name, accessibleLabel: `BTX facility marker: ${facility.name}`, latitude: Number(facility.coordinates.latitude), longitude: Number(facility.coordinates.longitude), facilityId: facility.facility_id })
+  if (enabled.has('intelligence')) for (const signal of signals) if (validCoordinates(signal.coordinates)) markers.push({ id: `intelligence:${signal.event_id}`, kind: 'intelligence', label: signal.title, accessibleLabel: `Intelligence marker: ${signal.title}`, latitude: Number(signal.coordinates.latitude), longitude: Number(signal.coordinates.longitude), accountId: signal.account_id, facilityId: signal.facility_id, eventId: signal.event_id })
+  return markers
+}
+export const toggleValue = <T extends string>(values: T[], value: T) => values.includes(value) ? values.filter(item => item !== value) : [...values, value]
