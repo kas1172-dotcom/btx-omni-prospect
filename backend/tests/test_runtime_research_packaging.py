@@ -22,6 +22,7 @@ RUNTIME_RESEARCH_FILES = (
     "btx_sample_hubspot_crm.json",
     "btx_sample_orders.json",
     "btx_sample_paperless_quotes.json",
+    "btx_sample_priority_customer_scenarios.json",
     "btx_usaspending_recipient_identities.json",
 )
 

@@ -44,6 +44,10 @@ from btx_omni.providers.research.reference_data import load_reference_import
 from btx_omni.providers.research.relationships import load_relationship_edges
 from btx_omni.providers.research.scenarios import SCENARIOS as RICH_SCENARIOS
 from btx_omni.providers.research.scenarios import RichScenario
+from btx_omni.providers.sample.priority_customers import (
+    PriorityCustomerScenario,
+    load_priority_customer_scenarios,
+)
 
 ROLE_FAMILIES = ("procurement", "supply_chain", "supplier_management", "engineering", "manufacturing", "operations")
 SCENARIOS = ("southwest-trip", "medical-whitespace", "defense-award-quote", "semiconductor-expansion", "dormant-customer", "quote-follow-up", "cross-bu-conflict", "strong-external-weak-internal", "strong-internal-weak-external", "missing-unresolved-conflicting")
@@ -90,6 +94,7 @@ class SampleEnvironment:
     reference_accounts: tuple[CanonicalAccount, ...]
     reference_facilities: tuple[AccountFacility, ...]
     rich_scenarios: dict[str, RichScenario]
+    priority_scenarios: dict[str, PriorityCustomerScenario]
 
 
 def build_sample_environment() -> SampleEnvironment:
@@ -122,6 +127,9 @@ def build_sample_environment() -> SampleEnvironment:
     account_ids, accounts_by_id = {item.id for item in accounts}, {item.id: item for item in accounts}
     units = load_btx_business_units()
     unit_ids = {item.id for item in units}
+    priority = load_priority_customer_scenarios(
+        account_ids=account_ids, business_unit_ids=unit_ids
+    )
     btx_facilities = load_btx_facilities(business_unit_ids=unit_ids)
     programs = load_programs(account_ids=account_ids)
     program_ids = {item.id for item in programs}
@@ -129,7 +137,10 @@ def build_sample_environment() -> SampleEnvironment:
     component_ids = {item.id for item in components}
     capabilities = load_capabilities(business_unit_ids=unit_ids)
     edges = load_relationship_edges(account_ids=account_ids, program_ids=program_ids)
-    contexts = load_commercial_contexts(account_ids=account_ids, business_unit_ids=unit_ids)
+    contexts = (
+        *load_commercial_contexts(account_ids=account_ids, business_unit_ids=unit_ids),
+        *priority.commercial_contexts,
+    )
     paperless_accounts, quotes = load_paperless_quotes(accounts_by_id=accounts_by_id, business_unit_ids=unit_ids, program_ids=program_ids, component_ids=component_ids)
     orders = load_orders(account_ids=account_ids, business_unit_ids=unit_ids, program_ids=program_ids, component_ids=component_ids, quote_ids={item.id for item in quotes})
     crm_companies, crm_contacts, crm_deals, crm_activities = load_crm(account_ids=account_ids, business_unit_ids=unit_ids, program_ids=program_ids)
@@ -137,10 +148,20 @@ def build_sample_environment() -> SampleEnvironment:
     unknown_scenarios = set(rich_scenarios) - account_ids
     if unknown_scenarios:
         raise ValueError(f"curated scenarios have unknown accounts: {sorted(unknown_scenarios)}")
-    # Existing account relationship semantics remain public-only; BTX links come from sourced commercial records.
+    # Public relationship evidence remains untouched. This separate relationship
+    # label is explicitly simulated for the bounded priority-Customer scenarios.
     active_bu_by_account: dict[str, set[str]] = {}
     for context in contexts: active_bu_by_account.setdefault(context.account_id, set()).add(context.business_unit)
-    accounts = tuple(replace(item, relationship=AccountRelationship.PUBLIC_MARKET, business_units=tuple(sorted(active_bu_by_account.get(item.id, ())))) for item in accounts)
+    accounts = tuple(
+        replace(
+            item,
+            relationship=priority.scenarios[item.id].sample_relationship
+            if item.id in priority.scenarios
+            else AccountRelationship.PUBLIC_MARKET,
+            business_units=tuple(sorted(active_bu_by_account.get(item.id, ()))),
+        )
+        for item in accounts
+    )
     scenario_accounts = {
         "southwest-trip": ("anduril-industries", "rocket-lab-usa", "general-atomics"),
         "medical-whitespace": ("medtronic",),
@@ -153,7 +174,18 @@ def build_sample_environment() -> SampleEnvironment:
         "strong-internal-weak-external": ("lam-research",),
         "missing-unresolved-conflicting": ("symbotic", "intel"),
     }
-    scoring_inputs = {account_id: scenario.simulated_score_inputs for account_id, scenario in rich_scenarios.items() if scenario.simulated_score_inputs}
+    scoring_inputs = {
+        account_id: scenario.simulated_score_inputs
+        for account_id, scenario in rich_scenarios.items()
+        if scenario.simulated_score_inputs
+    }
+    scoring_inputs.update(
+        {
+            account_id: scenario.simulated_score_inputs
+            for account_id, scenario in priority.scenarios.items()
+            if scenario.simulated_score_inputs
+        }
+    )
     public_signals = tuple(PublicScenarioSignal(scenario.event.source_id, account_id, scenario.event.source_url, primary_market_label(accounts_by_id[account_id].industries), accounts_by_id[account_id].provenance) for account_id, scenario in rich_scenarios.items())
     quote = next(item for item in quotes if item.account_id == "lockheed-martin" and item.line_items)
     line = quote.line_items[0]
@@ -163,4 +195,4 @@ def build_sample_environment() -> SampleEnvironment:
     for facility in public_facilities: public_facilities_by_account.setdefault(facility.account_id, []).append(facility.id)
     recipients = load_usaspending_recipient_identities()
     watch_profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, newsroom_url=item.public_identity.newsroom_url.value if item.public_identity and item.public_identity.newsroom_url else None, investor_relations_url=item.public_identity.investor_relations_url.value if item.public_identity and item.public_identity.investor_relations_url else None, official_feed_urls=tuple(field.value for field in item.public_identity.official_feed_urls) if item.public_identity else (), facilities=tuple(public_facilities_by_account.get(item.id, ())), industries=item.industries, usaspending_recipient_names=tuple(identity.recipient_legal_name for identity in recipients.get(item.id, ())), usaspending_recipient_sources=tuple((identity.recipient_legal_name, identity.source_url) for identity in recipients.get(item.id, ()))) for item in accounts)
-    return SampleEnvironment(accounts, all_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities, reference.accounts, reference.facilities, rich_scenarios)
+    return SampleEnvironment(accounts, all_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities, reference.accounts, reference.facilities, rich_scenarios, priority.scenarios)

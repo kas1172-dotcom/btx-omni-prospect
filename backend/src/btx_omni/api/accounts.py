@@ -36,7 +36,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         "prospect_rationale": item.prospect_rationale,
         "btx_top_100": item.btx_top_100,
         "btx_top_100_provenance": item.btx_top_100_provenance,
-        "is_rich_scenario": item.id in sample.rich_scenarios,
+        "is_rich_scenario": item.id in sample.rich_scenarios or item.id in sample.priority_scenarios,
         "truth_state": "PUBLICLY_VERIFIED" if item.id in sample.rich_scenarios else ("REFERENCE_SOURCE" if item.public_research_state == "SANITIZED_REFERENCE" else "RESEARCHED_PUBLIC"),
         "location": facilities.get(item.id),
         "attractiveness": calculate_account_attractiveness(AccountAttractivenessInputs(sample.scoring_inputs[item.id]), evidence_ids=(item.provenance.source_record_id,), calculated_at=runtime.observed_at()).score if item.id in sample.scoring_inputs else None,
@@ -62,7 +62,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     crm = {"companies": companies, "contacts": [item for item in sample.crm_contacts if item.company_id in company_ids], "deals": [item for item in sample.crm_deals if item.company_id in company_ids], "activities": [item for item in sample.crm_activities if item.company_id in company_ids]}
     signals = [item for item in intelligence_signals(runtime) if item["account_id"] == account.id]
     matches = [match_component_to_quote(component, quote) for component in sample.matching_components for quote in sample.matching_quotes if component.account_id == account_id and quote.account_id == account_id]
-    scenario = sample.rich_scenarios.get(account_id)
+    scenario = sample.priority_scenarios.get(account_id) or sample.rich_scenarios.get(account_id)
     selections = sample.scoring_inputs.get(account_id, {})
     score = calculate_account_attractiveness(AccountAttractivenessInputs(selections), evidence_ids=(account.provenance.source_record_id,), calculated_at=observed)
     alerts = [item for item in CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes, observed_at=observed, orders=sample.orders) if item.account_id == account_id]

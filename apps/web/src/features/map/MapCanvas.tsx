@@ -5,11 +5,12 @@ import './map.css'
 
 type Props = { markers: MapMarker[]; selectedMarkerId?: string; onSelect: (marker: MapMarker) => void }
 let configuredKey: string | undefined
+const markerZIndex = (marker: MapMarker, selected = false) => selected ? 4 : marker.kind === 'customer' || marker.kind === 'prospect' ? 2 : 1
 
 function makeMarkerButton(marker: MapMarker, selected: boolean, onSelect: () => void) {
   const button = document.createElement('button'); button.type = 'button'; button.className = `map-marker map-marker-${marker.kind}${selected ? ' selected' : ''}`; button.style.minWidth = '44px'; button.style.minHeight = '44px'; button.setAttribute('aria-label', marker.accessibleLabel); button.setAttribute('aria-pressed', String(selected)); button.title = marker.label; button.addEventListener('click', event => { event.stopPropagation(); onSelect() }); return button
 }
-function TestCanvas({ markers, selectedMarkerId, onSelect }: Props) { return <div className="map-test-canvas" role="application" aria-label="Interactive Customer, facility, BTX facility, and intelligence map">{markers.map((marker, index) => <button key={marker.id} type="button" className={`map-marker map-marker-${marker.kind}${marker.id === selectedMarkerId ? ' selected' : ''}`} style={{ left: `${10 + (index * 17) % 78}%`, top: `${18 + (index * 23) % 62}%`, minWidth: 44, minHeight: 44 }} aria-label={marker.accessibleLabel} aria-pressed={marker.id === selectedMarkerId} onClick={() => onSelect(marker)} />)}</div> }
+function TestCanvas({ markers, selectedMarkerId, onSelect }: Props) { return <div className="map-test-canvas" role="application" aria-label="Interactive Customer, facility, BTX facility, and intelligence map">{markers.map((marker, index) => <button key={marker.id} type="button" className={`map-marker map-marker-${marker.kind}${marker.id === selectedMarkerId ? ' selected' : ''}`} style={{ left: `${10 + (index * 17) % 78}%`, top: `${18 + (index * 23) % 62}%`, minWidth: 44, minHeight: 44, zIndex: markerZIndex(marker, marker.id === selectedMarkerId) }} aria-label={marker.accessibleLabel} aria-pressed={marker.id === selectedMarkerId} onClick={() => onSelect(marker)} />)}</div> }
 
 export function MapCanvas(props: Props) {
   const { markers, selectedMarkerId, onSelect } = props
@@ -26,7 +27,7 @@ export function MapCanvas(props: Props) {
       const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([importLibrary('maps'), importLibrary('marker')])
       if (cancelled || !container.current) return
       const map = new Map(container.current, { center: { lat: 38, lng: -98 }, zoom: 4, mapId, mapTypeControl: false, streetViewControl: false, fullscreenControl: false }); mapRef.current = map
-      markerRefs.current = propsRef.current.markers.map(marker => { const advanced = new AdvancedMarkerElement({ map, position: { lat: marker.latitude, lng: marker.longitude }, title: marker.accessibleLabel, gmpClickable: true }); advanced.append(makeMarkerButton(marker, marker.id === propsRef.current.selectedMarkerId, () => propsRef.current.onSelect(marker))); return advanced })
+      markerRefs.current = propsRef.current.markers.map(marker => { const selected = marker.id === propsRef.current.selectedMarkerId; const advanced = new AdvancedMarkerElement({ map, position: { lat: marker.latitude, lng: marker.longitude }, title: marker.accessibleLabel, gmpClickable: true, zIndex: markerZIndex(marker, selected) }); advanced.append(makeMarkerButton(marker, selected, () => propsRef.current.onSelect(marker))); return advanced })
     } catch { if (!cancelled) setFailure('The Google Maps renderer could not load. Verify the browser key, API restrictions, billing, and quota configuration.') } }
     void load(); const observer = new ResizeObserver(() => { if (mapRef.current) google.maps.event.trigger(mapRef.current, 'resize') }); observer.observe(container.current)
     return () => { cancelled = true; observer.disconnect(); markerRefs.current.forEach(marker => { marker.map = null }); markerRefs.current = []; mapRef.current = undefined }
@@ -34,7 +35,7 @@ export function MapCanvas(props: Props) {
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    Promise.resolve(importLibrary('marker')).then(({ AdvancedMarkerElement }) => { markerRefs.current.forEach(marker => { marker.map = null }); markerRefs.current = markers.map(marker => { const advanced = new AdvancedMarkerElement({ map, position: { lat: marker.latitude, lng: marker.longitude }, title: marker.accessibleLabel, gmpClickable: true }); advanced.append(makeMarkerButton(marker, marker.id === selectedMarkerId, () => onSelect(marker))); return advanced }) }).catch(() => setFailure('The Google Maps marker layer could not load.'))
+    Promise.resolve(importLibrary('marker')).then(({ AdvancedMarkerElement }) => { markerRefs.current.forEach(marker => { marker.map = null }); markerRefs.current = markers.map(marker => { const selected = marker.id === selectedMarkerId; const advanced = new AdvancedMarkerElement({ map, position: { lat: marker.latitude, lng: marker.longitude }, title: marker.accessibleLabel, gmpClickable: true, zIndex: markerZIndex(marker, selected) }); advanced.append(makeMarkerButton(marker, selected, () => onSelect(marker))); return advanced }) }).catch(() => setFailure('The Google Maps marker layer could not load.'))
   }, [markers, selectedMarkerId, onSelect])
   if (testUnconfigured) return <section className="map-unavailable" role="status"><h3>Map not configured</h3><p>Google Maps browser configuration is required to display verified geography.</p></section>
   if (testMode) return <TestCanvas {...props} />
