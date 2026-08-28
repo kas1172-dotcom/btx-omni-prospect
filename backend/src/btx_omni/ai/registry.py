@@ -1,9 +1,9 @@
-from btx_omni.ai.anthropic import AnthropicProvider
 from btx_omni.ai.config import AiConfig
-from btx_omni.ai.contracts import AiProvider
+from btx_omni.ai.contracts import LanguageProvider
+from btx_omni.ai.gemini import GeminiProvider
 
 
-def get_ai_provider(config: AiConfig) -> AiProvider:
-    if config.provider.lower() == "anthropic":
-        return AnthropicProvider(config)
-    raise ValueError(f"Unsupported AI_PROVIDER: {config.provider}")
+def get_ai_provider(config: AiConfig) -> LanguageProvider:
+    if config.provider.casefold() == "gemini":
+        return GeminiProvider(config)
+    raise ValueError(f"Unsupported AI provider: {config.provider}")

@@ -29,7 +29,7 @@ FastAPI application (Python 3.11, Pydantic, capability routers)
 
 The web app never reaches the database or providers directly. The backend runtime is composed in [`backend/src/btx_omni/api/runtime.py`](backend/src/btx_omni/api/runtime.py).
 
-**Omni note:** the current Omni request path is deterministic and composes responses from governed, typed context. An Anthropic provider adapter exists under `backend/src/btx_omni/ai/`, but it is not wired into Omni today.
+**Omni note:** governed typed reads and referent resolution remain authoritative. Optional Gemini synthesis runs server-side over the completed deterministic answer; missing or unavailable model configuration falls back without changing evidence, authorization, or write boundaries.
 
 ## A quick review path
 

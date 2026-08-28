@@ -1,8 +1,9 @@
 # Monitor controlled live validation
 
-Validated locally on 2026-08-16 with `BTX_MONITOR_MODE=live`,
-`BTX_AI_PROVIDER=anthropic`, a configured Anthropic model, and a configured
-SAM credential. Secret values were not recorded. Each live request was capped
+Validated locally on 2026-08-16 with `BTX_MONITOR_MODE=live`, a then-current
+model adapter, and a configured SAM credential. That adapter has since been
+retired; this record does not describe current runtime configuration. Secret
+values were not recorded. Each live request was capped
 to one record; no raw payload was written to this repository.
 
 ## Source validation matrix
@@ -23,18 +24,16 @@ to one record; no raw payload was written to this repository.
 ## Structured-first and AI boundary
 
 SAM.gov, USAspending, Federal Register, openFDA, and SEC adapters use
-deterministic parsing before normalization. No Claude request was made for those
+deterministic parsing before normalization. No model request was made for those
 structured source observations. Native IDs, source tiers, content hashes,
 retrieval times, canonical references, and raw evidence references are retained
 by `SourceObservation`.
 
-The provider-neutral registry selected the Anthropic adapter and consumed the
-configured key only within that adapter. The Models endpoint returned HTTP 200
-and listed `claude-sonnet-5`; the former configured model was unavailable to
-this API account and returned HTTP 404. A minimal public-text extraction through
-the adapter using `claude-sonnet-5` returned nonempty JSON-shaped content with
-its evidence ID. The default configuration now uses that discovered model; no
-BTX SAMPLE commercial data was sent.
+The historical provider-neutral registry consumed its configured credential
+only inside its server adapter. A minimal public-text extraction returned
+nonempty JSON-shaped content with its evidence ID; no BTX SAMPLE commercial
+data was sent. Current Omni uses Gemini only for synthesis after governed reads,
+and Monitor remains structured-first.
 
 ## Checkpoint 15 source decisions
 

@@ -51,14 +51,14 @@ def test_settings_prefers_btx_database_url_when_both_aliases_are_present(monkeyp
     assert settings.database_url == btx_database_url
 
 
-def test_settings_accepts_standard_anthropic_api_key_alias(monkeypatch) -> None:
-    monkeypatch.delenv("BTX_ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic-key")
+def test_settings_accepts_standard_gemini_api_key_alias(monkeypatch) -> None:
+    monkeypatch.delenv("BTX_GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
 
     settings = Settings(_env_file=None)
 
-    assert settings.anthropic_api_key == "test-anthropic-key"
-    assert settings.anthropic_model == "claude-sonnet-5"
+    assert settings.gemini_api_key == "test-gemini-key"
+    assert settings.gemini_model == "gemini-2.5-flash"
 
 
 def test_database_factory_uses_settings_url_without_connecting() -> None:

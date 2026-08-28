@@ -48,6 +48,9 @@ class OmniResponse:
     public_research_permitted: bool = False
     context_used: dict[str, object] = field(default_factory=dict)
     conversation_referent: dict[str, object] | None = None
+    language_provider: str = "deterministic"
+    language_model: str | None = None
+    provider_status: str = "NOT_CONFIGURED"
 
 
 class OmniOrchestrator:

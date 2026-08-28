@@ -4,4 +4,4 @@
 
 The registry declares authority tier, supported industries/events, cadence, backfill, authentication, rate-limit notes, endpoint and source-native identity strategy for SAM.gov, USAspending, Federal Register, SEC EDGAR, NASA, DoD, Commerce CHIPS, FDA/openFDA, company newsrooms and state economic development sources. Publisher/watch-profile sources require a verified canonical URL; a missing URL is a missing-data state, never a guessed feed.
 
-Structured APIs are deterministically mapped before any AI path. The provider-neutral AI contract supports extraction, classification, ambiguity resolution, summarization and entity assistance. `AI_PROVIDER=anthropic` selects the initial adapter, with `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL`; its results always retain evidence IDs and require validation. No AI output is canonical truth by itself.
+Structured APIs are deterministically mapped before any model path. Omni's provider-neutral language boundary supports optional Gemini synthesis only after governed reads complete. Evidence IDs and validation remain application-owned, and no model output is canonical truth by itself.

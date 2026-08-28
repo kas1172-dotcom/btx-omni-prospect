@@ -1,12 +1,15 @@
 from enum import StrEnum
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from btx_omni.ai.config import AiConfig
+from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
-from btx_omni.modules.assistant.orchestration import OmniOrchestrator
+from btx_omni.domain.work import Principal, PrincipalRole
+from btx_omni.modules.assistant.service import OmniService
 
 router = APIRouter(prefix="/omni", tags=["omni"])
 
@@ -71,14 +74,32 @@ class OmniQuestion(BaseModel):
     context: OmniContext | None = None
 
 
+def omni_principal(
+    runtime: PocRuntime = Depends(get_runtime),
+    token: str | None = Header(default=None, alias="X-BTX-Principal-Token"),
+) -> Principal:
+    if token in {None, runtime.settings.action_salesperson_token}:
+        return Principal(
+            "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON
+        )
+    if token == runtime.settings.action_manager_token:
+        return Principal("manager-1", "Development Manager", PrincipalRole.MANAGER)
+    raise HTTPException(401, "The Omni principal token is invalid.")
+
+
 @router.post("")
-def omni(body: OmniQuestion, runtime: PocRuntime = Depends(get_runtime)):
-    return OmniOrchestrator().answer(
+def omni(
+    body: OmniQuestion,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(omni_principal),
+):
+    provider = get_ai_provider(AiConfig.from_settings(runtime.settings))
+    return OmniService(provider).answer(
         runtime.environment(),
         account_id=body.account_id,
         question=body.question,
         observed_at=runtime.observed_at(),
         context=(body.context.model_dump(exclude_none=True) if body.context else {}),
         intelligence_events=intelligence_signals(runtime),
-        work_items=runtime.work.list(),
+        work_items=runtime.work.list(current),
     )

@@ -199,22 +199,18 @@ when — and only when — exact identity and eligibility permit it."**
 These are the non-obvious facts that took direct code reading (not just the
 README) to confirm. A reviewer should know all six before forming opinions.
 
-1. **Omni does not call a model today.** `modules/assistant/orchestration.py`
-   (~1,600 lines) is a fully deterministic response-composition engine —
-   pattern-matching questions against typed context and assembling answers
-   from governed read models. `backend/src/btx_omni/ai/` (an `AnthropicProvider`
-   + `AiConfig` + a registry) is a **complete, working adapter that nothing in
-   the codebase currently instantiates** — confirmed by grep, not inference:
-   `AnthropicProvider` is referenced only inside `ai/` itself and in
-   `core/config.py`'s settings plumbing. It's a ready extension point, not
-   dead code, but it's not wired into Omni's request path or Monitor's
-   pipeline. If you're reviewing this expecting an LLM call somewhere in the
-   Omni request path, you won't find one.
+1. **Omni resolves governed application truth before optional model synthesis.**
+   `modules/assistant/orchestration.py` retains deterministic typed routing;
+   `modules/assistant/service.py` invokes it through an allow-listed read tool,
+   then optionally asks the server-side Gemini adapter to organize the completed
+   answer. Missing configuration, timeout, or malformed provider output returns
+   the deterministic answer. Provider code cannot mutate Actions, CRM, SQL, or
+   canonical context.
    The browser supplies typed surface, selected-entity, filter, and visible-record
    context; `context_used` and the bounded `conversation_referent` are structured
    contract data, not semantics inferred from assistant prose.
-2. **Actions/work items are in-memory, not durable**, per §4 above — verify
-   this is still current before relying on it.
+2. **Actions are durable and backend-authorized.** Omni receives only the
+   principal-filtered read projection and has no mutation tool.
 3. **CONNECTED mode fails closed by raising an HTTP 503**, not by silently
    substituting SAMPLE data. This is enforced in `PocRuntime.environment()`,
    not just documented.

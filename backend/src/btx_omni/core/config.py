@@ -16,12 +16,16 @@ class Settings(BaseSettings):
     monitor_stale_after_hours: int = 48
     action_salesperson_token: str = "development-salesperson"
     action_manager_token: str = "development-manager"
-    ai_provider: str = "anthropic"
-    anthropic_api_key: str | None = Field(
+    ai_provider: str = "gemini"
+    gemini_api_key: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("BTX_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
+        validation_alias=AliasChoices("BTX_GEMINI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"),
     )
-    anthropic_model: str = "claude-sonnet-5"
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_mode: str = "developer"
+    google_cloud_project: str | None = None
+    google_cloud_location: str = "global"
+    ai_timeout_seconds: float = 20.0
     sam_api_key: str | None = None
 
     database_url: str = Field(

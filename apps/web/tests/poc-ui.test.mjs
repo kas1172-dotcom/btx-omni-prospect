@@ -26,11 +26,13 @@ test('frontend uses only canonical Omni Prospect API routes', () => {
   assert.doesNotMatch(client, /\/v1|\/v2|\/poc/)
 })
 
-test('mobile-first layout prevents horizontal overflow and exposes an Omni drawer', () => {
+test('mobile-first layout prevents horizontal overflow and exposes responsive Omni workspaces', () => {
   assert.match(mobileStyles, /grid-template-columns:\s*repeat\(5,/)
   assert.match(mobileStyles, /safe-area-inset-bottom/)
   assert.match(mobileStyles, /--touch-target/)
-  assert.match(omniStyles, /\.omni-drawer\{/)
+  assert.match(omniStyles, /\.quick-omni\s*\{/)
+  assert.match(omniStyles, /\.full-omni\s*\{/)
+  assert.match(omniStyles, /safe-area-inset-bottom/)
 })
 
 test('live Monitor observations use the canonical intelligence and map surfaces', () => {
@@ -66,21 +68,21 @@ test('Customer 360 renders deterministic seller-facing canonical relationship pa
   assert.doesNotMatch(accounts, /Canonical 2-hop path|validated warm paths|Request intro/)
 })
 
-test('Omni provides session-only deterministic chat with optional context and safe keyboard behavior', () => {
+test('Omni shares governed conversation state across Quick and Full responsive workspaces', () => {
   const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
   assert.match(drawer, /No Customer selected/)
   assert.match(drawer, /Clear/)
   assert.match(drawer, /What should I review today\?/)
-  assert.match(drawer, /Shift\+Enter for a new line/)
   assert.match(drawer, /session_account_id/)
   assert.match(drawer, /citation_links/)
-  assert.match(drawer, /Deterministic fallback—not model-generated advice/)
-  assert.match(drawer, /cannot write to CRM/)
-  assert.match(ui, /aria-modal="true"/)
-  assert.match(drawer, /triggerStorageKey/)
-  assert.match(drawer, /setPointerCapture/)
-  assert.match(drawer, /dragThreshold/)
-  assert.match(drawer, /clampTriggerPosition/)
+  assert.match(drawer, /Governed fallback mode/)
+  assert.match(drawer, /Use the governed Actions workspace for mutations/)
+  assert.match(drawer, /Open in Omni/)
+  assert.match(drawer, /Back to Quick Omni/)
+  assert.match(drawer, /Evidence &amp; sources/)
+  assert.match(drawer, /Customer context/)
+  assert.match(drawer, /aria-modal="true"/)
+  assert.doesNotMatch(drawer, /triggerStorageKey|setPointerCapture|dragThreshold|clampTriggerPosition/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
@@ -229,8 +231,8 @@ test('target interaction primitives expose governed semantic and accessibility c
 test('target primitive CSS encodes focus, touch, responsive rows, and safe-area sheets', () => {
   const componentStyles = readFileSync(new URL('../src/components/ui.css', import.meta.url), 'utf8')
   assert.match(componentStyles, /--touch-target/)
-  assert.match(componentStyles, /\.ui-mobile-row\{display:none/)
-  assert.match(componentStyles, /@media\(max-width:760px\).*\.ui-mobile-row\{display:grid/s)
+  assert.match(componentStyles, /\.ui-mobile-row\s*\{[^}]*display:\s*none/s)
+  assert.match(componentStyles, /@media\s*\(max-width:\s*760px\).*\.ui-mobile-row\s*\{[^}]*display:\s*grid/s)
   assert.match(componentStyles, /safe-area-inset-bottom/)
-  assert.match(componentStyles, /\.ui-drawer\{/)
+  assert.match(componentStyles, /\.ui-drawer\s*\{/)
 })

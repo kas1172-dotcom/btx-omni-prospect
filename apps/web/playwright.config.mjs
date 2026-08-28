@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 45_000,
   webServer: [
     {
-      command: 'uv run uvicorn btx_omni.app:app --host 127.0.0.1 --port 8000',
+      command: 'BTX_GEMINI_API_KEY= GEMINI_API_KEY= GOOGLE_API_KEY= uv run uvicorn btx_omni.app:app --host 127.0.0.1 --port 8000',
       cwd: '../../backend',
       url: 'http://127.0.0.1:8000/api/health',
       reuseExistingServer: false,

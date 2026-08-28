@@ -81,7 +81,7 @@ The workflow's job is to take one piece of public evidence (a contract award, a 
 
 **Gap.**
 - Component-class taxonomy for BTX is not defined in code. The `domain/programs.ComponentClass` dataclass exists but no seeded taxonomy.
-- LLM extraction of components from award descriptions is Kapil's original monitor workflow (per Alan call). Currently the console's LLM path (`ai/anthropic.py` / `assistant/orchestration.py`) is only wired for Omni Q&A, not for structured component extraction. **New pipeline needed: `modules/extraction/components.py` that takes a signal and returns candidate ComponentClass records with evidence.**
+- LLM extraction of components from award descriptions is Kapil's original monitor workflow (per Alan call). Current Gemini synthesis is limited to Omni's governed read responses and is not a structured component-extraction pipeline. **A future pipeline would need `modules/extraction/components.py` that takes a signal and returns candidate ComponentClass records with evidence.**
 - Governance: LLM extraction must be deterministic-first (regex/pattern match on known program vocabularies) before falling back to LLM inference, per your provenance discipline.
 
 **Sample data implication.** Sample dataset needs seeded programs (e.g. NASA CLPS, F-35, NGAD, CHIPS-Intel expansion, ATLAS-V ULA, Starship, ITER, cell manufacturing) and seeded component-class taxonomy tied to those programs. Currently the sample has `sim-program-lockheed` and `SIM-100` placeholders. These are the "overly general" placeholder-ness that should be deleted in favor of real program names with real component classes.

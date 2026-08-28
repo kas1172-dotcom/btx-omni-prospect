@@ -27,6 +27,6 @@ export const api = {
   history: (id: string) => actionRequest<{ events: ActionHistoryEvent[] }>(`/actions/${id}/history`),
   preview: (id: string) => actionRequest<{ confirmed: boolean; executed: boolean }>(`/actions/${id}/crm-preview`, { method: 'POST' }),
   execute: (id: string) => actionRequest<{ executed: boolean }>(`/actions/${id}/crm-execute?confirmed=true`, { method: 'POST' }),
-  omni: (account_id: string | undefined, question: string, context?: OmniContext) => request<OmniResponse>('/omni', { method: 'POST', body: JSON.stringify({ account_id, question, context }) }),
+  omni: (account_id: string | undefined, question: string, context?: OmniContext) => actionRequest<OmniResponse>('/omni', { method: 'POST', body: JSON.stringify({ account_id, question, context }) }),
   monitor: () => request<MonitorHealth>('/monitor/health'),
 }

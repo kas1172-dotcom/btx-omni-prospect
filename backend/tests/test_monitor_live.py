@@ -6,9 +6,8 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 
-from btx_omni.ai.anthropic import AnthropicProvider
 from btx_omni.ai.config import AiConfig
-from btx_omni.ai.contracts import AiRequest
+from btx_omni.ai.gemini import GeminiProvider
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.monitor import operational_collect
@@ -88,10 +87,9 @@ def test_all_six_industry_packs_reference_registry_sources_and_no_live_fallback(
 def test_entity_collision_is_ambiguous_and_ai_registry_is_provider_neutral() -> None:
     profiles = (AccountWatchProfile("one", "Acme", aliases=("Acme Systems",)), AccountWatchProfile("two", "Acme Two", aliases=("Acme Systems",)))
     assert resolve_entity("Acme Systems", profiles).state.value == "AMBIGUOUS"
-    provider = get_ai_provider(AiConfig("anthropic", None, "test-model"))
-    assert isinstance(provider, AnthropicProvider)
-    with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
-        provider.summarize_evidence(AiRequest("text", ("ev-1",), "summarize"))
+    provider = get_ai_provider(AiConfig("gemini", None, "test-model", "developer", None, "global", 1))
+    assert isinstance(provider, GeminiProvider)
+    assert not provider.configured
 
 
 def test_monitor_observations_cluster_with_multiple_evidence_and_source_update() -> None:
