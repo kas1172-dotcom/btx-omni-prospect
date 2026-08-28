@@ -9,7 +9,7 @@ from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.alerts import CommercialAlertKind
-from btx_omni.domain.markets import primary_market_label
+from btx_omni.domain.markets import PRIMARY_MARKET_ORDER, primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 
 router = APIRouter(prefix="/map", tags=["map"])
@@ -76,4 +76,5 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
             continue
         coordinates = facility_coordinates.get(facility_id) if facility_id else None
         intelligence_points.append({"id": f"intelligence:{signal['id']}", "entity_type": "INTELLIGENCE", "event_id": signal["id"], "account_id": account_id, "facility_id": facility_id, "title": signal["title"], "primary_markets": accounts[account_id].industries if account_id in accounts else (), "event_date": signal.get("observed_at"), "source_url": signal["source_url"], "relevance": signal.get("relevance_explanation"), "evidence_state": signal.get("evidence_state"), "coordinates": coordinates, "coordinate_derivation": "CANONICAL_FACILITY" if coordinates else None})
-    return {"layers": sorted({market for account in sample.accounts for market in account.industries}), "accounts": account_points, "facilities": facility_points, "btx_facilities": btx_points, "intelligence": intelligence_points, "records": account_points, "public_locations": facility_points, "intelligence_signals": intelligence_points, "proximity_note": "Seller planning input only; never an attractiveness input."}
+    available_markets = {market for account in sample.accounts for market in account.industries}
+    return {"layers": [market for market in PRIMARY_MARKET_ORDER if market in available_markets], "accounts": account_points, "facilities": facility_points, "btx_facilities": btx_points, "intelligence": intelligence_points, "records": account_points, "public_locations": facility_points, "intelligence_signals": intelligence_points, "proximity_note": "Seller planning input only; never an attractiveness input."}

@@ -142,7 +142,7 @@ eligible for the live seller projection.
 
 USAspending is prepared but is not enabled or collected in this POC task. Each
 run is bounded to curated researched companies in the supported primary markets
-(Aerospace, Defense, Semiconductor, Space Exploration, Energy, and Medical).
+(Commercial Aerospace, Defense, Semiconductor, Space, Robotics, Energy, and Medical).
 The eligible set is variable and is derived from loaded research. Queries use a researched
 company's legal display name and any separately documented, authoritative
 USAspending recipient name; no UEI, CAGE, recipient ID, parent, subsidiary, or

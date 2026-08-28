@@ -39,8 +39,8 @@ def catalog() -> MonitorCatalog:
 
 
 def test_market_taxonomy_recency_and_noise_are_deterministic() -> None:
-    assert set(classify_markets("NASA Artemis launch and spacecraft contract")) == {"Space Exploration"}
-    assert "Robotics" not in classify_markets("robotics only")
+    assert set(classify_markets("NASA Artemis launch and spacecraft contract")) == {"Space"}
+    assert classify_markets("robotics only") == ("Robotics",)
     assert all(set(adapter.definition.industries_supported) <= PRIMARY_MARKETS for adapter in REGISTRY.values())
     assert recency_state(NOW - timedelta(days=31), now=NOW) == "HISTORICAL"
 
@@ -65,8 +65,8 @@ def test_normalization_resolves_exact_catalog_links_and_rejects_noise() -> None:
         )
     )
     settings = Settings(_env_file=None, monitor_mode="live")
-    resolved = normalize_structured_observation(adapter.collect(run_id="run", settings=settings)[0], catalog=catalog(), source_markets=("Space Exploration",), now=NOW).event
-    noisy = normalize_structured_observation(adapter.collect(run_id="run", settings=settings)[1], catalog=catalog(), source_markets=("Space Exploration",), now=NOW).event
+    resolved = normalize_structured_observation(adapter.collect(run_id="run", settings=settings)[0], catalog=catalog(), source_markets=("Space",), now=NOW).event
+    noisy = normalize_structured_observation(adapter.collect(run_id="run", settings=settings)[1], catalog=catalog(), source_markets=("Space",), now=NOW).event
     assert resolved.subject_entities[0].canonical_account_id == "spacex"
     assert resolved.program.canonical_program_id == "artemis"
     assert resolved.canonical_facility_id == "starbase"

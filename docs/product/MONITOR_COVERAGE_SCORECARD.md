@@ -10,9 +10,9 @@ count below reflects a deliberately bounded, evidence-first monitor policy.
 
 | Primary market | Relevant event classes | Configured source path | Live-run result (2026-08-19) | Blocked / unavailable | Frozen evaluation examples | Recent-event result | Known gap |
 |---|---|---|---|---|---:|---:|---|---|
-| Aerospace | awards, launches, backlog, facilities | SAM, USAspending, NASA, SEC, official company | USAspending exact-recipient Boeing award | SAM key; SEC CIK; company feeds | 1 | PASS: resolved recent award | Program text absent from award payload |
+| Commercial Aerospace | awards, launches, backlog, facilities | SAM, USAspending, NASA, SEC, official company | USAspending exact-recipient Boeing award | SAM key; SEC CIK; company feeds | 1 | PASS: resolved recent award | Program text absent from award payload |
 | Defense | awards, solicitations, modifications | SAM, USAspending, Federal Register, DoD, SEC | USAspending exact-recipient Anduril award | SAM key; DoD feed; SEC CIK | 1 | PASS: resolved recent award | Program text absent from award payload |
-| Space Exploration | awards, launches, funding, partnerships | NASA, SAM, USAspending, SEC | USAspending exact-recipient Blue Origin award | SAM key; SEC CIK; company feeds | 1 | PASS: resolved recent award | Program text absent from award payload |
+| Space | awards, launches, funding, partnerships | NASA, SAM, USAspending, SEC | USAspending exact-recipient Blue Origin award | SAM key; SEC CIK; company feeds | 1 | PASS: resolved recent award | Program text absent from award payload |
 | Semiconductor | grants, capacity, facilities, capex | SEC, Commerce, company, state | no credible source result | SEC CIK; Commerce/company/state feeds | 0 | FAIL | Configure an authoritative structured or publisher source |
 | Medical | regulatory, launch, facilities | openFDA, Federal Register, SEC, company | openFDA exact-name Intuitive Surgical 510(k) result | SEC CIK; company feeds | 1 | PASS: resolved regulatory event | Regulatory clearance is not commercial launch proof |
 | Energy | capacity, funding, facilities | SEC, company, state, USAspending | USAspending public award retained unresolved | SEC CIK; company/state feeds | 1 | PARTIAL: no seller-visible account | Exact recipient identity evidence required |

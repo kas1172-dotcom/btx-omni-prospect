@@ -13,6 +13,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     ) as client:
         southwest = await client.get("/api/map", params={"industry": "Semiconductor"})
         medical = await client.get("/api/map", params={"industry": "Medical"})
+        canonical_map = await client.get("/api/map")
         accounts = await client.get("/api/accounts")
         defense = await client.get("/api/accounts/lockheed-martin")
         no_quote = await client.get("/api/accounts/symbotic")
@@ -44,6 +45,22 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         == 200
     )
     assert southwest.json()["records"] and medical.json()["records"]
+    assert canonical_map.json()["layers"] == [
+        "Defense",
+        "Commercial Aerospace",
+        "Space",
+        "Robotics",
+        "Semiconductor",
+        "Medical",
+        "Energy",
+    ]
+    account_markets = {
+        market
+        for account in accounts.json()["accounts"]
+        for market in account["industries"]
+    }
+    assert "Aerospace" not in account_markets
+    assert "Space Exploration" not in account_markets
     assert southwest.json()["accounts"] == southwest.json()["records"]
     assert all(
         item["entity_type"] == "ACCOUNT" and item["coordinates"]

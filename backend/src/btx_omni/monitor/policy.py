@@ -12,10 +12,11 @@ HISTORICAL_WINDOW_DAYS = 180
 # These are source-text routing terms, not a second market taxonomy.  Each
 # output value is constrained to the shared primary-market definition.
 MARKET_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "Aerospace": ("aircraft", "aviation", "airframe", "airplane", "engine", "faa"),
+    "Commercial Aerospace": ("commercial aircraft", "civil aviation", "business aviation", "passenger aircraft", "faa"),
     "Defense": ("defense", "military", "missile", "weapon", "army", "navy", "air force", "dod"),
+    "Space": ("space", "launch", "rocket", "lunar", "satellite", "nasa", "artemis"),
+    "Robotics": ("robotics", "robotic system", "automation robot", "autonomous warehouse"),
     "Semiconductor": ("semiconductor", "chip", "wafer", "fab", "lithography", "packaging"),
-    "Space Exploration": ("space", "launch", "rocket", "lunar", "satellite", "nasa", "artemis"),
     "Energy": ("energy", "nuclear", "fusion", "reactor", "turbine", "power grid"),
     "Medical": ("medical", "device", "surgical", "fda", "healthcare", "diagnostic"),
 }

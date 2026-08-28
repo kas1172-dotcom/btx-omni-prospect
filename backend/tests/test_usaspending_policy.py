@@ -20,8 +20,8 @@ def _observation(payload: dict):
 
 def _profiles() -> tuple[AccountWatchProfile, ...]:
     return (
-        AccountWatchProfile("boeing", "Boeing", aliases=("The Boeing Company",), industries=("Aerospace",)),
-        AccountWatchProfile("rocket-lab-usa", "Rocket Lab USA", subsidiaries=("Rocket Lab",), industries=("Space Exploration",)),
+        AccountWatchProfile("boeing", "Boeing", aliases=("The Boeing Company",), industries=("Commercial Aerospace",)),
+        AccountWatchProfile("rocket-lab-usa", "Rocket Lab USA", subsidiaries=("Rocket Lab",), industries=("Space",)),
         AccountWatchProfile("medtronic", "Medtronic", industries=("Medical",)),
     )
 

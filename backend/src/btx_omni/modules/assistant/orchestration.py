@@ -2060,15 +2060,21 @@ class OmniOrchestrator:
     ) -> tuple[str | None, dict[str, object], tuple[str, ...]]:
         """Use only exact canonical market values from the question or typed UI filter."""
         markets = (
-            "Aerospace",
+            "Commercial Aerospace",
             "Defense",
+            "Robotics",
             "Semiconductor",
-            "Space Exploration",
+            "Space",
             "Energy",
             "Medical",
         )
         explicit = next(
-            (market for market in markets if market.casefold() in question), None
+            (
+                market
+                for market in markets
+                if re.search(rf"\b{re.escape(market.casefold())}\b", question)
+            ),
+            None,
         )
         if explicit:
             return explicit, {}, ()
@@ -3181,10 +3187,11 @@ class OmniOrchestrator:
                 (
                     market
                     for market in (
-                        "Aerospace",
+                        "Commercial Aerospace",
                         "Defense",
+                        "Robotics",
                         "Semiconductor",
-                        "Space Exploration",
+                        "Space",
                         "Energy",
                         "Medical",
                     )

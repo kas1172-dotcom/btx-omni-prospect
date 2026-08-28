@@ -46,6 +46,21 @@ def test_verified_public_identity_keeps_field_level_connected_provenance() -> No
     assert identity.sec_cik and identity.sec_cik.provenance.data_mode is DataMode.CONNECTED
 
 
+def test_source_native_identity_seam_can_preserve_future_prism_identity() -> None:
+    field = PublicIdentityField(
+        "Prism source value",
+        PublicIdentityVerificationState.VERIFIED_AUTHORITATIVE,
+        public_provenance(),
+        NOW,
+        ("prism_consolidated_customer_name", "Prism source value"),
+    )
+
+    assert field.source_native_identifier == (
+        "prism_consolidated_customer_name",
+        "Prism source value",
+    )
+
+
 def test_verified_public_identity_rejects_synthetic_provenance() -> None:
     synthetic = Provenance(
         "sample",

@@ -995,7 +995,7 @@ def test_omni_cross_account_score_ranking_uses_canonical_scores_filters_and_boun
         observed_at=NOW,
         context={"surface": "ACCOUNTS", "active_filters": {"market": "Defense"}},
     )
-    unsupported = omni.answer(
+    robotics = omni.answer(
         sample,
         account_id=None,
         question="Which accounts have the highest scores?",
@@ -1009,8 +1009,8 @@ def test_omni_cross_account_score_ranking_uses_canonical_scores_filters_and_boun
     assert ranked.content.count("coverage") <= 5
     assert "Boeing" in filtered.content and "Intel" not in filtered.content
     assert filtered.context_used == {"filters": {"market": "Defense"}}
-    assert "unsupported for this query" in unsupported.missingness[0]
-    assert unsupported.context_used == {}
+    assert robotics.context_used == {"filters": {"market": "Robotics"}}
+    assert "1 matching account(s) have no available canonical attractiveness score." in robotics.missingness
 
 
 def test_omni_cross_account_work_intelligence_intersection_and_zero_results_are_read_only() -> (

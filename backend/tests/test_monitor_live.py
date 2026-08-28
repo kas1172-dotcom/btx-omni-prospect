@@ -78,7 +78,7 @@ def test_unavailable_auth_malformed_rate_limit_and_empty_are_health_states() -> 
 
 def test_all_six_industry_packs_reference_registry_sources_and_no_live_fallback() -> None:
     source_ids = {"sam_gov", "usaspending", "federal_register", "sec_edgar", "nasa", "dod", "commerce", "fda_openfda", "company_newsroom", "state_economic_development"}
-    assert set(PACKS) == {"aerospace", "defense", "energy", "medical", "semiconductor", "space_exploration"}
+    assert set(PACKS) == {"commercial_aerospace", "defense", "energy", "medical", "robotics", "semiconductor", "space"}
     assert all(set(pack.source_ids) <= source_ids for pack in PACKS.values())
     with pytest.raises(RuntimeError, match="disabled"):
         MonitorService(Settings(_env_file=None, monitor_mode="disabled")).collect("fda_openfda")

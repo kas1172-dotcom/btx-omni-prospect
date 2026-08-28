@@ -22,7 +22,7 @@ from btx_omni.domain.accounts import (
     ResearchProvenance,
 )
 from btx_omni.domain.common import DataMode, EvidenceState
-from btx_omni.domain.markets import PRIMARY_MARKETS
+from btx_omni.domain.markets import PRIMARY_MARKETS, normalize_source_market
 
 RESEARCH_DIR = Path(__file__).resolve().parents[5] / "docs" / "research"
 ACCOUNT_FILE = RESEARCH_DIR / "btx_researched_account_universe.json"
@@ -108,7 +108,7 @@ def load_research_accounts() -> tuple[ResearchAccount, ...]:
             True,
             ResearchProvenance(source_ids, source_urls, raw["public_identity_state"], research_only=True),
         )
-        industries = tuple(raw.get("industries", ()))
+        industries = tuple(normalize_source_market(value) for value in raw.get("industries", ()))
         if not set(industries) <= PRIMARY_MARKETS:
             raise ValueError(f"research account has unsupported primary market: {raw['research_account_id']}")
         result.append(ResearchAccount(raw["research_account_id"], raw["display_name"], raw.get("official_domain"), industries, tuple(raw.get("secondary_classifications", ())), relationship, raw["prospect_priority"], raw["prospect_rationale"], source_ids, source_urls, tuple(raw.get("watch_profile", {}).get("aliases", ())), raw.get("watch_profile", {}), tuple(contacts_by_account[raw["research_account_id"]])))

@@ -455,7 +455,7 @@
       "research_account_id": "rtx-collins-aerospace",
       "display_name": "RTX / Collins Aerospace",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "role_targets": [
@@ -476,7 +476,7 @@
       "research_account_id": "pratt-whitney",
       "display_name": "Pratt & Whitney",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "role_targets": [
@@ -497,7 +497,7 @@
       "research_account_id": "ge-aerospace",
       "display_name": "GE Aerospace",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "role_targets": [
@@ -947,7 +947,7 @@
       "research_account_id": "textron",
       "display_name": "Textron",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "role_targets": [

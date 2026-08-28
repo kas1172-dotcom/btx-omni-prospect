@@ -308,7 +308,9 @@
       "research_account_id": "symbotic",
       "display_name": "Symbotic",
       "official_domain": "symbotic.com",
-      "industries": [],
+      "industries": [
+        "Robotics"
+      ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "NO_RELATIONSHIP_EVIDENCE",
       "relationship_confidence": "NONE",
@@ -361,9 +363,7 @@
         "entity_resolution_allowed": true,
         "missing_identifiers_must_remain_null": true
       },
-      "secondary_classifications": [
-        "Robotics"
-      ]
+      "secondary_classifications": []
     },
     {
       "research_account_id": "lockheed-martin",
@@ -371,7 +371,7 @@
       "official_domain": "lockheedmartin.com",
       "industries": [
         "Defense",
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -435,7 +435,7 @@
       "display_name": "Boeing",
       "official_domain": "boeing.com",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
@@ -498,7 +498,7 @@
       "official_domain": "northropgrumman.com",
       "industries": [
         "Defense",
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -559,7 +559,7 @@
       "display_name": "RTX (Raytheon Technologies) / Collins Aerospace",
       "official_domain": "rtx.com",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
@@ -620,7 +620,7 @@
       "display_name": "Pratt & Whitney",
       "official_domain": "prattwhitney.com",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
@@ -678,7 +678,7 @@
       "display_name": "GE Aerospace",
       "official_domain": "geaerospace.com",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
@@ -737,7 +737,7 @@
       "display_name": "Spirit AeroSystems",
       "official_domain": "spiritaero.com",
       "industries": [
-        "Aerospace"
+        "Commercial Aerospace"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -797,7 +797,7 @@
       "official_domain": "l3harris.com",
       "industries": [
         "Defense",
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -909,7 +909,7 @@
       "display_name": "SpaceX",
       "official_domain": "spacex.com",
       "industries": [
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -969,7 +969,7 @@
       "display_name": "Blue Origin",
       "official_domain": "blueorigin.com",
       "industries": [
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -1027,7 +1027,7 @@
       "display_name": "Rocket Lab USA",
       "official_domain": "rocketlabusa.com",
       "industries": [
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -1083,7 +1083,7 @@
       "display_name": "United Launch Alliance",
       "official_domain": "ulalaunch.com",
       "industries": [
-        "Space Exploration",
+        "Space",
         "Defense"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
@@ -1138,7 +1138,7 @@
       "display_name": "Sierra Space",
       "official_domain": "sierraspace.com",
       "industries": [
-        "Space Exploration"
+        "Space"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
       "relationship_state": "BTX_CONFIRMED",
@@ -1993,7 +1993,7 @@
       "display_name": "Textron",
       "official_domain": "textron.com",
       "industries": [
-        "Aerospace",
+        "Commercial Aerospace",
         "Defense"
       ],
       "public_identity_state": "VERIFIED_PUBLIC",
@@ -2172,14 +2172,15 @@
       "NONE": 3
     },
     "industry_memberships": {
-      "Aerospace": 6,
+      "Commercial Aerospace": 6,
       "Defense": 12,
       "Semiconductor": 6,
-      "Space Exploration": 8,
+      "Space": 8,
       "Energy": 4,
-      "Medical": 6
+      "Medical": 6,
+      "Robotics": 1
     },
-    "notes": "The POC contains only researched real companies. Research depth and primary-market coverage are intentionally uneven; Robotics remains a secondary classification for Symbotic."
+    "notes": "The POC contains only researched real companies. Research depth and primary-market coverage are intentionally uneven; Robotics is a canonical primary industry for Symbotic."
   },
   "vision_readiness": {
     "schema_sufficient_for_current_omni_prospect_integration": true,
