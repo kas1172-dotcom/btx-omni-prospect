@@ -5,6 +5,7 @@ import './today.css'
 
 const eventDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
 const usableSource = (url: string) => /^https?:\/\//.test(url) && !url.includes('.invalid')
+const alertRenderKey = (alert: Alert) => `${alert.id}:${[...alert.evidence_ids].sort().join('|')}`
 
 function commercialPriorityCounts(alerts: Alert[]) {
   return alerts.reduce((counts, alert) => {
@@ -37,7 +38,7 @@ export function Today({ alerts, signals, accounts, onAccount, onAction, onIntell
     </section>
     <div className="today-command-grid">
       <Panel title="Seller attention" action={<span className="panel-kicker">SAMPLE BTX commercial context</span>}>
-        {alerts.length ? <div className="today-attention-list">{alerts.map(alert => <article className="today-attention-item" key={alert.id}>
+        {alerts.length ? <div className="today-attention-list">{alerts.map(alert => <article className="today-attention-item" key={alertRenderKey(alert)}>
           <div className="today-item-heading"><button className="today-customer-link" onClick={() => onAccount(alert.account_id)}>{name(alert.account_id)}</button><State value={alert.severity} /></div>
           <p><strong>Why:</strong> {alert.trigger_reason}</p><p><strong>Next:</strong> {alert.recommended_action}</p>
           <Disclosure title="SAMPLE evidence and actions"><p className="today-evidence-note">SAMPLE BTX commercial context · Evidence IDs: {alert.evidence_ids.length ? alert.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button onClick={() => onAccount(alert.account_id)}>Review Customer</Button><Button variant="primary" onClick={() => onAction(alert)}>Create action</Button></div></Disclosure>

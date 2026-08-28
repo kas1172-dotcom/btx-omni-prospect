@@ -52,7 +52,7 @@
 .omni-awareness button {
   margin-left: auto;
   min-height: 32px;
-  color: var(--information);
+  color: var(--status-info);
   background: none;
   border: 0;
 }
@@ -155,7 +155,7 @@
 .omni-response-summary .ui-disclosure > button {
   min-height: 30px;
   padding: 2px 0;
-  color: var(--information);
+  color: var(--status-info);
   font-size: 11px;
 }
 .omni-response-summary small {
@@ -170,7 +170,7 @@
 }
 .omni-error {
   margin: 0 14px 12px;
-  color: var(--danger);
+  color: var(--status-danger);
   font-size: 12px;
 }
 .full-omni {
@@ -269,7 +269,7 @@
 @media (max-width: 760px) {
   .omni-launch {
     right: 14px;
-    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 10px);
+    bottom: calc(var(--shell-mobile-nav-height) + env(safe-area-inset-bottom) + 10px);
   }
   .quick-omni {
     position: relative;

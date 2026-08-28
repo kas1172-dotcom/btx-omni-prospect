@@ -43,7 +43,26 @@ export function MobileListRow({ title, metadata, tertiary, selected = false, onC
 
 export function Drawer({ open, onClose, titleId, children, className = '' }: { open: boolean; onClose: () => void; titleId: string; children: ReactNode; className?: string }) {
   const dialog = useRef<HTMLElement>(null)
-  useEffect(() => { if (!open) return; const onKey = (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape') onClose(); if (event.key !== 'Tab' || !dialog.current) return; const items = [...dialog.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')]; if (!items.length) return; const first = items[0]; const last = items.at(-1)!; if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() } }; document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey) }, [open, onClose])
+  const closeRef = useRef(onClose)
+  useEffect(() => { closeRef.current = onClose }, [onClose])
+  useEffect(() => {
+    if (!open) return
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusTimer = window.setTimeout(() => dialog.current?.querySelector<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus(), 0)
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
+      if (event.key !== 'Tab' || !dialog.current) return
+      const items = [...dialog.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')]
+      if (!items.length) return
+      const first = items[0]; const last = items.at(-1)!
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => { window.clearTimeout(focusTimer); document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previouslyFocused?.isConnected) previouslyFocused.focus() }
+  }, [open])
   if (!open) return null
   return <div className="drawer-backdrop ui-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside ref={dialog} className={`ui-drawer ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby={titleId}>{children}</aside></div>
 }

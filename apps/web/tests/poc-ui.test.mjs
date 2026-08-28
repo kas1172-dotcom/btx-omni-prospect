@@ -83,7 +83,8 @@ test('Omni shares governed conversation state across Quick and Full responsive w
   assert.match(drawer, /Back to Quick Omni/)
   assert.match(drawer, /Evidence &amp; sources/)
   assert.match(drawer, /Customer context/)
-  assert.match(drawer, /aria-modal="true"/)
+  assert.match(drawer, /titleId="full-omni-title"/)
+  assert.match(ui, /aria-modal="true"/)
   assert.doesNotMatch(drawer, /triggerStorageKey|setPointerCapture|dragThreshold|clampTriggerPosition/)
 })
 
