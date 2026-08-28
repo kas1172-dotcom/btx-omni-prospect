@@ -1,4 +1,5 @@
 """Shared bounded POC runtime for API routers; CONNECTED never falls back to SAMPLE."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
@@ -15,7 +16,8 @@ from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.monitor.service import MonitorService
 from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
-from btx_omni.monitor.usaspending import recipient_query_names, targeted_profiles
+from btx_omni.monitor.targeting import StrategicWatchUniverse
+from btx_omni.monitor.usaspending import recipient_query_names
 from btx_omni.persistence.actions import SqlActionRepository
 from btx_omni.persistence.communications import SqlCommunicationRepository
 from btx_omni.persistence.database import create_database_engine
@@ -25,6 +27,7 @@ from btx_omni.providers.sample.environment import (
     SampleEnvironment,
     build_sample_environment,
 )
+from btx_omni.security.sessions import SessionStore
 
 
 @dataclass
@@ -35,36 +38,63 @@ class PocRuntime:
     communications: CommunicationService = field(init=False)
     communication_repository: SqlCommunicationRepository = field(init=False)
     monitor: MonitorService = field(init=False)
-    durable_accounts: DurablePublicAccountRepository | None = field(init=False, default=None)
-    durable_programs: DurableCanonicalProgramRepository | None = field(init=False, default=None)
+    sessions: SessionStore = field(init=False)
+    durable_accounts: DurablePublicAccountRepository | None = field(
+        init=False, default=None
+    )
+    durable_programs: DurableCanonicalProgramRepository | None = field(
+        init=False, default=None
+    )
     _curated_sample: SampleEnvironment = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self._curated_sample = self.sample
+        self.sessions = SessionStore(self.settings)
         application_engine = create_database_engine(self.settings)
         self.work = WorkService(SqlActionRepository(application_engine))
         self.communication_repository = SqlCommunicationRepository(application_engine)
         self.communications = CommunicationService(self.communication_repository)
-        engine = application_engine if self.settings.monitor_durable_state_enabled else None
+        engine = (
+            application_engine if self.settings.monitor_durable_state_enabled else None
+        )
         repository = MonitorRepository(engine) if engine else None
-        self.durable_accounts = DurablePublicAccountRepository(engine) if engine else None
-        self.durable_programs = DurableCanonicalProgramRepository(engine) if engine else None
+        self.durable_accounts = (
+            DurablePublicAccountRepository(engine) if engine else None
+        )
+        self.durable_programs = (
+            DurableCanonicalProgramRepository(engine) if engine else None
+        )
         if self.durable_accounts and self.durable_programs:
             try:
                 self.refresh_durable_catalog()
             except SQLAlchemyError:
                 self.durable_accounts = None
                 self.durable_programs = None
-        usa_profiles = targeted_profiles(self.sample.watch_profiles, rich_account_ids=set(self.sample.rich_scenarios))
+        watch_universe = StrategicWatchUniverse(
+            accounts=self.sample.accounts,
+            profiles=self.sample.watch_profiles,
+            facilities=self.sample.facilities,
+            scenario_account_ids=frozenset(self.sample.rich_scenarios),
+        )
+        usa_targets = watch_universe.targets_for(
+            REGISTRY["usaspending"].definition,
+            cap=self.settings.monitor_source_target_limit,
+        )
+        usa_profiles = tuple(item.profile for item in usa_targets)
         registry = dict(REGISTRY)
-        registry["usaspending"] = UsaSpendingAdapter(recipient_names=recipient_query_names(usa_profiles))
+        registry["usaspending"] = UsaSpendingAdapter(
+            recipient_names=recipient_query_names(usa_profiles)
+        )
         self.monitor = MonitorService(
             self.settings,
             registry=registry,
             repository=repository,
             watch_profiles=usa_profiles,
-            catalog=MonitorCatalog(self.sample.watch_profiles, self.sample.programs, self.sample.facilities),
+            catalog=MonitorCatalog(
+                self.sample.watch_profiles, self.sample.programs, self.sample.facilities
+            ),
         )
+        self.monitor.watch_targets = {"usaspending": usa_targets}
         if repository:
             try:
                 self.monitor.hydrate_events()
@@ -82,26 +112,40 @@ class PocRuntime:
         if not self.durable_accounts or not self.durable_programs:
             return
         persisted = tuple(item.account for item in self.durable_accounts.accounts())
-        durable_programs = tuple(item.program for item in self.durable_programs.programs())
+        durable_programs = tuple(
+            item.program for item in self.durable_programs.programs()
+        )
         ids = {item.id for item in self._curated_sample.accounts}
         if ids & {item.id for item in persisted}:
-            raise ValueError("durable Account ID collides with the curated canonical universe.")
+            raise ValueError(
+                "durable Account ID collides with the curated canonical universe."
+            )
         curated_program_ids = {item.id for item in self._curated_sample.programs}
         if curated_program_ids & {item.id for item in durable_programs}:
-            raise ValueError("durable Program ID collides with the curated canonical universe.")
-        if {item.name.casefold() for item in self._curated_sample.programs} & {item.name.casefold() for item in durable_programs}:
-            raise ValueError("durable Program name collides with the curated canonical universe.")
+            raise ValueError(
+                "durable Program ID collides with the curated canonical universe."
+            )
+        if {item.name.casefold() for item in self._curated_sample.programs} & {
+            item.name.casefold() for item in durable_programs
+        }:
+            raise ValueError(
+                "durable Program name collides with the curated canonical universe."
+            )
         durable_profiles = tuple(
             AccountWatchProfile(
                 item.id,
                 item.legal_name,
-                aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (),
+                aliases=tuple(field.value for field in item.public_identity.aliases)
+                if item.public_identity
+                else (),
                 domain=item.domain,
                 source_native_identifiers=tuple(
                     field.source_native_identifier
                     for field in item.public_identity.source_native_identifiers
                     if field.source_native_identifier
-                ) if item.public_identity else (),
+                )
+                if item.public_identity
+                else (),
                 industries=item.industries,
             )
             for item in persisted
@@ -112,17 +156,24 @@ class PocRuntime:
             programs=(*self._curated_sample.programs, *durable_programs),
             identity_map={
                 **self._curated_sample.identity_map,
-                **{f"public:{item.legal_name.casefold()}": item.id for item in persisted},
+                **{
+                    f"public:{item.legal_name.casefold()}": item.id
+                    for item in persisted
+                },
             },
             watch_profiles=(*self._curated_sample.watch_profiles, *durable_profiles),
         )
         if hasattr(self, "monitor"):
             self.monitor.watch_profiles = self.sample.watch_profiles
-            self.monitor.catalog = MonitorCatalog(self.sample.watch_profiles, self.sample.programs, self.sample.facilities)
+            self.monitor.catalog = MonitorCatalog(
+                self.sample.watch_profiles, self.sample.programs, self.sample.facilities
+            )
 
     def environment(self) -> SampleEnvironment:
         if self.settings.data_mode.upper() != "SAMPLE":
-            raise HTTPException(503, "CONNECTED mode is unavailable: no live providers are configured.")
+            raise HTTPException(
+                503, "CONNECTED mode is unavailable: no live providers are configured."
+            )
         return self.sample
 
     @staticmethod

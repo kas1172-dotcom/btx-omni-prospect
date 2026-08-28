@@ -1,4 +1,4 @@
-name: POC CI
+name: Release validation
 
 on:
   pull_request:
@@ -31,9 +31,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --frozen --all-groups
       - run: uv run ruff check .
-      - run: uv run pytest
       - run: uv run alembic upgrade head
       - run: uv run alembic current
+      - run: uv run pytest
       - run: >-
           uv run python -c "from btx_omni.app import app;
           schema = app.openapi();

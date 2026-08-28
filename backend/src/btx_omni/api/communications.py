@@ -7,8 +7,8 @@ from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import GroundedSynthesisRequest
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.accounts import get_runtime
-from btx_omni.api.actions import principal
 from btx_omni.api.runtime import PocRuntime
+from btx_omni.api.session import principal
 from btx_omni.domain.work import ApprovalStatus, Principal
 from btx_omni.integrations.communications import (
     DeliveryNotConfiguredError,

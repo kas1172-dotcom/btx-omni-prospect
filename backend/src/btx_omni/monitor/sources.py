@@ -44,6 +44,11 @@ class SourceDefinition:
     rate_limit_notes: str
     api_base: str
     identifier_strategy: str
+    content_structure: str = "STRUCTURED_API"
+    freshness_threshold_hours: int = 26
+    seller_promotion_permitted: bool = True
+    targeting_mode: str = "BROAD_PUBLIC_FEED"
+    consumes_strategic_targets: bool = False
 
 
 HttpGet = Callable[[str, dict[str, str]], tuple[int, bytes, dict[str, str]]]
@@ -134,7 +139,7 @@ class LiveSourceAdapter:
 
 
 class SamAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("Defense", "Space", "Commercial Aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published")
+    definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("Defense", "Space", "Commercial Aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published", freshness_threshold_hours=2)
     def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.sam_api_key), "SAM_API_KEY is not configured"
     def request_url(self, limit: int) -> str:
         today = datetime.now(UTC).date()
@@ -145,11 +150,14 @@ class SamAdapter(LiveSourceAdapter):
 
 
 class UsaSpendingAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("Commercial Aerospace", "Defense", "Space", "Semiconductor", "Energy"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name")
+    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name", targeting_mode="ACCOUNT_TARGETED", consumes_strategic_targets=True)
     def __init__(self, get: HttpGet = default_get, *, recipient_names: tuple[str, ...] = (), post: HttpPost = default_post) -> None:
         super().__init__(get)
         self.recipient_names = recipient_names
         self.post = post
+
+    def available(self, settings: Any) -> tuple[bool, str | None]:
+        return bool(self.recipient_names), "verified USAspending recipient targets are required"
 
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
     def record_id(self, item: dict[str, Any]) -> str:
@@ -231,7 +239,7 @@ class SecEdgarAdapter(LiveSourceAdapter):
 
 
 class NasaAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("nasa", "NASA Official News", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "NASA official publisher", ("Space", "Commercial Aerospace"), (EventType.PROGRAM_LAUNCH, EventType.CONTRACT_AWARD, EventType.GOVERNMENT_FUNDING, EventType.PARTNERSHIP), "daily", "news archive", "keyless", "RSS/API availability varies", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "canonical article URL; NASA program names")
+    definition = SourceDefinition("nasa", "NASA Official News", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "NASA official publisher", ("Space", "Commercial Aerospace"), (EventType.PROGRAM_LAUNCH, EventType.CONTRACT_AWARD, EventType.GOVERNMENT_FUNDING, EventType.PARTNERSHIP), "daily", "news archive", "keyless", "RSS/API availability varies", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "canonical article URL; NASA program names", content_structure="OFFICIAL_RSS_WITH_UNSTRUCTURED_TEXT")
     def parse(self, payload: bytes, *, run_id: str) -> list[SourceObservation]:
         try:
             root = element_tree.fromstring(payload)
@@ -241,12 +249,12 @@ class NasaAdapter(LiveSourceAdapter):
 
 
 class DodAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("Defense", "Space"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present")
+    definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("Defense", "Space"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present", content_structure="UNCONFIGURED_PUBLISHER_PAGE", seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official DoD machine-readable feed is not configured; web page collection is disabled"
 
 
 class CommerceAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("Semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers")
+    definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("Semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers", content_structure="UNCONFIGURED_PUBLISHER_PAGE", seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official Commerce machine-readable feed is not configured; web page collection is disabled"
 
 
@@ -257,12 +265,12 @@ class FdaAdapter(LiveSourceAdapter):
 
 
 class CompanyNewsAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL")
+    definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL", content_structure="UNCONFIGURED_ACCOUNT_FEED", seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified account-watch-profile newsroom URL is required"
 
 
 class StateEconomicAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("Semiconductor", "Robotics", "Medical", "Commercial Aerospace", "Energy"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography")
+    definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("Semiconductor", "Robotics", "Medical", "Commercial Aerospace", "Energy"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography", content_structure="UNCONFIGURED_PUBLISHER_FEED", freshness_threshold_hours=192, seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified state publisher URL is required"
 
 

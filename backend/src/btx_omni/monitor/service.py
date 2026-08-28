@@ -1,9 +1,11 @@
 """Explicit live collection orchestration. Disabled mode performs no network I/O."""
 from __future__ import annotations
 
+import signal
+import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from time import perf_counter
+from time import monotonic, perf_counter
 from uuid import uuid4
 
 from btx_omni.core.config import Settings
@@ -14,12 +16,14 @@ from btx_omni.monitor.candidates import (
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.clustering import cluster_event, cluster_key, observation_changed
 from btx_omni.monitor.contracts import (
+    CollectionCursor,
     CollectionRun,
     EventCluster,
     IntelligenceEvent,
     RejectedObservation,
     SourceHealth,
     SourceObservation,
+    SourceOperationalStatus,
 )
 from btx_omni.monitor.health import SOURCE_HEALTH_WARNING
 from btx_omni.monitor.normalization import normalize_structured_observation
@@ -27,7 +31,16 @@ from btx_omni.monitor.ontology import EventType, SourceHealthState
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.monitor.sources import REGISTRY, LiveSourceAdapter
+from btx_omni.monitor.targeting import WatchTarget
 from btx_omni.monitor.usaspending import normalize_usaspending_observation
+
+
+class CollectionDeadlineExceeded(TimeoutError):
+    pass
+
+
+def _deadline_alarm(_signum: int, _frame: object) -> None:
+    raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
 
 
 @dataclass
@@ -44,14 +57,35 @@ class MonitorService:
     repository: MonitorRepository | None = None
     watch_profiles: tuple[AccountWatchProfile, ...] = ()
     catalog: MonitorCatalog = field(default_factory=MonitorCatalog)
+    watch_targets: dict[str, tuple[WatchTarget, ...]] = field(default_factory=dict)
 
-    def collect(self, source_id: str, limit: int = 10) -> CollectionRun:
+    def collect(self, source_id: str, limit: int = 10, *, deadline_monotonic: float | None = None) -> CollectionRun:
         if self.settings.monitor_mode.lower() != "live":
             raise RuntimeError("MONITOR_MODE is disabled; live collection was not attempted")
         adapter = self.registry[source_id]
         started, clock, run_id = datetime.now(UTC), perf_counter(), str(uuid4())
+        previous_health = self.health.get(source_id)
+        if previous_health is None and self.repository:
+            durable_health = next((item for item in self.repository.snapshot()["health"] if item["source_id"] == source_id), None)
+            previous_success = durable_health.get("last_success_at") if durable_health else None
+        else:
+            previous_success = previous_health.last_success_at if previous_health else None
         try:
-            observations = adapter.collect(run_id=run_id, settings=self.settings, limit=limit)
+            remaining = deadline_monotonic - monotonic() if deadline_monotonic is not None else None
+            if remaining is not None and remaining <= 0:
+                raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
+            alarm_supported = remaining is not None and threading.current_thread() is threading.main_thread() and hasattr(signal, "setitimer")
+            previous_handler = None
+            if alarm_supported:
+                previous_handler = signal.getsignal(signal.SIGALRM)
+                signal.signal(signal.SIGALRM, _deadline_alarm)
+                signal.setitimer(signal.ITIMER_REAL, remaining)
+            try:
+                observations = adapter.collect(run_id=run_id, settings=self.settings, limit=limit)
+            finally:
+                if alarm_supported:
+                    signal.setitimer(signal.ITIMER_REAL, 0)
+                    signal.signal(signal.SIGALRM, previous_handler)
             created = changed = new = rejected_count = 0
             persisted_events: list[IntelligenceEvent] = []
             organization_candidates = []
@@ -112,14 +146,18 @@ class MonitorService:
                 decision = cluster_event(candidate.event, observation, existing_cluster)
                 self.clusters[cluster_id] = decision.cluster
                 created += int(decision.created)
-            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, records_seen=len(observations), records_new=new, records_changed=changed, records_rejected=rejected_count, events_created=created, events_matched=len(observations) - created, latency_ms=round((perf_counter() - clock) * 1000))
+            completed = datetime.now(UTC)
+            cursor = CollectionCursor(source_id, token=completed.isoformat(), page=1, updated_at=completed)
+            run = CollectionRun(run_id, source_id, started, completed, cursor, records_seen=len(observations), records_new=new, records_changed=changed, records_rejected=rejected_count, events_created=created, events_matched=len(observations) - created, latency_ms=round((perf_counter() - clock) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.HEALTHY, started, run.completed_at)
         except PermissionError as exc:
-            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(str(exc),), latency_ms=round((perf_counter() - clock) * 1000))
-            self.health[source_id] = SourceHealth(source_id, SourceHealthState.WARNING, started, None, SOURCE_HEALTH_WARNING, str(exc))
+            detail = self._safe_failure(exc)
+            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(detail,), latency_ms=round((perf_counter() - clock) * 1000))
+            self.health[source_id] = SourceHealth(source_id, SourceHealthState.WARNING, started, previous_success, SOURCE_HEALTH_WARNING, detail)
         except Exception as exc:  # noqa: BLE001 - adapter boundary records all source failures as health
-            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(str(exc),), latency_ms=round((perf_counter() - clock) * 1000))
-            self.health[source_id] = SourceHealth(source_id, SourceHealthState.FAILED, started, None, SOURCE_HEALTH_WARNING, str(exc))
+            detail = self._safe_failure(exc)
+            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(detail,), latency_ms=round((perf_counter() - clock) * 1000))
+            self.health[source_id] = SourceHealth(source_id, SourceHealthState.FAILED, started, previous_success, SOURCE_HEALTH_WARNING, detail)
         self.runs.append(run)
         if self.repository:
             self.repository.persist_snapshot(run=run, health=self.health[source_id], observations=tuple(observations) if 'observations' in locals() else (), events=tuple(persisted_events) if 'persisted_events' in locals() else (), clusters=tuple(self.clusters.values()), rejected=tuple(self.rejected), organization_candidates=tuple(organization_candidates) if 'organization_candidates' in locals() else (), program_candidates=tuple(program_candidates) if 'program_candidates' in locals() else ())
@@ -137,6 +175,17 @@ class MonitorService:
             raise KeyError(f"unknown Monitor sources: {sorted(unknown)}")
         return tuple(self.collect(source_id, limit=limit) for source_id in identifiers)
 
+    @staticmethod
+    def _safe_failure(error: Exception) -> str:
+        if isinstance(error, PermissionError):
+            return str(error)[:240]
+        message = str(error)
+        if message in {"RATE_LIMITED", "MALFORMED_SOURCE_RESPONSE"} or message.startswith("HTTP_"):
+            return message
+        if isinstance(error, CollectionDeadlineExceeded):
+            return "DEADLINE_EXCEEDED"
+        return f"{type(error).__name__}: collection failed"
+
     def durable_snapshot(self) -> dict[str, tuple[dict, ...]] | None:
         if not self.repository:
             return None
@@ -150,8 +199,37 @@ class MonitorService:
     def source_state(self, *, source_id: str, last_success_at: datetime | None, now: datetime) -> str:
         if last_success_at is None:
             return "UNAVAILABLE"
-        cadence = self.registry.get(source_id).definition.cadence.casefold() if source_id in self.registry else ""
-        expected_hours = 2 if "hour" in cadence else 26 if "daily" in cadence else 192 if "week" in cadence else self.settings.monitor_stale_after_hours
-        if now - last_success_at > timedelta(hours=min(expected_hours, self.settings.monitor_stale_after_hours)):
+        # SQLite drops timezone information while PostgreSQL preserves it. Treat
+        # persisted Monitor timestamps as UTC at this boundary so readiness and
+        # freshness semantics are identical in local tests and production.
+        if last_success_at.tzinfo is None:
+            last_success_at = last_success_at.replace(tzinfo=UTC)
+        if now - last_success_at > timedelta(hours=self.freshness_threshold_hours(source_id)):
             return "STALE"
         return "HEALTHY"
+
+    def freshness_threshold_hours(self, source_id: str) -> int:
+        cadence = self.registry.get(source_id).definition.cadence.casefold() if source_id in self.registry else ""
+        expected_hours = 2 if "hour" in cadence else 26 if "daily" in cadence else 192 if "week" in cadence else self.settings.monitor_stale_after_hours
+        configured = self.registry[source_id].definition.freshness_threshold_hours if source_id in self.registry else expected_hours
+        return min(expected_hours, configured, self.settings.monitor_stale_after_hours)
+
+    def operational_status(self, source_id: str, *, now: datetime | None = None, durable_health: dict | None = None, last_run: dict | None = None) -> SourceOperationalStatus:
+        clock = now or datetime.now(UTC)
+        adapter = self.registry[source_id]
+        available, unavailable_reason = adapter.available(self.settings)
+        health = durable_health or self.health.get(source_id)
+        last_attempt = health.get("last_attempt_at") if isinstance(health, dict) else getattr(health, "last_attempt_at", None)
+        last_success = health.get("last_success_at") if isinstance(health, dict) else getattr(health, "last_success_at", None)
+        detail = health.get("detail") if isinstance(health, dict) else getattr(health, "detail", None)
+        persisted = health.get("state") if isinstance(health, dict) else getattr(health, "state", None)
+        persisted_value = str(getattr(persisted, "value", persisted))
+        if self.settings.monitor_mode.lower() != "live": state = SourceHealthState.DISABLED
+        elif not available: state, detail = SourceHealthState.NOT_CONFIGURED, unavailable_reason
+        elif last_attempt is None: state = SourceHealthState.NEVER_ATTEMPTED
+        elif not last_success or persisted_value == "FAILED": state = SourceHealthState.FAILED
+        elif persisted_value in {"WARNING", "PARTIAL"}: state = SourceHealthState.PARTIAL
+        elif self.source_state(source_id=source_id, last_success_at=last_success, now=clock) == "STALE": state = SourceHealthState.STALE
+        else: state = SourceHealthState.HEALTHY
+        run = last_run or {}
+        return SourceOperationalStatus(source_id, adapter.definition.source_name, state, available and self.settings.monitor_mode.lower() == "live" and bool(self.repository), adapter.definition.content_structure, adapter.definition.authentication_requirement, tuple(reason.code for target in self.watch_targets.get(source_id, ()) for reason in target.reasons), self.freshness_threshold_hours(source_id), last_attempt, last_success, detail, bool(self.repository), int(run.get("records_seen", 0)), int(run.get("events_created", 0)), adapter.definition.seller_promotion_permitted)

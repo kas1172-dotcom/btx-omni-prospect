@@ -1310,6 +1310,68 @@ def test_omni_conversation_facility_action_account_and_cleared_screen_context() 
     )
 
 
+def test_omni_natural_customer_follow_ups_switching_and_ambiguity_are_governed() -> None:
+    sample = build_sample_environment()
+    work, _item = create_selected_work_item()
+    before = work.list()
+    omni = OmniOrchestrator()
+
+    boeing = omni.answer(
+        sample, account_id=None, question="Tell me about Boeing.", observed_at=NOW
+    )
+    changed = omni.answer(
+        sample,
+        account_id=None,
+        question="What changed recently?",
+        observed_at=NOW,
+        context={"conversation_referent": boeing.conversation_referent},
+        work_items=work.list(),
+    )
+    significance = omni.answer(
+        sample,
+        account_id=None,
+        question="Why does that matter to us?",
+        observed_at=NOW,
+        context={"conversation_referent": changed.conversation_referent},
+        work_items=work.list(),
+    )
+    next_move = omni.answer(
+        sample,
+        account_id=None,
+        question="What should I do next?",
+        observed_at=NOW,
+        context={"conversation_referent": significance.conversation_referent},
+        work_items=work.list(),
+    )
+    switched = omni.answer(
+        sample,
+        account_id=None,
+        question="Tell me about KLA.",
+        observed_at=NOW,
+        context={"conversation_referent": next_move.conversation_referent},
+        work_items=work.list(),
+    )
+    ambiguous = omni.answer(
+        sample,
+        account_id=None,
+        question="Why does that matter to us?",
+        observed_at=NOW,
+        context={},
+        work_items=work.list(),
+    )
+
+    assert boeing.account_id == "boeing" and boeing.citations
+    assert changed.account_id == "boeing" and changed.citations
+    assert changed.context_used["context_source"] == "conversation"
+    assert significance.account_id == "boeing" and "truth categories" in significance.content
+    assert "Suggested next move" in next_move.content and "read-only" in next_move.content
+    assert switched.account_id == "kla" and switched.account_name == "KLA Corporation"
+    assert switched.context_used.get("context_source") is None
+    assert "need a specific Customer" in ambiguous.content
+    assert ambiguous.missingness and AssistantProvenance.MISSING_UNAVAILABLE in ambiguous.provenance
+    assert "simulated POC data" in boeing.content and work.list() == before
+
+
 def test_omni_conversation_comparison_relationship_and_ambiguity_are_bounded() -> None:
     sample = build_sample_environment()
     work, _item = create_selected_work_item()

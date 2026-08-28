@@ -27,6 +27,44 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
   await expect(page.locator('.today-surface')).toHaveCount(0)
 })
 
+test('Today consumes projected priority, market hubs, and curated IDs without substitution', async ({ page }) => {
+  await page.goto('/')
+  const payload = await page.evaluate(async () => (await fetch('/api/today')).json())
+  const projectedPriority = payload.command_center.priority_briefing.map(item => item.id)
+  await expect(page.locator('[data-priority-id]')).toHaveCount(projectedPriority.length)
+  expect(await page.locator('[data-priority-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-priority-id')))).toEqual(projectedPriority)
+
+  const commercial = payload.command_center.priority_briefing.filter(item => item.kind === 'COMMERCIAL_REVIEW')
+  const publicSignals = payload.command_center.priority_briefing.filter(item => item.kind === 'PUBLIC_SIGNAL')
+  await expect(page.locator('[data-priority-id]').filter({ hasText: 'SAMPLE BTX commercial context' })).toHaveCount(commercial.length)
+  for (const item of commercial) {
+    const card = page.locator(`[data-priority-id="${item.id}"]`)
+    await card.getByRole('button', { name: 'Evidence and governed action' }).click()
+    await expect(card.getByRole('button', { name: 'Create action' })).toBeVisible()
+  }
+  for (const item of publicSignals) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)
+
+  const defense = payload.command_center.market_hubs.find(hub => hub.market === 'Defense')
+  await page.getByRole('navigation', { name: 'Market hubs' }).getByRole('button', { name: /Defense/ }).click()
+  await expect(page.getByRole('heading', { name: 'Defense coverage and gaps' })).toBeVisible()
+  const watchPanel = page.getByRole('heading', { name: 'Recommended Customer watchlist' }).locator('..').locator('..')
+  const programPanel = page.getByRole('heading', { name: 'Watched programs' }).locator('..').locator('..')
+  await expect(watchPanel.locator('.today-watch-list > button')).toHaveCount(Math.min(12, defense.watched_account_ids.length))
+  await expect(programPanel.locator('.today-watch-list > button')).toHaveCount(defense.watched_program_ids.length)
+  const coverage = page.getByRole('heading', { name: 'Defense coverage and gaps' }).locator('..').locator('..')
+  for (const gap of defense.gaps) await expect(coverage).toContainText(gap)
+
+  await page.getByRole('navigation', { name: 'Market hubs' }).getByRole('button', { name: /All markets/ }).click()
+  await expect(page.getByRole('heading', { name: 'Coverage and source freshness' })).toBeVisible()
+  await expect(watchPanel.locator('.today-watch-list > button')).toHaveCount(Math.min(12, payload.command_center.watched_accounts.length))
+
+  const intelligence = await page.evaluate(async () => (await fetch('/api/intelligence')).json())
+  const projected = new Set(payload.command_center.curated_reference_signal_ids)
+  const expectedCurated = intelligence.signals.filter(signal => projected.has(signal.id) && signal.data_mode === 'CURATED_PUBLIC')
+  const curatedPanel = page.getByRole('heading', { name: 'Public intelligence' }).locator('..').locator('..')
+  await expect(curatedPanel.locator('.seller-signal-brief')).toHaveCount(expectedCurated.length)
+})
+
 test('desktop Intelligence composes search and canonical filters with evidence and Omni selection', async ({ page }) => {
   await page.goto('/')
   await navigate(page, 'Intelligence')

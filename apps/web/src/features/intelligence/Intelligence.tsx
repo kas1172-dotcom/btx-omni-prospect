@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Account, OmniContext, Signal } from '../../types/api'
-import { Button, Disclosure, Empty, EvidenceSource, FilterChip, Panel, SearchInput, SelectInput, State } from '../../components/UI'
+import { SignalBriefCard } from '../../components/SignalBriefCard'
+import { curatedSignalBrief } from '../../components/signalBriefModel'
+import { Button, Empty, FilterChip, Panel, SearchInput, SelectInput } from '../../components/UI'
 import './intelligence.css'
 
 type Filters = { customer: string; industry: string; kind: string; source: string; evidence: string }
 const emptyFilters: Filters = { customer: '', industry: '', kind: '', source: '', evidence: '' }
-const eventDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unavailable'
-const sourceValidation = (state?: string) => ({ BROWSER_VERIFIED: 'Source opened and supported in a normal browser.', AUTOMATION_BLOCKED: 'Publisher controls blocked automated validation; the original official source is retained.', REPLACED_WITH_EQUIVALENT_OFFICIAL_SOURCE: 'A stable, equivalent official source replaced the original; provenance retains the original.', NEEDS_RESEARCH: 'Source validation still needs research.' }[state ?? ''])
 const unique = (values: Array<string | undefined>) => [...new Set(values.filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b))
 const normalize = (value?: string) => (value ?? '').toLocaleLowerCase()
 
@@ -70,15 +70,9 @@ export function Intelligence({ signals, accounts, onAccount, onEventSelect, onOm
     <Panel className="intelligence-feed-panel">
       {visible.length ? <div className="intelligence-signal-list">{visible.map(signal => {
         const account = accountById.get(signal.account_id ?? '')
-        return <article className={`intelligence-signal ${selectedEventId === signal.id ? 'selected' : ''}`} key={signal.id}>
-          <div className="intelligence-signal-head"><div><span className="eyebrow">{signal.kind.replaceAll('_', ' ')}</span><button className="intelligence-customer-link" disabled={!signal.account_id} onClick={() => signal.account_id && onAccount(signal.account_id)}>{customerName(signal.account_id)}</button></div><div className="intelligence-states"><State value="PUBLIC EVIDENCE" /><State value={signal.evidence_state} /></div></div>
-          <h2>{signal.title}</h2>
-          <p className="intelligence-context">{account ? [account.relationship === 'TARGET' ? 'Prospect' : 'Customer', ...account.industries].join(' · ') : 'Customer association unavailable'}</p>
-          <p className="intelligence-meaning"><strong>Why it may matter:</strong> {signal.relevance_explanation}</p>
-          <p className="intelligence-next-step"><strong>Next:</strong> Review the public evidence and explicit Customer context.</p>
-          <Disclosure title={`Evidence · ${eventDate(signal.observed_at)} · ${signal.source_tier?.replaceAll('_', ' ') ?? 'Source unavailable'}`}><EvidenceSource title={signal.title} source={signal.source_tier} date={eventDate(signal.observed_at)} evidenceState={signal.evidence_state} validationState={signal.source_validation_state} url={signal.source_url} detail={sourceValidation(signal.source_validation_state)} /></Disclosure>
-          <div className="card-actions intelligence-actions"><Button aria-pressed={selectedEventId === signal.id} variant={selectedEventId === signal.id ? 'primary' : 'secondary'} onClick={() => selectEvent(signal.id)}>{selectedEventId === signal.id ? 'Clear Omni event' : 'Use in Omni'}</Button>{signal.account_id && <Button variant="ghost" onClick={() => onAccount(signal.account_id!)}>Open Customer</Button>}</div>
-        </article>
+        return <div className={`intelligence-signal ${selectedEventId === signal.id ? 'selected' : ''}`} key={signal.id}>
+          <SignalBriefCard brief={curatedSignalBrief(signal, account)} accountName={customerName} onAccount={onAccount} onUseInOmni={() => selectEvent(signal.id)} selected={selectedEventId === signal.id} />
+        </div>
       })}</div> : <Empty>No governed Intelligence matches the current search and filters. Clear filters to restore results.</Empty>}
     </Panel>
   </div>

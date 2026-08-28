@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from btx_omni.ai.config import AiConfig
@@ -8,7 +8,8 @@ from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
-from btx_omni.domain.work import Principal, PrincipalRole
+from btx_omni.api.session import principal
+from btx_omni.domain.work import Principal
 from btx_omni.modules.assistant.service import OmniService
 
 router = APIRouter(prefix="/omni", tags=["omni"])
@@ -76,24 +77,11 @@ class OmniQuestion(BaseModel):
     context: OmniContext | None = None
 
 
-def omni_principal(
-    runtime: PocRuntime = Depends(get_runtime),
-    token: str | None = Header(default=None, alias="X-BTX-Principal-Token"),
-) -> Principal:
-    if token in {None, runtime.settings.action_salesperson_token}:
-        return Principal(
-            "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON
-        )
-    if token == runtime.settings.action_manager_token:
-        return Principal("manager-1", "Development Manager", PrincipalRole.MANAGER)
-    raise HTTPException(401, "The Omni principal token is invalid.")
-
-
 @router.post("")
 def omni(
     body: OmniQuestion,
     runtime: PocRuntime = Depends(get_runtime),
-    current: Principal = Depends(omni_principal),
+    current: Principal = Depends(principal),
 ):
     provider = get_ai_provider(AiConfig.from_settings(runtime.settings))
     return OmniService(provider).answer(

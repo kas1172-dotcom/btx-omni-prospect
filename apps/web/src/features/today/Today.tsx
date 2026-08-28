@@ -1,56 +1,67 @@
-import { useEffect, useMemo } from 'react'
-import type { Account, Alert, OmniContext, Signal } from '../../types/api'
-import { Button, Disclosure, Empty, EvidenceSource, Panel, State, StatTile } from '../../components/UI'
+import { useEffect, useMemo, useState } from 'react'
+import type { Account, Alert, CommandCenter, MonitorSignalBrief, OmniContext, Signal } from '../../types/api'
+import { SignalBriefCard } from '../../components/SignalBriefCard'
+import { curatedSignalBrief } from '../../components/signalBriefModel'
+import { Button, Disclosure, Empty, Panel, State, StatTile } from '../../components/UI'
 import './today.css'
 
-const eventDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
-const usableSource = (url: string) => /^https?:\/\//.test(url) && !url.includes('.invalid')
-const alertRenderKey = (alert: Alert) => `${alert.id}:${[...alert.evidence_ids].sort().join('|')}`
+const priorityCounts = (alerts: Alert[]) => alerts.reduce((counts, alert) => { const value = alert.severity.toUpperCase(); if (value in counts) counts[value as keyof typeof counts] += 1; return counts }, { HIGH: 0, MEDIUM: 0, LOW: 0 })
+const itemsById = <T extends { id: string }>(items: T[], ids?: string[]) => ids ? ids.flatMap(id => { const item = items.find(value => value.id === id); return item ? [item] : [] }) : items
 
-function commercialPriorityCounts(alerts: Alert[]) {
-  return alerts.reduce((counts, alert) => {
-    const severity = alert.severity.toUpperCase()
-    if (severity === 'HIGH' || severity === 'MEDIUM' || severity === 'LOW') counts[severity] += 1
-    return counts
-  }, { HIGH: 0, MEDIUM: 0, LOW: 0 })
-}
-
-function SignalTruth({ signal }: { signal: Signal }) {
-  const mode = signal.data_mode === 'CONNECTED' ? 'LIVE PUBLIC' : signal.data_mode === 'CURATED_PUBLIC' ? 'CURATED PUBLIC' : 'PUBLIC EVIDENCE'
-  return <div className="truth-row"><State value={mode} /><State value={signal.resolution_state ?? signal.evidence_state} /></div>
-}
-
-export function Today({ alerts, signals, accounts, onAccount, onAction, onIntelligence, onOmniContext }: { alerts: Alert[]; signals: Signal[]; accounts: Account[]; onAccount: (id: string) => void; onAction: (alert: Alert) => void; onIntelligence: () => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
-  const prioritySignals = useMemo(() => [...signals].sort((a, b) => (b.observed_at ?? '').localeCompare(a.observed_at ?? '')).slice(0, 4), [signals])
-  const visibleRecordIds = useMemo(() => [...alerts.map(alert => alert.id), ...prioritySignals.map(signal => signal.id)].slice(0, 50), [alerts, prioritySignals])
-  const counts = useMemo(() => commercialPriorityCounts(alerts), [alerts])
+export function Today({ commandCenter, alerts, signals, accounts, onAccount, onAction, onIntelligence, onMonitor, onEventSelect, onOmniContext }: { commandCenter?: CommandCenter; alerts: Alert[]; signals: Signal[]; accounts: Account[]; onAccount: (id: string) => void; onAction: (alert: Alert) => void; onIntelligence: () => void; onMonitor: () => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'selected_event_id' | 'selected_program_id' | 'active_filters' | 'visible_record_ids'>) => void }) {
+  const [market, setMarket] = useState('')
+  const [selectedEventId, setSelectedEventId] = useState<string>()
+  const [selectedProgramId, setSelectedProgramId] = useState<string>()
+  const counts = useMemo(() => priorityCounts(alerts), [alerts])
   const accountById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts])
-  useEffect(() => { onOmniContext({ visible_record_ids: visibleRecordIds }) }, [onOmniContext, visibleRecordIds])
-  useEffect(() => () => onOmniContext({}), [onOmniContext])
-  const name = (id?: string) => accountById.get(id ?? '')?.name ?? 'Unresolved Customer'
+  const current = useMemo(() => commandCenter?.current_signal_briefs ?? [], [commandCenter])
+  const radar = useMemo(() => commandCenter?.upcoming_radar ?? [], [commandCenter])
+  const selectedHub = commandCenter?.market_hubs.find(hub => hub.market === market)
+  const visibleCurrent = useMemo(() => itemsById(current, selectedHub?.current_signal_ids), [current, selectedHub?.current_signal_ids])
+  const visibleRadar = useMemo(() => itemsById(radar, selectedHub?.upcoming_signal_ids), [radar, selectedHub?.upcoming_signal_ids])
+  const visibleAccounts = useMemo(() => market ? (commandCenter?.watched_accounts ?? []).filter(item => selectedHub?.watched_account_ids.includes(item.account_id)) : (commandCenter?.watched_accounts ?? []), [commandCenter?.watched_accounts, market, selectedHub?.watched_account_ids])
+  const visiblePrograms = useMemo(() => market ? (commandCenter?.watched_programs ?? []).filter(item => selectedHub?.watched_program_ids.includes(item.program_id)) : (commandCenter?.watched_programs ?? []), [commandCenter?.watched_programs, market, selectedHub?.watched_program_ids])
+  const alertById = useMemo(() => new Map(alerts.map(alert => [alert.id, alert])), [alerts])
+  const priority = useMemo(() => commandCenter?.priority_briefing ?? [], [commandCenter])
+  const curatedIds = useMemo(() => commandCenter?.curated_reference_signal_ids ?? [], [commandCenter])
+  const curatedSignals = useMemo(() => curatedIds.flatMap(id => { const signal = signals.find(item => item.id === id && item.data_mode === 'CURATED_PUBLIC'); return signal ? [signal] : [] }), [curatedIds, signals])
+  const curated = useMemo(() => curatedSignals.map(signal => curatedSignalBrief(signal, accountById.get(signal.account_id ?? ''))), [accountById, curatedSignals])
+  const missingCuratedCount = curatedIds.length - curated.length
+  const visibleIds = useMemo(() => [...new Set([...priority.map(item => item.id), ...visibleCurrent.map(item => item.id), ...visibleRadar.map(item => item.id), ...visibleAccounts.slice(0, 12).map(item => item.account_id), ...visiblePrograms.map(item => item.program_id), ...curated.map(item => item.id)])].slice(0, 50), [curated, priority, visibleAccounts, visibleCurrent, visiblePrograms, visibleRadar])
+  useEffect(() => { onOmniContext({ selected_event_id: selectedEventId, selected_program_id: selectedProgramId, active_filters: market ? { market } : undefined, visible_record_ids: visibleIds }) }, [market, onOmniContext, selectedEventId, selectedProgramId, visibleIds])
+  useEffect(() => () => { onEventSelect(undefined); onOmniContext({}) }, [onEventSelect, onOmniContext])
+  const name = (id: string) => accountById.get(id)?.name ?? accountById.get(id)?.legal_name ?? 'Unresolved Customer'
+  const useBrief = (brief: MonitorSignalBrief) => { const next = selectedEventId === brief.id ? undefined : brief.id; setSelectedEventId(next); setSelectedProgramId(next ? brief.canonical_program_id : undefined); onEventSelect(next) }
+  const changeMarket = (nextMarket: string) => {
+    const nextHub = commandCenter?.market_hubs.find(hub => hub.market === nextMarket)
+    const nextVisibleEvents = new Set([...priority.map(item => item.id), ...(nextHub ? nextHub.current_signal_ids : current.map(item => item.id)), ...(nextHub ? nextHub.upcoming_signal_ids : radar.map(item => item.id)), ...curated.map(item => item.id)])
+    const nextVisiblePrograms = new Set(nextHub ? nextHub.watched_program_ids : (commandCenter?.watched_programs ?? []).map(item => item.program_id))
+    if (selectedEventId && !nextVisibleEvents.has(selectedEventId)) { setSelectedEventId(undefined); onEventSelect(undefined) }
+    if (selectedProgramId && !nextVisiblePrograms.has(selectedProgramId)) setSelectedProgramId(undefined)
+    setMarket(nextMarket)
+  }
   return <div className="surface today-surface">
-    <header className="page-title today-title"><span className="eyebrow">Seller command</span><h1>Today</h1><p>What deserves attention today?</p></header>
+    <header className="page-title today-title"><span className="eyebrow">Seller Command Center</span><h1>Today</h1><p>Attention, change, timing, and governed next steps in one briefing.</p></header>
     <section className="today-priority-summary" aria-label="Commercial review priority distribution">
-      <StatTile label="High" value={counts.HIGH} detail="Commercial reviews" tone={counts.HIGH ? 'danger' : 'neutral'} />
-      <StatTile label="Medium" value={counts.MEDIUM} detail="Commercial reviews" tone={counts.MEDIUM ? 'warning' : 'neutral'} />
-      <StatTile label="Low" value={counts.LOW} detail="Commercial reviews" />
-      <StatTile label="Public signals" value={signals.length} detail="Current governed evidence" tone="info" />
+      <StatTile label="High" value={counts.HIGH} detail="SAMPLE commercial reviews" tone={counts.HIGH ? 'danger' : 'neutral'} />
+      <StatTile label="Medium" value={counts.MEDIUM} detail="SAMPLE commercial reviews" tone={counts.MEDIUM ? 'warning' : 'neutral'} />
+      <StatTile label="Low" value={counts.LOW} detail="SAMPLE commercial reviews" />
+      <StatTile label="Current signals" value={current.length} detail="Eligible collected evidence" tone="info" />
+      <StatTile label="Upcoming" value={radar.length} detail="Source-supported dates" />
     </section>
+    <nav className="today-market-hubs" aria-label="Market hubs"><Button variant={market ? 'ghost' : 'primary'} aria-pressed={!market} onClick={() => changeMarket('')}>All markets</Button>{(commandCenter?.market_hubs ?? []).map(hub => <Button key={hub.market} variant={market === hub.market ? 'primary' : 'ghost'} aria-pressed={market === hub.market} onClick={() => changeMarket(hub.market)}>{hub.market}<span>{hub.current_signal_ids.length + hub.upcoming_signal_ids.length}</span></Button>)}</nav>
     <div className="today-command-grid">
-      <Panel title="Seller attention" action={<span className="panel-kicker">SAMPLE BTX commercial context</span>}>
-        {alerts.length ? <div className="today-attention-list">{alerts.map(alert => <article className="today-attention-item" key={alertRenderKey(alert)}>
-          <div className="today-item-heading"><button className="today-customer-link" onClick={() => onAccount(alert.account_id)}>{name(alert.account_id)}</button><State value={alert.severity} /></div>
-          <p><strong>Why:</strong> {alert.trigger_reason}</p><p><strong>Next:</strong> {alert.recommended_action}</p>
-          <Disclosure title="SAMPLE evidence and actions"><p className="today-evidence-note">SAMPLE BTX commercial context · Evidence IDs: {alert.evidence_ids.length ? alert.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button onClick={() => onAccount(alert.account_id)}>Review Customer</Button><Button variant="primary" onClick={() => onAction(alert)}>Create action</Button></div></Disclosure>
-        </article>)}</div> : <Empty>No commercial reviews need attention.</Empty>}
+      <Panel title="Seller attention" action={<span className="panel-kicker">Governed priority briefing</span>}>
+        {priority.length ? <div className="today-attention-list">{priority.map(item => item.kind === 'COMMERCIAL_REVIEW' ? <article className="today-attention-item" key={item.id} data-priority-id={item.id}><div className="today-item-heading"><button className="today-customer-link" disabled={!item.account_id} onClick={() => item.account_id && onAccount(item.account_id)}>{item.account_id ? name(item.account_id) : 'Customer unavailable'}</button><State value={item.severity ?? 'REVIEW'} /></div><State value="SAMPLE BTX commercial context" /><p><strong>Why:</strong> {item.reason}</p><p><strong>Next:</strong> {item.recommended_action ?? 'Governed next step unavailable.'}</p><Disclosure title="Evidence and governed action"><p className="today-evidence-note">SAMPLE BTX commercial context · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions">{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="primary" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></Disclosure></article> : item.signal_brief ? <div className="today-priority-signal" key={item.id} data-priority-id={item.id}><SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedEventId === item.id} /></div> : <article className="today-attention-item" key={item.id} data-priority-id={item.id}><State value={item.data_mode} /><p>{item.reason}</p><p className="muted">Signal Brief details are unavailable; no substitute was selected.</p></article>)}</div> : <Empty>No governed priority briefing items are available.</Empty>}
       </Panel>
-      <Panel title="Public intelligence" action={<Button variant="ghost" onClick={onIntelligence}>View Intelligence</Button>}>
-        {prioritySignals.length ? <div className="today-signal-list">{prioritySignals.map(signal => <article className="today-signal-item" key={signal.id}>
-          <div className="today-item-heading"><button className="today-customer-link" disabled={!signal.account_id} onClick={() => signal.account_id && onAccount(signal.account_id)}>{name(signal.account_id)}</button><SignalTruth signal={signal} /></div>
-          <h3>{signal.title}</h3><p><strong>Why it may matter:</strong> {signal.relevance_explanation}</p>
-          <Disclosure title={`Evidence · ${eventDate(signal.observed_at)}`}><EvidenceSource title={signal.title} source={signal.source_tier} date={eventDate(signal.observed_at)} evidenceState={signal.evidence_state} validationState={signal.source_validation_state} url={usableSource(signal.source_url) ? signal.source_url : undefined} /></Disclosure>
-        </article>)}</div> : <Empty>No governed public intelligence is available.</Empty>}
-      </Panel>
+      <Panel title="Current Signal Briefs" action={<Button variant="ghost" onClick={onMonitor}>Source health</Button>}>{visibleCurrent.length ? <div className="seller-signal-list">{visibleCurrent.map(brief => <SignalBriefCard key={brief.id} brief={brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} />)}</div> : <Empty>No current eligible collected evidence{market ? ` for ${market}` : ''}. Curated demonstration material is shown separately and is not live collection.</Empty>}</Panel>
     </div>
+    <Panel title="Upcoming Radar" action={<span className="panel-kicker">Only source-supported future dates</span>}>{visibleRadar.length ? <div className="seller-signal-list radar-list">{visibleRadar.map(brief => <SignalBriefCard key={brief.id} brief={brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} />)}</div> : <Empty>No governed upcoming dates{market ? ` for ${market}` : ''}. Unknown dates are not promoted into Radar.</Empty>}</Panel>
+    <div className="today-watch-grid">
+      <Panel title="Recommended Customer watchlist" action={<span className="panel-kicker">System recommended · read only</span>}>{visibleAccounts.length ? <div className="today-watch-list">{visibleAccounts.slice(0, 12).map(item => <button key={item.account_id} onClick={() => onAccount(item.account_id)}><span><strong>{item.name}</strong><small>{item.markets.join(' · ')}</small></span><State value={item.relationship === 'TARGET' ? 'PROSPECT' : 'CUSTOMER'} /></button>)}</div> : <Empty>No governed watch targets{market ? ` for ${market}` : ''}. No user saves are implied.</Empty>}</Panel>
+      <Panel title="Watched programs" action={<span className="panel-kicker">Governed Signal Brief associations</span>}>{visiblePrograms.length ? <div className="today-watch-list">{visiblePrograms.map(item => <button key={item.program_id} aria-pressed={selectedProgramId === item.program_id} onClick={() => setSelectedProgramId(selectedProgramId === item.program_id ? undefined : item.program_id)}><span><strong>{item.name}</strong><small>{item.reason}</small></span></button>)}</div> : <Empty>No current or upcoming Signal Brief has a canonical program association{market ? ` for ${market}` : ''}.</Empty>}</Panel>
+    </div>
+    <Panel title={market ? `${market} coverage and gaps` : 'Coverage and source freshness'} action={<Button variant="ghost" onClick={onMonitor}>Open Monitor</Button>}><p className="truth-note">{commandCenter?.daily_briefing.live_intelligence_available ? 'Current eligible collected evidence is available.' : 'No current eligible live intelligence is available.'} Worker readiness does not prove that a schedule is active.</p>{selectedHub && <div className="today-hub-summary"><p><strong>Source coverage:</strong> {selectedHub.source_coverage.length ? selectedHub.source_coverage.map(source => `${source.source_name} (${source.state.replaceAll('_', ' ').toLocaleLowerCase()})`).join(' · ') : 'No declared source coverage'}</p>{selectedHub.gaps.length ? <ul>{selectedHub.gaps.map(gap => <li key={gap}>{gap}</li>)}</ul> : <p>No governed coverage gap is reported for this market.</p>}</div>}{!selectedHub && (commandCenter?.source_health_warnings.length ?? 0) > 0 && <Disclosure title={`${commandCenter!.source_health_warnings.length} source coverage notices`}><ul>{commandCenter!.source_health_warnings.map(item => <li key={item.source_id}><strong>{item.source_name}</strong>: {item.message}</li>)}</ul></Disclosure>}{!selectedHub && (commandCenter?.missingness.length ?? 0) > 0 && <p className="muted">{commandCenter!.missingness.join(' ')}</p>}</Panel>
+    <Panel title="Public intelligence" action={<Button variant="ghost" onClick={onIntelligence}>View Intelligence</Button>}><p className="monitor-intro">Stored public scenarios demonstrate evidence workflows. They are curated public material, not today’s live collection.</p>{curated.length ? <div className="seller-signal-list curated-reference-list">{curated.map(brief => <SignalBriefCard key={brief.id} brief={brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedEventId === brief.id} />)}</div> : <Empty>No projected curated public evidence is available.</Empty>}{missingCuratedCount > 0 && <p className="muted">{missingCuratedCount} projected curated record{missingCuratedCount === 1 ? '' : 's'} could not be resolved from the current Intelligence payload; no substitute was shown.</p>}</Panel>
   </div>
 }

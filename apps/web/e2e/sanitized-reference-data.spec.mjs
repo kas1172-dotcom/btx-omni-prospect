@@ -24,6 +24,7 @@ test('sanitized reference Customers, provenance, and BTX Top 100 flow through ca
   const filters = page.getByRole('dialog', { name: 'Layers & filters' })
   await filters.getByRole('button', { name: 'BTX Top 100', exact: true }).click()
   await filters.getByRole('button', { name: 'Apply to map' }).click()
+  await page.getByRole('button', { name: /Cluster of .* Customers and Prospects:.*Honeywell/ }).first().click()
   await expect(page.getByRole('button', { name: 'Customer marker: Honeywell' })).toBeVisible()
   await page.getByRole('button', { name: 'Customer marker: Honeywell' }).click({ force: true })
   await expect(page.getByRole('complementary', { name: 'Selected map location' })).toContainText('BTX Top 100')

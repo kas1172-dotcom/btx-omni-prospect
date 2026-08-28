@@ -29,6 +29,7 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
   await sheet.getByRole('button', { name: 'Defense', exact: true }).click()
   await sheet.getByRole('button', { name: 'Commercial Aerospace', exact: true }).click()
   await sheet.getByRole('button', { name: 'Apply to map' }).click()
+  await page.getByRole('button', { name: /Cluster of .* Customers and Prospects:.*Lockheed Martin/ }).first().click()
   await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Customer marker: Boeing' })).toBeVisible()
 })

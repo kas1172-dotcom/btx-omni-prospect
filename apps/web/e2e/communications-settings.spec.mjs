@@ -71,3 +71,30 @@ test('Settings and secondary mobile navigation are role-aware, safe, and non-ove
   const body = await page.locator('body').innerText()
   expect(body).not.toMatch(/api[_ -]?key|access[_ -]?token|secret/i)
 })
+
+test('Settings failure stays on Settings and retries only its failed read', async ({ page }) => {
+  let settingsRequests = 0
+  await page.route('**/*', async route => {
+    if (!new URL(route.request().url()).pathname.startsWith('/api/settings')) {
+      await route.continue()
+      return
+    }
+    settingsRequests += 1
+    // React StrictMode runs the initial load effect twice in the development server.
+    if (settingsRequests <= 2) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{"detail":"Unavailable"}' })
+      return
+    }
+    await route.continue()
+  })
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.goto('/')
+  await expect.poll(() => settingsRequests).toBe(2)
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  await expect(page.getByText('Settings could not be loaded')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Retry Settings' }).click()
+  await expect(page.getByText('Role & Access', { exact: true }).last()).toBeVisible()
+  expect(settingsRequests).toBe(3)
+})

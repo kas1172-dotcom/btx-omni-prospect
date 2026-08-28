@@ -1,10 +1,11 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
+from btx_omni.api.session import principal
 from btx_omni.domain.work import (
     ActionPriority,
     ActionStatus,
@@ -54,19 +55,6 @@ class ApprovalDecision(BaseModel):
 class SuggestionConversion(BaseModel):
     owner_id: str | None = None
     due_date: date | None = None
-
-
-def principal(
-    runtime: PocRuntime = Depends(get_runtime),
-    token: str | None = Header(default=None, alias="X-BTX-Principal-Token"),
-) -> Principal:
-    if token == runtime.settings.action_salesperson_token:
-        return Principal(
-            "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON
-        )
-    if token == runtime.settings.action_manager_token:
-        return Principal("manager-1", "Development Manager", PrincipalRole.MANAGER)
-    raise HTTPException(401, "A configured development principal token is required.")
 
 
 def _handle(error: Exception) -> HTTPException:

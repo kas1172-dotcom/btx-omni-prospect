@@ -1,0 +1,26 @@
+import type { Account, MonitorSignalBrief, Signal } from '../types/api'
+
+export const curatedSignalBrief = (signal: Signal, account?: Account): MonitorSignalBrief => ({
+  id: signal.id,
+  headline: signal.title,
+  what_happened: signal.title,
+  why_it_may_matter: signal.relevance_explanation,
+  canonical_account_ids: signal.account_id ? [signal.account_id] : [],
+  markets: account?.industries ?? [],
+  publication_timestamp: signal.observed_at,
+  collection_timestamp: signal.observed_at ?? new Date(0).toISOString(),
+  freshness: 'PUBLICATION_DATE_UNAVAILABLE',
+  evidence_ids: signal.evidence_ids,
+  source_url: signal.source_url,
+  source_system: signal.source_tier ?? 'Source unavailable',
+  data_mode: signal.data_mode ?? 'CURATED_PUBLIC',
+  resolution_state: signal.resolution_state ?? signal.evidence_state,
+  seller_promotion_state: signal.evidence_state,
+  what_to_watch: 'Review the governed public evidence and explicit Customer context.',
+  missing_fields: signal.observed_at ? [] : ['publication date'],
+  seller_summary: signal.relevance_explanation,
+  summary_mode: 'DETERMINISTIC',
+  event_timing: signal.observed_at ? 'OBSERVED' : 'UNKNOWN',
+  watchlist_eligible: false,
+  priority_reasons: [],
+})
