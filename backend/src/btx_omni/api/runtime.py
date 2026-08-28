@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.config import Settings
+from btx_omni.modules.communications.service import CommunicationService
 from btx_omni.modules.work.service import WorkService
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.repository import MonitorRepository
@@ -16,6 +17,7 @@ from btx_omni.monitor.service import MonitorService
 from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
 from btx_omni.monitor.usaspending import recipient_query_names, targeted_profiles
 from btx_omni.persistence.actions import SqlActionRepository
+from btx_omni.persistence.communications import SqlCommunicationRepository
 from btx_omni.persistence.database import create_database_engine
 from btx_omni.persistence.durable_accounts import DurablePublicAccountRepository
 from btx_omni.persistence.durable_programs import DurableCanonicalProgramRepository
@@ -30,6 +32,8 @@ class PocRuntime:
     settings: Settings
     sample: SampleEnvironment = field(default_factory=build_sample_environment)
     work: WorkService = field(init=False)
+    communications: CommunicationService = field(init=False)
+    communication_repository: SqlCommunicationRepository = field(init=False)
     monitor: MonitorService = field(init=False)
     durable_accounts: DurablePublicAccountRepository | None = field(init=False, default=None)
     durable_programs: DurableCanonicalProgramRepository | None = field(init=False, default=None)
@@ -39,6 +43,8 @@ class PocRuntime:
         self._curated_sample = self.sample
         application_engine = create_database_engine(self.settings)
         self.work = WorkService(SqlActionRepository(application_engine))
+        self.communication_repository = SqlCommunicationRepository(application_engine)
+        self.communications = CommunicationService(self.communication_repository)
         engine = application_engine if self.settings.monitor_durable_state_enabled else None
         repository = MonitorRepository(engine) if engine else None
         self.durable_accounts = DurablePublicAccountRepository(engine) if engine else None

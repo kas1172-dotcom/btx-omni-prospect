@@ -1,0 +1,73 @@
+import { expect, test } from '@playwright/test'
+
+async function openDesktop(page, destination) {
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: destination, exact: true }).click()
+}
+
+test('seller creates a durable governed draft without recipient or autonomous delivery', async ({ page }) => {
+  const subject = `E2E governed communication ${Date.now()}`
+  await openDesktop(page, 'Communications')
+  await expect(page.getByRole('heading', { name: 'Communications', exact: true })).toBeVisible()
+  await expect(page.getByText('NOT CONFIGURED', { exact: true }).first()).toBeVisible()
+  await page.getByRole('button', { name: 'Create draft' }).click()
+  const editor = page.getByRole('dialog', { name: 'Create communication' })
+  await editor.getByLabel('Subject').fill(subject)
+  await editor.getByLabel('Message').fill('Human-reviewed SAMPLE outreach draft.')
+  await expect(editor.getByText(/No verified deliverable email/)).toBeVisible()
+  await editor.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page.getByRole('heading', { name: subject })).toBeVisible()
+  await expect(page.getByText(/remains unsent and requires human review/i)).toBeVisible()
+  await expect(page.getByText('Recipient unavailable').first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Approve' })).toHaveCount(0)
+  await page.reload()
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Communications', exact: true }).click()
+  await page.getByLabel('Search communications').fill(subject)
+  await expect(page.getByText(subject).first()).toBeVisible()
+})
+
+test('manager can review but approval does not bypass recipient and confirmation boundaries', async ({ browser }) => {
+  const subject = `E2E manager review ${Date.now()}`
+  const seller = await browser.newPage()
+  await openDesktop(seller, 'Communications')
+  await seller.getByRole('button', { name: 'Create draft' }).click()
+  const editor = seller.getByRole('dialog', { name: 'Create communication' })
+  await editor.getByLabel('Subject').fill(subject)
+  await editor.getByLabel('Message').fill('Governed review copy.')
+  await editor.getByRole('button', { name: 'Save draft' }).click()
+  await seller.close()
+
+  const context = await browser.newContext()
+  await context.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
+  const manager = await context.newPage()
+  await openDesktop(manager, 'Communications')
+  await manager.getByLabel('Search communications').fill(subject)
+  await manager.locator('.communication-row').filter({ hasText: subject }).click()
+  await manager.getByRole('button', { name: 'Approve' }).click()
+  await expect(manager.getByText(/approved by human review.*No message was sent/i)).toBeVisible()
+  await expect(manager.getByText('READY', { exact: true }).last()).toBeVisible()
+  await expect(manager.getByRole('button', { name: 'Confirm send' })).toBeDisabled()
+  await manager.getByRole('button', { name: 'Audit history' }).click()
+  await expect(manager.getByText('Approved', { exact: true }).last()).toBeVisible()
+  await context.close()
+})
+
+test('Settings and secondary mobile navigation are role-aware, safe, and non-overflowing', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const menu = page.getByRole('button', { name: 'Workspace menu' })
+  await menu.click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  await expect(page.getByText('Role & Access', { exact: true }).last()).toBeVisible()
+  await expect(page.getByText(/cannot change or self-promote/)).toBeVisible()
+  await expect(page.getByText('Communication delivery')).toBeVisible()
+  await expect(page.getByText('Not configured', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(5)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+  await page.setViewportSize({ width: 320, height: 700 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+  const body = await page.locator('body').innerText()
+  expect(body).not.toMatch(/api[_ -]?key|access[_ -]?token|secret/i)
+})

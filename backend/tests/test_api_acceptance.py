@@ -310,7 +310,7 @@ async def test_omni_typed_context_is_bounded_and_backwards_compatible() -> None:
                 },
             },
         )
-        invalid_surface = await client.post(
+        settings_context = await client.post(
             "/api/omni", json={"question": "x", "context": {"surface": "settings"}}
         )
         oversized = await client.post(
@@ -343,7 +343,8 @@ async def test_omni_typed_context_is_bounded_and_backwards_compatible() -> None:
     assert monitor_context_exact.json()["context_used"] == {"surface": "MONITOR"}
     assert "Monitor exposes status and provenance" in monitor_context.json()["content"]
     assert monitor_global.json()["context_used"] == {}
-    assert invalid_surface.status_code == oversized.status_code == 422
+    assert settings_context.status_code == 200
+    assert oversized.status_code == 422
 
 
 @pytest.mark.asyncio

@@ -54,6 +54,7 @@ test('approval is Manager-only and remains separate from work status', async ({ 
   const sellerPage = await browser.newPage()
   await openActions(sellerPage)
   await createAction(sellerPage, title, { approval: true })
+  await sellerPage.locator('.action-row').filter({ hasText: title }).click()
   await expect(sellerPage.locator('.action-detail').getByText('Pending', { exact: true })).toBeVisible()
   await expect(sellerPage.getByText(/Manager review is required/)).toBeVisible()
   await expect(sellerPage.getByRole('button', { name: 'Approve' })).toHaveCount(0)

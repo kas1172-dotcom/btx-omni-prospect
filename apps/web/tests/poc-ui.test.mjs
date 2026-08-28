@@ -15,6 +15,8 @@ const accounts = readFileSync(new URL('../src/features/accounts/Accounts.tsx', i
 const intelligence = readFileSync(new URL('../src/features/intelligence/Intelligence.tsx', import.meta.url), 'utf8')
 const today = readFileSync(new URL('../src/features/today/Today.tsx', import.meta.url), 'utf8')
 const monitor = readFileSync(new URL('../src/features/monitor/Monitor.tsx', import.meta.url), 'utf8')
+const communications = readFileSync(new URL('../src/features/communications/Communications.tsx', import.meta.url), 'utf8')
+const settings = readFileSync(new URL('../src/features/settings/Settings.tsx', import.meta.url), 'utf8')
 
 test('canonical navigation and mobile core flow are present', () => {
   for (const surface of ['Today', 'Customers & Prospects', 'Intelligence', 'Map', 'Actions', 'OmniDrawer']) assert.match(app, new RegExp(surface))
@@ -39,7 +41,7 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(app, /map\.intelligence/)
   assert.match(map, /public-intelligence geography/)
   assert.match(map, /Intelligence/)
-  assert.match(app, /Promise\.all\(\[api\.accounts\(\), api\.today\(\), api\.intelligence\(\), api\.map\(\), api\.actions\(\)\]\)/)
+  assert.match(app, /Promise\.all\(\[api\.accounts\(\), api\.today\(\), api\.intelligence\(\), api\.map\(\), api\.actions\(\), api\.communications\(\), api\.settings\(\)\]\)/)
   assert.match(app, /void api\.monitor\(\)\.then\(setMonitor\)\.catch/)
 })
 
@@ -226,6 +228,25 @@ test('target interaction primitives expose governed semantic and accessibility c
   assert.match(ui, /Source link unavailable/)
   assert.match(ui, /Unavailable · needs research/)
   assert.match(ui, /aria-sort=/)
+})
+
+test('Communications keeps drafting, review, and delivery explicitly governed', () => {
+  assert.match(communications, /Trigger → Draft → Human review → Approved send/)
+  assert.match(communications, /Gemini can assist with words, never authorization or delivery/)
+  assert.match(communications, /Recipient unavailable/)
+  assert.match(communications, /Manager review is required/)
+  assert.match(communications, /Confirm send/)
+  assert.match(client, /confirmed=true&idempotency_key/)
+  assert.doesNotMatch(communications, /autonomous send/i)
+})
+
+test('Settings presents backend-managed role and truthful integration state', () => {
+  assert.match(settings, /Personal/)
+  assert.match(settings, /Role & Access/)
+  assert.match(settings, /Integrations/)
+  assert.match(settings, /cannot change or self-promote/)
+  assert.match(settings, /Credentials and tokens are never returned/)
+  assert.match(app, /mobileNav = nav\.filter\(\(\[id\]\) => \['today', 'accounts', 'intelligence', 'map', 'actions'\]/)
 })
 
 test('target primitive CSS encodes focus, touch, responsive rows, and safe-area sheets', () => {

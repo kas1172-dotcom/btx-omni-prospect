@@ -3,13 +3,13 @@ import { expect, test } from '@playwright/test'
 test('shared disclosure and controls expose keyboard and selected-state contracts', async ({ page }) => {
   await page.goto('/')
 
-  const disclosure = page.getByRole('button', { name: /POC mode/ })
+  const disclosure = page.getByRole('button', { name: /Workspace menu/ })
   await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
   await disclosure.focus()
   await expect(disclosure).toBeFocused()
   await disclosure.press('Enter')
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.getByText(/Publicly verified: Customer identity/)).toBeVisible()
+  await expect(page.getByText(/Public evidence and SAMPLE commercial context/)).toBeVisible()
   await disclosure.press('Enter')
   await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
 

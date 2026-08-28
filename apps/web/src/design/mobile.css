@@ -4,8 +4,12 @@
   .app-workspace { min-height: 100dvh; padding: 0 var(--space-4) calc(var(--shell-mobile-nav-height) + env(safe-area-inset-bottom) + var(--space-8)); }
   .topbar { min-height: var(--shell-mobile-header-height); margin: 0 calc(var(--space-4) * -1); padding: 10px var(--space-4); }
   .topbar-context strong { font-size: 18px; }
-  .topbar-context { max-width: calc(100% - 104px); }
-  .mode { display: none; }
+  .topbar-context { max-width: calc(100% - 196px); }
+  .mode { display: block; max-width: 104px; margin-right: 92px; }
+  .mode .ui-disclosure-trigger { min-height: var(--touch-target); padding-inline: var(--space-2); }
+  .mode .ui-disclosure-body { position: absolute; top: calc(100% - 8px); right: 96px; width: min(280px, calc(100vw - 32px)); padding: var(--space-3); background: var(--surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); box-shadow: var(--shadow-elevated); }
+  .mobile-secondary-links { display: grid; gap: var(--space-2); }
+  .mobile-secondary-links button { min-height: var(--touch-target); text-align: left; }
   .surface { padding-top: var(--space-5); }
   .page-title { margin-bottom: var(--space-4); }
   .page-title h1 { font-size: 24px; }
