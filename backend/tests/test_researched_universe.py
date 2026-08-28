@@ -12,9 +12,10 @@ def test_researched_identities_are_the_canonical_universe_and_support_simulated_
     environment = build_sample_environment()
 
     assert len(environment.researched_accounts) == len(environment.research_mappings) > 0
-    assert all(account.id in environment.research_mappings for account in environment.accounts)
+    researched = [account for account in environment.accounts if account.research_account_id]
+    assert all(account.id in environment.research_mappings for account in researched)
     assert all(account.provenance and not account.provenance.synthetic for account in environment.accounts)
-    assert all(account.research_account_id == account.id for account in environment.accounts)
+    assert all(account.research_account_id == account.id for account in researched)
     assert len(environment.rich_scenarios) == 12
     assert all(account.id in environment.scoring_inputs for account in environment.accounts if account.id in environment.rich_scenarios and environment.rich_scenarios[account.id].simulated_score_inputs)
 
@@ -37,7 +38,7 @@ def test_role_targets_missing_identifiers_and_watch_profile_resolution_are_prese
     boeing = next(account for account in records if account.research_account_id == "boeing")
 
     assert (boeing.watch_profile.get("sec_cik"), boeing.watch_profile.get("ticker")) == ("0000012927", "BA")
-    assert all(account.contact_role_families for account in environment.accounts)
+    assert all(account.contact_role_families for account in environment.accounts if account.research_account_id)
     resolved = resolve_entity("Boeing", environment.watch_profiles)
     assert resolved.canonical_account_id == environment.research_mappings["boeing"]
     assert resolve_entity("unrelated entity", environment.watch_profiles).state.value == "UNRESOLVED"

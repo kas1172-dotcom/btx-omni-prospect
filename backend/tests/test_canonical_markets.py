@@ -64,7 +64,8 @@ def test_environment_uses_only_canonical_markets_without_changing_ids() -> None:
         "textron", "tsmc-arizona", "ula-united-launch-alliance", "westinghouse",
         "zimmer-biomet",
     }
-    assert {account.id for account in environment.accounts} == expected_ids
+    assert {account.research_account_id for account in environment.researched_accounts} == expected_ids
+    assert expected_ids < {account.id for account in environment.accounts}
     assert all(set(account.industries) <= PRIMARY_MARKETS for account in environment.accounts)
     symbotic = next(account for account in environment.accounts if account.id == "symbotic")
     assert symbotic.industries == ("Robotics",)

@@ -121,6 +121,8 @@ class CanonicalAccount:
     prospect_rationale: str | None = None
     public_contacts: tuple[PublicContactResearch, ...] = ()
     secondary_classifications: tuple[str, ...] = ()
+    btx_top_100: bool = False
+    btx_top_100_provenance: ResearchProvenance | None = None
 
 
 @dataclass(frozen=True)

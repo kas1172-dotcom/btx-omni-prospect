@@ -42,7 +42,7 @@ def test_complete_sample_provider_links_and_provenance() -> None:
     units = {item.id for item in sample.business_units}
     quotes = {item.id for item in sample.quotes}
     companies = {item.id for item in sample.crm_companies}
-    assert len(accounts) == len(sample.researched_accounts) > 0
+    assert len(accounts) > len(sample.researched_accounts) > 0
     assert all(item.research_account_id in accounts for item in sample.rich_scenarios.values())
     assert all(item.account_id in accounts and item.business_unit in units and item.program_id in programs for item in sample.quotes)
     assert all(item.quote_id in quotes and item.account_id in accounts and item.component_class_id in components and item.program_id in programs for item in sample.orders if item.quote_id)

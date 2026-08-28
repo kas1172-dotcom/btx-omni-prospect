@@ -92,7 +92,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         for item in accounts.json()["accounts"]
     )
     assert accounts.json()["accounts"] and all(
-        item["public_identity_state"] != "UNVERIFIED"
+        item["public_identity_state"] != "UNVERIFIED" or item["public_research_state"] == "SANITIZED_REFERENCE"
         for item in accounts.json()["accounts"]
     )
     assert all(

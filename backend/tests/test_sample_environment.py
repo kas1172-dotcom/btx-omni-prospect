@@ -5,16 +5,19 @@ from btx_omni.providers.sample.environment import (
 )
 
 
-def test_environment_contains_only_researched_public_companies() -> None:
+def test_environment_contains_researched_and_sanitized_reference_companies() -> None:
     environment = build_sample_environment()
-    assert len(environment.accounts) == len(environment.researched_accounts) > 0
-    assert set(environment.research_mappings) == {account.id for account in environment.accounts}
-    assert all(account.research_account_id == account.id for account in environment.accounts)
-    assert all(account.public_identity and account.public_research_state == "RESEARCHED_PUBLIC" for account in environment.accounts)
+    researched = [account for account in environment.accounts if account.research_account_id]
+    reference_only = [account for account in environment.accounts if account.public_research_state == "SANITIZED_REFERENCE"]
+    assert len(environment.accounts) > len(environment.researched_accounts) > 0
+    assert set(environment.research_mappings) == {account.id for account in researched}
+    assert all(account.research_account_id == account.id for account in researched)
+    assert all(account.public_identity and account.public_research_state == "RESEARCHED_PUBLIC" for account in researched)
+    assert reference_only and all(account.public_identity for account in reference_only)
     assert all("market target" not in account.legal_name.casefold() for account in environment.accounts)
     assert all("placeholder" not in account.legal_name.casefold() for account in environment.accounts)
-    assert all(account.contact_role_families == ROLE_FAMILIES for account in environment.accounts)
-    assert environment.facilities == environment.public_facilities
+    assert all(account.contact_role_families == ROLE_FAMILIES for account in researched)
+    assert set(environment.facilities) == set(environment.public_facilities) | set(environment.reference_facilities)
 
 
 def test_simulated_btx_context_is_attached_only_to_curated_real_companies() -> None:

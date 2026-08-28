@@ -81,7 +81,7 @@ def test_verified_public_identity_rejects_synthetic_provenance() -> None:
 def test_researched_universe_uses_connected_public_identity_provenance() -> None:
     environment = build_sample_environment()
 
-    assert len(environment.accounts) == len(environment.researched_accounts) > 0
+    assert len(environment.accounts) > len(environment.researched_accounts) > 0
     assert all(account.public_identity is not None and account.provenance and account.provenance.data_mode is DataMode.CONNECTED and not account.provenance.synthetic for account in environment.accounts)
 
 

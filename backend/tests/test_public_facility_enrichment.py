@@ -11,7 +11,7 @@ def test_verified_hq_public_locations_are_the_only_map_locations() -> None:
     assert environment.public_facilities
     assert {item.verification_state for item in environment.public_facilities} == {"VERIFIED_PUBLIC_HQ", "VERIFIED_PUBLIC_FACILITY"}
     assert all(item.provenance and item.source_url for item in environment.public_facilities)
-    assert environment.facilities == environment.public_facilities
+    assert set(environment.facilities) == set(environment.public_facilities) | set(environment.reference_facilities)
     assert {item.account_id for item in environment.public_facilities} <= {item.id for item in environment.accounts}
 
 

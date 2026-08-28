@@ -40,6 +40,7 @@ from btx_omni.providers.research.ingestion import (
     load_usaspending_recipient_identities,
 )
 from btx_omni.providers.research.programs import load_programs
+from btx_omni.providers.research.reference_data import load_reference_import
 from btx_omni.providers.research.relationships import load_relationship_edges
 from btx_omni.providers.research.scenarios import SCENARIOS as RICH_SCENARIOS
 from btx_omni.providers.research.scenarios import RichScenario
@@ -86,12 +87,38 @@ class SampleEnvironment:
     researched_accounts: tuple[ResearchAccount, ...]
     watch_profiles: tuple[AccountWatchProfile, ...]
     public_facilities: tuple[AccountFacility, ...]
+    reference_accounts: tuple[CanonicalAccount, ...]
+    reference_facilities: tuple[AccountFacility, ...]
     rich_scenarios: dict[str, RichScenario]
 
 
 def build_sample_environment() -> SampleEnvironment:
     accounts, research_mappings, researched_accounts = build_researched_canonical_accounts()
     accounts, public_facilities = apply_facility_feed_enrichment(accounts, research_mappings)
+    reference = load_reference_import()
+    existing = {item.id: item for item in accounts}
+    merged_accounts: list[CanonicalAccount] = list(accounts)
+    for reference_account in reference.accounts:
+        current = existing.get(reference_account.id)
+        if current is None:
+            merged_accounts.append(reference_account)
+            existing[reference_account.id] = reference_account
+            continue
+        aliases = current.public_identity.aliases if current.public_identity else ()
+        reference_aliases = reference_account.public_identity.aliases if reference_account.public_identity else ()
+        identity = replace(current.public_identity, aliases=tuple({item.value: item for item in (*aliases, *reference_aliases)}.values())) if current.public_identity else reference_account.public_identity
+        updated = replace(
+            current,
+            industries=tuple(dict.fromkeys((*current.industries, *reference_account.industries))),
+            public_identity=identity,
+            secondary_classifications=tuple(dict.fromkeys((*current.secondary_classifications, *reference_account.secondary_classifications))),
+            btx_top_100=reference_account.btx_top_100,
+            btx_top_100_provenance=reference_account.btx_top_100_provenance,
+        )
+        merged_accounts[merged_accounts.index(current)] = updated
+        existing[updated.id] = updated
+    accounts = tuple(merged_accounts)
+    all_facilities = tuple({item.id: item for item in (*public_facilities, *reference.facilities)}.values())
     account_ids, accounts_by_id = {item.id for item in accounts}, {item.id: item for item in accounts}
     units = load_btx_business_units()
     unit_ids = {item.id for item in units}
@@ -136,4 +163,4 @@ def build_sample_environment() -> SampleEnvironment:
     for facility in public_facilities: public_facilities_by_account.setdefault(facility.account_id, []).append(facility.id)
     recipients = load_usaspending_recipient_identities()
     watch_profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, newsroom_url=item.public_identity.newsroom_url.value if item.public_identity and item.public_identity.newsroom_url else None, investor_relations_url=item.public_identity.investor_relations_url.value if item.public_identity and item.public_identity.investor_relations_url else None, official_feed_urls=tuple(field.value for field in item.public_identity.official_feed_urls) if item.public_identity else (), facilities=tuple(public_facilities_by_account.get(item.id, ())), industries=item.industries, usaspending_recipient_names=tuple(identity.recipient_legal_name for identity in recipients.get(item.id, ())), usaspending_recipient_sources=tuple((identity.recipient_legal_name, identity.source_url) for identity in recipients.get(item.id, ()))) for item in accounts)
-    return SampleEnvironment(accounts, public_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities, rich_scenarios)
+    return SampleEnvironment(accounts, all_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities, reference.accounts, reference.facilities, rich_scenarios)

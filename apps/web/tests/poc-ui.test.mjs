@@ -257,3 +257,12 @@ test('target primitive CSS encodes focus, touch, responsive rows, and safe-area 
   assert.match(componentStyles, /safe-area-inset-bottom/)
   assert.match(componentStyles, /\.ui-drawer\s*\{/)
 })
+
+test('sanitized reference classifications remain orthogonal and source-backed in Portfolio and Map', () => {
+  assert.match(accounts, /btx_top_100/)
+  assert.match(accounts, /BTX Top 100/)
+  assert.match(map, /BTX Top 100 uses the sanitized POC reference workbook/)
+  assert.match(map, /Strategic Partnership and Industry Top 100 remain unavailable/)
+  assert.match(mapModel, /!filters\.top100 \|\| record\.btx_top_100/)
+  assert.doesNotMatch(mapModel, /priority.*top100|attractiveness.*top100/i)
+})

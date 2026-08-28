@@ -244,7 +244,7 @@ class OmniOrchestrator:
                 (
                     item
                     for item in accounts
-                    if item.research_account_id and item.legal_name.casefold() in query
+                    if item.public_identity and item.legal_name.casefold() in query
                 ),
                 None,
             )
@@ -268,8 +268,11 @@ class OmniOrchestrator:
                 OmniCitation("Public company identity", account.provenance.source_url)
             )
         missing: list[str] = []
+        reference_only = account.public_research_state == "SANITIZED_REFERENCE"
         lines = [
-            f"Deterministic governed answer for {account.legal_name}. Public identity, location, and cited events are publicly verified; BTX commercial, CRM, ownership, deal, quote, scoring, and workflow context is simulated POC data."
+            f"Deterministic governed answer for {account.legal_name}. "
+            + ("Identity and location come from a sanitized reference source." if reference_only else "Public identity, location, and cited events are publicly verified.")
+            + " BTX commercial, CRM, ownership, deal, quote, scoring, and workflow context is simulated POC data when present."
         ]
         public_identity_state = (
             account.public_identity.verification_state.value
@@ -279,6 +282,9 @@ class OmniOrchestrator:
         lines.append(
             f"Public identity: {public_identity_state}; BTX commercial context is simulated and not a connected source record."
         )
+        lines.append(f"Canonical industries: {primary_market_label(account.industries)}.")
+        if account.btx_top_100:
+            lines.append("BTX Top 100: yes, sourced from the sanitized POC Top 100 reference workbook; no rank is inferred.")
         if account.public_relationship:
             lines.append(
                 f"Public relationship evidence: {account.public_relationship.state.value} ({account.public_relationship.confidence}); it is not BTX internal confirmation."
@@ -377,7 +383,7 @@ class OmniOrchestrator:
             peers = [
                 item.legal_name
                 for item in accounts
-                if item.research_account_id
+                if item.public_identity
                 and item.id != account.id
                 and item.industries == account.industries
             ][:3]
@@ -2145,7 +2151,7 @@ class OmniOrchestrator:
         researched = [
             account
             for account in environment.accounts
-            if account.research_account_id
+            if account.public_identity
             and (market is None or market in account.industries)
         ]
         account_by_id = {account.id: account for account in researched}
@@ -3181,7 +3187,7 @@ class OmniOrchestrator:
         environment: SampleEnvironment, *, observed_at, question: str
     ) -> OmniResponse:
         """Ground a general seller question in the loaded curated universe, not a generic refusal."""
-        researched = [item for item in environment.accounts if item.research_account_id]
+        researched = [item for item in environment.accounts if item.public_identity]
         if "open quote" in question:
             market = next(
                 (
