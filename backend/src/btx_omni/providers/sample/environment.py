@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from btx_omni.core.classification import Classification
 from btx_omni.domain.accounts import (
     AccountFacility,
     AccountRelationship,
@@ -11,6 +12,7 @@ from btx_omni.domain.accounts import (
 from btx_omni.domain.btx import BtxBusinessUnit, BtxFacility
 from btx_omni.domain.capabilities import Capability
 from btx_omni.domain.commercial import CommercialContext
+from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.domain.crm import CrmActivity, CrmCompany, CrmContact, CrmDeal
 from btx_omni.domain.markets import primary_market_label
 from btx_omni.domain.orders import Order
@@ -27,6 +29,7 @@ from btx_omni.providers.hubspot_sample.crm import load_crm
 from btx_omni.providers.lake_sample.context import load_commercial_contexts
 from btx_omni.providers.lake_sample.orders import load_orders
 from btx_omni.providers.paperless_sample.quotes import load_paperless_quotes
+from btx_omni.providers.research._catalog_support import source_provenance
 from btx_omni.providers.research.btx_profile import (
     load_btx_business_units,
     load_btx_facilities,
@@ -136,6 +139,14 @@ def build_sample_environment() -> SampleEnvironment:
     components = load_component_classes(business_unit_ids=unit_ids)
     component_ids = {item.id for item in components}
     capabilities = load_capabilities(business_unit_ids=unit_ids)
+    huxwrx_opportunity_provenance = source_provenance(
+        {"id": "huxwrx-sample-opportunity", "provenance": {"source_system": "priority-customer-sample", "source_record_id": "huxwrx-sample-opportunity", "data_mode": "SAMPLE", "synthetic": True, "evidence_state": "CONFIRMED"}},
+        classification=Classification.INTERNAL_COMMERCIAL,
+        default_mode=DataMode.SAMPLE,
+        default_synthetic=True,
+    )
+    programs = (*programs, Program("huxwrx-sample-opportunity", "huxwrx", "SAMPLE prospect opportunity", "Defense", EvidenceState.CONFIRMED, huxwrx_opportunity_provenance))
+    components = (*components, ComponentClass("cc-huxwrx-sample-opportunity", "huxwrx-sample-opportunity", "SAMPLE suppressed-platform precision housing", EvidenceState.CONFIRMED, huxwrx_opportunity_provenance, "Defense", ("era-industries",)))
     edges = load_relationship_edges(account_ids=account_ids, program_ids=program_ids)
     contexts = (
         *load_commercial_contexts(account_ids=account_ids, business_unit_ids=unit_ids),
@@ -187,12 +198,51 @@ def build_sample_environment() -> SampleEnvironment:
         }
     )
     public_signals = tuple(PublicScenarioSignal(scenario.event.source_id, account_id, scenario.event.source_url, primary_market_label(accounts_by_id[account_id].industries), accounts_by_id[account_id].provenance) for account_id, scenario in rich_scenarios.items())
-    quote = next(item for item in quotes if item.account_id == "lockheed-martin" and item.line_items)
-    line = quote.line_items[0]
-    matching_components = (CommercialComponent(f"component-{line.id}", quote.account_id, quote.program_id, line.part_number, line.component_class_id, None, None, line.component_class_id, line.provenance.evidence_state, (line.provenance.source_record_id,), line.provenance, tuple(item.id for item in capabilities if quote.business_unit in item.business_units)), CommercialComponent(f"component-structured-{line.id}", quote.account_id, quote.program_id, None, line.component_class_id, None, None, line.component_class_id, line.provenance.evidence_state, (line.provenance.source_record_id,), line.provenance, tuple(item.id for item in capabilities if quote.business_unit in item.business_units)))
-    matching_quotes = (HistoricalQuoteContext(quote.id, quote.account_id, quote.business_unit, line.part_number, line.component_class_id, None, None, line.component_class_id, (quote.provenance.source_record_id,), quote.provenance),)
+    # The priority roster intentionally proves several canonical joined paths:
+    # Customer -> Program -> component class -> BTX capability -> BU -> quote.
+    # Keep Lockheed's structured variant for matching-state coverage, then add
+    # one exact fixture for each other quote-bearing priority scenario.
+    priority_quote_by_account: dict[str, CommercialQuote] = {}
+    for quote in quotes:
+        if quote.account_id in priority.scenarios and quote.line_items:
+            priority_quote_by_account.setdefault(quote.account_id, quote)
+    ordered_priority_quotes = [
+        priority_quote_by_account[account_id]
+        for account_id in ("lockheed-martin", *sorted(set(priority_quote_by_account) - {"lockheed-martin"}))
+    ]
+    matching_components: list[CommercialComponent] = []
+    matching_quotes: list[HistoricalQuoteContext] = []
+    for quote in ordered_priority_quotes:
+        line = quote.line_items[0]
+        capability_ids = tuple(
+            item.id for item in capabilities if quote.business_unit in item.business_units
+        )
+        matching_components.append(
+            CommercialComponent(
+                f"component-{line.id}", quote.account_id, quote.program_id,
+                line.part_number, line.component_class_id, None, None,
+                line.component_class_id, line.provenance.evidence_state,
+                (line.provenance.source_record_id,), line.provenance, capability_ids,
+            )
+        )
+        if quote.account_id == "lockheed-martin":
+            matching_components.append(
+                CommercialComponent(
+                    f"component-structured-{line.id}", quote.account_id,
+                    quote.program_id, None, line.component_class_id, None, None,
+                    line.component_class_id, line.provenance.evidence_state,
+                    (line.provenance.source_record_id,), line.provenance, capability_ids,
+                )
+            )
+        matching_quotes.append(
+            HistoricalQuoteContext(
+                quote.id, quote.account_id, quote.business_unit, line.part_number,
+                line.component_class_id, None, None, line.component_class_id,
+                (quote.provenance.source_record_id,), quote.provenance,
+            )
+        )
     public_facilities_by_account: dict[str, list[str]] = {}
     for facility in public_facilities: public_facilities_by_account.setdefault(facility.account_id, []).append(facility.id)
     recipients = load_usaspending_recipient_identities()
     watch_profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, newsroom_url=item.public_identity.newsroom_url.value if item.public_identity and item.public_identity.newsroom_url else None, investor_relations_url=item.public_identity.investor_relations_url.value if item.public_identity and item.public_identity.investor_relations_url else None, official_feed_urls=tuple(field.value for field in item.public_identity.official_feed_urls) if item.public_identity else (), facilities=tuple(public_facilities_by_account.get(item.id, ())), industries=item.industries, usaspending_recipient_names=tuple(identity.recipient_legal_name for identity in recipients.get(item.id, ())), usaspending_recipient_sources=tuple((identity.recipient_legal_name, identity.source_url) for identity in recipients.get(item.id, ()))) for item in accounts)
-    return SampleEnvironment(accounts, all_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), matching_components, matching_quotes, research_mappings, researched_accounts, watch_profiles, public_facilities, reference.accounts, reference.facilities, rich_scenarios, priority.scenarios)
+    return SampleEnvironment(accounts, all_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), tuple(matching_components), tuple(matching_quotes), research_mappings, researched_accounts, watch_profiles, public_facilities, reference.accounts, reference.facilities, rich_scenarios, priority.scenarios)

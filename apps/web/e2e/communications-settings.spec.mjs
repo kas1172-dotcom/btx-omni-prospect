@@ -35,7 +35,9 @@ test('manager can review but approval does not bypass recipient and confirmation
   const editor = seller.getByRole('dialog', { name: 'Create communication' })
   await editor.getByLabel('Subject').fill(subject)
   await editor.getByLabel('Message').fill('Governed review copy.')
+  const createResponse = seller.waitForResponse(response => new URL(response.url()).pathname === '/api/communications' && response.request().method() === 'POST' && response.status() === 200)
   await editor.getByRole('button', { name: 'Save draft' }).click()
+  await createResponse
   await seller.close()
 
   const context = await browser.newContext()
@@ -44,7 +46,9 @@ test('manager can review but approval does not bypass recipient and confirmation
   await openDesktop(manager, 'Communications')
   await manager.getByLabel('Search communications').fill(subject)
   await manager.locator('.communication-row').filter({ hasText: subject }).click()
+  const approvalResponse = manager.waitForResponse(response => /\/api\/communications\/[^/]+\/approval$/.test(new URL(response.url()).pathname) && response.status() === 200)
   await manager.getByRole('button', { name: 'Approve' }).click()
+  await approvalResponse
   await expect(manager.getByText(/approved by human review.*No message was sent/i)).toBeVisible()
   await expect(manager.getByText('READY', { exact: true }).last()).toBeVisible()
   await expect(manager.getByRole('button', { name: 'Confirm send' })).toBeDisabled()
@@ -94,7 +98,9 @@ test('Settings failure stays on Settings and retries only its failed read', asyn
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
   await expect(page.getByText('Settings could not be loaded')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(0)
+  const retryResponse = page.waitForResponse(response => new URL(response.url()).pathname.startsWith('/api/settings') && response.status() === 200)
   await page.getByRole('button', { name: 'Retry Settings' }).click()
+  await retryResponse
   await expect(page.getByText('Role & Access', { exact: true }).last()).toBeVisible()
   expect(settingsRequests).toBe(3)
 })

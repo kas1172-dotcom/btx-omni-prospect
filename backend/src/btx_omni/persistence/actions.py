@@ -4,6 +4,8 @@ import json
 from datetime import UTC, date
 
 from sqlalchemy import Engine, insert, select, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from btx_omni.domain.work import (
     Action,
@@ -90,17 +92,35 @@ class SqlActionRepository:
             "idempotency_key": action.id,
         }
         with self.engine.begin() as connection:
-            exists = connection.execute(
-                select(work_items.c.id).where(work_items.c.id == action.id)
-            ).scalar_one_or_none()
-            if exists:
+            if event.event != "CREATED":
                 connection.execute(
-                    update(work_items)
-                    .where(work_items.c.id == action.id)
-                    .values(**values)
+                    update(work_items).where(work_items.c.id == action.id).values(**values)
                 )
-            else:
-                connection.execute(insert(work_items).values(id=action.id, **values))
+                connection.execute(
+                    insert(work_audit_events).values(
+                        work_item_id=event.action_id, event=event.event,
+                        actor_id=event.actor_id, occurred_at=event.occurred_at,
+                        note=None, metadata=json.dumps(event.metadata, sort_keys=True),
+                    )
+                )
+                return action
+            statement = (
+                postgresql_insert(work_items)
+                if connection.dialect.name == "postgresql"
+                else sqlite_insert(work_items)
+                if connection.dialect.name == "sqlite"
+                else insert(work_items)
+            )
+            result = connection.execute(
+                statement.values(id=action.id, **values).on_conflict_do_nothing(
+                    index_elements=[work_items.c.id]
+                )
+                if connection.dialect.name in {"postgresql", "sqlite"}
+                else statement.values(id=action.id, **values)
+            )
+            if result.rowcount == 0:
+                row = connection.execute(select(work_items).where(work_items.c.id == action.id)).first()
+                return self._action(row)
             connection.execute(
                 insert(work_audit_events).values(
                     work_item_id=event.action_id,

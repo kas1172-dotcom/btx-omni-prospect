@@ -303,6 +303,7 @@ test('Communications keeps drafting, review, and delivery explicitly governed', 
   assert.match(communications, /Recipient unavailable/)
   assert.match(communications, /Manager review is required/)
   assert.match(communications, /Confirm send/)
+  assert.match(communications, /draft-\$\{accountId\}-\$\{crypto\.randomUUID\(\)\}/)
   assert.match(client, /confirmed=true&idempotency_key/)
   assert.doesNotMatch(communications, /autonomous send/i)
 })

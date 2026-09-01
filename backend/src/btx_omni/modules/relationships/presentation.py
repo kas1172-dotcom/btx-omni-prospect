@@ -42,6 +42,7 @@ RELATIONSHIP_POLICY: dict[str, tuple[str, str, str]] = {
     "CAPABILITY_OF": ("BTX capability", "Canonical BTX data links this capability to the business unit.", "Review the capability and responsible business unit."),
 }
 SELLER_PATH_LIMIT = 12
+_PROGRAM_OWNERSHIP_ONLY = {"RELATED_TO_PROGRAM", "PROGRAM_FOR"}
 
 
 def seller_relationship_semantics(relationship_type: str) -> tuple[str, str, str]:
@@ -132,7 +133,16 @@ class SellerRelationshipPresentationService:
 
     def present(self, result: dict[str, Any]) -> dict[str, Any]:
         """Return raw-compatible DTOs plus the sole bounded seller-priority view."""
-        raw = sorted(result["paths"], key=self._priority_key)
+        # Owning or being associated to a program is opportunity context, not a
+        # seller relationship basis. Program hops remain meaningful when a path
+        # also contains an independently governed relationship edge.
+        raw = sorted(
+            [
+                path for path in result["paths"]
+                if not all(hop.relationship_type in _PROGRAM_OWNERSHIP_ONLY for hop in path["hops"])
+            ],
+            key=self._priority_key,
+        )
         grouped = {state: [path for path in raw if path["presentation_state"] == state] for state in ("validated", "needs_validation", "unusable")}
         eligible = grouped["validated"] + grouped["needs_validation"]
         selected = eligible[:SELLER_PATH_LIMIT]
