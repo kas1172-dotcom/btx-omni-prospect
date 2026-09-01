@@ -20,12 +20,16 @@ class Settings(BaseSettings):
     monitor_operator_token: str | None = None
     monitor_stale_after_hours: int = 48
     monitor_worker_sources: str = (
-        "sam_gov,usaspending,federal_register,nasa,fda_openfda"
+        "sam_gov,usaspending,federal_register,sec_edgar,nasa,fda_openfda"
     )
     monitor_source_record_limit: int = 25
     monitor_source_target_limit: int = 25
     monitor_worker_max_seconds: float = 240
     monitor_source_min_start_seconds: float = 2.0
+    # SAM NAICS filtering remains opt-in until BTX verifies the target codes.
+    # An empty list deliberately means the bounded date query is unclassified.
+    monitor_sam_naics: str = ""
+    monitor_sam_naics_verification_state: str = "PENDING_VERIFICATION"
     monitor_brief_synthesis_cap: int = 3
     monitor_brief_auth_retry_seconds: int = 3600
     monitor_brief_timeout_retry_seconds: int = 300
@@ -47,6 +51,9 @@ class Settings(BaseSettings):
     google_cloud_location: str = "global"
     ai_timeout_seconds: float = 20.0
     sam_api_key: str | None = None
+    # SEC requires an organization/contact identifying User-Agent.  Never use a
+    # plausible-looking default contact as a production identity.
+    sec_user_agent: str | None = None
 
     database_url: str = Field(
         default=("postgresql+psycopg://btx_omni:btx_omni_dev@localhost:5432/btx_omni"),

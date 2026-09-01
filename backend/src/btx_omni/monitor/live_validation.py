@@ -20,7 +20,7 @@ from btx_omni.monitor.briefs import signal_briefs_for_monitor
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.service import MonitorService
-from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
+from btx_omni.monitor.sources import REGISTRY, SecEdgarAdapter, UsaSpendingAdapter
 from btx_omni.monitor.targeting import StrategicWatchUniverse
 from btx_omni.monitor.usaspending import recipient_query_names
 from btx_omni.persistence.models import metadata
@@ -47,6 +47,14 @@ def _service(*, database_url: str, target_limit: int) -> MonitorService:
     registry["usaspending"] = UsaSpendingAdapter(
         recipient_names=recipient_query_names(tuple(item.profile for item in targets))
     )
+    sec_targets = tuple(
+        target
+        for target in universe.targets_for(REGISTRY["sec_edgar"].definition, cap=10_000)
+        if target.profile.sec_cik
+    )[:target_limit]
+    registry["sec_edgar"] = SecEdgarAdapter(
+        targets=tuple((target.profile.sec_cik, target.legal_name) for target in sec_targets if target.profile.sec_cik)
+    )
     # The temporary database URL is supplied by the caller after its directory
     # exists.  The repository itself remains the normal durable boundary.
     engine = create_engine(settings.database_url)
@@ -58,7 +66,7 @@ def _service(*, database_url: str, target_limit: int) -> MonitorService:
         watch_profiles=tuple(item.profile for item in targets),
         catalog=MonitorCatalog(sample.watch_profiles, sample.programs, sample.facilities),
     )
-    service.watch_targets = {"usaspending": targets}
+    service.watch_targets = {"usaspending": targets, "sec_edgar": sec_targets}
     return service
 
 

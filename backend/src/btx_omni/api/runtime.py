@@ -19,7 +19,7 @@ from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.monitor.service import MonitorService
-from btx_omni.monitor.sources import REGISTRY, UsaSpendingAdapter
+from btx_omni.monitor.sources import REGISTRY, SecEdgarAdapter, UsaSpendingAdapter
 from btx_omni.monitor.targeting import StrategicWatchUniverse
 from btx_omni.monitor.usaspending import recipient_query_names
 from btx_omni.persistence.actions import SqlActionRepository
@@ -89,6 +89,16 @@ class PocRuntime:
         registry["usaspending"] = UsaSpendingAdapter(
             recipient_names=recipient_query_names(usa_profiles)
         )
+        sec_targets = tuple(
+            target
+            for target in watch_universe.targets_for(
+                REGISTRY["sec_edgar"].definition, cap=10_000
+            )
+            if target.profile.sec_cik
+        )[: self.settings.monitor_source_target_limit]
+        registry["sec_edgar"] = SecEdgarAdapter(
+            targets=tuple((target.profile.sec_cik, target.legal_name) for target in sec_targets if target.profile.sec_cik)
+        )
         self.monitor = MonitorService(
             self.settings,
             registry=registry,
@@ -98,7 +108,10 @@ class PocRuntime:
                 self.sample.watch_profiles, self.sample.programs, self.sample.facilities
             ),
         )
-        self.monitor.watch_targets = {"usaspending": usa_targets}
+        self.monitor.watch_targets = {
+            "usaspending": usa_targets,
+            "sec_edgar": sec_targets,
+        }
         if repository:
             try:
                 self.monitor.hydrate_events()

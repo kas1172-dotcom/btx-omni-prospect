@@ -133,6 +133,8 @@ def build_researched_canonical_accounts() -> tuple[tuple[CanonicalAccount, ...],
             legal_name=field(item.display_name), display_name=field(item.display_name),
             aliases=tuple(field(value) for value in item.aliases),
             official_domain=field(item.official_domain) if item.official_domain else None,
+            sec_cik=field(str(item.watch_profile["sec_cik"])) if item.watch_profile.get("sec_cik") else None,
+            ticker=field(str(item.watch_profile["ticker"])) if item.watch_profile.get("ticker") else None,
         )
         accounts.append(CanonicalAccount(
             item.research_account_id, item.display_name, AccountRelationship.PUBLIC_MARKET, item.official_domain,
