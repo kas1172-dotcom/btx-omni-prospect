@@ -4,7 +4,7 @@ import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
 const display = (value: string) => value.replaceAll('_', ' ').toLocaleLowerCase().replace(/^./, letter => letter.toUpperCase())
-const modeLabel = (value: string) => ({ LIVE_PUBLIC: 'LIVE PUBLIC', CURATED_PUBLIC: 'CURATED PUBLIC', SANITIZED_REFERENCE: 'SANITIZED REFERENCE', SAMPLE: 'SAMPLE BTX CONTEXT' }[value] ?? display(value))
+const modeLabel = (value: string) => ({ LIVE_PUBLIC: 'CONNECTED PUBLIC', CURATED_PUBLIC: 'CURATED PUBLIC', SANITIZED_REFERENCE: 'SANITIZED REFERENCE', SAMPLE: 'SAMPLE BTX CONTEXT' }[value] ?? display(value))
 
 export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, selected = false }: { brief: MonitorSignalBrief; accountName?: (id: string) => string; onAccount?: (id: string) => void; onUseInOmni?: (brief: MonitorSignalBrief) => void; selected?: boolean }) {
   const accountId = brief.canonical_account_ids[0]

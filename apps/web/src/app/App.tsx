@@ -40,6 +40,7 @@ const surfaceLabels: Record<Surface, string> = {
 export default function App() {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'required'>(import.meta.env.DEV ? 'authenticated' : 'checking')
   const [commandCenter, setCommandCenter] = useState<CommandCenter>()
+  const [todayState, setTodayState] = useState<'loading' | 'loaded' | 'unavailable'>('loading')
   const [surface, setSurface] = useState<Surface>('today')
   const [accounts, setAccounts] = useState<Account[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -105,7 +106,8 @@ export default function App() {
         if (todayResult.status === 'fulfilled') {
           setAlerts(todayResult.value.commercial_alerts)
           setCommandCenter(todayResult.value.command_center)
-        }
+          setTodayState('loaded')
+        } else setTodayState('unavailable')
         if (intelligenceResult.status === 'fulfilled') setSignals(intelligenceResult.value.signals)
         if (mapResult.status === 'fulfilled') {
           setRecords(mapResult.value.accounts)
@@ -187,6 +189,7 @@ export default function App() {
     ) : (
       <Today
         commandCenter={commandCenter}
+        state={todayState}
         alerts={alerts}
         signals={signals}
         accounts={accounts}

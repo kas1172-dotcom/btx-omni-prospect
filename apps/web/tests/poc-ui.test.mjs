@@ -258,7 +258,10 @@ test('Monitor keeps inactive collection separate from curated public preview sig
 
 test('Seller Command Center reuses governed Signal Briefs with market, Radar, and watch truth', () => {
   assert.match(today, /Seller Command Center/)
-  assert.match(today, /Current Signal Briefs/)
+  assert.match(today, /What changed \/ needs attention/)
+  assert.match(today, /Current public intelligence/)
+  assert.match(today, /Market Hubs/)
+  assert.match(today, /Today briefing is unavailable\. This is not zero activity/)
   assert.match(today, /Upcoming Radar/)
   assert.match(today, /System recommended · read only/)
   assert.match(today, /Unknown dates are not promoted into Radar/)
