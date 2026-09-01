@@ -16,7 +16,12 @@ class MonitorCatalog:
     programs: tuple[Program, ...] = ()
     facilities: tuple[AccountFacility, ...] = ()
 
-    def resolve_subjects(self, text: str) -> tuple[EntityResolution, ...]:
+    def resolve_subjects(
+        self,
+        text: str,
+        *,
+        source_identifiers: tuple[tuple[str, str], ...] = (),
+    ) -> tuple[EntityResolution, ...]:
         """Find only exact governed names/aliases appearing in source text."""
         normalized = text.casefold()
         mentions: list[str] = []
@@ -25,6 +30,11 @@ class MonitorCatalog:
                 if candidate and candidate.casefold() in normalized:
                     mentions.append(candidate)
                     break
+        identifier_resolution = resolve_entity(
+            text, self.profiles, source_identifiers=source_identifiers
+        ) if source_identifiers else None
+        if identifier_resolution and identifier_resolution.state is ResolutionState.RESOLVED:
+            return (identifier_resolution,)
         resolved = [resolve_entity(mention, self.profiles) for mention in dict.fromkeys(mentions)]
         return tuple(resolved) or (
             EntityResolution("unresolved source subject", None, ResolutionState.UNRESOLVED, "no_governed_match", "source text has no exact governed account name"),

@@ -9,6 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from enum import StrEnum
+from time import sleep
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import quote, urlencode
@@ -168,7 +169,20 @@ class SamAdapter(LiveSourceAdapter):
     def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         today = (collected_at or datetime.now(UTC)).date()
         window_start = today - timedelta(days=14)
-        return f"{self.definition.api_base}?{urlencode({'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')})}"
+        query: dict[str, object] = {'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')}
+        # Do not apply unverified classifications to a production query.
+        naics = tuple(
+            code.strip() for code in getattr(self, "_sam_naics", ()) if code.strip()
+        )
+        if naics:
+            query["ncode"] = ",".join(naics)
+        return f"{self.definition.api_base}?{urlencode(query)}"
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        self._sam_naics = (
+            tuple(value.strip() for value in settings.monitor_sam_naics.split(",") if value.strip())
+            if settings.monitor_sam_naics_verification_state == "VERIFIED" else ()
+        )
+        return super().collect(run_id=run_id, settings=settings, limit=limit, collected_at=collected_at)
     def headers(self, settings: Any) -> dict[str, str]: return {"X-Api-Key": settings.sam_api_key, **super().headers(settings)}
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("opportunitiesData", [])
 
@@ -267,12 +281,68 @@ class FederalRegisterAdapter(LiveSourceAdapter):
 
 class SecEdgarAdapter(LiveSourceAdapter):
     definition = SourceDefinition("sec_edgar", "SEC EDGAR Submissions", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "securities filings", ("Commercial Aerospace", "Defense", "Space", "Semiconductor", "Medical", "Energy"), (EventType.EARNINGS_SIGNAL, EventType.BACKLOG_CHANGE, EventType.CAPITAL_INVESTMENT, EventType.M_AND_A, EventType.FACILITY_EXPANSION), "daily", "full submissions archives", "keyless", "requires descriptive User-Agent and SEC fair access", "https://data.sec.gov/submissions", "CIK/accession number")
-    def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("filings", {}).get("recent", {}).get("accessionNumber", []) and [{"accessionNumber": value, "filingDate": decoded["filings"]["recent"]["filingDate"][index], "form": decoded["filings"]["recent"]["form"][index]} for index, value in enumerate(decoded["filings"]["recent"]["accessionNumber"])]
-    def available(self, settings: Any) -> tuple[bool, str | None]: return (self.definition.api_base != "https://data.sec.gov/submissions", "verified SEC CIK from an account watch profile is required")
-    def for_cik(self, cik: str, get: HttpGet | None = None) -> SecEdgarAdapter:
-        adapter = SecEdgarAdapter(get or self.get)
-        adapter.definition = replace(self.definition, api_base=f"https://data.sec.gov/submissions/CIK{cik.zfill(10)}.json")
-        return adapter
+    def __init__(self, get: HttpGet = default_get, *, targets: tuple[tuple[str, str], ...] = ()) -> None:
+        super().__init__(get)
+        self.targets = targets
+
+    def available(self, settings: Any) -> tuple[bool, str | None]:
+        if not self.targets:
+            return False, "verified SEC CIK targets are required"
+        if not settings.sec_user_agent:
+            return False, "BTX_SEC_USER_AGENT with organization and contact is required"
+        return True, None
+
+    def headers(self, settings: Any) -> dict[str, str]:
+        return {"User-Agent": settings.sec_user_agent, "Accept-Encoding": "gzip, deflate"}
+
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        allowed, reason = self.available(settings)
+        if not allowed:
+            raise PermissionError(reason or "SEC EDGAR is not configured")
+        per_target = max(1, limit // len(self.targets))
+        observations: list[SourceObservation] = []
+        for index, (cik, account_name) in enumerate(self.targets):
+            url = f"{self.definition.api_base}/CIK{cik.zfill(10)}.json"
+            status, payload, _headers = self.get(url, self.headers(settings))
+            if status == 429:
+                raise RuntimeError("RATE_LIMITED")
+            if status >= 400:
+                raise RuntimeError(f"HTTP_{status}")
+            observations.extend(self._parse_submissions(payload, cik=cik, account_name=account_name, run_id=run_id, collected_at=collected_at)[:per_target])
+            # Four requests/second is deliberately below the SEC's published
+            # 10 requests/second ceiling and preserves a bounded worker load.
+            if index + 1 < len(self.targets):
+                sleep(0.25)
+        return observations
+
+    def _parse_submissions(self, payload: bytes, *, cik: str, account_name: str, run_id: str, collected_at: datetime | None) -> list[SourceObservation]:
+        try:
+            recent = json.loads(payload).get("filings", {}).get("recent", {})
+        except json.JSONDecodeError as exc:
+            raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
+        forms = recent.get("form", [])
+        filings: list[SourceObservation] = []
+        for index, form in enumerate(forms):
+            if form not in {"10-K", "10-Q"}:
+                continue
+            accession = str(recent.get("accessionNumber", [])[index])
+            primary_document = str(recent.get("primaryDocument", [""])[index])
+            filing_date = recent.get("filingDate", [None])[index]
+            item = {"accessionNumber": accession, "filingDate": filing_date, "form": form, "primaryDocument": primary_document, "issuer_name": account_name, "cik": cik, "title": f"{account_name} {form} filing"}
+            filings.append(self._observation(item, run_id, collected_at=collected_at))
+        return filings
+
+    def url(self, item: dict[str, Any]) -> str:
+        accession = str(item.get("accessionNumber", "")).replace("-", "")
+        primary_document = str(item.get("primaryDocument", ""))
+        cik = str(item.get("cik", "")).lstrip("0")
+        if accession and primary_document and cik:
+            return f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession}/{primary_document}"
+        return self.definition.api_base
+
+    def _observation(self, item: dict[str, Any], run_id: str, *, collected_at: datetime | None = None) -> SourceObservation:
+        observation = super()._observation(item, run_id, collected_at=collected_at)
+        return replace(observation, source_identity=SourceIdentity(self.definition.source_id, observation.source_identity.source_record_id, (("sec_cik", str(item["cik"]).zfill(10)),)))
 
 
 class NasaAdapter(LiveSourceAdapter):
