@@ -108,9 +108,16 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   }
 
   // Each canonical scenario anchor reaches Account 360 and Omni with the exact UI-selected ID.
-  for (const [, account, accountId] of scenarioAccounts) {
-    await search.fill(account)
-    await page.locator('.account-row').filter({ hasText: account }).first().click()
+  for (const [index, [, account, accountId]] of scenarioAccounts.entries()) {
+    if (index === 0) {
+      await search.fill(account)
+      await page.locator('.account-row').filter({ hasText: account }).first().click()
+    } else {
+      const switcher = page.getByLabel('Switch Customer')
+      await switcher.fill(account)
+      await page.getByRole('option', { name: new RegExp(account, 'i') }).first().click()
+    }
+    await expect(page.getByRole('heading', { name: new RegExp(account, 'i'), level: 1 })).toBeVisible()
     await expect(page.getByText(/Customer 360/).first()).toBeVisible()
     await openOmni(page)
     const accountAnswer = await ask(page, 'Tell me about this account.')

@@ -17,7 +17,7 @@ test('sanitized reference Customers, provenance, and BTX Top 100 flow through ca
   await honeywell.click()
   await expect(page.getByRole('heading', { name: 'Honeywell', level: 1 })).toBeVisible()
   await expect(page.getByText('SANITIZED REFERENCE SOURCE', { exact: true })).toBeVisible()
-  await expect(page.getByText('No SAMPLE quote history is available.')).toBeVisible()
+  await expect(page.getByText('No Paperless record is linked to this canonical Customer.')).toBeVisible()
 
   await navigate(page, 'Map')
   await page.getByRole('button', { name: 'Layers & filters' }).click()

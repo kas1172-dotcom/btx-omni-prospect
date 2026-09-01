@@ -64,6 +64,7 @@ def _service(tmp_path, adapter: FdaAdapter) -> MonitorService:
         catalog=MonitorCatalog(
             sample.watch_profiles, sample.programs, sample.facilities
         ),
+        clock=lambda: NOW,
     )
 
 
@@ -247,6 +248,52 @@ def test_signal_brief_uses_publication_freshness_and_blocks_unresolved_promotion
         publication_freshness(None, collected_at=NOW, threshold_hours=48, now=NOW)
         == "PUBLICATION_DATE_UNAVAILABLE"
     )
+
+
+def test_injected_collection_clock_controls_generated_monitor_timestamps(tmp_path) -> None:
+    service = _service(
+        tmp_path,
+        FdaAdapter(
+            _get(
+                {
+                    "results": [
+                        {
+                            "k_number": "K-CLOCK",
+                            "device_name": "Medtronic device approval",
+                            "decision_date": "2026-08-28",
+                        }
+                    ]
+                }
+            )
+        ),
+    )
+
+    run = service.collect("fda_openfda")
+    observation = next(iter(service.observations.values()))
+
+    assert run.started_at == run.completed_at == NOW
+    assert observation.observed_at == NOW
+    assert observation.source_version.first_seen_at == NOW
+    assert observation.raw_evidence.captured_at == NOW
+    assert observation.source_published_at == datetime(2026, 8, 28, tzinfo=UTC)
+    assert publication_freshness(
+        observation.source_published_at,
+        collected_at=observation.observed_at,
+        threshold_hours=48,
+        now=NOW,
+    ) == "CURRENT"
+
+
+def test_future_collection_timestamp_remains_withheld(tmp_path) -> None:
+    service = _service(tmp_path, FdaAdapter(_get({"results": []})))
+
+    assert publication_freshness(
+        NOW,
+        collected_at=NOW + timedelta(seconds=1),
+        threshold_hours=48,
+        now=NOW,
+    ) == "STALE"
+    assert service.clock().tzinfo is UTC
 
 
 class _BriefProvider:
@@ -515,6 +562,7 @@ def test_worker_enforces_collection_deadline_preserves_completed_runs_and_releas
             self.monitor = monitor
 
     monkeypatch.setattr("btx_omni.monitor.worker.PocRuntime", Runtime)
+    monkeypatch.delattr("btx_omni.monitor.service.signal.setitimer", raising=False)
     started = time.monotonic()
     report, code = run_worker(settings)
     elapsed = time.monotonic() - started
@@ -570,6 +618,7 @@ def test_monitor_health_reuses_durable_synthesis_without_model_calls(tmp_path) -
     engine = create_engine(settings.database_url)
     metadata.create_all(engine)
     runtime = PocRuntime(settings)
+    runtime.monitor.clock = lambda: NOW
     runtime.monitor.registry["fda_openfda"] = FdaAdapter(
         _get({"results": [{"k_number": "K-PROJECTION", "device_name": "Medtronic device approval", "decision_date": "2026-08-28"}]})
     )
@@ -595,9 +644,12 @@ def test_monitor_health_reuses_durable_synthesis_without_model_calls(tmp_path) -
     second = monitor_health(runtime)
     assisted = next(item for item in first["signal_briefs"] if item.id == event_id)
 
-    assert assisted.summary_mode == "GEMINI_ASSISTED"
-    assert assisted.seller_summary == "Seller-readable governed summary."
-    assert first["brief_synthesis_status"] == "AVAILABLE"
+    # The synthesis was written for the August 28 governed state.  Health
+    # recomputes freshness at read time, so its later governed hash must not
+    # reuse the cached prose.
+    assert assisted.summary_mode == "DETERMINISTIC"
+    assert assisted.seller_summary != "Seller-readable governed summary."
+    assert first["brief_synthesis_status"] == "UNAVAILABLE"
     assert next(item for item in second["signal_briefs"] if item.id == event_id) == assisted
     assert provider.calls == 1
 

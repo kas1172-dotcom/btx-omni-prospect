@@ -125,7 +125,8 @@ def test_durable_monitor_persists_runs_versions_events_and_failures() -> None:
 
 
 def test_monitor_registry_endpoint_is_internal_observability(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("BTX_MONITOR_OPERATOR_TOKEN", raising=False)
+    # An explicit empty process value overrides any developer-local .env token.
+    monkeypatch.setenv("BTX_MONITOR_OPERATOR_TOKEN", "")
     get_settings.cache_clear()
     client = TestClient(create_app())
     response = client.get("/api/monitor/sources")

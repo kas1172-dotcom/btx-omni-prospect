@@ -41,6 +41,7 @@ RELATIONSHIP_POLICY: dict[str, tuple[str, str, str]] = {
     "HAS_CAPABILITY": ("BTX capability", "Canonical BTX data records this capability for the business unit.", "Review the capability and responsible business unit."),
     "CAPABILITY_OF": ("BTX capability", "Canonical BTX data links this capability to the business unit.", "Review the capability and responsible business unit."),
 }
+SELLER_PATH_LIMIT = 12
 
 
 def seller_relationship_semantics(relationship_type: str) -> tuple[str, str, str]:
@@ -98,6 +99,12 @@ class SellerRelationshipPresentationService:
             or getattr(item["data_mode"], "value", item["data_mode"]) == "SAMPLE"
             for item in evidence
         )
+        state = path["presentation_state"]
+        rationale = {
+            "validated": "Validated direct canonical connection" if len(hops) == 1 else f"Validated {len(hops)}-step canonical connection",
+            "needs_validation": "Requires validation because the governed path has unresolved evidence requirements.",
+            "unusable": "Excluded because the governed path has missing or conflicting evidence.",
+        }[state]
         return {
             "path_id": path["path_id"],
             "direct": len(hops) == 1,
@@ -109,12 +116,39 @@ class SellerRelationshipPresentationService:
             "suggested_move": policies[-1][2],
             "evidence_state": path["overall_evidence_state"],
             "presentation_state": path["presentation_state"],
+            "seller_rationale": rationale,
             "truth_label": "SAMPLE BTX commercial context" if is_sample else "Canonical relationship evidence",
             "evidence": evidence,
         }
 
-    def present(self, result: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    @staticmethod
+    def _priority_key(path: dict[str, Any]) -> tuple[Any, ...]:
+        state_order = {"validated": 0, "needs_validation": 1, "unusable": 2}
+        hops: tuple[RelationshipHop, ...] = path["hops"]
+        has_sources = any(hop.source_ids for hop in hops)
+        return (state_order[path["presentation_state"]], 0 if len(hops) == 1 else 1,
+                len(hops), 0 if has_sources else 1, path["target_entity"].kind,
+                path["target_entity"].id, path["path_id"])
+
+    def present(self, result: dict[str, Any]) -> dict[str, Any]:
+        """Return raw-compatible DTOs plus the sole bounded seller-priority view."""
+        raw = sorted(result["paths"], key=self._priority_key)
+        grouped = {state: [path for path in raw if path["presentation_state"] == state] for state in ("validated", "needs_validation", "unusable")}
+        eligible = grouped["validated"] + grouped["needs_validation"]
+        selected = eligible[:SELLER_PATH_LIMIT]
+        projected = [self.present_path(path) for path in selected]
         return {
             "seller_direct_relationships": [self.present_path(path) for path in result["direct_relationships"]],
             "seller_paths": [self.present_path(path) for path in result["paths"]],
+            "seller_projection": {
+                "validated": [path for path in projected if path["presentation_state"] == "validated"],
+                "needs_validation": [path for path in projected if path["presentation_state"] == "needs_validation"],
+                "total_raw_count": len(raw),
+                "validated_count": len(grouped["validated"]),
+                "needs_validation_count": len(grouped["needs_validation"]),
+                "unusable_count": len(grouped["unusable"]),
+                "returned_count": len(projected),
+                "omitted_count": max(0, len(eligible) - len(projected)),
+                "traversal_truncated": result["truncated"],
+            },
         }

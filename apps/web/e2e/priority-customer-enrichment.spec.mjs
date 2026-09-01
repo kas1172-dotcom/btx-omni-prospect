@@ -24,16 +24,16 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
   await expect(page.getByRole('heading', { name: 'Honeywell', level: 1 })).toBeVisible()
   await expect(page.getByText('SANITIZED REFERENCE SOURCE', { exact: true })).toBeVisible()
   await expect(page.getByText('SIMULATED BTX CONTEXT', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('2 commercial records')).toBeVisible()
+  await expect(page.getByText('Commercial context available')).toBeVisible()
   await expect(page.getByText('Cross Bu Coordination')).toBeVisible()
   await expect(page.getByText('No verified public contact is available.', { exact: false })).toBeVisible()
 
   await page.getByRole('searchbox', { name: 'Switch Customer' }).fill('HUXWRX')
   await page.getByRole('option', { name: /HUXWRX/ }).click()
   await expect(page.getByRole('heading', { name: 'HUXWRX', level: 1 })).toBeVisible()
-  await expect(page.getByText('0 commercial records')).toBeVisible()
+  await expect(page.getByText('No Commercial record is linked to this canonical Customer.')).toBeVisible()
   await expect(page.getByText('No governed alert is currently open')).toBeVisible()
-  await expect(page.getByText('No canonical direct connection is currently available')).toBeVisible()
+  await expect(page.getByText('No eligible validated connection is currently available for this Customer.')).toBeVisible()
 })
 
 for (const width of [390, 320]) test(`priority Customer disclosures remain usable at ${width}px`, async ({ page }) => {

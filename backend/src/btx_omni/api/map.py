@@ -14,7 +14,7 @@ from btx_omni.domain.markets import PRIMARY_MARKET_ORDER, primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
-    calculate_account_attractiveness,
+    seller_attractiveness_projection,
 )
 from btx_omni.monitor.briefs import (
     SignalBrief,
@@ -189,11 +189,8 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
         location = next((facility for facility in candidates if facility.id == f"public-hq-{account.id}"), None) or next(iter(candidates), None)
         if location is None:
             continue
-        score = calculate_account_attractiveness(
-            AccountAttractivenessInputs(sample.scoring_inputs.get(account.id, {})),
-            evidence_ids=(account.provenance.source_record_id,),
-            calculated_at=runtime.observed_at(),
-        )
+        scenario = sample.priority_scenarios.get(account.id) or sample.rich_scenarios.get(account.id)
+        score = seller_attractiveness_projection(AccountAttractivenessInputs(sample.scoring_inputs.get(account.id, {})), calculated_at=runtime.observed_at(), excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
         nearest = min(
             btx_facilities,
             key=lambda item: haversine_miles(
@@ -227,11 +224,10 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
     facility_coordinates = {facility.id: _coordinates(facility.latitude, facility.longitude) for facility in facilities}
     intelligence_points = []
     for brief in briefs:
-        event = runtime.monitor.events.get(brief.id)
         account_id = next(
             (item for item in brief.canonical_account_ids if item in selected_ids), None
         )
-        facility_id = event.canonical_facility_id if event else None
+        facility_id = brief.canonical_facility_id
         coordinates = facility_coordinates.get(facility_id) if facility_id else None
         marker_mode = _map_brief_marker_mode(
             brief, account_id=account_id, coordinates=coordinates

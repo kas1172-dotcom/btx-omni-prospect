@@ -9,6 +9,10 @@ from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.config import Settings
+from btx_omni.modules.commercial.read import (
+    CommercialAccountSnapshot,
+    CommercialReadService,
+)
 from btx_omni.modules.communications.service import CommunicationService
 from btx_omni.modules.work.service import WorkService
 from btx_omni.monitor.catalog import MonitorCatalog
@@ -175,6 +179,10 @@ class PocRuntime:
                 503, "CONNECTED mode is unavailable: no live providers are configured."
             )
         return self.sample
+
+    def commercial_account_snapshot(self, canonical_account_id: str) -> CommercialAccountSnapshot:
+        """Return the configured provider-neutral commercial read projection."""
+        return CommercialReadService(self.environment()).account_snapshot(canonical_account_id)
 
     @staticmethod
     def observed_at() -> datetime:

@@ -76,29 +76,47 @@ class LiveSourceAdapter:
     def available(self, settings: Any) -> tuple[bool, str | None]:
         return True, None
 
-    def request_url(self, limit: int) -> str:
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         return self.definition.api_base
 
-    def collect(self, *, run_id: str, settings: Any, limit: int = 10) -> list[SourceObservation]:
+    def collect(
+        self,
+        *,
+        run_id: str,
+        settings: Any,
+        limit: int = 10,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         allowed, reason = self.available(settings)
         if not allowed:
             raise PermissionError(reason or "source credentials unavailable")
-        status, payload, _headers = self.get(self.request_url(limit), self.headers(settings))
+        status, payload, _headers = self.get(
+            self.request_url(limit, collected_at=collected_at), self.headers(settings)
+        )
         if status == 429:
             raise RuntimeError("RATE_LIMITED")
         if status >= 400:
             raise RuntimeError(f"HTTP_{status}")
-        return self.parse(payload, run_id=run_id)[:limit]
+        return self.parse(payload, run_id=run_id, collected_at=collected_at)[:limit]
 
     def headers(self, settings: Any) -> dict[str, str]:
         return {"User-Agent": "OmniProspectMonitor/2.0 contact=monitor@localhost"}
 
-    def parse(self, payload: bytes, *, run_id: str) -> list[SourceObservation]:
+    def parse(
+        self,
+        payload: bytes,
+        *,
+        run_id: str,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         try:
             decoded = json.loads(payload)
         except json.JSONDecodeError as exc:
             raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
-        return [self._observation(item, run_id) for item in self.items(decoded)]
+        return [
+            self._observation(item, run_id, collected_at=collected_at)
+            for item in self.items(decoded)
+        ]
 
     def items(self, decoded: Any) -> list[dict[str, Any]]:
         return decoded if isinstance(decoded, list) else []
@@ -126,8 +144,14 @@ class LiveSourceAdapter:
                         return None
         return None
 
-    def _observation(self, item: dict[str, Any], run_id: str) -> SourceObservation:
-        now = datetime.now(UTC)
+    def _observation(
+        self,
+        item: dict[str, Any],
+        run_id: str,
+        *,
+        collected_at: datetime | None = None,
+    ) -> SourceObservation:
+        now = collected_at or datetime.now(UTC)
         record_id = self.record_id(item)
         content = json.dumps(item, sort_keys=True, separators=(",", ":"))
         content_hash = hashlib.sha256(content.encode()).hexdigest()
@@ -141,8 +165,8 @@ class LiveSourceAdapter:
 class SamAdapter(LiveSourceAdapter):
     definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("Defense", "Space", "Commercial Aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published", freshness_threshold_hours=2)
     def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.sam_api_key), "SAM_API_KEY is not configured"
-    def request_url(self, limit: int) -> str:
-        today = datetime.now(UTC).date()
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
+        today = (collected_at or datetime.now(UTC)).date()
         window_start = today - timedelta(days=14)
         return f"{self.definition.api_base}?{urlencode({'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')})}"
     def headers(self, settings: Any) -> dict[str, str]: return {"X-Api-Key": settings.sam_api_key, **super().headers(settings)}
@@ -170,10 +194,17 @@ class UsaSpendingAdapter(LiveSourceAdapter):
     def url(self, item: dict[str, Any]) -> str:
         award_id = item.get("generated_internal_id")
         return f"https://api.usaspending.gov/api/v2/awards/{quote(str(award_id), safe='')}/" if award_id else self.definition.api_base
-    def collect(self, *, run_id: str, settings: Any, limit: int = 10) -> list[SourceObservation]:
+    def collect(
+        self,
+        *,
+        run_id: str,
+        settings: Any,
+        limit: int = 10,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         if not self.recipient_names:
             raise PermissionError("USASPENDING_TARGET_RECIPIENTS_REQUIRED")
-        today = datetime.now(UTC).date()
+        today = (collected_at or datetime.now(UTC)).date()
         start = today - timedelta(days=90)
         per_target = max(1, limit // len(self.recipient_names))
         observations: list[SourceObservation] = []
@@ -189,7 +220,13 @@ class UsaSpendingAdapter(LiveSourceAdapter):
                 for award in award_rows:
                     generated_id = award.get("generated_internal_id")
                     transaction = self._latest_transaction(generated_id, settings)
-                    observations.append(self._observation(self._combine_award_and_transaction(award, transaction), run_id))
+                    observations.append(
+                        self._observation(
+                            self._combine_award_and_transaction(award, transaction),
+                            run_id,
+                            collected_at=collected_at,
+                        )
+                    )
             except HTTPError as exc:
                 if exc.code == 429:
                     raise RuntimeError("RATE_LIMITED") from exc
@@ -223,7 +260,7 @@ class UsaSpendingAdapter(LiveSourceAdapter):
 
 class FederalRegisterAdapter(LiveSourceAdapter):
     definition = SourceDefinition("federal_register", "Federal Register", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal rulemaking", ("Defense", "Space", "Medical", "Semiconductor", "Energy"), (EventType.REGULATORY_CHANGE, EventType.SOLICITATION, EventType.GOVERNMENT_FUNDING), "daily", "documents API archives", "keyless", "public API", "https://www.federalregister.gov/api/v1/documents.json", "document_number")
-    def request_url(self, limit: int) -> str:
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         return f"{self.definition.api_base}?{urlencode({'per_page': limit, 'order': 'newest'})}"
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
 
@@ -240,12 +277,30 @@ class SecEdgarAdapter(LiveSourceAdapter):
 
 class NasaAdapter(LiveSourceAdapter):
     definition = SourceDefinition("nasa", "NASA Official News", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "NASA official publisher", ("Space", "Commercial Aerospace"), (EventType.PROGRAM_LAUNCH, EventType.CONTRACT_AWARD, EventType.GOVERNMENT_FUNDING, EventType.PARTNERSHIP), "daily", "news archive", "keyless", "RSS/API availability varies", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "canonical article URL; NASA program names", content_structure="OFFICIAL_RSS_WITH_UNSTRUCTURED_TEXT")
-    def parse(self, payload: bytes, *, run_id: str) -> list[SourceObservation]:
+    def parse(
+        self,
+        payload: bytes,
+        *,
+        run_id: str,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         try:
             root = element_tree.fromstring(payload)
         except element_tree.ParseError as exc:
             raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
-        return [self._observation({"id": item.findtext("guid") or item.findtext("link"), "title": item.findtext("title"), "url": item.findtext("link"), "publication_date": item.findtext("pubDate")}, run_id) for item in root.findall(".//item")]
+        return [
+            self._observation(
+                {
+                    "id": item.findtext("guid") or item.findtext("link"),
+                    "title": item.findtext("title"),
+                    "url": item.findtext("link"),
+                    "publication_date": item.findtext("pubDate"),
+                },
+                run_id,
+                collected_at=collected_at,
+            )
+            for item in root.findall(".//item")
+        ]
 
 
 class DodAdapter(LiveSourceAdapter):
@@ -261,7 +316,7 @@ class CommerceAdapter(LiveSourceAdapter):
 class FdaAdapter(LiveSourceAdapter):
     definition = SourceDefinition("fda_openfda", "FDA openFDA", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "FDA regulatory data", ("Medical",), (EventType.REGULATORY_APPROVAL, EventType.REGULATORY_CHANGE, EventType.PRODUCT_LAUNCH), "daily", "API datasets", "keyless", "API limits; clearance is not commercial launch", "https://api.fda.gov/device/510k.json", "K number/PMA/recall identifiers")
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
-    def request_url(self, limit: int) -> str: return f"{self.definition.api_base}?{urlencode({'limit': limit, 'sort': 'decision_date:desc'})}"
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str: return f"{self.definition.api_base}?{urlencode({'limit': limit, 'sort': 'decision_date:desc'})}"
 
 
 class CompanyNewsAdapter(LiveSourceAdapter):

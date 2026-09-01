@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import signal
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from time import monotonic, perf_counter
+from time import monotonic
 from uuid import uuid4
 
 from btx_omni.core.config import Settings
@@ -58,12 +59,85 @@ class MonitorService:
     watch_profiles: tuple[AccountWatchProfile, ...] = ()
     catalog: MonitorCatalog = field(default_factory=MonitorCatalog)
     watch_targets: dict[str, tuple[WatchTarget, ...]] = field(default_factory=dict)
+    clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
+
+    @staticmethod
+    def _collect_with_deadline(
+        adapter: LiveSourceAdapter,
+        *,
+        run_id: str,
+        settings: Settings,
+        limit: int,
+        collected_at: datetime,
+        deadline_monotonic: float | None,
+    ) -> list[SourceObservation]:
+        """Execute only the adapter call within the worker's bounded budget.
+
+        A signal interrupts supported Unix main-thread calls.  Other hosts use
+        a daemon thread solely for the adapter call; state is never shared with
+        that thread, so a late result cannot mutate Monitor state.
+        """
+        def invoke() -> list[SourceObservation]:
+            return adapter.collect(
+                run_id=run_id,
+                settings=settings,
+                limit=limit,
+                collected_at=collected_at,
+            )
+
+        remaining = (
+            deadline_monotonic - monotonic()
+            if deadline_monotonic is not None
+            else None
+        )
+        if remaining is not None and remaining <= 0:
+            raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
+        alarm_supported = (
+            remaining is not None
+            and threading.current_thread() is threading.main_thread()
+            and hasattr(signal, "setitimer")
+        )
+        if alarm_supported:
+            previous_handler = signal.getsignal(signal.SIGALRM)
+            signal.signal(signal.SIGALRM, _deadline_alarm)
+            signal.setitimer(signal.ITIMER_REAL, remaining)
+            try:
+                observations = invoke()
+                if monotonic() >= deadline_monotonic:
+                    raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
+                return observations
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, previous_handler)
+        if remaining is None:
+            return invoke()
+
+        completed = threading.Event()
+        result: list[SourceObservation] | None = None
+        failure: Exception | None = None
+
+        def collect_in_background() -> None:
+            nonlocal result, failure
+            try:
+                result = invoke()
+            except Exception as exc:  # noqa: BLE001 - adapter boundary reraises on caller thread
+                failure = exc
+            finally:
+                completed.set()
+
+        thread = threading.Thread(target=collect_in_background, daemon=True)
+        thread.start()
+        if not completed.wait(remaining) or monotonic() >= deadline_monotonic:
+            raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
+        if failure is not None:
+            raise failure
+        return result or []
 
     def collect(self, source_id: str, limit: int = 10, *, deadline_monotonic: float | None = None) -> CollectionRun:
         if self.settings.monitor_mode.lower() != "live":
             raise RuntimeError("MONITOR_MODE is disabled; live collection was not attempted")
         adapter = self.registry[source_id]
-        started, clock, run_id = datetime.now(UTC), perf_counter(), str(uuid4())
+        started, started_monotonic, run_id = self.clock(), monotonic(), str(uuid4())
         previous_health = self.health.get(source_id)
         if previous_health is None and self.repository:
             durable_health = next((item for item in self.repository.snapshot()["health"] if item["source_id"] == source_id), None)
@@ -71,21 +145,14 @@ class MonitorService:
         else:
             previous_success = previous_health.last_success_at if previous_health else None
         try:
-            remaining = deadline_monotonic - monotonic() if deadline_monotonic is not None else None
-            if remaining is not None and remaining <= 0:
-                raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
-            alarm_supported = remaining is not None and threading.current_thread() is threading.main_thread() and hasattr(signal, "setitimer")
-            previous_handler = None
-            if alarm_supported:
-                previous_handler = signal.getsignal(signal.SIGALRM)
-                signal.signal(signal.SIGALRM, _deadline_alarm)
-                signal.setitimer(signal.ITIMER_REAL, remaining)
-            try:
-                observations = adapter.collect(run_id=run_id, settings=self.settings, limit=limit)
-            finally:
-                if alarm_supported:
-                    signal.setitimer(signal.ITIMER_REAL, 0)
-                    signal.signal(signal.SIGALRM, previous_handler)
+            observations = self._collect_with_deadline(
+                adapter,
+                run_id=run_id,
+                settings=self.settings,
+                limit=limit,
+                collected_at=started,
+                deadline_monotonic=deadline_monotonic,
+            )
             created = changed = new = rejected_count = 0
             persisted_events: list[IntelligenceEvent] = []
             organization_candidates = []
@@ -146,17 +213,17 @@ class MonitorService:
                 decision = cluster_event(candidate.event, observation, existing_cluster)
                 self.clusters[cluster_id] = decision.cluster
                 created += int(decision.created)
-            completed = datetime.now(UTC)
+            completed = self.clock()
             cursor = CollectionCursor(source_id, token=completed.isoformat(), page=1, updated_at=completed)
-            run = CollectionRun(run_id, source_id, started, completed, cursor, records_seen=len(observations), records_new=new, records_changed=changed, records_rejected=rejected_count, events_created=created, events_matched=len(observations) - created, latency_ms=round((perf_counter() - clock) * 1000))
+            run = CollectionRun(run_id, source_id, started, completed, cursor, records_seen=len(observations), records_new=new, records_changed=changed, records_rejected=rejected_count, events_created=created, events_matched=len(observations) - created, latency_ms=round((monotonic() - started_monotonic) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.HEALTHY, started, run.completed_at)
         except PermissionError as exc:
             detail = self._safe_failure(exc)
-            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(detail,), latency_ms=round((perf_counter() - clock) * 1000))
+            run = CollectionRun(run_id, source_id, started, self.clock(), None, failures=(detail,), latency_ms=round((monotonic() - started_monotonic) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.WARNING, started, previous_success, SOURCE_HEALTH_WARNING, detail)
         except Exception as exc:  # noqa: BLE001 - adapter boundary records all source failures as health
             detail = self._safe_failure(exc)
-            run = CollectionRun(run_id, source_id, started, datetime.now(UTC), None, failures=(detail,), latency_ms=round((perf_counter() - clock) * 1000))
+            run = CollectionRun(run_id, source_id, started, self.clock(), None, failures=(detail,), latency_ms=round((monotonic() - started_monotonic) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.FAILED, started, previous_success, SOURCE_HEALTH_WARNING, detail)
         self.runs.append(run)
         if self.repository:

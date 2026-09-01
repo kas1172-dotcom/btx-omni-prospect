@@ -80,6 +80,9 @@ def run_worker(
             if "DEADLINE_EXCEEDED" in run.failures:
                 deadline_exhausted = True
                 break
+            if monotonic() >= deadline:
+                deadline_exhausted = True
+                break
         synthesis = None
         if runs and not deadline_exhausted and repository:
             synthesis = process_signal_brief_synthesis(

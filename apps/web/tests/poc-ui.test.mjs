@@ -51,7 +51,7 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
 test('Customer 360 distinguishes public evidence from simulated BTX context', () => {
   assert.match(accounts, /Public professional contact research/)
   assert.match(accounts, /Simulated BTX commercial context/)
-  assert.match(accounts, /Customer Attractiveness · POC simulation/)
+  assert.match(accounts, /Customer Attractiveness · simulated hypothesis/)
   assert.match(accounts, /Coverage/)
   assert.match(accounts, /Curated scenarios/)
 })
@@ -62,15 +62,25 @@ test('Customer 360 renders deterministic seller-facing canonical relationship pa
   assert.match(accounts, /How this Customer is connected/)
   assert.match(accounts, /Public professional contact research remains separate/)
   assert.match(accounts, /does not establish a BTX relationship, introduction path, or relationship strength/)
-  assert.match(accounts, /No canonical direct connection is currently available/)
+  assert.match(accounts, /No eligible validated connection is currently available/)
   assert.match(accounts, /api\.relationships\(accountId\)/)
-  assert.match(accounts, /Direct connections/)
-  assert.match(accounts, /Connected paths/)
-  assert.match(accounts, /No canonical connected path is currently available/)
+  assert.match(accounts, /Validated connections/)
+  assert.match(accounts, /Connections to review/)
+  assert.match(accounts, /No connection requiring validation is currently available/)
+  assert.match(accounts, /seller_projection/)
   assert.match(accounts, /path\.presentation_state/)
   assert.match(accounts, /Why it matters:/)
   assert.match(accounts, /Suggested move:/)
   assert.doesNotMatch(accounts, /Canonical 2-hop path|validated warm paths|Request intro/)
+})
+
+test('Customer 360 renders backend-owned commercial source states without zero inference', () => {
+  assert.match(accounts, /commercial_source_states/)
+  assert.match(accounts, /No \$\{label\} record is linked to this canonical Customer/)
+  assert.match(accounts, /\$\{label\} integration is not configured/)
+  assert.match(accounts, /\$\{label\} context is currently unavailable/)
+  assert.match(accounts, /source_state === 'AVAILABLE'/)
+  assert.match(accounts, /Simulated BTX commercial context/)
 })
 
 test('Omni shares governed conversation state across Quick and Full responsive workspaces', () => {

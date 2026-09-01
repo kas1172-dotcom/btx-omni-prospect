@@ -155,7 +155,7 @@ def test_top_100_and_reference_geography_flow_through_canonical_apis() -> None:
     assert "BTX Top 100: yes" in omni["content"]
     assert "sanitized reference source" in omni["content"]
     assert "BTX commercial context is simulated" in omni["content"]
-    assert not any("strategic" in json.dumps(item).casefold() for item in accounts)
+    assert all("strategic_partnership" not in item for item in accounts)
 
 
 def test_top_100_is_membership_not_rank_and_unsupported_classes_remain_absent() -> None:

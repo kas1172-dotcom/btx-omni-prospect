@@ -42,11 +42,8 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
   await expect(relationshipPanel.locator('.seller-relationship-card').first().locator('.ui-evidence').first()).toBeVisible()
   await expect(relationshipPanel.locator('.seller-relationship-card').first().locator('.ui-evidence').first()).toContainText('Source reference:')
 
-  await relationshipPanel.getByRole('tab', { name: 'Connected paths' }).click()
-  const canonicalMultiHop = lockheedRelationships.seller_paths.find(path => path.step_count === 2)
-  expect(canonicalMultiHop).toBeTruthy()
-  await expect(relationshipPanel).toContainText(canonicalMultiHop.steps.at(-1).display_name)
-  await expect(relationshipPanel).toContainText(canonicalMultiHop.connection_label)
+  await relationshipPanel.getByRole('tab', { name: 'Connections to review' }).click()
+  await expect(relationshipPanel).toContainText('No connection requiring validation is currently available for this Customer.')
 
   const switcher = page.getByLabel('Switch Customer')
   await switcher.fill('Symbotic')
@@ -54,8 +51,8 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
   expect((await symboticResponse).status()).toBe(200)
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
-  await relationshipPanel.getByRole('tab', { name: 'Connected paths' }).click()
-  await expect(relationshipPanel).toContainText('No canonical connected path is currently available for this Customer. This does not establish a real-world absence.')
+  await relationshipPanel.getByRole('tab', { name: 'Validated connections' }).click()
+  await expect(relationshipPanel).toContainText('No eligible validated connection is currently available for this Customer. This does not establish a real-world absence.')
   await expect(relationshipPanel.locator('.seller-relationship-card')).toHaveCount(0)
 })
 
@@ -68,7 +65,7 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
   const sectionTrigger = relationshipSection.getByRole('button', { name: /Relationship Intelligence/ })
   await sectionTrigger.click()
   await expect(sectionTrigger).toHaveAttribute('aria-expanded', 'true')
-  await relationshipSection.getByRole('tab', { name: 'Connected paths' }).click()
+  await relationshipSection.getByRole('tab', { name: 'Validated connections' }).click()
 
   const firstPath = relationshipSection.locator('.seller-relationship-card').first()
   await expect(firstPath).toBeVisible()
@@ -95,7 +92,7 @@ test('Relationship Intelligence remains non-overflowing at 320px', async ({ page
   await openAccount(page, 'Lockheed', 'lockheed-martin')
   const relationshipSection = page.locator('.account-workspace-relationship')
   await relationshipSection.getByRole('button', { name: /Relationship Intelligence/ }).click()
-  await relationshipSection.getByRole('tab', { name: 'Connected paths' }).click()
+  await relationshipSection.getByRole('tab', { name: 'Validated connections' }).click()
   await expect(relationshipSection.locator('.seller-relationship-card').first()).toContainText('Connection:')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })

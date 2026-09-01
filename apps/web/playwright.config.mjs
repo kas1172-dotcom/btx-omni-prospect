@@ -5,17 +5,31 @@ export default defineConfig({
   timeout: 45_000,
   webServer: [
     {
-      command: 'BTX_GEMINI_API_KEY= GEMINI_API_KEY= GOOGLE_API_KEY= uv run uvicorn btx_omni.app:app --host 127.0.0.1 --port 8000',
+      command: 'uv run uvicorn btx_omni.app:app --host 127.0.0.1 --port 8000',
       cwd: '../../backend',
       url: 'http://127.0.0.1:8000/api/health',
       reuseExistingServer: false,
       timeout: 120_000,
+      env: {
+        ...process.env,
+        BTX_AI_PROVIDER: 'gemini',
+        BTX_GEMINI_API_KEY: '',
+        GEMINI_API_KEY: '',
+        GOOGLE_API_KEY: '',
+        BTX_MONITOR_OPERATOR_TOKEN: '',
+        BTX_ACTION_SALESPERSON_TOKEN: 'development-salesperson',
+        BTX_ACTION_MANAGER_TOKEN: 'development-manager',
+      },
     },
     {
-      command: 'VITE_MAP_TEST_MODE=true npm run dev -- --host 127.0.0.1 --port 5173',
+      command: 'npm run dev -- --host 127.0.0.1 --port 5173',
       url: 'http://127.0.0.1:5173',
       reuseExistingServer: false,
       timeout: 120_000,
+      env: {
+        ...process.env,
+        VITE_MAP_TEST_MODE: 'true',
+      },
     },
   ],
   use: {

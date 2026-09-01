@@ -100,6 +100,24 @@ def test_seller_projection_preserves_raw_paths_and_evidence_without_strength() -
     assert direct["direct"] is True and direct["step_count"] == 1
     assert multi_hop["direct"] is False and multi_hop["step_count"] == 2
     assert all(step["display_name"] not in {"quote", "order"} for path in projected["seller_paths"] for step in path["steps"])
+    seller = projected["seller_projection"]
+    assert seller["returned_count"] <= 12
+    assert seller["unusable_count"] >= 0
+    assert not any(path["presentation_state"] == "unusable" for path in seller["validated"] + seller["needs_validation"])
+    assert all("seller_rationale" in path for path in seller["validated"] + seller["needs_validation"])
+
+
+def test_seller_projection_prioritizes_governed_state_directness_sources_and_stability() -> None:
+    service = RelationshipIntelligenceService(build_sample_environment())
+    raw = service.account_relationships("spirit-aerosystems", depth=2)
+    first = SellerRelationshipPresentationService().present(raw)["seller_projection"]
+    second = SellerRelationshipPresentationService().present(raw)["seller_projection"]
+    first_paths = first["validated"] + first["needs_validation"]
+    second_paths = second["validated"] + second["needs_validation"]
+    assert [path["path_id"] for path in first_paths] == [path["path_id"] for path in second_paths]
+    assert not first["needs_validation"] or not first["validated"] or first_paths.index(first["needs_validation"][0]) >= len(first["validated"])
+    for paths in (first["validated"], first["needs_validation"]):
+        assert [path["direct"] for path in paths] == sorted((path["direct"] for path in paths), reverse=True)
 
 
 @pytest.mark.asyncio
@@ -115,6 +133,8 @@ async def test_account_relationship_api_is_typed_and_bounded() -> None:
     assert multi_hop["path_id"] and all(hop["presentation_state"] for hop in multi_hop["hops"])
     assert len(payload["seller_direct_relationships"]) == len(payload["direct_relationships"])
     assert len(payload["seller_paths"]) == len(payload["paths"])
+    assert payload["seller_projection"]["returned_count"] <= 12
+    assert not any(path["presentation_state"] == "unusable" for path in payload["seller_projection"]["validated"] + payload["seller_projection"]["needs_validation"])
     assert "relationship_type" in payload["paths"][0]["hops"][0]
     assert "connection_label" in payload["seller_paths"][0]
     assert "strength" not in payload["seller_paths"][0]

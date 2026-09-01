@@ -65,6 +65,7 @@ class SignalBrief:
     relevant_event_timestamp: datetime | None = None
     watchlist_eligible: bool = False
     priority_reasons: tuple[TargetReason, ...] = ()
+    canonical_facility_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -204,6 +205,7 @@ def signal_brief(
         relevant_event_timestamp=published,
         watchlist_eligible=bool(target_reasons),
         priority_reasons=target_reasons,
+        canonical_facility_id=event.canonical_facility_id,
     )
 
 

@@ -17,6 +17,7 @@ from btx_omni.modules.relationships.service import RelationshipIntelligenceServi
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
     calculate_account_attractiveness,
+    seller_attractiveness_projection,
 )
 from btx_omni.providers.sample.environment import SampleEnvironment
 
@@ -2357,13 +2358,8 @@ class OmniOrchestrator:
         for account in environment.accounts:
             if account.id not in environment.scoring_inputs:
                 continue
-            result = calculate_account_attractiveness(
-                AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                evidence_ids=(account.provenance.source_record_id,)
-                if account.provenance
-                else (),
-                calculated_at=observed_at,
-            )
+            scenario = environment.priority_scenarios.get(account.id) or environment.rich_scenarios.get(account.id)
+            result = seller_attractiveness_projection(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), calculated_at=observed_at, excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
             if result.score is not None:
                 scores.append((account, result))
         return scores

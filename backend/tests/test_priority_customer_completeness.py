@@ -113,6 +113,7 @@ def test_priority_scores_are_deterministic_inputs_not_hand_written_outputs() -> 
 
 def test_customer_api_exposes_rich_and_sparse_priority_truthfully() -> None:
     client = TestClient(create_app())
+    listed = {item["id"]: item for item in client.get("/api/accounts").json()["accounts"]}
     honeywell = client.get("/api/accounts/honeywell").json()
     huxwrx = client.get("/api/accounts/huxwrx").json()
 
@@ -131,7 +132,14 @@ def test_customer_api_exposes_rich_and_sparse_priority_truthfully() -> None:
     assert huxwrx["prism_commercial_context"] == []
     assert huxwrx["alerts"] == []
     assert huxwrx["account_attractiveness"]["status"] == "NEEDS_RESEARCH"
-    assert "CRM context unavailable" in huxwrx["missingness"]
+    assert huxwrx["account_attractiveness"]["score"] is None
+    assert listed["huxwrx"]["attractiveness"] is None
+    assert listed["huxwrx"]["account_attractiveness"]["score"] is None
+    assert listed["honeywell"]["attractiveness"] == honeywell["account_attractiveness"]["score"]
+    assert huxwrx["account_attractiveness"]["evidence_ids"] == []
+    assert all(not factor["evidence_ids"] for factor in huxwrx["account_attractiveness"]["factors"])
+    assert huxwrx["commercial_source_states"]["crm"]["source_state"] == "NO_LINKED_DATA"
+    assert "No linked CRM company for this canonical Customer" in huxwrx["missingness"]
 
 
 def test_reference_only_universe_does_not_receive_accidental_sample_context() -> None:
