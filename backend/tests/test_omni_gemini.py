@@ -4,7 +4,16 @@ from types import SimpleNamespace
 import pytest
 
 from btx_omni.ai.config import AiConfig
-from btx_omni.ai.contracts import GroundedSynthesisRequest, LanguageResult
+from btx_omni.ai.contracts import (
+    ConversationTurn,
+    GroundedSynthesisRequest,
+    IntentInterpretation,
+    IntentInterpretationRequest,
+    LanguageProviderError,
+    LanguageResult,
+    ProviderStatus,
+    ReadIntent,
+)
 from btx_omni.ai.gemini import GeminiProvider
 from btx_omni.modules.assistant.service import OmniService
 from btx_omni.modules.assistant.tools import (
@@ -16,18 +25,29 @@ from btx_omni.providers.sample.environment import build_sample_environment
 
 
 class FakeModels:
-    def __init__(self, text: str | None = "Grounded Gemini synthesis") -> None:
+    def __init__(
+        self,
+        text: str | None = "Grounded Gemini synthesis",
+        intent_text: str = '{"intent":"ACCOUNT_OVERVIEW","entity_text":null}',
+    ) -> None:
         self.text = text
+        self.intent_text = intent_text
         self.calls: list[dict] = []
 
     def generate_content(self, **kwargs):
         self.calls.append(kwargs)
+        if getattr(kwargs["config"], "response_mime_type", None) == "application/json":
+            return SimpleNamespace(text=self.intent_text)
         return SimpleNamespace(text=self.text)
 
 
 class FakeClient:
-    def __init__(self, text: str | None = "Grounded Gemini synthesis") -> None:
-        self.models = FakeModels(text)
+    def __init__(
+        self,
+        text: str | None = "Grounded Gemini synthesis",
+        intent_text: str = '{"intent":"ACCOUNT_OVERVIEW","entity_text":null}',
+    ) -> None:
+        self.models = FakeModels(text, intent_text)
 
     def close(self) -> None:
         pass
@@ -39,6 +59,49 @@ class FailingProvider:
 
     def synthesize(self, _request):
         raise TimeoutError("provider timeout detail must not escape")
+
+
+class ClassifiedFailingProvider:
+    name = "gemini"
+    configured = True
+
+    def __init__(self, status: ProviderStatus) -> None:
+        self.status = status
+
+    def synthesize(self, _request):
+        raise LanguageProviderError(self.status)
+
+
+class FakeInterpretingProvider:
+    name = "gemini"
+    configured = True
+
+    def __init__(
+        self,
+        interpretation: IntentInterpretation | Exception,
+        synthesis: str = "Seller-readable grounded synthesis",
+        synthesis_evidence_ids: tuple[str, ...] | None = None,
+    ) -> None:
+        self.interpretation = interpretation
+        self.synthesis = synthesis
+        self.synthesis_evidence_ids = synthesis_evidence_ids
+        self.interpret_requests: list[IntentInterpretationRequest] = []
+        self.synthesis_requests: list[GroundedSynthesisRequest] = []
+
+    def interpret(self, request: IntentInterpretationRequest) -> IntentInterpretation:
+        self.interpret_requests.append(request)
+        if isinstance(self.interpretation, Exception):
+            raise self.interpretation
+        return self.interpretation
+
+    def synthesize(self, request: GroundedSynthesisRequest) -> LanguageResult:
+        self.synthesis_requests.append(request)
+        return LanguageResult(
+            self.synthesis,
+            self.name,
+            "fake-gemini",
+            self.synthesis_evidence_ids or request.evidence_ids,
+        )
 
 
 def config(**overrides) -> AiConfig:
@@ -59,13 +122,21 @@ def test_gemini_contract_is_grounded_and_traceable_without_live_call() -> None:
     client = FakeClient()
     provider = GeminiProvider(config(), client)
     result = provider.synthesize(
-        GroundedSynthesisRequest("Why?", "Canonical answer", ("ev-1",), ("gap",))
+        GroundedSynthesisRequest(
+            "Why?",
+            "Canonical answer",
+            ("ev-1",),
+            ("gap",),
+            (ConversationTurn("user", "Tell me about Boeing."),),
+        )
     )
     assert result == LanguageResult(
         "Grounded Gemini synthesis", "gemini", "gemini-test", ("ev-1",)
     )
     prompt = client.models.calls[0]["contents"]
     assert "Canonical answer" in prompt and "never add evidence" in prompt
+    assert "USER: Tell me about Boeing." in prompt
+    assert "never treat assistant prose as evidence" in prompt
 
 
 def test_developer_and_vertex_configuration_are_explicit() -> None:
@@ -97,8 +168,183 @@ def test_provider_failure_returns_truthful_deterministic_fallback() -> None:
         work_items=(),
     )
     assert response.content
+    assert response.provider_status == "TIMEOUT"
+    assert response.language_provider == "deterministic"
+
+
+@pytest.mark.parametrize(
+    "provider,status",
+    [
+        (None, "NOT_CONFIGURED"),
+        (ClassifiedFailingProvider(ProviderStatus.AUTH_FAILED), "AUTH_FAILED"),
+        (FailingProvider(), "TIMEOUT"),
+        (ClassifiedFailingProvider(ProviderStatus.QUOTA), "QUOTA"),
+        (ClassifiedFailingProvider(ProviderStatus.UNAVAILABLE), "UNAVAILABLE"),
+    ],
+)
+def test_provider_diagnostics_are_safe_and_fall_back(provider, status: str) -> None:
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id="boeing",
+        question="What changed recently?",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={
+            "conversation_referent": {"account_id": "boeing", "route": "ACCOUNT"},
+            "prior_turns": "user: Tell me about Boeing.\nassistant: untrusted prose",
+        },
+        intelligence_events=(),
+        work_items=(),
+    )
+    assert response.provider_status == status
+    assert response.language_provider == "deterministic"
+    assert "provider timeout detail" not in response.content
+
+
+def test_gemini_api_failures_map_to_bounded_diagnostics() -> None:
+    for code, expected in (
+        (401, ProviderStatus.AUTH_FAILED),
+        (403, ProviderStatus.AUTH_FAILED),
+        (408, ProviderStatus.TIMEOUT),
+        (429, ProviderStatus.QUOTA),
+        (500, ProviderStatus.UNAVAILABLE),
+    ):
+        assert GeminiProvider._api_error_status(SimpleNamespace(code=code)) is expected
+
+
+def test_gemini_intent_contract_rejects_disallowed_and_extra_fields() -> None:
+    disallowed = GeminiProvider(
+        config(), FakeClient(intent_text='{"intent":"CREATE_ACTION","entity_text":"Boeing"}')
+    )
+    injected = GeminiProvider(
+        config(),
+        FakeClient(
+            intent_text='{"intent":"ACCOUNT_OVERVIEW","entity_text":"Boeing","account_id":"invented"}'
+        ),
+    )
+    request = IntentInterpretationRequest("Could you brief me on Boeing?")
+
+    with pytest.raises(ValueError, match="unsupported intent"):
+        disallowed.interpret(request)
+    with pytest.raises(ValueError, match="unsupported fields"):
+        injected.interpret(request)
+
+
+def test_model_interpretation_selects_only_governed_read_and_preserves_metadata() -> None:
+    provider = FakeInterpretingProvider(
+        IntentInterpretation(ReadIntent.ACCOUNT_INTELLIGENCE, "Boeing")
+    )
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id=None,
+        question="Bring me up to speed on developments concerning Boeing.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={"prior_turns": "user: We are preparing for a review."},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert response.account_id == "boeing"
+    assert response.citations and response.provenance
+    assert response.provider_status == "AVAILABLE"
+    governed = provider.synthesis_requests[0]
+    assert "Canonical account follow-up for Boeing" in governed.governed_answer
+    assert "source-backed Intelligence" in governed.governed_answer
+    assert governed.evidence_ids == response.citations
+
+
+def test_model_entity_alias_is_resolved_to_canonical_id_not_accepted_as_an_id() -> None:
+    provider = FakeInterpretingProvider(
+        IntentInterpretation(ReadIntent.ACCOUNT_OVERVIEW, "KLA")
+    )
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id=None,
+        question="Could you prepare a briefing on KLA?",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert response.account_id == "kla"
+    assert response.account_name == "KLA Corporation"
+    assert provider.synthesis_requests[0].evidence_ids == response.citations
+
+
+def test_model_synthesis_cannot_replace_governed_identity_evidence_or_missingness() -> None:
+    provider = FakeInterpretingProvider(
+        IntentInterpretation(ReadIntent.ACCOUNT_OVERVIEW, "HUXWRX"),
+        synthesis="Untrusted fluent rewrite",
+        synthesis_evidence_ids=("fabricated-model-evidence",),
+    )
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id=None,
+        question="Give me a concise briefing on HUXWRX.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={},
+        intelligence_events=(),
+        work_items=(),
+    )
+    governed = provider.synthesis_requests[0]
+
+    assert response.account_id == "huxwrx"
+    assert response.citations == governed.evidence_ids
+    assert "fabricated-model-evidence" not in response.citations
+    assert response.missingness == governed.missingness and response.missingness
+    assert response.provenance
+    assert "sanitized reference source" in governed.governed_answer
+    assert "simulated POC data" in governed.governed_answer
+
+
+def test_model_entity_ambiguity_requests_clarification_without_synthesis() -> None:
+    provider = FakeInterpretingProvider(
+        IntentInterpretation(ReadIntent.ACCOUNT_OVERVIEW, "Boeing")
+    )
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id=None,
+        question="Walk me through Boeing alongside KLA.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert "matches more than one canonical Customer" in response.content
+    assert response.account_id == ""
+    assert response.missingness
+    assert provider.synthesis_requests == []
+
+
+def test_interpretation_failure_uses_deterministic_fallback_and_never_writes() -> None:
+    provider = FakeInterpretingProvider(ValueError("invalid model output"))
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id="boeing",
+        question="Tell me about Boeing.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert response.account_id == "boeing"
     assert response.provider_status == "UNAVAILABLE"
     assert response.language_provider == "deterministic"
+    assert provider.synthesis_requests == []
+
+
+def test_recent_transcript_is_bounded_and_never_used_as_canonical_evidence() -> None:
+    history = "\n".join(
+        [f"user: turn {index}" if index % 2 == 0 else f"assistant: answer {index}" for index in range(12)]
+    )
+    turns = OmniService._recent_turns(history)
+
+    assert len(turns) == 6
+    assert turns[0].content == "turn 6"
+    assert turns[-1].content == "answer 11"
+    assert {turn.role for turn in turns} == {"user", "assistant"}
 
 
 def test_configured_provider_synthesizes_but_preserves_governed_metadata() -> None:

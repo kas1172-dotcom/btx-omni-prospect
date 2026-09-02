@@ -58,8 +58,8 @@ class AccountAttractiveness:
         require_aware(self.calculated_at, "calculated_at")
         if self.status is ScoreStatus.AVAILABLE and self.score is None:
             raise ValueError("available scores require a value")
-        if self.score is not None and not Decimal(0) <= self.score <= Decimal(1):
-            raise ValueError("score must be between zero and one")
+        if self.score is not None and not Decimal(0) <= self.score <= Decimal(100):
+            raise ValueError("Customer Attractiveness score must be between zero and 100")
 
 
 @dataclass(frozen=True)

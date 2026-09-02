@@ -7,6 +7,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 
+from btx_omni.ai.contracts import ReadIntent
 from btx_omni.domain.common import EvidenceState
 from btx_omni.domain.markets import primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
@@ -16,6 +17,7 @@ from btx_omni.modules.relationships.service import RelationshipIntelligenceServi
 from btx_omni.modules.scoring.account_attractiveness import (
     AccountAttractivenessInputs,
     calculate_account_attractiveness,
+    seller_attractiveness_projection,
 )
 from btx_omni.providers.sample.environment import SampleEnvironment
 
@@ -114,7 +116,7 @@ class OmniOrchestrator:
         product_context = context or {}
         if product_context.get("_conversation_ambiguity"):
             return OmniResponse(
-                "I can't determine a unique conversational referent for 'the other one'. Name a canonical account or compare exactly two accounts first.",
+                "I can't determine a unique conversational referent for that follow-up. Select or name a canonical Customer, event, facility, or Action and ask again.",
                 "",
                 (),
                 (AssistantProvenance.MISSING_UNAVAILABLE,),
@@ -137,8 +139,24 @@ class OmniOrchestrator:
                 None,
             )
         selected_account_id = product_context.get("selected_account_id")
-        if isinstance(selected_account_id, str) and self._is_account_follow_up_question(
-            query
+        if (
+            isinstance(selected_account_id, str)
+            and self._is_account_follow_up_question(query)
+            and not self._is_global_cross_account_question(query)
+            and not self._is_screen_summary_question(query)
+            and not self._is_relationship_question(query)
+            and not (
+                isinstance(product_context.get("selected_event_id"), str)
+                and self._is_event_question(query)
+            )
+            and not (
+                isinstance(product_context.get("selected_facility_id"), str)
+                and self._is_facility_question(query)
+            )
+            and not (
+                isinstance(product_context.get("selected_action_id"), str)
+                and self._is_action_question(query)
+            )
         ):
             return self._account_follow_up_answer(
                 environment,
@@ -234,20 +252,37 @@ class OmniOrchestrator:
                 intelligence_events=event_records,
                 work_items=work_items,
             )
+        interpreted_intent = product_context.get("_interpreted_intent")
+        if isinstance(interpreted_intent, str):
+            try:
+                intent = ReadIntent(interpreted_intent)
+            except ValueError:
+                intent = None
+            if intent is not None:
+                event_records = (
+                    tuple(intelligence_events)
+                    if intelligence_events is not None
+                    else self._sample_event_records(environment)
+                )
+                return self._interpreted_read_answer(
+                    environment,
+                    intent=intent,
+                    entity_text=product_context.get("_interpreted_entity_text"),
+                    account_id=account_id,
+                    question=query,
+                    observed_at=observed_at,
+                    context=product_context,
+                    intelligence_events=event_records,
+                    work_items=work_items,
+                )
         session_account_id = product_context.get("session_account_id")
         session_id = session_account_id if isinstance(session_account_id, str) else None
         account = next(
             (item for item in accounts if item.id == (account_id or session_id)), None
         )
         if account is None:
-            account = next(
-                (
-                    item
-                    for item in accounts
-                    if item.public_identity and item.legal_name.casefold() in query
-                ),
-                None,
-            )
+            named_accounts = self._accounts_named_in(query, environment)
+            account = named_accounts[0] if len(named_accounts) == 1 else None
         if account is None:
             return self._unscoped_answer(
                 environment, observed_at=observed_at, question=query
@@ -499,16 +534,40 @@ class OmniOrchestrator:
 
     @staticmethod
     def _is_account_follow_up_question(question: str) -> bool:
-        return any(
-            phrase in question
-            for phrase in (
-                "does it have open actions",
-                "does that account have open actions",
-                "any intelligence",
-                "what about its open actions",
-                "does it have quote history",
-                "does that account have quote history",
-            )
+        return OmniOrchestrator._account_follow_up_intent(question) is not None
+
+    @staticmethod
+    def _account_follow_up_intent(question: str) -> str | None:
+        """Classify bounded account continuations without relying on one exact phrase."""
+        if re.match(r"^(what|who|where)\s+(is|are)\b", question.casefold()):
+            return None
+        words = set(re.findall(r"[a-z0-9]+", question.casefold()))
+        if words & {"action", "actions", "work", "task", "tasks"}:
+            return "ACTIONS"
+        if words & {"quote", "quotes", "rfq", "rfqs"}:
+            return "QUOTES"
+        if (
+            words & {"changed", "change", "recent", "recently", "new", "latest", "intelligence", "signal", "signals"}
+        ):
+            return "INTELLIGENCE"
+        if (
+            words & {"matter", "matters", "important", "importance", "significant", "significance", "relevant"}
+        ):
+            return "SIGNIFICANCE"
+        if (
+            ("next" in words and words & {"do", "step", "move", "action"})
+            or ("recommend" in words)
+            or ("should" in words and "do" in words)
+        ):
+            return "NEXT_ACTION"
+        if words & {"more", "else", "summary", "overview"} and len(words) <= 10:
+            return "SUMMARY"
+        return None
+
+    @staticmethod
+    def _is_global_cross_account_question(question: str) -> bool:
+        return bool(
+            re.search(r"\b(which|what)\s+(?:[a-z]+\s+){0,2}(accounts|customers|prospects)\b", question)
         )
 
     @staticmethod
@@ -525,7 +584,7 @@ class OmniOrchestrator:
 
     @staticmethod
     def _is_conversational_follow_up(question: str) -> bool:
-        return any(
+        return OmniOrchestrator._is_account_follow_up_question(question) or any(
             phrase in question
             for phrase in (
                 "what about it",
@@ -571,8 +630,8 @@ class OmniOrchestrator:
             self._accounts_named_in(question, environment)
             or (
                 self._cross_account_intent(question)
+                and self._is_global_cross_account_question(question)
                 and not self._is_comparison_follow_up(question)
-                and not self._is_account_follow_up_question(question)
             )
             or self._is_screen_summary_question(question)
             or not self._is_conversational_follow_up(question)
@@ -790,6 +849,150 @@ class OmniOrchestrator:
             response, context_used=used, conversation_referent=referent or None
         )
 
+    def _interpreted_read_answer(
+        self,
+        environment: SampleEnvironment,
+        *,
+        intent: ReadIntent,
+        entity_text: object,
+        account_id: str | None,
+        question: str,
+        observed_at,
+        context: Mapping[str, object],
+        intelligence_events: Iterable[Mapping[str, object]],
+        work_items: Iterable[object],
+    ) -> OmniResponse:
+        """Execute a validated model intent through existing deterministic read routes."""
+        clean_context = {
+            key: value
+            for key, value in context.items()
+            if key not in {"_interpreted_intent", "_interpreted_entity_text"}
+        }
+        if intent is ReadIntent.SCREEN_SUMMARY:
+            return self._screen_summary_answer(
+                environment,
+                question=question,
+                observed_at=observed_at,
+                context=clean_context,
+                intelligence_events=intelligence_events,
+                work_items=work_items,
+            )
+        if intent is ReadIntent.GENERAL_OVERVIEW:
+            return self._unscoped_answer(
+                environment,
+                observed_at=observed_at,
+                question="give a general governed overview",
+            )
+
+        candidates: tuple[object, ...]
+        if isinstance(entity_text, str):
+            # Provider output may copy entity text, but may not inject a Customer
+            # that the user did not name in the current question.
+            if not re.search(
+                rf"(?<!\w){re.escape(entity_text.casefold())}(?!\w)", question
+            ):
+                return self._interpreted_entity_clarification(
+                    entity_text, ambiguous=False
+                )
+            if len(self._accounts_named_in(question, environment)) > 1:
+                return self._interpreted_entity_clarification(
+                    entity_text, ambiguous=True
+                )
+            candidates = self._accounts_matching_exact_text(entity_text, environment)
+            if len(candidates) != 1:
+                return self._interpreted_entity_clarification(
+                    entity_text, ambiguous=len(candidates) > 1
+                )
+        else:
+            referent = clean_context.get("conversation_referent")
+            referent_id = (
+                referent.get("account_id") if isinstance(referent, Mapping) else None
+            )
+            selected_id = next(
+                (
+                    value
+                    for value in (
+                        account_id,
+                        clean_context.get("selected_account_id"),
+                        clean_context.get("session_account_id"),
+                        referent_id,
+                    )
+                    if isinstance(value, str)
+                ),
+                None,
+            )
+            candidates = tuple(
+                item for item in environment.accounts if item.id == selected_id
+            )
+            if len(candidates) != 1:
+                return self._interpreted_entity_clarification(None, ambiguous=False)
+
+        account = candidates[0]
+        if intent is ReadIntent.ACCOUNT_OVERVIEW:
+            return self._answer_current(
+                environment,
+                account_id=account.id,
+                question=question,
+                observed_at=observed_at,
+                context=clean_context,
+                intelligence_events=intelligence_events,
+                work_items=work_items,
+            )
+        canonical_questions = {
+            ReadIntent.ACCOUNT_INTELLIGENCE: "any intelligence",
+            ReadIntent.ACCOUNT_SIGNIFICANCE: "why does that matter",
+            ReadIntent.ACCOUNT_NEXT_ACTION: "what should i do next",
+            ReadIntent.ACCOUNT_ACTIONS: "does it have open actions",
+            ReadIntent.ACCOUNT_QUOTES: "does it have quote history",
+        }
+        return self._account_follow_up_answer(
+            environment,
+            account_id=account.id,
+            question=canonical_questions[intent],
+            observed_at=observed_at,
+            work_items=work_items,
+            context=clean_context,
+        )
+
+    @staticmethod
+    def _accounts_matching_exact_text(
+        entity_text: str, environment: SampleEnvironment
+    ) -> tuple[object, ...]:
+        normalized = entity_text.casefold().strip()
+        matches: list[object] = []
+        for account in environment.accounts:
+            names = [account.legal_name]
+            if account.public_identity:
+                names.extend(field.value for field in account.public_identity.aliases)
+            if any(name.casefold().strip() == normalized for name in names):
+                matches.append(account)
+        return tuple(matches)
+
+    @staticmethod
+    def _interpreted_entity_clarification(
+        entity_text: str | None, *, ambiguous: bool
+    ) -> OmniResponse:
+        detail = (
+            f"'{entity_text}' matches more than one canonical Customer"
+            if ambiguous and entity_text
+            else (
+                f"'{entity_text}' does not resolve uniquely to a canonical Customer"
+                if entity_text
+                else "no canonical Customer is selected or named"
+            )
+        )
+        return OmniResponse(
+            f"I need clarification because {detail}. Select or name one Customer; Omni will not invent an ID.",
+            "",
+            (),
+            (AssistantProvenance.MISSING_UNAVAILABLE,),
+            (f"Model-proposed entity text was not uniquely resolved: {detail}.",),
+            None,
+            (),
+            None,
+            context_used={"interpretation_status": "CLARIFICATION"},
+        )
+
     def _account_follow_up_answer(
         self,
         environment: SampleEnvironment,
@@ -821,7 +1024,8 @@ class OmniOrchestrator:
         lines = [f"Canonical account follow-up for {account.legal_name}."]
         citations: list[str] = []
         missing: list[str] = []
-        if "open actions" in question:
+        intent = self._account_follow_up_intent(question)
+        if intent == "ACTIONS":
             items = [
                 item
                 for item in self._open_work_items(work_items)
@@ -843,7 +1047,7 @@ class OmniOrchestrator:
             lines.append(
                 "Workflow facts are current session-only SAMPLE state; Omni is read-only."
             )
-        elif "intelligence" in question:
+        elif intent == "INTELLIGENCE":
             events = [
                 event
                 for event in self._sample_event_records(environment)
@@ -862,13 +1066,58 @@ class OmniOrchestrator:
             lines.append(
                 "No event geography or account association is inferred beyond the canonical Monitor read."
             )
-        else:
+        elif intent == "QUOTES":
             quotes = [
                 quote for quote in environment.quotes if quote.account_id == account.id
             ]
             lines.append(f"Canonical quote-history records: {len(quotes)}.")
             lines.append(
                 "Quote history is current SAMPLE commercial context; Omni does not infer capability or production truth from it."
+            )
+        elif intent == "SIGNIFICANCE":
+            alerts = tuple(
+                item
+                for item in CommercialAlertEngine().evaluate(
+                    environment.commercial_contexts,
+                    environment.quotes,
+                    observed_at=observed_at,
+                    orders=environment.orders,
+                )
+                if item.account_id == account.id
+            )
+            if account.prospect_rationale:
+                lines.append(f"Governed rationale: {account.prospect_rationale}")
+            if alerts:
+                lines.append(f"Current SAMPLE commercial attention: {alerts[0].trigger_reason}")
+                citations.extend(alerts[0].evidence_ids)
+            if not account.prospect_rationale and not alerts:
+                lines.append("No narrower governed significance rationale is available for this Customer.")
+                missing.append("Customer significance needs research or governed commercial context.")
+            lines.append("Public/reference identity and SAMPLE BTX commercial context remain separate truth categories.")
+        elif intent == "NEXT_ACTION":
+            alerts = tuple(
+                item
+                for item in CommercialAlertEngine().evaluate(
+                    environment.commercial_contexts,
+                    environment.quotes,
+                    observed_at=observed_at,
+                    orders=environment.orders,
+                )
+                if item.account_id == account.id
+            )
+            suggestion = (
+                alerts[0].recommended_action
+                if alerts
+                else account.prospect_rationale
+                or "Review governed Customer evidence before choosing an outreach step."
+            )
+            lines.append(f"Suggested next move: {suggestion}")
+            citations.extend(value for item in alerts[:1] for value in item.evidence_ids)
+            lines.append("This is read-only guidance; create or update work only in the authorized Actions workflow.")
+        else:
+            lines.append(f"Canonical industries: {primary_market_label(account.industries)}.")
+            lines.append(
+                "Ask about recent Intelligence, significance, quotes, or governed Actions for a narrower answer."
             )
         return OmniResponse(
             " ".join(lines),
@@ -2109,13 +2358,8 @@ class OmniOrchestrator:
         for account in environment.accounts:
             if account.id not in environment.scoring_inputs:
                 continue
-            result = calculate_account_attractiveness(
-                AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                evidence_ids=(account.provenance.source_record_id,)
-                if account.provenance
-                else (),
-                calculated_at=observed_at,
-            )
+            scenario = environment.priority_scenarios.get(account.id) or environment.rich_scenarios.get(account.id)
+            result = seller_attractiveness_projection(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), calculated_at=observed_at, excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
             if result.score is not None:
                 scores.append((account, result))
         return scores
@@ -3187,6 +3431,17 @@ class OmniOrchestrator:
         environment: SampleEnvironment, *, observed_at, question: str
     ) -> OmniResponse:
         """Ground a general seller question in the loaded curated universe, not a generic refusal."""
+        if OmniOrchestrator._is_conversational_follow_up(question):
+            return OmniResponse(
+                "I need a specific Customer, event, facility, or Action to answer that follow-up. Select or name one; Omni will not reconstruct canonical context from prior assistant prose.",
+                "",
+                (),
+                (AssistantProvenance.MISSING_UNAVAILABLE,),
+                ("No unambiguous canonical conversational referent is available.",),
+                None,
+                (),
+                None,
+            )
         researched = [item for item in environment.accounts if item.public_identity]
         if "open quote" in question:
             market = next(

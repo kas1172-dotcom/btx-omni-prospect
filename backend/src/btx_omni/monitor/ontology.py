@@ -68,7 +68,11 @@ class RejectionState(StrEnum):
 
 
 class SourceHealthState(StrEnum):
+    NEVER_ATTEMPTED = "NEVER_ATTEMPTED"
     HEALTHY = "HEALTHY"
+    STALE = "STALE"
+    PARTIAL = "PARTIAL"
     WARNING = "WARNING"
     FAILED = "FAILED"
-
+    DISABLED = "DISABLED"
+    NOT_CONFIGURED = "NOT_CONFIGURED"

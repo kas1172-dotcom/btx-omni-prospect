@@ -4,6 +4,8 @@ import json
 from datetime import UTC, date
 
 from sqlalchemy import Engine, insert, select, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from btx_omni.domain.work import (
     Action,
@@ -47,6 +49,8 @@ class SqlActionRepository:
             updated_at=aware(row.updated_at),
             completed_at=aware(row.completed_at),
             canceled_at=aware(row.canceled_at),
+            version=row.version,
+            context_referents=tuple(tuple(item) for item in json.loads(row.context_referents or "[]")),
         )
 
     def get(self, action_id: str) -> Action | None:
@@ -70,7 +74,7 @@ class SqlActionRepository:
             rows = connection.execute(select(work_items)).all()
         return tuple(self._action(row) for row in rows)
 
-    def save(self, action: Action, event: ActionAuditEvent) -> Action:
+    def save(self, action: Action, event: ActionAuditEvent, expected_version: int | None = None) -> Action:
         values = {
             "account_id": action.account_id,
             "summary": action.title,
@@ -82,25 +86,48 @@ class SqlActionRepository:
             "approval_status": action.approval_status.value,
             "source_suggestion_id": action.source_suggestion_id,
             "evidence_ids": json.dumps(action.evidence_ids),
+            "context_referents": json.dumps(action.context_referents),
             "created_by": action.created_by,
             "created_at": action.created_at,
             "updated_at": action.updated_at,
             "completed_at": action.completed_at,
             "canceled_at": action.canceled_at,
+            "version": action.version,
             "idempotency_key": action.id,
         }
         with self.engine.begin() as connection:
-            exists = connection.execute(
-                select(work_items.c.id).where(work_items.c.id == action.id)
-            ).scalar_one_or_none()
-            if exists:
+            if event.event != "CREATED":
+                statement = update(work_items).where(work_items.c.id == action.id)
+                if expected_version is not None:
+                    statement = statement.where(work_items.c.version == expected_version)
+                result = connection.execute(statement.values(**values))
+                if result.rowcount != 1:
+                    raise ValueError("Action has changed; reload it before saving.")
                 connection.execute(
-                    update(work_items)
-                    .where(work_items.c.id == action.id)
-                    .values(**values)
+                    insert(work_audit_events).values(
+                        work_item_id=event.action_id, event=event.event,
+                        actor_id=event.actor_id, occurred_at=event.occurred_at,
+                        note=None, metadata=json.dumps(event.metadata, sort_keys=True),
+                    )
                 )
-            else:
-                connection.execute(insert(work_items).values(id=action.id, **values))
+                return action
+            statement = (
+                postgresql_insert(work_items)
+                if connection.dialect.name == "postgresql"
+                else sqlite_insert(work_items)
+                if connection.dialect.name == "sqlite"
+                else insert(work_items)
+            )
+            result = connection.execute(
+                statement.values(id=action.id, **values).on_conflict_do_nothing(
+                    index_elements=[work_items.c.id]
+                )
+                if connection.dialect.name in {"postgresql", "sqlite"}
+                else statement.values(id=action.id, **values)
+            )
+            if result.rowcount == 0:
+                row = connection.execute(select(work_items).where(work_items.c.id == action.id)).first()
+                return self._action(row)
             connection.execute(
                 insert(work_audit_events).values(
                     work_item_id=event.action_id,

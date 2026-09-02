@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from btx_omni.core.config import Settings
+import pytest
+
+from btx_omni.core.config import BACKEND_ENV_FILE, Settings
 from btx_omni.persistence.database import (
     Base,
     create_database_engine,
@@ -59,6 +61,18 @@ def test_settings_accepts_standard_gemini_api_key_alias(monkeypatch) -> None:
 
     assert settings.gemini_api_key == "test-gemini-key"
     assert settings.gemini_model == "gemini-2.5-flash"
+
+
+@pytest.mark.parametrize("working_directory", [Path(__file__).parents[2], Path(__file__).parents[1]])
+def test_backend_environment_path_is_cwd_independent(monkeypatch, working_directory: Path) -> None:
+    monkeypatch.chdir(working_directory)
+    monkeypatch.setenv("BTX_APP_NAME", "process-environment-wins")
+
+    settings = Settings()
+
+    assert Path(Settings.model_config["env_file"]) == BACKEND_ENV_FILE
+    assert BACKEND_ENV_FILE == Path(__file__).parents[1] / ".env"
+    assert settings.app_name == "process-environment-wins"
 
 
 def test_database_factory_uses_settings_url_without_connecting() -> None:

@@ -29,6 +29,11 @@ async function closeOmni(page) {
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeHidden()
 }
 
+async function expandTargetClusterIfPresent(page, target) {
+  const cluster = page.getByRole('button', { name: new RegExp(`Cluster of .* Customers and Prospects:.*${target}`) }).first()
+  if (await cluster.count()) await cluster.click()
+}
+
 test('Tactical Map composes canonical industry and SAMPLE commercial segment filters', async ({ page }) => {
   await page.goto('/')
   await navigate(page, 'Map')
@@ -36,14 +41,19 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
   await page.getByRole('button', { name: 'All researched' }).click()
   await page.getByRole('button', { name: 'Defense', exact: true }).click()
   await page.getByRole('button', { name: 'Customers', exact: true }).first().click()
-  await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin' })).toBeVisible()
+  await page.getByRole('button', { name: 'Apply to map' }).click()
+  await expandTargetClusterIfPresent(page, 'Lockheed Martin')
+  await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin', exact: true }).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Layers & filters' }).click()
   await page.getByRole('button', { name: 'Prospects', exact: true }).first().click()
-  await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries' })).toBeVisible()
+  const markerLayers = page.locator('fieldset').filter({ hasText: 'Marker layers' })
+  await markerLayers.getByRole('button', { name: 'Public facilities', exact: true }).click()
+  await page.getByRole('button', { name: 'Apply to map' }).click()
+  await expandTargetClusterIfPresent(page, 'Anduril Industries')
+  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries', exact: true }).first()).toBeVisible()
   const anduril = page.getByRole('button', { name: 'Public facility marker: Anduril Industries headquarters' })
   await expect(anduril).toBeVisible()
-  await page.getByRole('button', { name: 'Apply to map' }).click()
   await anduril.click()
   await expect(anduril).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('heading', { name: 'Anduril Industries' })).toBeVisible()
@@ -52,17 +62,24 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
   await page.getByRole('button', { name: 'Customers', exact: true }).first().click()
   await page.getByRole('button', { name: 'Prospects', exact: true }).first().click()
   await page.getByRole('button', { name: 'Other researched' }).click()
-  const markerLayers = page.locator('fieldset').filter({ hasText: 'Marker layers' })
   for (const name of ['Customers', 'Prospects', 'Public facilities', 'BTX facilities', 'Intelligence']) await markerLayers.getByRole('button', { name, exact: true }).click()
   await expect(page.getByText('No verified markers match the selected filters.')).toBeVisible()
   await page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'Clear filters' }).click()
-  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries' })).toBeVisible()
+  await page.getByRole('button', { name: 'Apply to map' }).click()
+  await expandTargetClusterIfPresent(page, 'Anduril Industries')
+  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries', exact: true }).first()).toBeVisible()
 
+  await page.getByRole('button', { name: 'Layers & filters' }).click()
   await page.getByRole('button', { name: 'All researched' }).click()
   await page.getByRole('button', { name: 'Semiconductor', exact: true }).click()
   await page.getByRole('button', { name: 'Dormant customers' }).click()
-  const applied = page.getByRole('button', { name: 'Customer marker: Applied Materials' })
+  const customersLayer = markerLayers.getByRole('button', { name: 'Customers', exact: true })
+  if (await customersLayer.getAttribute('aria-pressed') === 'false') await customersLayer.click()
+  await page.getByRole('button', { name: 'Apply to map' }).click()
+  await expandTargetClusterIfPresent(page, 'Applied Materials')
+  const applied = page.getByRole('button', { name: 'Customer marker: Applied Materials', exact: true }).first()
   await expect(applied).toBeVisible()
+  await page.getByRole('button', { name: 'Layers & filters' }).click()
   await page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'Clear filters' }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
 })
@@ -84,7 +101,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   ]
 
   await page.goto('/')
-  await expect(page.locator('.page-title h1')).toHaveText('Today')
+  await expect(page.locator('.page-title h1')).toHaveText('Today', { timeout: 15_000 })
   await openOmni(page)
   const today = await ask(page, 'What am I looking at?')
   expect(today.request.context.surface).toBe('TODAY')
@@ -101,9 +118,16 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   }
 
   // Each canonical scenario anchor reaches Account 360 and Omni with the exact UI-selected ID.
-  for (const [, account, accountId] of scenarioAccounts) {
-    await search.fill(account)
-    await page.locator('.account-row').filter({ hasText: account }).first().click()
+  for (const [index, [, account, accountId]] of scenarioAccounts.entries()) {
+    if (index === 0) {
+      await search.fill(account)
+      await page.locator('.account-row').filter({ hasText: account }).first().click()
+    } else {
+      const switcher = page.getByLabel('Switch Customer')
+      await switcher.fill(account)
+      await page.getByRole('option', { name: new RegExp(account, 'i') }).first().click()
+    }
+    await expect(page.getByRole('heading', { name: new RegExp(account, 'i'), level: 1 })).toBeVisible()
     await expect(page.getByText(/Customer 360/).first()).toBeVisible()
     await openOmni(page)
     const accountAnswer = await ask(page, 'Tell me about this account.')
@@ -135,8 +159,9 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   await page.getByRole('button', { name: 'Layers & filters' }).click()
   await expect(page.getByRole('dialog', { name: 'Layers & filters' })).toBeVisible()
   await page.getByRole('button', { name: 'All researched' }).click()
-  await page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'Clear filters' }).click()
+  await page.locator('fieldset').filter({ hasText: 'Marker layers' }).getByRole('button', { name: 'Public facilities', exact: true }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
+  await expandTargetClusterIfPresent(page, 'Anduril Industries')
   const andurilMarker = page.getByRole('button', {
     name: 'Public facility marker: Anduril Industries headquarters',
   })

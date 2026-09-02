@@ -1,10 +1,11 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
+from btx_omni.api.session import principal
 from btx_omni.domain.work import (
     ActionPriority,
     ActionStatus,
@@ -31,6 +32,7 @@ class CreateAction(BaseModel):
     priority: ActionPriority = ActionPriority.MEDIUM
     due_date: date | None = None
     evidence_ids: tuple[str, ...] = ()
+    context_referents: tuple[tuple[str, str], ...] = ()
     approval_required: bool = False
     idempotency_key: str | None = None
 
@@ -41,32 +43,22 @@ class EditAction(BaseModel):
     owner_id: str | None = None
     priority: ActionPriority | None = None
     due_date: date | None = None
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 class StatusChange(BaseModel):
     status: ActionStatus
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 class ApprovalDecision(BaseModel):
     decision: ApprovalStatus
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 class SuggestionConversion(BaseModel):
     owner_id: str | None = None
     due_date: date | None = None
-
-
-def principal(
-    runtime: PocRuntime = Depends(get_runtime),
-    token: str | None = Header(default=None, alias="X-BTX-Principal-Token"),
-) -> Principal:
-    if token == runtime.settings.action_salesperson_token:
-        return Principal(
-            "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON
-        )
-    if token == runtime.settings.action_manager_token:
-        return Principal("manager-1", "Development Manager", PrincipalRole.MANAGER)
-    raise HTTPException(401, "A configured development principal token is required.")
 
 
 def _handle(error: Exception) -> HTTPException:
@@ -244,7 +236,7 @@ def change_status(
 ):
     try:
         return runtime.work.transition(
-            action_id, body.status, principal=current, occurred_at=runtime.observed_at()
+            action_id, body.status, principal=current, occurred_at=runtime.observed_at(), expected_version=body.expected_version
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
@@ -263,6 +255,7 @@ def decide_approval(
             body.decision,
             principal=current,
             occurred_at=runtime.observed_at(),
+            expected_version=body.expected_version,
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error

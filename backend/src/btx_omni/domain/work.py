@@ -57,6 +57,8 @@ class Action:
     updated_at: datetime
     completed_at: datetime | None = None
     canceled_at: datetime | None = None
+    version: int = 1
+    context_referents: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         require_aware(self.created_at, "created_at")
@@ -67,6 +69,8 @@ class Action:
             require_aware(self.canceled_at, "canceled_at")
         if not self.title.strip():
             raise ValueError("Action title is required.")
+        if self.version < 1:
+            raise ValueError("Action version must be positive.")
 
     @property
     def summary(self) -> str:

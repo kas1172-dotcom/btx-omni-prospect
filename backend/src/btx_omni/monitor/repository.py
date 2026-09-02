@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import Engine, delete, insert, select
+from sqlalchemy import Engine, delete, insert, select, text
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -32,6 +33,7 @@ from btx_omni.monitor.ontology import (
     SellerRelevanceState,
 )
 from btx_omni.persistence.models import (
+    monitor_brief_syntheses,
     monitor_candidate_promotion_audits,
     monitor_collection_runs,
     monitor_event_clusters,
@@ -196,6 +198,20 @@ class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
 
+    @contextmanager
+    def operational_lock(self):
+        """Hold one cross-process PostgreSQL lock for a collection cycle."""
+        if self.engine.dialect.name != "postgresql":
+            yield True
+            return
+        with self.engine.connect() as connection:
+            acquired = bool(connection.execute(text("SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))")).scalar_one())
+            try:
+                yield acquired
+            finally:
+                if acquired:
+                    connection.execute(text("SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))"))
+
     def persist_snapshot(self, *, run: CollectionRun, health: SourceHealth, observations: tuple[SourceObservation, ...], events: tuple[IntelligenceEvent, ...], clusters: tuple[EventCluster, ...], rejected: tuple[RejectedObservation, ...], organization_candidates: tuple[OrganizationCandidate, ...] = (), program_candidates: tuple[ProgramCandidate, ...] = ()) -> None:
         with self.engine.begin() as connection:
             connection.execute(insert(monitor_collection_runs).values(id=run.id, source_id=run.source_id, started_at=run.started_at, completed_at=run.completed_at, cursor=_json(run.cursor) if run.cursor else None, records_seen=run.records_seen, records_new=run.records_new, records_changed=run.records_changed, records_rejected=run.records_rejected, events_created=run.events_created, events_matched=run.events_matched, failures=_json(run.failures), latency_ms=run.latency_ms))
@@ -282,6 +298,64 @@ class MonitorRepository:
                     monitor_source_versions.c.source_record_id == source_record_id,
                 )
             ).scalar_one_or_none()
+
+    def brief_synthesis(
+        self, brief_id: str, governed_content_hash: str
+    ) -> dict | None:
+        """Return only an exact governed-content match; stale prose never leaks."""
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                select(monitor_brief_syntheses).where(
+                    monitor_brief_syntheses.c.brief_id == brief_id,
+                    monitor_brief_syntheses.c.governed_content_hash
+                    == governed_content_hash,
+                )
+            ).mappings().one_or_none()
+        if not row:
+            return None
+        value = dict(row)
+        if value.get("next_retry_at"):
+            value["next_retry_at"] = _database_timestamp(value["next_retry_at"])
+        value["synthesized_at"] = _database_timestamp(value["synthesized_at"])
+        return value
+
+    def save_brief_synthesis(
+        self,
+        *,
+        brief_id: str,
+        governed_content_hash: str,
+        summary: str | None,
+        provider: str | None,
+        model: str | None,
+        status: str,
+        attempt_count: int,
+        next_retry_at: datetime | None,
+        synthesized_at: datetime,
+    ) -> None:
+        """Replace the one cached attempt for a brief with its current content hash."""
+        with self.engine.begin() as connection:
+            connection.execute(
+                delete(monitor_brief_syntheses).where(
+                    monitor_brief_syntheses.c.brief_id == brief_id
+                )
+            )
+            connection.execute(
+                insert(monitor_brief_syntheses).values(
+                    brief_id=brief_id,
+                    governed_content_hash=governed_content_hash,
+                    summary=summary,
+                    provider=provider,
+                    model=model,
+                    status=status,
+                    attempt_count=attempt_count,
+                    next_retry_at=next_retry_at,
+                    synthesized_at=synthesized_at,
+                )
+            )
+
+    def brief_synthesis_count(self) -> int:
+        with self.engine.connect() as connection:
+            return len(connection.execute(select(monitor_brief_syntheses.c.brief_id)).all())
 
     def cluster(self, cluster_id: str) -> EventCluster | None:
         with self.engine.connect() as connection:

@@ -1,10 +1,336 @@
-.intelligence-surface{max-width:1480px}.intelligence-title{display:grid;gap:4px;margin-bottom:14px}.intelligence-title p{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text-primary)}
-.intelligence-controls{display:grid;gap:10px;margin-bottom:10px}.intelligence-controls>.ui-search{width:100%}.intelligence-controls>.ui-search .ui-field{width:100%}.intelligence-controls>.ui-search .ui-input{height:40px}
-.intelligence-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:8px}.intelligence-filter-grid .ui-field,.intelligence-filter-grid .ui-input{min-width:0;width:100%}
-.intelligence-active-filters{display:flex;flex-wrap:wrap;align-items:center;gap:7px}.intelligence-result-line{margin:8px 0 10px;color:var(--text-secondary);font-size:12px}.intelligence-result-line strong{color:var(--text-primary)}
-.intelligence-feed-panel{padding:0 16px}.intelligence-signal-list{display:grid}.intelligence-signal{display:grid;gap:7px;min-width:0;padding:14px 0;border-bottom:1px solid var(--border-default)}.intelligence-signal:last-child{border-bottom:0}.intelligence-signal.selected{margin:0 -16px;padding:14px 16px;background:var(--surface-selected);box-shadow:inset 3px 0 0 var(--accent-primary)}
-.intelligence-signal-head{display:flex;align-items:start;justify-content:space-between;gap:14px}.intelligence-signal-head>div:first-child{display:grid;gap:3px;min-width:0}.intelligence-customer-link{min-height:30px;padding:0;color:var(--text-primary);background:none;border:0;font-family:var(--font-display);font-size:14px;font-weight:700;text-align:left}.intelligence-customer-link:hover:not(:disabled){text-decoration:underline}.intelligence-customer-link:disabled{color:var(--text-secondary)}
-.intelligence-states{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.intelligence-signal h2{font-size:15px;line-height:1.35}.intelligence-context{color:var(--text-tertiary);font-size:11px}.intelligence-meaning,.intelligence-next-step{color:var(--text-secondary);line-height:1.4}.intelligence-meaning strong,.intelligence-next-step strong{color:var(--text-primary)}.intelligence-signal .ui-disclosure{margin-top:2px}.intelligence-signal .ui-evidence{margin-top:8px}.intelligence-actions{margin-top:2px}
-@media(max-width:980px){.intelligence-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:680px){.intelligence-title{margin-bottom:10px}.intelligence-title .eyebrow,.intelligence-title h1{display:none}.intelligence-title p{font-size:17px}.intelligence-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intelligence-filter-grid .ui-field:last-child{grid-column:1/-1}.intelligence-active-filters{flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding-bottom:3px}.intelligence-active-filters>*{flex:0 0 auto}.intelligence-feed-panel{padding:0 12px}.intelligence-signal{padding:13px 0}.intelligence-signal.selected{margin:0 -12px;padding:13px 12px}.intelligence-signal-head{display:grid;gap:6px}.intelligence-states{justify-content:flex-start}.intelligence-actions .ui-button{min-height:44px}.intelligence-signal .ui-disclosure-trigger{min-height:44px}}
-@media(max-width:350px){.intelligence-filter-grid{grid-template-columns:1fr}.intelligence-filter-grid .ui-field:last-child{grid-column:auto}.intelligence-actions{display:grid}.intelligence-actions .ui-button{width:100%}}
+.intelligence-surface {
+  max-width: 1480px;
+  display: grid;
+  gap: 16px;
+}
+.intelligence-tabs,
+.federal-tabs,
+.federal-kpis {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.intelligence-title {
+  display: grid;
+  gap: 4px;
+}
+.intelligence-title p {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.intelligence-context-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.intelligence-context-tiles article {
+  border: 1px solid var(--border-default);
+  background: var(--surface-raised);
+  padding: 12px;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.intelligence-context-tiles span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+.intelligence-context-tiles strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: end;
+}
+.section-heading h2 {
+  font-size: 18px;
+}
+.section-heading > span {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.intelligence-priority {
+  border: 2px solid var(--text-primary);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  background: var(--surface-raised);
+}
+.intelligence-priority ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.intelligence-priority li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-default);
+  align-items: start;
+}
+.intelligence-priority li > b {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.intelligence-priority li div {
+  display: grid;
+  gap: 3px;
+}
+.intelligence-priority li button,
+.intelligence-tracked button {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.intelligence-priority li button {
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+.intelligence-priority li strong {
+  font-size: 14px;
+}
+.intelligence-priority li span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.intelligence-priority li small {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.intelligence-tracked {
+  display: grid;
+  gap: 9px;
+}
+.intelligence-tracked > div:last-child {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.intelligence-tracked button {
+  border: 1px solid var(--border-default);
+  padding: 10px;
+  min-width: 180px;
+  display: grid;
+  gap: 3px;
+}
+.intelligence-tracked button:hover {
+  background: var(--surface-selected);
+}
+.intelligence-tracked button span,
+.intelligence-tracked button small {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.intelligence-controls {
+  display: grid;
+  gap: 9px;
+}
+.intelligence-controls > .ui-search,
+.intelligence-controls > .ui-search .ui-field {
+  width: 100%;
+}
+.intelligence-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 8px;
+}
+.intelligence-filter-grid .ui-field,
+.intelligence-filter-grid .ui-input {
+  width: 100%;
+  min-width: 0;
+}
+.intelligence-active-filters {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.intelligence-feed-panel {
+  padding: 0 16px;
+}
+.intelligence-signal-list {
+  display: grid;
+}
+.intelligence-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.intelligence-card:last-child {
+  border-bottom: 0;
+}
+.intelligence-card.selected {
+  margin: 0 -16px;
+  padding: 16px;
+  background: var(--surface-selected);
+  box-shadow: inset 3px 0 var(--accent-primary);
+}
+.intelligence-card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.intelligence-card-kicker,
+.intelligence-card-states,
+.intelligence-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.intelligence-card-kicker {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.intelligence-card-kicker b {
+  color: var(--text-primary);
+}
+.intelligence-card-main {
+  display: grid;
+  gap: 7px;
+}
+.intelligence-customer-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: underline;
+}
+.intelligence-customer-link:disabled {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.intelligence-card h3 {
+  font-size: 17px;
+  line-height: 1.3;
+}
+.intelligence-card-main p {
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.intelligence-bottom-line {
+  border-left: 4px solid var(--text-primary);
+  background: var(--surface-subdued);
+  padding: 10px 12px;
+  display: grid;
+  gap: 5px;
+}
+.intelligence-bottom-line > span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+}
+.intelligence-bottom-line strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.intelligence-bottom-line p {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.intelligence-evidence {
+  display: grid;
+  gap: 9px;
+}
+.intelligence-evidence p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.intelligence-source-health {
+  margin-bottom: 8px;
+}
+.federal-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.federal-procurement {
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 980px) {
+  .intelligence-context-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .intelligence-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 680px) {
+  .intelligence-surface {
+    gap: 12px;
+  }
+  .intelligence-title .eyebrow,
+  .intelligence-title h1 {
+    display: none;
+  }
+  .intelligence-title p {
+    font-size: 17px;
+  }
+  .intelligence-context-tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+  .intelligence-context-tiles article {
+    padding: 10px;
+  }
+  .intelligence-priority {
+    padding: 12px;
+  }
+  .intelligence-priority li {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+  .intelligence-priority li small {
+    grid-column: 2;
+  }
+  .intelligence-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .intelligence-feed-panel {
+    padding: 0 12px;
+  }
+  .intelligence-card.selected {
+    margin: 0 -12px;
+    padding: 14px 12px;
+  }
+  .intelligence-card {
+    padding: 14px 0;
+  }
+  .intelligence-card > header {
+    display: grid;
+  }
+  .intelligence-card-actions .ui-button,
+  .intelligence-card .ui-disclosure-trigger {
+    min-height: 44px;
+  }
+}
+@media (max-width: 350px) {
+  .intelligence-context-tiles,
+  .intelligence-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .intelligence-tabs .ui-button {
+    width: 100%;
+  }
+}

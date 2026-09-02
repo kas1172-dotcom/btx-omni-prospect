@@ -1,27 +1,34 @@
-import type { Account, Account360, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommunicationDraft, CommunicationHistoryEvent, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, Signal, Suggestion, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalProcurement, HostedSession, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, Signal, Suggestion, WorkspaceSettings } from '../types/api'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`${apiBase}${path}`, { headers: { 'content-type': 'application/json' }, ...init })
+  const response = await fetch(`${apiBase}${path}`, { credentials: 'include', headers: { 'content-type': 'application/json' }, ...init })
   if (!response.ok) throw new Error((await response.text()) || `Request failed: ${response.status}`)
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
-const principalToken = () => sessionStorage.getItem('btx-principal-token') ?? 'development-salesperson'
-const actionRequest = <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, headers: { 'content-type': 'application/json', 'X-BTX-Principal-Token': principalToken() } })
+let csrfToken: string | undefined
+const developmentPrincipalHeaders: Record<string, string> = import.meta.env.DEV
+  ? { 'X-BTX-Principal-Token': sessionStorage.getItem('btx-principal-token') ?? 'development-salesperson' }
+  : {}
+const actionRequest = <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, headers: { 'content-type': 'application/json', ...developmentPrincipalHeaders, ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}) } })
 
 export const api = {
+  session: async () => { const value = await request<HostedSession>('/session'); csrfToken = value.csrf_token; return value },
+  signIn: async (access_code: string) => { const value = await request<HostedSession>('/session/sign-in', { method: 'POST', body: JSON.stringify({ access_code }) }); csrfToken = value.csrf_token; return value },
+  signOut: async () => { const value = await actionRequest<{ authenticated: false }>('/session/sign-out', { method: 'POST' }); csrfToken = undefined; return value },
   accounts: () => request<{ accounts: Account[] }>('/accounts'),
   account: (id: string) => request<Account360>(`/accounts/${id}`),
   relationships: (accountId: string) => request<AccountRelationships>(`/accounts/${accountId}/relationships?depth=2`),
-  today: () => request<{ priority_intelligence: Signal[]; commercial_alerts: Alert[]; recommended_actions: Array<{ account_id: string; action: string; evidence_ids: string[] }> }>('/today'),
+  today: () => request<{ priority_intelligence: Signal[]; commercial_alerts: Alert[]; recommended_actions: Array<{ account_id: string; action: string; evidence_ids: string[] }>; command_center: CommandCenter }>('/today'),
   intelligence: () => request<{ signals: Signal[] }>('/intelligence'),
+  federalProcurement: (params = '') => request<FederalProcurement>(`/federal-procurement${params}`),
   map: (industry?: string) => request<{ layers: string[]; accounts: MapRecord[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : '')),
   actions: () => actionRequest<{ items: Action[]; suggestions: Suggestion[]; principal: Principal; persistence: string; warning: string }>('/actions'),
-  createAction: (body: { account_id: string; title: string; description?: string; owner_id?: string; priority: ActionPriority; due_date?: string; evidence_ids?: string[]; approval_required?: boolean; idempotency_key?: string }) => actionRequest<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),
-  editAction: (id: string, body: Partial<Pick<Action, 'title' | 'description' | 'owner_id' | 'priority' | 'due_date'>>) => actionRequest<Action>(`/actions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  transition: (id: string, status: ActionStatus) => actionRequest<Action>(`/actions/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
-  approve: (id: string, decision: 'APPROVED' | 'REJECTED') => actionRequest<Action>(`/actions/${id}/approval`, { method: 'POST', body: JSON.stringify({ decision }) }),
+  createAction: (body: { account_id: string; title: string; description?: string; owner_id?: string; priority: ActionPriority; due_date?: string; evidence_ids?: string[]; context_referents?: Array<[string, string]>; approval_required?: boolean; idempotency_key?: string }) => actionRequest<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),
+  editAction: (id: string, body: Partial<Pick<Action, 'title' | 'description' | 'owner_id' | 'priority' | 'due_date'>> & { expected_version?: number }) => actionRequest<Action>(`/actions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  transition: (id: string, status: ActionStatus, expected_version?: number) => actionRequest<Action>(`/actions/${id}/status`, { method: 'POST', body: JSON.stringify({ status, expected_version }) }),
+  approve: (id: string, decision: 'APPROVED' | 'REJECTED', expected_version?: number) => actionRequest<Action>(`/actions/${id}/approval`, { method: 'POST', body: JSON.stringify({ decision, expected_version }) }),
   convertSuggestion: (id: string) => actionRequest<Action>(`/actions/suggestions/${id}/convert`, { method: 'POST', body: '{}' }),
   dismissSuggestion: (id: string) => actionRequest<void>(`/actions/suggestions/${id}/dismiss`, { method: 'POST' }),
   history: (id: string) => actionRequest<{ events: ActionHistoryEvent[] }>(`/actions/${id}/history`),

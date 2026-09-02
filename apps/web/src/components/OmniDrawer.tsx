@@ -40,7 +40,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const ask = async (starter?: string) => {
     const text = (starter ?? question).trim()
     if (!text || loading) return
-    const history = messages.slice(-6).map(message => `${message.role}: ${message.text}`).join('\n').slice(0, 1600)
+    const history = messages.slice(-6).map(message => `${message.role}: ${message.text}`).join('\n').slice(-1600)
     setMessages(old => [...old, { role: 'user', text }]); setQuestion(''); setLoading(true); setError('')
     try {
       const response = await api.omni(activeAccount?.id, text, { ...context, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
@@ -82,7 +82,15 @@ function Composer({ value, loading, inputRef, onChange, onKeyDown, onSubmit }: {
   return <form className="omni-compose" onSubmit={event => { event.preventDefault(); onSubmit() }}><label className="sr-only" htmlFor="omni-message">Ask Omni</label><textarea id="omni-message" ref={inputRef} value={value} onChange={event => onChange(event.target.value)} onKeyDown={onKeyDown} placeholder="Ask Omni anything…" rows={1} /><Button variant="primary" disabled={loading || !value.trim()} type="submit">{loading ? 'Working…' : 'Send'}</Button></form>
 }
 
-function ResponseDetails({ response }: { response: OmniResponse }) { return <div className="omni-response-summary"><Disclosure title={`${response.citation_links?.length ?? 0} sources · Inspect evidence`}><EvidencePanel response={response} /></Disclosure>{response.provider_status !== 'AVAILABLE' && <small>Governed fallback mode</small>}</div> }
+const fallbackLabels: Record<Exclude<OmniResponse['provider_status'], 'AVAILABLE'>, string> = {
+  NOT_CONFIGURED: 'Gemini not configured · governed fallback',
+  AUTH_FAILED: 'Gemini authentication unavailable · governed fallback',
+  TIMEOUT: 'Gemini timed out · governed fallback',
+  QUOTA: 'Gemini quota unavailable · governed fallback',
+  UNAVAILABLE: 'Gemini temporarily unavailable · governed fallback',
+}
+
+function ResponseDetails({ response }: { response: OmniResponse }) { return <div className="omni-response-summary"><Disclosure title={`${response.citation_links?.length ?? 0} sources · Inspect evidence`}><EvidencePanel response={response} /></Disclosure>{response.provider_status !== 'AVAILABLE' && <small>{fallbackLabels[response.provider_status]}</small>}</div> }
 
 function EvidencePanel({ response }: { response?: OmniResponse }) {
   if (!response) return <p className="muted">Sources appear here when a response uses evidence.</p>

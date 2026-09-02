@@ -16,7 +16,9 @@ test('seller creates a durable governed draft without recipient or autonomous de
   await editor.getByLabel('Subject').fill(subject)
   await editor.getByLabel('Message').fill('Human-reviewed SAMPLE outreach draft.')
   await expect(editor.getByText(/No verified deliverable email/)).toBeVisible()
+  const createResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/communications' && response.request().method() === 'POST' && response.status() === 200)
   await editor.getByRole('button', { name: 'Save draft' }).click()
+  await createResponse
   await expect(page.getByRole('heading', { name: subject })).toBeVisible()
   await expect(page.getByText(/remains unsent and requires human review/i)).toBeVisible()
   await expect(page.getByText('Recipient unavailable').first()).toBeVisible()
@@ -35,7 +37,9 @@ test('manager can review but approval does not bypass recipient and confirmation
   const editor = seller.getByRole('dialog', { name: 'Create communication' })
   await editor.getByLabel('Subject').fill(subject)
   await editor.getByLabel('Message').fill('Governed review copy.')
+  const createResponse = seller.waitForResponse(response => new URL(response.url()).pathname === '/api/communications' && response.request().method() === 'POST' && response.status() === 200)
   await editor.getByRole('button', { name: 'Save draft' }).click()
+  await createResponse
   await seller.close()
 
   const context = await browser.newContext()
@@ -44,7 +48,9 @@ test('manager can review but approval does not bypass recipient and confirmation
   await openDesktop(manager, 'Communications')
   await manager.getByLabel('Search communications').fill(subject)
   await manager.locator('.communication-row').filter({ hasText: subject }).click()
+  const approvalResponse = manager.waitForResponse(response => /\/api\/communications\/[^/]+\/approval$/.test(new URL(response.url()).pathname) && response.status() === 200)
   await manager.getByRole('button', { name: 'Approve' }).click()
+  await approvalResponse
   await expect(manager.getByText(/approved by human review.*No message was sent/i)).toBeVisible()
   await expect(manager.getByText('READY', { exact: true }).last()).toBeVisible()
   await expect(manager.getByRole('button', { name: 'Confirm send' })).toBeDisabled()
@@ -70,4 +76,33 @@ test('Settings and secondary mobile navigation are role-aware, safe, and non-ove
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   const body = await page.locator('body').innerText()
   expect(body).not.toMatch(/api[_ -]?key|access[_ -]?token|secret/i)
+})
+
+test('Settings failure stays on Settings and retries only its failed read', async ({ page }) => {
+  let settingsRequests = 0
+  await page.route('**/*', async route => {
+    if (!new URL(route.request().url()).pathname.startsWith('/api/settings')) {
+      await route.continue()
+      return
+    }
+    settingsRequests += 1
+    // React StrictMode runs the initial load effect twice in the development server.
+    if (settingsRequests <= 2) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{"detail":"Unavailable"}' })
+      return
+    }
+    await route.continue()
+  })
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.goto('/')
+  await expect.poll(() => settingsRequests).toBe(2)
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  await expect(page.getByText('Settings could not be loaded')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(0)
+  const retryResponse = page.waitForResponse(response => new URL(response.url()).pathname.startsWith('/api/settings') && response.status() === 200)
+  await page.getByRole('button', { name: 'Retry Settings' }).click()
+  await retryResponse
+  await expect(page.getByText('Role & Access', { exact: true }).last()).toBeVisible()
+  expect(settingsRequests).toBe(3)
 })

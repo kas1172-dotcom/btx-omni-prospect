@@ -23,7 +23,12 @@ from btx_omni.monitor.packs import PACKS
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
 from btx_omni.monitor.service import MonitorService
-from btx_omni.monitor.sources import FdaAdapter, SamAdapter, UsaSpendingAdapter
+from btx_omni.monitor.sources import (
+    FdaAdapter,
+    SamAdapter,
+    SecEdgarAdapter,
+    UsaSpendingAdapter,
+)
 from btx_omni.persistence.models import metadata
 
 
@@ -51,6 +56,85 @@ def test_live_adapter_caps_generic_results_before_normalization() -> None:
     observations = adapter.collect(run_id="r1", settings=Settings(_env_file=None, monitor_mode="live"), limit=1)
 
     assert len(observations) == 1 and observations[0].source_identity.source_record_id == "K1"
+
+
+def test_sam_naics_are_applied_only_after_explicit_verification() -> None:
+    adapter = SamAdapter(fake_get({"opportunitiesData": []}))
+    pending = Settings(
+        _env_file=None,
+        sam_api_key="key",
+        monitor_sam_naics="336411,334413",
+        monitor_sam_naics_verification_state="PENDING_VERIFICATION",
+    )
+    verified = pending.model_copy(
+        update={"monitor_sam_naics_verification_state": "VERIFIED"}
+    )
+
+    adapter.collect(run_id="pending", settings=pending)
+    assert "ncode=" not in adapter.request_url(1)
+    adapter.collect(run_id="verified", settings=verified)
+    assert "ncode=336411%2C334413" in adapter.request_url(1)
+
+
+def test_sec_requires_explicit_identifying_agent_and_preserves_filing_identity() -> None:
+    payload = {
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0000000001-26-000001", "0000000001-26-000002"],
+                "filingDate": ["2026-08-01", "2026-07-01"],
+                "form": ["10-Q", "8-K"],
+                "primaryDocument": ["q2.htm", "event.htm"],
+            }
+        }
+    }
+    calls: list[dict[str, str]] = []
+
+    def get(_url: str, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
+        calls.append(headers)
+        return 200, json.dumps(payload).encode(), {}
+
+    adapter = SecEdgarAdapter(get, targets=(("0000000001", "Verified Co"),))
+    assert adapter.available(Settings(_env_file=None))[0] is False
+    settings = Settings(_env_file=None, sec_user_agent="BTX Omni Prospect ops@example.com")
+    observation = adapter.collect(run_id="sec", settings=settings)[0]
+    assert calls[0]["User-Agent"] == settings.sec_user_agent
+    assert observation.source_identity.source_record_id == "0000000001-26-000001"
+    assert observation.source_identity.source_native_ids == (("sec_cik", "0000000001"),)
+    assert observation.raw_evidence.locator.endswith("/q2.htm")
+
+
+def test_sec_filing_accession_is_idempotent_in_the_monitor_pipeline() -> None:
+    payload = {
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0000000001-26-000001"],
+                "filingDate": ["2026-08-01"],
+                "form": ["10-K"],
+                "primaryDocument": ["annual.htm"],
+            }
+        }
+    }
+    adapter = SecEdgarAdapter(
+        fake_get(payload), targets=(("0000000001", "Verified Co"),)
+    )
+    service = MonitorService(
+        Settings(
+            _env_file=None,
+            monitor_mode="live",
+            sec_user_agent="BTX Omni Prospect ops@example.com",
+        ),
+        {"sec_edgar": adapter},
+        catalog=MonitorCatalog(
+            (AccountWatchProfile("verified", "Verified Co", sec_cik="0000000001"),)
+        ),
+    )
+
+    first = service.collect("sec_edgar")
+    second = service.collect("sec_edgar")
+
+    assert first.records_new == 1
+    assert second.records_new == 0
+    assert second.records_changed == 0
 
 
 def test_unavailable_auth_malformed_rate_limit_and_empty_are_health_states() -> None:
@@ -125,7 +209,8 @@ def test_durable_monitor_persists_runs_versions_events_and_failures() -> None:
 
 
 def test_monitor_registry_endpoint_is_internal_observability(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("BTX_MONITOR_OPERATOR_TOKEN", raising=False)
+    # An explicit empty process value overrides any developer-local .env token.
+    monkeypatch.setenv("BTX_MONITOR_OPERATOR_TOKEN", "")
     get_settings.cache_clear()
     client = TestClient(create_app())
     response = client.get("/api/monitor/sources")

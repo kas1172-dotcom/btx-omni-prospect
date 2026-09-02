@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 test('shared disclosure and controls expose keyboard and selected-state contracts', async ({ page }) => {
   await page.goto('/')
 
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible({ timeout: 15_000 })
   const disclosure = page.getByRole('button', { name: /Workspace menu/ })
   await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
   await disclosure.focus()
@@ -32,7 +33,7 @@ test('shared disclosure and controls expose keyboard and selected-state contract
 test('shared evidence treatment renders truthful sourced and unavailable states', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
-  const disclosure = page.locator('.intelligence-signal').first().getByRole('button', { name: /Evidence/ })
+  const disclosure = page.locator('.intelligence-card').first().getByRole('button', { name: /Evidence/ })
   await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
   await disclosure.click()
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true')

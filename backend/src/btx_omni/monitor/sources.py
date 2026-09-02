@@ -9,6 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from enum import StrEnum
+from time import sleep
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import quote, urlencode
@@ -44,6 +45,11 @@ class SourceDefinition:
     rate_limit_notes: str
     api_base: str
     identifier_strategy: str
+    content_structure: str = "STRUCTURED_API"
+    freshness_threshold_hours: int = 26
+    seller_promotion_permitted: bool = True
+    targeting_mode: str = "BROAD_PUBLIC_FEED"
+    consumes_strategic_targets: bool = False
 
 
 HttpGet = Callable[[str, dict[str, str]], tuple[int, bytes, dict[str, str]]]
@@ -71,29 +77,47 @@ class LiveSourceAdapter:
     def available(self, settings: Any) -> tuple[bool, str | None]:
         return True, None
 
-    def request_url(self, limit: int) -> str:
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         return self.definition.api_base
 
-    def collect(self, *, run_id: str, settings: Any, limit: int = 10) -> list[SourceObservation]:
+    def collect(
+        self,
+        *,
+        run_id: str,
+        settings: Any,
+        limit: int = 10,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         allowed, reason = self.available(settings)
         if not allowed:
             raise PermissionError(reason or "source credentials unavailable")
-        status, payload, _headers = self.get(self.request_url(limit), self.headers(settings))
+        status, payload, _headers = self.get(
+            self.request_url(limit, collected_at=collected_at), self.headers(settings)
+        )
         if status == 429:
             raise RuntimeError("RATE_LIMITED")
         if status >= 400:
             raise RuntimeError(f"HTTP_{status}")
-        return self.parse(payload, run_id=run_id)[:limit]
+        return self.parse(payload, run_id=run_id, collected_at=collected_at)[:limit]
 
     def headers(self, settings: Any) -> dict[str, str]:
         return {"User-Agent": "OmniProspectMonitor/2.0 contact=monitor@localhost"}
 
-    def parse(self, payload: bytes, *, run_id: str) -> list[SourceObservation]:
+    def parse(
+        self,
+        payload: bytes,
+        *,
+        run_id: str,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         try:
             decoded = json.loads(payload)
         except json.JSONDecodeError as exc:
             raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
-        return [self._observation(item, run_id) for item in self.items(decoded)]
+        return [
+            self._observation(item, run_id, collected_at=collected_at)
+            for item in self.items(decoded)
+        ]
 
     def items(self, decoded: Any) -> list[dict[str, Any]]:
         return decoded if isinstance(decoded, list) else []
@@ -121,8 +145,14 @@ class LiveSourceAdapter:
                         return None
         return None
 
-    def _observation(self, item: dict[str, Any], run_id: str) -> SourceObservation:
-        now = datetime.now(UTC)
+    def _observation(
+        self,
+        item: dict[str, Any],
+        run_id: str,
+        *,
+        collected_at: datetime | None = None,
+    ) -> SourceObservation:
+        now = collected_at or datetime.now(UTC)
         record_id = self.record_id(item)
         content = json.dumps(item, sort_keys=True, separators=(",", ":"))
         content_hash = hashlib.sha256(content.encode()).hexdigest()
@@ -134,22 +164,38 @@ class LiveSourceAdapter:
 
 
 class SamAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("Defense", "Space", "Commercial Aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published")
+    definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("Defense", "Space", "Commercial Aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published", freshness_threshold_hours=2)
     def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.sam_api_key), "SAM_API_KEY is not configured"
-    def request_url(self, limit: int) -> str:
-        today = datetime.now(UTC).date()
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
+        today = (collected_at or datetime.now(UTC)).date()
         window_start = today - timedelta(days=14)
-        return f"{self.definition.api_base}?{urlencode({'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')})}"
+        query: dict[str, object] = {'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')}
+        # Do not apply unverified classifications to a production query.
+        naics = tuple(
+            code.strip() for code in getattr(self, "_sam_naics", ()) if code.strip()
+        )
+        if naics:
+            query["ncode"] = ",".join(naics)
+        return f"{self.definition.api_base}?{urlencode(query)}"
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        self._sam_naics = (
+            tuple(value.strip() for value in settings.monitor_sam_naics.split(",") if value.strip())
+            if settings.monitor_sam_naics_verification_state == "VERIFIED" else ()
+        )
+        return super().collect(run_id=run_id, settings=settings, limit=limit, collected_at=collected_at)
     def headers(self, settings: Any) -> dict[str, str]: return {"X-Api-Key": settings.sam_api_key, **super().headers(settings)}
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("opportunitiesData", [])
 
 
 class UsaSpendingAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("Commercial Aerospace", "Defense", "Space", "Semiconductor", "Energy"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name")
+    definition = SourceDefinition("usaspending", "USAspending Awards", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal spending", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.GOVERNMENT_FUNDING), "daily", "award search history", "keyless", "public endpoint; bounded recipient queries plus transaction detail", "https://api.usaspending.gov/api/v2/search/spending_by_award/", "generated_internal_id; exact verified recipient legal name", targeting_mode="ACCOUNT_TARGETED", consumes_strategic_targets=True)
     def __init__(self, get: HttpGet = default_get, *, recipient_names: tuple[str, ...] = (), post: HttpPost = default_post) -> None:
         super().__init__(get)
         self.recipient_names = recipient_names
         self.post = post
+
+    def available(self, settings: Any) -> tuple[bool, str | None]:
+        return bool(self.recipient_names), "verified USAspending recipient targets are required"
 
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
     def record_id(self, item: dict[str, Any]) -> str:
@@ -162,10 +208,17 @@ class UsaSpendingAdapter(LiveSourceAdapter):
     def url(self, item: dict[str, Any]) -> str:
         award_id = item.get("generated_internal_id")
         return f"https://api.usaspending.gov/api/v2/awards/{quote(str(award_id), safe='')}/" if award_id else self.definition.api_base
-    def collect(self, *, run_id: str, settings: Any, limit: int = 10) -> list[SourceObservation]:
+    def collect(
+        self,
+        *,
+        run_id: str,
+        settings: Any,
+        limit: int = 10,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         if not self.recipient_names:
             raise PermissionError("USASPENDING_TARGET_RECIPIENTS_REQUIRED")
-        today = datetime.now(UTC).date()
+        today = (collected_at or datetime.now(UTC)).date()
         start = today - timedelta(days=90)
         per_target = max(1, limit // len(self.recipient_names))
         observations: list[SourceObservation] = []
@@ -181,7 +234,13 @@ class UsaSpendingAdapter(LiveSourceAdapter):
                 for award in award_rows:
                     generated_id = award.get("generated_internal_id")
                     transaction = self._latest_transaction(generated_id, settings)
-                    observations.append(self._observation(self._combine_award_and_transaction(award, transaction), run_id))
+                    observations.append(
+                        self._observation(
+                            self._combine_award_and_transaction(award, transaction),
+                            run_id,
+                            collected_at=collected_at,
+                        )
+                    )
             except HTTPError as exc:
                 if exc.code == 429:
                     raise RuntimeError("RATE_LIMITED") from exc
@@ -215,54 +274,128 @@ class UsaSpendingAdapter(LiveSourceAdapter):
 
 class FederalRegisterAdapter(LiveSourceAdapter):
     definition = SourceDefinition("federal_register", "Federal Register", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal rulemaking", ("Defense", "Space", "Medical", "Semiconductor", "Energy"), (EventType.REGULATORY_CHANGE, EventType.SOLICITATION, EventType.GOVERNMENT_FUNDING), "daily", "documents API archives", "keyless", "public API", "https://www.federalregister.gov/api/v1/documents.json", "document_number")
-    def request_url(self, limit: int) -> str:
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         return f"{self.definition.api_base}?{urlencode({'per_page': limit, 'order': 'newest'})}"
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
 
 
 class SecEdgarAdapter(LiveSourceAdapter):
     definition = SourceDefinition("sec_edgar", "SEC EDGAR Submissions", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "securities filings", ("Commercial Aerospace", "Defense", "Space", "Semiconductor", "Medical", "Energy"), (EventType.EARNINGS_SIGNAL, EventType.BACKLOG_CHANGE, EventType.CAPITAL_INVESTMENT, EventType.M_AND_A, EventType.FACILITY_EXPANSION), "daily", "full submissions archives", "keyless", "requires descriptive User-Agent and SEC fair access", "https://data.sec.gov/submissions", "CIK/accession number")
-    def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("filings", {}).get("recent", {}).get("accessionNumber", []) and [{"accessionNumber": value, "filingDate": decoded["filings"]["recent"]["filingDate"][index], "form": decoded["filings"]["recent"]["form"][index]} for index, value in enumerate(decoded["filings"]["recent"]["accessionNumber"])]
-    def available(self, settings: Any) -> tuple[bool, str | None]: return (self.definition.api_base != "https://data.sec.gov/submissions", "verified SEC CIK from an account watch profile is required")
-    def for_cik(self, cik: str, get: HttpGet | None = None) -> SecEdgarAdapter:
-        adapter = SecEdgarAdapter(get or self.get)
-        adapter.definition = replace(self.definition, api_base=f"https://data.sec.gov/submissions/CIK{cik.zfill(10)}.json")
-        return adapter
+    def __init__(self, get: HttpGet = default_get, *, targets: tuple[tuple[str, str], ...] = ()) -> None:
+        super().__init__(get)
+        self.targets = targets
+
+    def available(self, settings: Any) -> tuple[bool, str | None]:
+        if not self.targets:
+            return False, "verified SEC CIK targets are required"
+        if not settings.sec_user_agent:
+            return False, "BTX_SEC_USER_AGENT with organization and contact is required"
+        return True, None
+
+    def headers(self, settings: Any) -> dict[str, str]:
+        return {"User-Agent": settings.sec_user_agent, "Accept-Encoding": "gzip, deflate"}
+
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        allowed, reason = self.available(settings)
+        if not allowed:
+            raise PermissionError(reason or "SEC EDGAR is not configured")
+        per_target = max(1, limit // len(self.targets))
+        observations: list[SourceObservation] = []
+        for index, (cik, account_name) in enumerate(self.targets):
+            url = f"{self.definition.api_base}/CIK{cik.zfill(10)}.json"
+            status, payload, _headers = self.get(url, self.headers(settings))
+            if status == 429:
+                raise RuntimeError("RATE_LIMITED")
+            if status >= 400:
+                raise RuntimeError(f"HTTP_{status}")
+            observations.extend(self._parse_submissions(payload, cik=cik, account_name=account_name, run_id=run_id, collected_at=collected_at)[:per_target])
+            # Four requests/second is deliberately below the SEC's published
+            # 10 requests/second ceiling and preserves a bounded worker load.
+            if index + 1 < len(self.targets):
+                sleep(0.25)
+        return observations
+
+    def _parse_submissions(self, payload: bytes, *, cik: str, account_name: str, run_id: str, collected_at: datetime | None) -> list[SourceObservation]:
+        try:
+            recent = json.loads(payload).get("filings", {}).get("recent", {})
+        except json.JSONDecodeError as exc:
+            raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
+        forms = recent.get("form", [])
+        filings: list[SourceObservation] = []
+        for index, form in enumerate(forms):
+            if form not in {"10-K", "10-Q"}:
+                continue
+            accession = str(recent.get("accessionNumber", [])[index])
+            primary_document = str(recent.get("primaryDocument", [""])[index])
+            filing_date = recent.get("filingDate", [None])[index]
+            item = {"accessionNumber": accession, "filingDate": filing_date, "form": form, "primaryDocument": primary_document, "issuer_name": account_name, "cik": cik, "title": f"{account_name} {form} filing"}
+            filings.append(self._observation(item, run_id, collected_at=collected_at))
+        return filings
+
+    def url(self, item: dict[str, Any]) -> str:
+        accession = str(item.get("accessionNumber", "")).replace("-", "")
+        primary_document = str(item.get("primaryDocument", ""))
+        cik = str(item.get("cik", "")).lstrip("0")
+        if accession and primary_document and cik:
+            return f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession}/{primary_document}"
+        return self.definition.api_base
+
+    def _observation(self, item: dict[str, Any], run_id: str, *, collected_at: datetime | None = None) -> SourceObservation:
+        observation = super()._observation(item, run_id, collected_at=collected_at)
+        return replace(observation, source_identity=SourceIdentity(self.definition.source_id, observation.source_identity.source_record_id, (("sec_cik", str(item["cik"]).zfill(10)),)))
 
 
 class NasaAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("nasa", "NASA Official News", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "NASA official publisher", ("Space", "Commercial Aerospace"), (EventType.PROGRAM_LAUNCH, EventType.CONTRACT_AWARD, EventType.GOVERNMENT_FUNDING, EventType.PARTNERSHIP), "daily", "news archive", "keyless", "RSS/API availability varies", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "canonical article URL; NASA program names")
-    def parse(self, payload: bytes, *, run_id: str) -> list[SourceObservation]:
+    definition = SourceDefinition("nasa", "NASA Official News", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "NASA official publisher", ("Space", "Commercial Aerospace"), (EventType.PROGRAM_LAUNCH, EventType.CONTRACT_AWARD, EventType.GOVERNMENT_FUNDING, EventType.PARTNERSHIP), "daily", "news archive", "keyless", "RSS/API availability varies", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "canonical article URL; NASA program names", content_structure="OFFICIAL_RSS_WITH_UNSTRUCTURED_TEXT")
+    def parse(
+        self,
+        payload: bytes,
+        *,
+        run_id: str,
+        collected_at: datetime | None = None,
+    ) -> list[SourceObservation]:
         try:
             root = element_tree.fromstring(payload)
         except element_tree.ParseError as exc:
             raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
-        return [self._observation({"id": item.findtext("guid") or item.findtext("link"), "title": item.findtext("title"), "url": item.findtext("link"), "publication_date": item.findtext("pubDate")}, run_id) for item in root.findall(".//item")]
+        return [
+            self._observation(
+                {
+                    "id": item.findtext("guid") or item.findtext("link"),
+                    "title": item.findtext("title"),
+                    "url": item.findtext("link"),
+                    "publication_date": item.findtext("pubDate"),
+                },
+                run_id,
+                collected_at=collected_at,
+            )
+            for item in root.findall(".//item")
+        ]
 
 
 class DodAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("Defense", "Space"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present")
+    definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("Defense", "Space"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present", content_structure="UNCONFIGURED_PUBLISHER_PAGE", seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official DoD machine-readable feed is not configured; web page collection is disabled"
 
 
 class CommerceAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("Semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers")
+    definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("Semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers", content_structure="UNCONFIGURED_PUBLISHER_PAGE", seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official Commerce machine-readable feed is not configured; web page collection is disabled"
 
 
 class FdaAdapter(LiveSourceAdapter):
     definition = SourceDefinition("fda_openfda", "FDA openFDA", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "FDA regulatory data", ("Medical",), (EventType.REGULATORY_APPROVAL, EventType.REGULATORY_CHANGE, EventType.PRODUCT_LAUNCH), "daily", "API datasets", "keyless", "API limits; clearance is not commercial launch", "https://api.fda.gov/device/510k.json", "K number/PMA/recall identifiers")
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("results", [])
-    def request_url(self, limit: int) -> str: return f"{self.definition.api_base}?{urlencode({'limit': limit, 'sort': 'decision_date:desc'})}"
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str: return f"{self.definition.api_base}?{urlencode({'limit': limit, 'sort': 'decision_date:desc'})}"
 
 
 class CompanyNewsAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL")
+    definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL", content_structure="UNCONFIGURED_ACCOUNT_FEED", seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified account-watch-profile newsroom URL is required"
 
 
 class StateEconomicAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("Semiconductor", "Robotics", "Medical", "Commercial Aerospace", "Energy"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography")
+    definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("Semiconductor", "Robotics", "Medical", "Commercial Aerospace", "Energy"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography", content_structure="UNCONFIGURED_PUBLISHER_FEED", freshness_threshold_hours=192, seller_promotion_permitted=False)
     def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified state publisher URL is required"
 
 

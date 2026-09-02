@@ -93,6 +93,9 @@ uv run uvicorn btx_omni.app:app --reload
 The API health endpoint is `http://127.0.0.1:8000/api/health`; generated OpenAPI
 is available at `http://127.0.0.1:8000/openapi.json`.
 
+Backend configuration is always loaded from `backend/.env`, independent of the
+startup working directory. Explicit process environment variables take precedence.
+
 ### Frontend
 
 In a second shell:

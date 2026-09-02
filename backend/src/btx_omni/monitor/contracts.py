@@ -195,6 +195,25 @@ class SourceHealth:
 
 
 @dataclass(frozen=True)
+class SourceOperationalStatus:
+    source_id: str
+    source_name: str
+    state: SourceHealthState
+    collectable: bool
+    content_structure: str
+    credential_requirement: str
+    targeting_inputs: tuple[str, ...]
+    freshness_threshold_hours: int
+    last_attempt_at: datetime | None
+    last_success_at: datetime | None
+    failure_summary: str | None
+    durable_state: bool
+    records_seen: int
+    events_created: int
+    seller_promotion_permitted: bool
+
+
+@dataclass(frozen=True)
 class RejectedObservation:
     observation_id: str
     state: RejectionState

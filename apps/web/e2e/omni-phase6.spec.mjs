@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test'
 
 test.describe.configure({ mode: 'serial' })
 
+async function waitForApp(page) {
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible({ timeout: 15_000 })
+}
+
 async function openOmni(page) {
   await page.getByLabel('Open Omni assistant').click()
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeVisible()
@@ -31,6 +35,7 @@ async function navigate(page, name) {
 
 test('Phase 6 Omni browser acceptance preserves typed context, continuity, and isolation', async ({ page }) => {
   await page.goto('/')
+  await waitForApp(page)
   await expect(page.locator('.page-title h1')).toHaveText('Today')
 
   // Screen summary comes from the actual current UI context.
@@ -100,6 +105,7 @@ test('Phase 6 Omni browser acceptance preserves typed context, continuity, and i
 
 test('Quick Omni opens the Full Omni workspace without losing the conversation', async ({ page }) => {
   await page.goto('/')
+  await waitForApp(page)
   await openOmni(page)
   await ask(page, 'What should I review today?')
   await page.getByRole('button', { name: 'Open in Omni' }).click()
@@ -116,6 +122,7 @@ test('Quick Omni opens the Full Omni workspace without losing the conversation',
 test('mobile Quick and Full Omni use touch-safe sheet and mode navigation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
+  await waitForApp(page)
   await openOmni(page)
   const quick = page.locator('.quick-omni')
   await expect(quick).toBeVisible()
@@ -133,6 +140,7 @@ test('mobile Quick and Full Omni use touch-safe sheet and mode navigation', asyn
 
 test('Omni replaces prompt starters with a readable current exchange', async ({ page }) => {
   await page.goto('/')
+  await waitForApp(page)
   await openOmni(page)
   await expect(page.getByLabel('Prompt starters')).toBeVisible()
   const result = await ask(page, 'Which accounts have open quotes?')
@@ -144,6 +152,7 @@ test('Omni replaces prompt starters with a readable current exchange', async ({ 
 
 test('Monitor sends its truthful typed surface without scoping global Omni queries', async ({ page }) => {
   await page.goto('/')
+  await waitForApp(page)
   await navigate(page, 'Monitor')
   await openOmni(page)
   const monitor = await ask(page, 'What am I looking at?')
