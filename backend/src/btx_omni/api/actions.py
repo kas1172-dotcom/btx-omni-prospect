@@ -32,6 +32,7 @@ class CreateAction(BaseModel):
     priority: ActionPriority = ActionPriority.MEDIUM
     due_date: date | None = None
     evidence_ids: tuple[str, ...] = ()
+    context_referents: tuple[tuple[str, str], ...] = ()
     approval_required: bool = False
     idempotency_key: str | None = None
 
@@ -42,14 +43,17 @@ class EditAction(BaseModel):
     owner_id: str | None = None
     priority: ActionPriority | None = None
     due_date: date | None = None
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 class StatusChange(BaseModel):
     status: ActionStatus
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 class ApprovalDecision(BaseModel):
     decision: ApprovalStatus
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 class SuggestionConversion(BaseModel):
@@ -232,7 +236,7 @@ def change_status(
 ):
     try:
         return runtime.work.transition(
-            action_id, body.status, principal=current, occurred_at=runtime.observed_at()
+            action_id, body.status, principal=current, occurred_at=runtime.observed_at(), expected_version=body.expected_version
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
@@ -251,6 +255,7 @@ def decide_approval(
             body.decision,
             principal=current,
             occurred_at=runtime.observed_at(),
+            expected_version=body.expected_version,
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
