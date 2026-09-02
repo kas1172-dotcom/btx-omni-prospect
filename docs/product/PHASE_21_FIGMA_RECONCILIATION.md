@@ -20,6 +20,10 @@ The Figma target file is a visual and interaction reference only. Runtime projec
 
 Screens are covered by the responsive release matrix at 320px, 390px, and 430px, plus desktop shared-shell, Actions, Omni, Customer, Intelligence, Federal Procurement, Relationship, Map, Settings/Communications, seller-scenario, and primitive coverage. The screenshots produced by those Playwright journeys are the visual regression review artifact; they exercise the actual governed runtime rather than Figma placeholder data.
 
+## Final visual review
+
+The deterministic desktop and responsive browser journeys were reviewed for Today, Customers & Prospects, Customer 360, External Intelligence, Federal Procurement, Relationship Intelligence, Tactical Map, Actions, Omni, Settings, and the desktop/mobile shell. All are **MATCHED** for the supported target-state experience or an **INTENTIONAL DIVERGENCE** listed below. The mobile matrix covers 320px, 390px, and 430px without clipping, navigation collision, drawer loss, horizontal overflow, stale terminology, or placeholder claims. Blocking differences remaining: **0**.
+
 ## Intentional Figma divergences
 
 - Runtime provider and data-mode truth overrides illustrative connected states.
