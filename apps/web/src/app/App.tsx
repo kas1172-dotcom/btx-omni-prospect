@@ -157,6 +157,7 @@ export default function App() {
         layers={layers}
         signals={mapSignals}
         onAccount={(id) => void select(id)}
+        onRelationships={(id) => void select(id)}
         onMapAccountSelect={(id) => {
           setSelectedMapAccountId(id)
           setSelectedMapFacilityId(undefined)

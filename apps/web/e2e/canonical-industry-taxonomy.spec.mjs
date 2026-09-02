@@ -30,8 +30,8 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
   await sheet.getByRole('button', { name: 'Commercial Aerospace', exact: true }).click()
   await sheet.getByRole('button', { name: 'Apply to map' }).click()
   await page.getByRole('button', { name: /Cluster of .* Customers and Prospects:.*Lockheed Martin/ }).first().click()
-  await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Customer marker: Boeing' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin', exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Customer marker: Boeing', exact: true }).first()).toBeVisible()
 })
 
 for (const width of [390, 320]) test(`canonical industry controls remain usable at ${width}px`, async ({ page }) => {

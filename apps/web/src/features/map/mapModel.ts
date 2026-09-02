@@ -4,7 +4,7 @@ export type MapMarkerKind = 'customer' | 'prospect' | 'public-facility' | 'btx-f
 export type MapLayer = 'customers' | 'prospects' | 'public-facilities' | 'btx-facilities' | 'intelligence'
 export type MapSelection = { markerId: string; kind: MapMarkerKind; accountId?: string; facilityId?: string; eventId?: string }
 export type MapMarker = { id: string; kind: MapMarkerKind; label: string; accessibleLabel: string; latitude: number; longitude: number; accountId?: string; facilityId?: string; eventId?: string; memberIds?: string[]; bounds?: { north: number; south: number; east: number; west: number } }
-export type MapFilters = { coverage: 'RICH' | 'ALL'; top100: boolean; industries: string[]; relationships: MapAccountSegment[]; layers: MapLayer[]; radiusMiles?: 30 | 50 | 100 }
+export type MapFilters = { coverage: 'RICH' | 'ALL'; top100: boolean; industries: string[]; relationships: MapAccountSegment[]; layers: MapLayer[]; signalTiming: Array<'CURRENT' | 'UPCOMING'>; radiusMiles?: 30 | 50 | 100 }
 export const ALL_MAP_LAYERS: MapLayer[] = ['customers', 'prospects', 'public-facilities', 'btx-facilities', 'intelligence']
 export const DEFAULT_MAP_LAYERS: MapLayer[] = ['customers', 'prospects', 'btx-facilities']
 export const validCoordinates = (value: Coordinates | null | undefined): value is Coordinates => Boolean(value && Number.isFinite(Number(value.latitude)) && Number.isFinite(Number(value.longitude)) && Math.abs(Number(value.latitude)) <= 90 && Math.abs(Number(value.longitude)) <= 180)
@@ -14,7 +14,7 @@ export function buildMapMarkers(records: MapRecord[], publicLocations: PublicLoc
   const enabled = new Set(layers); const markers: MapMarker[] = []
   const publicFacilitySeen = new Set<string>()
   const btxFacilitySeen = new Set<string>()
-  for (const record of records) { if (!validCoordinates(record.coordinates)) continue; const kind = relationshipKind(record); if (!enabled.has(kind === 'customer' ? 'customers' : 'prospects')) continue; markers.push({ id: `account:${record.account_id}`, kind, label: record.name, accessibleLabel: `${kind === 'customer' ? 'Customer' : 'Prospect'} marker: ${record.name}`, latitude: Number(record.coordinates.latitude), longitude: Number(record.coordinates.longitude), accountId: record.account_id }) }
+  for (const record of records) { if (!validCoordinates(record.coordinates)) continue; const kind = relationshipKind(record); if (!enabled.has(kind === 'customer' ? 'customers' : 'prospects')) continue; markers.push({ id: record.id, kind, label: record.name, accessibleLabel: `${kind === 'customer' ? 'Customer' : 'Prospect'} marker: ${record.name}`, latitude: Number(record.coordinates.latitude), longitude: Number(record.coordinates.longitude), accountId: record.account_id, facilityId: record.facility_id }) }
   if (enabled.has('public-facilities')) for (const facility of publicLocations) {
     if (!validCoordinates(facility.coordinates)) continue
     if (publicFacilitySeen.has(facility.facility_id)) continue

@@ -38,6 +38,9 @@ test('390 × 844 target shell uses five safe touch destinations without overflow
 
   const shell = page.locator('.app-shell:not(.app-shell-loading)')
   const navigation = page.getByRole('navigation', { name: 'Mobile primary navigation' })
+  // The shell is usable only after the governed bootstrap leaves its explicit
+  // loading state; this remains deterministic under default parallel workers.
+  await expect(page.locator('.app-shell-loading')).toBeHidden({ timeout: 15_000 })
   await expect(shell).toBeVisible()
   await expect(navigation).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Primary navigation', exact: true })).toBeHidden()

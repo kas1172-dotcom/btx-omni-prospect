@@ -6,6 +6,9 @@ import './map.css'
 type Props = { markers: MapMarker[]; selectedMarkerId?: string; selectionFrame?: MapMarker[]; onSelect: (marker: MapMarker) => void; onVisibleMarkers?: (markers: MapMarker[]) => void }
 let configuredKey: string | undefined
 const markerZIndex = (marker: MapMarker, selected = false) => selected ? 4 : marker.kind === 'cluster' ? 3 : marker.kind === 'customer' || marker.kind === 'prospect' ? 2 : 1
+// Account markers may be legacy `account:<accountId>` or facility-scoped
+// `account:<accountId>:facility:<facilityId>`; clustering uses the canonical account.
+export const accountIdFromMarkerId = (id: string) => id.startsWith('account:') ? id.split(':')[1] : undefined
 
 function makeMarkerButton(marker: MapMarker, selected: boolean, onSelect: () => void) {
   const button = document.createElement('button'); button.type = 'button'; button.className = `map-marker map-marker-${marker.kind}${selected ? ' selected' : ''}`; button.style.minWidth = '44px'; button.style.minHeight = '44px'; button.setAttribute('aria-label', marker.accessibleLabel); button.setAttribute('aria-pressed', String(selected)); button.title = marker.label; button.addEventListener('click', event => { event.stopPropagation(); onSelect() }); return button
@@ -13,7 +16,7 @@ function makeMarkerButton(marker: MapMarker, selected: boolean, onSelect: () => 
 function TestCanvas({ markers, selectedMarkerId, onSelect, onVisibleMarkers }: Props) {
   const markerSignature = markers.filter(marker => marker.kind === 'customer' || marker.kind === 'prospect').map(marker => marker.id).join('|')
   const [focus, setFocus] = useState<{ members?: string[]; signature: string }>({ signature: '' }); const clusterMembers = focus.signature === markerSignature ? focus.members : undefined
-  const visible = useMemo(() => { if (!clusterMembers) return markersForZoom(markers, 4); const accountIds = new Set(clusterMembers.filter(id => id.startsWith('account:')).map(id => id.slice(8))); return markers.filter(marker => clusterMembers.includes(marker.id) || marker.kind === 'btx-facility' || (Boolean(marker.accountId) && accountIds.has(marker.accountId!))) }, [clusterMembers, markers])
+  const visible = useMemo(() => { if (!clusterMembers) return markersForZoom(markers, 4); const accountIds = new Set(clusterMembers.map(accountIdFromMarkerId).filter((id): id is string => Boolean(id))); return markers.filter(marker => clusterMembers.includes(marker.id) || marker.kind === 'btx-facility' || (Boolean(marker.accountId) && accountIds.has(marker.accountId!))) }, [clusterMembers, markers])
   useEffect(() => onVisibleMarkers?.(visible), [onVisibleMarkers, visible])
   return <div className="map-test-canvas" role="application" aria-label="Interactive Customer, facility, BTX facility, and intelligence map">{visible.map((marker, index) => <button key={marker.id} type="button" className={`map-marker map-marker-${marker.kind}${marker.id === selectedMarkerId ? ' selected' : ''}`} style={{ left: `${8 + (index % 6) * 9}%`, top: `${12 + Math.floor(index / 6) * 11}%`, minWidth: 44, minHeight: 44, zIndex: markerZIndex(marker, marker.id === selectedMarkerId) }} aria-label={marker.accessibleLabel} aria-pressed={marker.id === selectedMarkerId} onClick={() => marker.kind === 'cluster' ? setFocus({ members: marker.memberIds, signature: markerSignature }) : onSelect(marker)}>{marker.kind === 'cluster' ? marker.memberIds?.length : ''}</button>)}</div>
 }

@@ -98,6 +98,7 @@ function SellerRelationshipCard({ path }: { path: SellerRelationshipPath }) {
     <div className="seller-relationship-meta"><StatusBadge value={path.direct ? 'DIRECT' : 'INDIRECT'} kind="relationship" /><State value={path.evidence_state} /><span>{path.step_count} canonical {path.step_count === 1 ? 'step' : 'steps'}</span></div>
     <p><strong>Connection:</strong> {path.connection_label}</p>
     <p><strong>Why it matters:</strong> {path.why_it_matters}</p><p><strong>Governed status:</strong> {path.seller_rationale}</p>
+    {path.validation_requirements.length > 0 && <Notice tone="warning" title="Validate before use">{path.validation_requirements.join(' ')}</Notice>}
     {path.suggested_move && <p className="seller-relationship-move"><strong>Suggested move:</strong> {path.suggested_move}</p>}
     <Disclosure title={`Evidence · ${path.truth_label} · ${path.evidence.length} ${path.evidence.length === 1 ? 'source' : 'sources'}`}>
       {path.evidence.length ? <div className="seller-relationship-evidence">{path.evidence.map((item, index) => <RelationshipEvidence key={`${path.path_id}:${index}`} item={item} path={path} />)}</div> : <Empty>No supporting source is currently attached. This path must not be treated as validated.</Empty>}

@@ -80,6 +80,17 @@ def _evidence(hops: tuple[RelationshipHop, ...]) -> list[dict[str, Any]]:
     return items
 
 
+def _validation_requirements(hops: tuple[RelationshipHop, ...], state: str) -> list[str]:
+    """Expose only governed gaps needed to use a path safely."""
+    requirements: list[str] = []
+    if state == "needs_validation":
+        if any(not hop.derived and not hop.source_ids for hop in hops):
+            requirements.append("Attach or confirm the source record for the recorded relationship.")
+        if any(hop.evidence_state.value == "INFERRED" for hop in hops):
+            requirements.append("Confirm the inferred relationship before using it in outreach planning.")
+    return requirements
+
+
 class SellerRelationshipPresentationService:
     """Projects raw paths into deterministic, provenance-preserving seller DTOs."""
 
@@ -120,6 +131,7 @@ class SellerRelationshipPresentationService:
             "seller_rationale": rationale,
             "truth_label": "SAMPLE BTX commercial context" if is_sample else "Canonical relationship evidence",
             "evidence": evidence,
+            "validation_requirements": _validation_requirements(hops, state),
         }
 
     @staticmethod

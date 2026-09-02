@@ -105,6 +105,22 @@ def test_seller_projection_preserves_raw_paths_and_evidence_without_strength() -
     assert seller["unusable_count"] >= 0
     assert not any(path["presentation_state"] == "unusable" for path in seller["validated"] + seller["needs_validation"])
     assert all("seller_rationale" in path for path in seller["validated"] + seller["needs_validation"])
+    assert all("validation_requirements" in path for path in seller["validated"] + seller["needs_validation"])
+
+
+def test_needs_validation_paths_expose_governed_requirements() -> None:
+    raw = RelationshipIntelligenceService(build_sample_environment()).account_relationships(
+        "spirit-aerosystems", depth=1
+    )
+    raw_path = next(
+        item
+        for item in raw["direct_relationships"]
+        if item["hops"][0].relationship_type == "GEOGRAPHIC_CLUSTER_REVERSE"
+    )
+    path = SellerRelationshipPresentationService().present_path(raw_path)
+    assert path["validation_requirements"] == [
+        "Attach or confirm the source record for the recorded relationship."
+    ]
 
 
 def test_seller_projection_prioritizes_governed_state_directness_sources_and_stability() -> None:
