@@ -746,6 +746,13 @@ def test_synthesis_cache_hash_invalidation_eligibility_and_cap(tmp_path) -> None
     assert first.attempted == 1 and repeated.reused == 1 and provider.calls == 1
     assert apply_cached_synthesis(original, cached).summary_mode == "GEMINI_ASSISTED"
 
+    recollected = replace(original, collection_timestamp=NOW + timedelta(hours=1))
+    assert governed_content_hash(recollected) == governed_content_hash(original)
+    recollected_run = process_signal_brief_synthesis(
+        (recollected,), provider=provider, repository=repository, cap=1, now=NOW
+    )
+    assert recollected_run.reused == 1 and provider.calls == 1
+
     changed = replace(original, what_happened="Governed source content changed.")
     assert governed_content_hash(changed) != governed_content_hash(original)
     assert apply_cached_synthesis(changed, cached) == changed

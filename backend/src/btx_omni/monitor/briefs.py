@@ -284,6 +284,10 @@ def governed_content_hash(brief: SignalBrief) -> str:
     governed.pop("seller_summary", None)
     governed.pop("language_provider", None)
     governed.pop("summary_mode", None)
+    # Collection time is operational provenance, not an input to seller prose.
+    # A source record with unchanged governed content must reuse its synthesis
+    # when it is observed again on a subsequent Monitor run.
+    governed.pop("collection_timestamp", None)
 
     def encode(value: object) -> object:
         if isinstance(value, datetime):
