@@ -364,12 +364,16 @@ test('target interaction primitives expose governed semantic and accessibility c
 
 test('Communications keeps drafting, review, and delivery explicitly governed', () => {
   assert.match(communications, /Trigger → Draft → Human review → Approved send/)
-  assert.match(communications, /Gemini can assist with words, never authorization or delivery/)
+  assert.match(communications, /Gemini can assist\s+with words, never authorization or delivery/)
+  assert.match(communications, /Gemini proposes words only/)
+  assert.match(communications, /Propose draft/)
+  assert.match(communications, /Propose revision/)
   assert.match(communications, /Recipient unavailable/)
   assert.match(communications, /Manager review is required/)
   assert.match(communications, /Confirm send/)
   assert.match(communications, /draft-\$\{accountId\}-\$\{crypto\.randomUUID\(\)\}/)
   assert.match(client, /confirmed=true&idempotency_key/)
+  assert.match(client, /assistNewCommunication/)
   assert.doesNotMatch(communications, /autonomous send/i)
 })
 

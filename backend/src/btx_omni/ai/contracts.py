@@ -79,6 +79,69 @@ class GroundedSynthesisRequest:
 
 
 @dataclass(frozen=True)
+class GovernedDraftingRequest:
+    """Bounded seller-language proposal built only from supplied governed context."""
+
+    subject_display_name: str
+    instruction: str
+    draft_kind: str
+    governed_facts: tuple[str, ...]
+    evidence_ids: tuple[str, ...] = ()
+    current_subject: str | None = None
+    current_body: str | None = None
+    public_research: tuple[PublicWebFinding, ...] = ()
+    contract_version: str = "governed-drafting-v1"
+
+    def __post_init__(self) -> None:
+        if (
+            not self.subject_display_name.strip()
+            or len(self.subject_display_name) > 300
+        ):
+            raise ValueError("Drafting subject exceeds bounds.")
+        if (
+            not self.instruction.strip()
+            or len(self.instruction) > 500
+            or not self.draft_kind.strip()
+            or len(self.draft_kind) > 80
+        ):
+            raise ValueError("Drafting instruction exceeds bounds.")
+        if len(self.governed_facts) > 12 or any(
+            not item.strip() or len(item) > 800 for item in self.governed_facts
+        ):
+            raise ValueError("Drafting context exceeds bounds.")
+        if len(self.evidence_ids) > 16 or any(
+            not item.strip() or len(item) > 160 for item in self.evidence_ids
+        ):
+            raise ValueError("Drafting evidence exceeds bounds.")
+        if any(
+            value is not None and len(value) > 6000
+            for value in (self.current_subject, self.current_body)
+        ):
+            raise ValueError("Drafting source text exceeds bounds.")
+
+
+@dataclass(frozen=True)
+class GovernedDraft:
+    subject: str
+    body: str
+    evidence_ids: tuple[str, ...]
+    provider: str
+    model: str
+    contract_version: str
+
+    def __post_init__(self) -> None:
+        if (
+            not self.subject.strip()
+            or len(self.subject) > 300
+            or not self.body.strip()
+            or len(self.body) > 8000
+        ):
+            raise ValueError("Draft proposal exceeds bounds.")
+        if len(self.evidence_ids) > 16:
+            raise ValueError("Draft proposal evidence exceeds bounds.")
+
+
+@dataclass(frozen=True)
 class PublicWebResearchRequest:
     """Bounded read-only query over public web content; content is never authority."""
 
@@ -344,6 +407,10 @@ class LanguageProvider(Protocol):
     ) -> IntentInterpretation: ...
 
     def synthesize(self, request: GroundedSynthesisRequest) -> LanguageResult: ...
+
+    def draft_governed_content(
+        self, request: GovernedDraftingRequest
+    ) -> GovernedDraft: ...
 
     def research_public_web(
         self, request: PublicWebResearchRequest

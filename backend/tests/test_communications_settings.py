@@ -192,3 +192,29 @@ async def test_api_requires_manager_review_and_never_autosends() -> None:
     assert seller_approval.status_code == 403
     assert approved.status_code == 200 and approved.json()["status"] == "READY"
     assert blocked.status_code == 409 and "recipient" in blocked.text.casefold()
+
+
+@pytest.mark.asyncio
+async def test_api_governed_draft_assist_is_a_nonpersistent_proposal() -> None:
+    headers = {"X-BTX-Principal-Token": "development-salesperson"}
+    async with AsyncClient(
+        transport=ASGITransport(app=create_app()), base_url="http://test"
+    ) as client:
+        before = await client.get("/api/communications", headers=headers)
+        proposal = await client.post(
+            "/api/communications/assist",
+            headers=headers,
+            json={
+                "account_id": "boeing",
+                "instruction": "Draft a concise manager update.",
+                "subject": "Boeing update",
+                "body": "Existing governed draft.",
+                "evidence_ids": ["ev-1"],
+            },
+        )
+        after = await client.get("/api/communications", headers=headers)
+    assert proposal.status_code == 200
+    payload = proposal.json()
+    assert payload["assisted"] is False and payload["provider_status"] == "NOT_CONFIGURED"
+    assert payload["proposal"]["body"] == "Existing governed draft."
+    assert before.json()["items"] == after.json()["items"]

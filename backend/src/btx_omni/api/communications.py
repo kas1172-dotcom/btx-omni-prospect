@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from btx_omni.ai.config import AiConfig
-from btx_omni.ai.contracts import GroundedSynthesisRequest
+from btx_omni.ai.contracts import GovernedDraftingRequest
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
@@ -14,6 +14,7 @@ from btx_omni.integrations.communications import (
     DeliveryNotConfiguredError,
     UnconfiguredDeliveryAdapter,
 )
+from btx_omni.modules.communications.drafting import draft_governed_content
 from btx_omni.modules.communications.service import (
     CommunicationConflictError,
     CommunicationForbiddenError,
@@ -47,6 +48,53 @@ class DraftAssist(BaseModel):
     instruction: str = Field(min_length=1, max_length=500)
 
 
+class DraftProposal(BaseModel):
+    account_id: str
+    instruction: str = Field(min_length=1, max_length=500)
+    subject: str | None = Field(default=None, max_length=300)
+    body: str | None = Field(default=None, max_length=6000)
+    evidence_ids: tuple[str, ...] = Field(default=(), max_length=16)
+
+
+def _drafting_request(
+    account,
+    instruction: str,
+    *,
+    subject: str | None = None,
+    body: str | None = None,
+    evidence_ids: tuple[str, ...] = (),
+) -> GovernedDraftingRequest:
+    facts = [
+        f"Canonical Customer: {account.legal_name}. Public identity and market context are governed by Omni.",
+        f"Public industries/markets: {', '.join(account.industries) or 'Unavailable'}.",
+        "Do not imply BTX commercial activity, supplier status, score, relationship, or authorization unless supplied through a governed workflow.",
+    ]
+    return GovernedDraftingRequest(
+        subject_display_name=account.legal_name,
+        instruction=instruction,
+        draft_kind="SELLER_COMMUNICATION",
+        governed_facts=tuple(facts),
+        evidence_ids=evidence_ids,
+        current_subject=subject,
+        current_body=body,
+    )
+
+
+def _proposal_payload(outcome) -> dict:
+    return {
+        "proposal": {
+            "subject": outcome.proposal.subject,
+            "body": outcome.proposal.body,
+            "evidence_ids": outcome.proposal.evidence_ids,
+        },
+        "provider_status": outcome.provider_status.value,
+        "assisted": outcome.assisted,
+        "message": "Gemini produced a proposal. Review and save it through the governed draft workflow."
+        if outcome.assisted
+        else "Gemini is unavailable; manual drafting remains available and no draft was changed.",
+    }
+
+
 def _error(error: Exception) -> HTTPException:
     if isinstance(error, CommunicationNotFoundError):
         return HTTPException(404, "Communication draft not found.")
@@ -58,7 +106,9 @@ def _error(error: Exception) -> HTTPException:
 
 
 def _allowed_recipients(runtime: PocRuntime, account_id: str) -> frozenset[str]:
-    account = next((item for item in runtime.environment().accounts if item.id == account_id), None)
+    account = next(
+        (item for item in runtime.environment().accounts if item.id == account_id), None
+    )
     if not account:
         raise HTTPException(404, "Canonical Customer not found.")
     return frozenset(
@@ -68,15 +118,24 @@ def _allowed_recipients(runtime: PocRuntime, account_id: str) -> frozenset[str]:
     )
 
 
-def _validate_recipients(runtime: PocRuntime, account_id: str, recipients: tuple[str, ...]) -> tuple[str, ...]:
-    normalized = tuple(dict.fromkeys(item.strip().casefold() for item in recipients if item.strip()))
+def _validate_recipients(
+    runtime: PocRuntime, account_id: str, recipients: tuple[str, ...]
+) -> tuple[str, ...]:
+    normalized = tuple(
+        dict.fromkeys(item.strip().casefold() for item in recipients if item.strip())
+    )
     if not set(normalized) <= _allowed_recipients(runtime, account_id):
-        raise HTTPException(422, "Recipients must use an explicitly available professional email for this Customer.")
+        raise HTTPException(
+            422,
+            "Recipients must use an explicitly available professional email for this Customer.",
+        )
     return normalized
 
 
 @router.get("")
-def list_drafts(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)) -> dict:
+def list_drafts(
+    runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)
+) -> dict:
     return {
         "items": runtime.communications.list(current),
         "principal": current,
@@ -85,84 +144,167 @@ def list_drafts(runtime: PocRuntime = Depends(get_runtime), current: Principal =
 
 
 @router.post("")
-def create_draft(body: DraftCreate, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+def create_draft(
+    body: DraftCreate,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+):
     recipients = _validate_recipients(runtime, body.account_id, body.recipients)
     try:
-        return runtime.communications.create(**body.model_dump(exclude={"recipients"}), recipients=recipients, principal=current, occurred_at=runtime.observed_at())
+        return runtime.communications.create(
+            **body.model_dump(exclude={"recipients"}),
+            recipients=recipients,
+            principal=current,
+            occurred_at=runtime.observed_at(),
+        )
     except (CommunicationConflictError, ValueError) as error:
         raise _error(error) from error
 
 
 @router.patch("/{draft_id}")
-def edit_draft(draft_id: str, body: DraftEdit, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+def edit_draft(
+    draft_id: str,
+    body: DraftEdit,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+):
     draft = runtime.communications.repository.get(draft_id)
     if not draft:
         raise HTTPException(404, "Communication draft not found.")
     values = body.model_dump(exclude_unset=True)
     if "recipients" in values:
-        values["recipients"] = _validate_recipients(runtime, draft.account_id, tuple(values["recipients"]))
+        values["recipients"] = _validate_recipients(
+            runtime, draft.account_id, tuple(values["recipients"])
+        )
     try:
-        return runtime.communications.edit(draft_id, **values, principal=current, occurred_at=runtime.observed_at())
+        return runtime.communications.edit(
+            draft_id, **values, principal=current, occurred_at=runtime.observed_at()
+        )
     except Exception as error:
         raise _error(error) from error
 
 
 @router.post("/{draft_id}/assist")
-def assist_draft(draft_id: str, body: DraftAssist, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)) -> dict:
+def assist_draft(
+    draft_id: str,
+    body: DraftAssist,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+) -> dict:
     draft = runtime.communications.repository.get(draft_id)
     if not draft:
         raise HTTPException(404, "Communication draft not found.")
-    account = next(item for item in runtime.environment().accounts if item.id == draft.account_id)
+    account = next(
+        item for item in runtime.environment().accounts if item.id == draft.account_id
+    )
     provider = get_ai_provider(AiConfig.from_settings(runtime.settings))
-    provider_status = "NOT_CONFIGURED"
-    revised = draft.body
-    model = None
-    if provider.configured:
-        try:
-            result = provider.synthesize(GroundedSynthesisRequest(
-                question=f"Revise this outreach draft as instructed: {body.instruction}. Do not add recipients, unsupported facts, or claims.",
-                governed_answer=f"Customer: {account.legal_name}. Current draft: {draft.body}",
-                evidence_ids=draft.evidence_ids,
-                missingness=("Recipient availability remains governed by the application.",),
-            ))
-            revised, provider_status, model = result.content, "AVAILABLE", result.model
-        except (RuntimeError, TimeoutError, ValueError):
-            provider_status = "UNAVAILABLE"
-    try:
-        updated = runtime.communications.edit(draft_id, body=revised, principal=current, occurred_at=runtime.observed_at(), ai_metadata={"provider": "gemini" if model else "deterministic", "model": model or "none", "status": provider_status})
-    except Exception as error:
-        raise _error(error) from error
-    return {"draft": updated, "provider_status": provider_status, "message": "Draft revised with governed Gemini assistance." if model else "Gemini is unavailable; the existing draft was preserved."}
+    if not runtime.communications._can_manage(current, draft):
+        raise HTTPException(
+            403, "This draft is outside the current principal's permitted work."
+        )
+    outcome = draft_governed_content(
+        _drafting_request(
+            account,
+            body.instruction,
+            subject=draft.subject,
+            body=draft.body,
+            evidence_ids=draft.evidence_ids,
+        ),
+        provider,
+    )
+    return {"draft": draft, **_proposal_payload(outcome)}
+
+
+@router.post("/assist")
+def assist_new_draft(
+    body: DraftProposal,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+) -> dict:
+    account = next(
+        (item for item in runtime.environment().accounts if item.id == body.account_id),
+        None,
+    )
+    if not account:
+        raise HTTPException(404, "Canonical Customer not found.")
+    provider = get_ai_provider(AiConfig.from_settings(runtime.settings))
+    outcome = draft_governed_content(
+        _drafting_request(
+            account,
+            body.instruction,
+            subject=body.subject,
+            body=body.body,
+            evidence_ids=body.evidence_ids,
+        ),
+        provider,
+    )
+    return _proposal_payload(outcome)
 
 
 @router.post("/{draft_id}/approval")
-def approval(draft_id: str, body: ApprovalDecision, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+def approval(
+    draft_id: str,
+    body: ApprovalDecision,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+):
     try:
-        return runtime.communications.decide(draft_id, body.decision, principal=current, occurred_at=runtime.observed_at())
+        return runtime.communications.decide(
+            draft_id,
+            body.decision,
+            principal=current,
+            occurred_at=runtime.observed_at(),
+        )
     except Exception as error:
         raise _error(error) from error
 
 
 @router.post("/{draft_id}/preview")
-def preview(draft_id: str, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+def preview(
+    draft_id: str,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+):
     try:
-        return runtime.communications.preview(draft_id, principal=current, occurred_at=runtime.observed_at(), delivery=UnconfiguredDeliveryAdapter())
+        return runtime.communications.preview(
+            draft_id,
+            principal=current,
+            occurred_at=runtime.observed_at(),
+            delivery=UnconfiguredDeliveryAdapter(),
+        )
     except Exception as error:
         raise _error(error) from error
 
 
 @router.post("/{draft_id}/send")
-def send(draft_id: str, confirmed: bool = False, idempotency_key: str = "", runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+def send(
+    draft_id: str,
+    confirmed: bool = False,
+    idempotency_key: str = "",
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+):
     if not idempotency_key:
         raise HTTPException(422, "An idempotency key is required.")
     try:
-        return runtime.communications.send(draft_id, principal=current, occurred_at=runtime.observed_at(), confirmed=confirmed, idempotency_key=idempotency_key, delivery=UnconfiguredDeliveryAdapter())
+        return runtime.communications.send(
+            draft_id,
+            principal=current,
+            occurred_at=runtime.observed_at(),
+            confirmed=confirmed,
+            idempotency_key=idempotency_key,
+            delivery=UnconfiguredDeliveryAdapter(),
+        )
     except Exception as error:
         raise _error(error) from error
 
 
 @router.get("/{draft_id}/history")
-def history(draft_id: str, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)) -> dict:
+def history(
+    draft_id: str,
+    runtime: PocRuntime = Depends(get_runtime),
+    current: Principal = Depends(principal),
+) -> dict:
     try:
         return {"events": runtime.communications.history(draft_id, current)}
     except Exception as error:
