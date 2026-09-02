@@ -4,6 +4,7 @@ import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { curatedSignalBrief } from '../../components/signalBriefModel'
 import { Button, Empty, FilterChip, Panel, SearchInput, SelectInput } from '../../components/UI'
 import './intelligence.css'
+import { FederalProcurementView } from './FederalProcurement'
 
 type Filters = { customer: string; industry: string; kind: string; source: string; evidence: string }
 const emptyFilters: Filters = { customer: '', industry: '', kind: '', source: '', evidence: '' }
@@ -22,6 +23,7 @@ function signalMatches(signal: Signal, account: Account | undefined, query: stri
 }
 
 export function Intelligence({ signals, accounts, onAccount, onEventSelect, onOmniContext }: { signals: Signal[]; accounts: Account[]; onAccount: (id: string) => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
+  const [workspace, setWorkspace] = useState<'monitor' | 'federal'>('monitor')
   const [selectedEventId, setSelectedEventId] = useState<string>()
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<Filters>(emptyFilters)
@@ -49,7 +51,9 @@ export function Intelligence({ signals, accounts, onAccount, onEventSelect, onOm
   const clearAll = () => { clearEventSelection(); setQuery(''); setFilters(emptyFilters) }
   const customerName = (id?: string) => accountById.get(id ?? '')?.name ?? 'Unresolved Customer'
   const filterLabels: Array<[keyof Filters, string]> = [['customer', filters.customer ? customerName(filters.customer) : ''], ['industry', filters.industry], ['kind', filters.kind.replaceAll('_', ' ')], ['source', filters.source.replaceAll('_', ' ')], ['evidence', filters.evidence.replaceAll('_', ' ')]]
+  if (workspace === 'federal') return <><div className="surface intelligence-surface"><div className="federal-tabs"><Button onClick={() => setWorkspace('monitor')}>Intelligence Monitor</Button><Button aria-current="page">Federal Procurement</Button></div></div><FederalProcurementView /></>
   return <div className="surface intelligence-surface">
+    <div className="federal-tabs"><Button aria-current="page">Intelligence Monitor</Button><Button onClick={() => setWorkspace('federal')}>Federal Procurement</Button></div>
     <header className="page-title intelligence-title"><span className="eyebrow">Public evidence</span><h1>Intelligence</h1><p>Find what changed and why it matters.</p></header>
     <section className="intelligence-controls" aria-label="Intelligence search and filters">
       <SearchInput aria-label="Search Intelligence" placeholder="Search title, summary, Customer, industry, source, signal type…" value={query} onChange={event => setSearch(event.target.value)} />

@@ -1,4 +1,4 @@
-import type { Account, Account360, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, HostedSession, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, Signal, Suggestion, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalProcurement, HostedSession, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, Signal, Suggestion, WorkspaceSettings } from '../types/api'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -22,6 +22,7 @@ export const api = {
   relationships: (accountId: string) => request<AccountRelationships>(`/accounts/${accountId}/relationships?depth=2`),
   today: () => request<{ priority_intelligence: Signal[]; commercial_alerts: Alert[]; recommended_actions: Array<{ account_id: string; action: string; evidence_ids: string[] }>; command_center: CommandCenter }>('/today'),
   intelligence: () => request<{ signals: Signal[] }>('/intelligence'),
+  federalProcurement: (params = '') => request<FederalProcurement>(`/federal-procurement${params}`),
   map: (industry?: string) => request<{ layers: string[]; accounts: MapRecord[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : '')),
   actions: () => actionRequest<{ items: Action[]; suggestions: Suggestion[]; principal: Principal; persistence: string; warning: string }>('/actions'),
   createAction: (body: { account_id: string; title: string; description?: string; owner_id?: string; priority: ActionPriority; due_date?: string; evidence_ids?: string[]; approval_required?: boolean; idempotency_key?: string }) => actionRequest<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),
