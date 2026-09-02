@@ -12,7 +12,10 @@ test('desktop target shell preserves primary seller navigation and Omni access',
 
   const shell = page.locator('.app-shell:not(.app-shell-loading)')
   const navigation = page.getByRole('navigation', { name: 'Primary navigation' })
-  await expect(shell).toBeVisible()
+  // The governed bootstrap may take longer than Playwright's default under the
+  // normal parallel release matrix. Wait for the explicit ready state rather
+  // than treating startup timing as a shell regression.
+  await expect(shell).toBeVisible({ timeout: 15_000 })
   await expect(navigation).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' })).toBeHidden()
 

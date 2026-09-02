@@ -43,4 +43,5 @@ The repository has a production Docker entrypoint, Fly release migration command
 - Federal relevance is not PWin and needs BTX calibration.
 - Relationships are deterministic bounded paths, not a weighted graph engine.
 - Map output requires canonical supplied/verified facilities.
+- The real Google Maps renderer is available when deployment-managed browser configuration is supplied. Executive-map capture remains deferred pending an authorized browser key; deterministic Playwright coverage uses the TestCanvas and is not blocked by that configuration.
 - Gemini is optional language assistance; governed fallback remains available.
