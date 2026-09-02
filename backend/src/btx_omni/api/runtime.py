@@ -14,6 +14,7 @@ from btx_omni.modules.commercial.read import (
     CommercialReadService,
 )
 from btx_omni.modules.communications.service import CommunicationService
+from btx_omni.modules.intelligence.technical_fit import TechnicalDecompositionService
 from btx_omni.modules.work.service import WorkService
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.repository import MonitorRepository
@@ -50,10 +51,15 @@ class PocRuntime:
         init=False, default=None
     )
     _curated_sample: SampleEnvironment = field(init=False, repr=False)
+    technical_decomposition: TechnicalDecompositionService = field(init=False)
 
     def __post_init__(self) -> None:
         self._curated_sample = self.sample
         self.sessions = SessionStore(self.settings)
+        self.technical_decomposition = TechnicalDecompositionService(
+            components=self.sample.component_classes,
+            business_units=self.sample.business_units,
+        )
         application_engine = create_database_engine(self.settings)
         self.work = WorkService(SqlActionRepository(application_engine))
         self.communication_repository = SqlCommunicationRepository(application_engine)

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     monitor_sam_naics: str = ""
     monitor_sam_naics_verification_state: str = "PENDING_VERIFICATION"
     monitor_brief_synthesis_cap: int = 3
+    monitor_technical_decomposition_cap: int = 2
     monitor_brief_auth_retry_seconds: int = 3600
     monitor_brief_timeout_retry_seconds: int = 300
     monitor_brief_quota_retry_seconds: int = 21600

@@ -21,6 +21,18 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
     </div>
     <p>{brief.seller_summary}</p>
     {brief.summary_mode === 'GEMINI_ASSISTED' && <small>Language assisted; governed evidence unchanged.</small>}
+    {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit">
+      <div className="seller-signal-details technical-fit">
+        {brief.technical_opportunity.matches.length ? brief.technical_opportunity.matches.map((match, index) => <article key={`${match.candidate_name}:${index}`}>
+          <p><strong>{match.candidate_name}</strong> · <span>{display(match.basis)}</span></p>
+          {match.status === 'MATCHED' ? <>
+            <p>Controlled BTX match: {match.component_name ?? 'Available'}</p>
+            <p>Applicable BU{match.business_units.length === 1 ? '' : 's'}: {match.business_units.map(unit => unit.name).join(', ') || 'Unavailable'}</p>
+          </> : <p>{match.status === 'NO_MATCH' ? 'No controlled BTX capability match identified.' : match.status === 'POSSIBLE_MATCH_REVIEW_REQUIRED' ? 'Controlled taxonomy review required before a BTX match is asserted.' : 'Controlled BTX taxonomy is not specific enough for a match.'}</p>}
+        </article>) : <p>{brief.technical_opportunity.provider_status === 'AVAILABLE' ? 'No manufactured component candidates were identified from the supplied public evidence.' : 'Technical decomposition is unavailable; the governed public signal remains available.'}</p>}
+        <small>{brief.technical_opportunity.disclosure}</small>
+      </div>
+    </Disclosure>}
     <Disclosure title="Evidence, why it matters, and next step">
       <div className="seller-signal-details">
         <p><strong>What happened:</strong> {brief.what_happened}</p>

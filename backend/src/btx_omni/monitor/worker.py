@@ -10,6 +10,7 @@ from dataclasses import asdict
 from time import monotonic
 
 from btx_omni.ai.config import AiConfig
+from btx_omni.ai.contracts import PublicEvidenceRecord, TechnicalDecompositionRequest
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.core.config import Settings
@@ -84,6 +85,7 @@ def run_worker(
                 deadline_exhausted = True
                 break
         synthesis = None
+        technical: list[dict] = []
         if runs and not deadline_exhausted and repository:
             synthesis = process_signal_brief_synthesis(
                 signal_briefs_for_monitor(runtime.monitor),
@@ -99,6 +101,17 @@ def run_worker(
                 deadline_monotonic=deadline,
                 minimum_attempt_seconds=settings.ai_timeout_seconds,
             )
+            # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
+            provider = get_ai_provider(AiConfig.from_settings(settings))
+            for brief in signal_briefs_for_monitor(runtime.monitor)[:settings.monitor_technical_decomposition_cap]:
+                request = TechnicalDecompositionRequest(
+                    event_id=brief.id, event_type=brief.headline,
+                    canonical_customer_name=next((item.legal_name for item in runtime.sample.accounts if item.id in brief.canonical_account_ids), None),
+                    canonical_program_name=brief.canonical_program_id, market=brief.markets[0] if brief.markets else None,
+                    evidence=(PublicEvidenceRecord(brief.evidence_ids[0] if brief.evidence_ids else brief.id, brief.what_happened, brief.what_happened, brief.source_url, brief.source_system),),
+                )
+                projection = runtime.technical_decomposition.process(request, provider)
+                technical.append({"event_id": brief.id, "provider_status": projection.provider_status.value, "matches": len(projection.matches)})
     failed = tuple(run.source_id for run in runs if run.failures)
     report = {
         "status": "DEADLINE_EXHAUSTED" if deadline_exhausted else "FAILED" if failed else "SUCCESS",
@@ -107,6 +120,7 @@ def run_worker(
         "failed_sources": failed,
         "runs": tuple(asdict(run) for run in runs),
         "brief_synthesis": asdict(synthesis) if synthesis else None,
+        "technical_decomposition": technical,
         "bounded": {
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,

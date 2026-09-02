@@ -49,6 +49,15 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(app, /api[\s\S]*\.monitor\(\)[\s\S]*\.then\(setMonitor\)[\s\S]*\.catch/)
 })
 
+test('Technical Opportunity disclosure preserves the model hypothesis and controlled-match boundary', () => {
+  assert.match(apiTypes, /TechnicalFitMatch/)
+  assert.match(apiTypes, /POSSIBLE_MATCH_REVIEW_REQUIRED/)
+  assert.match(signalBrief, /Potential BTX Technical Fit/)
+  assert.match(signalBrief, /Controlled BTX match/)
+  assert.match(signalBrief, /No controlled BTX capability match identified/)
+  assert.doesNotMatch(signalBrief, /probability|supplier claim/i)
+})
+
 test('Customer 360 distinguishes public evidence from simulated BTX context', () => {
   assert.match(accounts, /Public professional contact research/)
   assert.match(accounts, /Simulated BTX commercial context/)

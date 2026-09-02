@@ -18,7 +18,12 @@ from btx_omni.ai.contracts import (
     LanguageResult,
     ProviderStatus,
     ReadIntent,
+    TechnicalBasis,
+    TechnicalCandidate,
+    TechnicalDecompositionRequest,
+    TechnicalDecompositionResult,
 )
+from btx_omni.ai.technical_prompt import TECHNICAL_DECOMPOSITION_PROMPT
 
 
 class _Models(Protocol):
@@ -120,6 +125,62 @@ class GeminiProvider:
         )
         return LanguageResult(
             content, self.name, self.config.model, request.evidence_ids
+        )
+
+    def decompose_technical_opportunity(
+        self, request: TechnicalDecompositionRequest
+    ) -> TechnicalDecompositionResult:
+        """Return candidates only; controlled BTX matching happens outside Gemini."""
+        evidence = "\n\n".join(
+            f"EVIDENCE ID: {item.evidence_id}\nTITLE: {item.title}\nURL: {item.source_url or 'Unavailable'}\nEXTRACT:\n{item.extract}"
+            for item in request.evidence
+        )
+        schema = {
+            "event_summary": "string",
+            "product_candidates": [{"name": "string", "basis": "SOURCE_STATED|MODEL_INFERRED", "reason": "string", "source_support": "string", "evidence_ids": ["evidence id"]}],
+            "program_candidates": [], "technical_systems": [],
+            "component_candidates": [{"name": "string", "basis": "SOURCE_STATED|MODEL_INFERRED", "reason": "string", "source_support": "string", "evidence_ids": ["evidence id"], "parent_system": "string|null", "parent_product": "string|null", "manufacturing_family": "string|null"}],
+            "uncertainties": ["string"],
+        }
+        prompt = (
+            f"{TECHNICAL_DECOMPOSITION_PROMPT}\n\nCONTRACT VERSION: {request.contract_version}\n"
+            f"EVENT: {request.event_type}\nCANONICAL CUSTOMER NAME (context only): {request.canonical_customer_name or 'Unavailable'}\n"
+            f"CANONICAL PROGRAM NAME (context only): {request.canonical_program_name or 'Unavailable'}\nMARKET: {request.market or 'Unavailable'}\n"
+            f"PUBLIC EVIDENCE:\n{evidence}\n\nRETURN SCHEMA:\n{json.dumps(schema)}"
+        )
+        content = self._generate_text(prompt, types.GenerateContentConfig(
+            temperature=0, max_output_tokens=1800, response_mime_type="application/json"
+        ))
+        return self._technical_result(content)
+
+    def _technical_result(self, content: str) -> TechnicalDecompositionResult:
+        try:
+            payload = json.loads(content)
+        except (TypeError, json.JSONDecodeError) as error:
+            raise ValueError("Gemini technical decomposition output is invalid.") from error
+        allowed = {"event_summary", "product_candidates", "program_candidates", "technical_systems", "component_candidates", "uncertainties"}
+        if not isinstance(payload, dict) or set(payload) != allowed:
+            raise ValueError("Gemini technical decomposition output has unsupported fields.")
+        def candidates(value: object) -> tuple[TechnicalCandidate, ...]:
+            if not isinstance(value, list):
+                raise TypeError("Gemini technical candidate collection is invalid.")
+            result = []
+            keys = {"name", "basis", "reason", "source_support", "evidence_ids", "parent_system", "parent_product", "manufacturing_family"}
+            for item in value:
+                if not isinstance(item, dict) or set(item) - keys:
+                    raise ValueError("Gemini technical candidate has unsupported fields.")
+                result.append(TechnicalCandidate(
+                    name=str(item.get("name", "")), basis=TechnicalBasis(item.get("basis")),
+                    reason=str(item.get("reason", "")), source_support=str(item.get("source_support", "")),
+                    evidence_ids=tuple(item.get("evidence_ids", ())), parent_system=item.get("parent_system"),
+                    parent_product=item.get("parent_product"), manufacturing_family=item.get("manufacturing_family"),
+                ))
+            return tuple(result)
+        return TechnicalDecompositionResult(
+            event_summary=str(payload.get("event_summary", "")),
+            product_candidates=candidates(payload["product_candidates"]), program_candidates=candidates(payload["program_candidates"]),
+            technical_systems=candidates(payload["technical_systems"]), component_candidates=candidates(payload["component_candidates"]),
+            uncertainties=tuple(payload["uncertainties"]), provider=self.name, model=self.config.model,
         )
 
     def _generate_text(self, prompt: str, generation_config: object) -> str:
