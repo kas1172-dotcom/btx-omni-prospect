@@ -4,7 +4,7 @@ from __future__ import annotations
 import signal
 import threading
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from time import monotonic
 from uuid import uuid4
@@ -204,6 +204,20 @@ class MonitorService:
                         program_candidates.append(program_candidate)
                 version_key = (observation.source_identity.source_system, observation.source_identity.source_record_id)
                 previous = self.source_versions.get(version_key)
+                # Source adapters construct a fresh observation on every run.
+                # Preserve governed first-seen history when the same canonical
+                # source record reappears; this is consumed by procurement
+                # period comparisons and is not inferred from source text.
+                if previous is not None:
+                    observation = replace(
+                        observation,
+                        source_version=replace(
+                            observation.source_version,
+                            first_seen_at=previous.source_version.first_seen_at,
+                            last_seen_at=observation.observed_at,
+                            changed_at=(observation.observed_at if observation_changed(previous, observation) else previous.source_version.changed_at),
+                        ),
+                    )
                 persisted_hash = self.repository.source_content_hash(*version_key) if previous is None and self.repository else None
                 changed += int(observation_changed(previous, observation) or (persisted_hash is not None and persisted_hash != observation.source_version.content_hash))
                 new += int(previous is None and persisted_hash is None)

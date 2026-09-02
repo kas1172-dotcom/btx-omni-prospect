@@ -8,3 +8,7 @@
 @media(max-width:980px){.intelligence-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){.intelligence-title{margin-bottom:10px}.intelligence-title .eyebrow,.intelligence-title h1{display:none}.intelligence-title p{font-size:17px}.intelligence-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intelligence-filter-grid .ui-field:last-child{grid-column:1/-1}.intelligence-active-filters{flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding-bottom:3px}.intelligence-active-filters>*{flex:0 0 auto}.intelligence-feed-panel{padding:0 12px}.intelligence-signal{padding:13px 0}.intelligence-signal.selected{margin:0 -12px;padding:13px 12px}.intelligence-signal-head{display:grid;gap:6px}.intelligence-states{justify-content:flex-start}.intelligence-actions .ui-button{min-height:44px}.intelligence-signal .ui-disclosure-trigger{min-height:44px}}
 @media(max-width:350px){.intelligence-filter-grid{grid-template-columns:1fr}.intelligence-filter-grid .ui-field:last-child{grid-column:auto}.intelligence-actions{display:grid}.intelligence-actions .ui-button{width:100%}}
+
+.federal-tabs, .federal-kpis { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+.federal-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.federal-procurement { display: grid; gap: 12px; }

@@ -17,6 +17,7 @@ export default defineConfig({
         GEMINI_API_KEY: '',
         GOOGLE_API_KEY: '',
         BTX_MONITOR_OPERATOR_TOKEN: '',
+        BTX_FEDERAL_PROCUREMENT_FIXTURE_MODE: 'true',
         BTX_ACTION_SALESPERSON_TOKEN: 'development-salesperson',
         BTX_ACTION_MANAGER_TOKEN: 'development-manager',
       },
