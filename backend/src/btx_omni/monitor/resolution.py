@@ -56,15 +56,6 @@ def _distinct(matches: list[AccountWatchProfile]) -> list[AccountWatchProfile]:
 
 def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, source_identifiers: tuple[tuple[str, str], ...] = (), source_url: str | None = None) -> EntityResolution:
     """Resolve only governed evidence and return ambiguity instead of guessing."""
-    source_owners = _distinct([
-        profile for profile in profiles
-        if ("governed_source_owner", profile.canonical_account_id) in source_identifiers
-    ])
-    if len(source_owners) == 1:
-        profile = source_owners[0]
-        return EntityResolution(mention, profile.canonical_account_id, ResolutionState.RESOLVED, "governed_source_ownership", "source publisher is explicitly governed as owned by this account")
-    if len(source_owners) > 1:
-        return EntityResolution(mention, None, ResolutionState.AMBIGUOUS, "governed_source_ownership_collision", "multiple governed source owners were supplied", tuple(profile.canonical_account_id for profile in source_owners))
     identifier_matches = _distinct([
         profile for profile in profiles
         if any(
@@ -85,6 +76,15 @@ def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, s
             "multiple governed accounts match supplied exact source identifiers",
             tuple(profile.canonical_account_id for profile in identifier_matches),
         )
+    source_owners = _distinct([
+        profile for profile in profiles
+        if ("governed_source_owner", profile.canonical_account_id) in source_identifiers
+    ])
+    if len(source_owners) == 1:
+        profile = source_owners[0]
+        return EntityResolution(mention, profile.canonical_account_id, ResolutionState.RESOLVED, "governed_source_ownership", "source publisher is explicitly governed as owned by this account")
+    if len(source_owners) > 1:
+        return EntityResolution(mention, None, ResolutionState.AMBIGUOUS, "governed_source_ownership_collision", "multiple governed source owners were supplied", tuple(profile.canonical_account_id for profile in source_owners))
     exact = mention.casefold().strip()
     matches = _distinct([profile for profile in profiles if exact in {
         profile.legal_name.casefold(),

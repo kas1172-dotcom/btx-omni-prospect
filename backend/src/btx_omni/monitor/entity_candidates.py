@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
@@ -20,6 +21,48 @@ from btx_omni.monitor.contracts import (
 from btx_omni.monitor.ontology import ResolutionState
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile
+
+_NON_DISCRIMINATIVE = frozenset({"and", "the", "company", "group", "systems", "technology", "technologies", "inc", "corp", "corporation", "llc", "ltd"})
+
+
+def _tokens(value: str) -> frozenset[str]:
+    return frozenset(
+        token for token in re.findall(r"[\w]+", value.casefold())
+        if len(token) > 2 and token not in _NON_DISCRIMINATIVE
+    )
+
+
+def generate_candidate_account_ids(
+    *, mention: str,
+    source_text: str,
+    profiles: tuple[AccountWatchProfile, ...],
+    markets: tuple[str, ...] = (),
+    cap: int = 12,
+) -> tuple[str, ...]:
+    """Return governed, explainable candidates without fuzzy identity matching.
+
+    A token overlap only puts a record in an AI review set.  It never resolves
+    identity, and candidates with no discriminative governed evidence are not
+    sent to the model.
+    """
+    mention_tokens = _tokens(mention)
+    source_tokens = _tokens(source_text)
+    ranked: list[tuple[int, str]] = []
+    for profile in profiles:
+        governed_names = (profile.legal_name, *profile.aliases, *profile.subsidiaries, *profile.usaspending_recipient_names)
+        name_tokens = set().union(*(_tokens(value) for value in governed_names if value))
+        overlap = len(mention_tokens & name_tokens)
+        context = sum(
+            1
+            for value in (*profile.facilities, *profile.programs)
+            if _tokens(value) & source_tokens
+        )
+        market = int(bool(set(markets) & set(profile.industries)))
+        # A distinctive governed name/alias token is required.  Market and
+        # context only narrow an already meaningful set.
+        if overlap:
+            ranked.append((overlap * 10 + context * 2 + market, profile.canonical_account_id))
+    return tuple(account_id for _score, account_id in sorted(ranked, key=lambda item: (-item[0], item[1]))[:cap])
 
 
 class CandidateProvider(Protocol):
@@ -48,7 +91,13 @@ class EntityCandidateResolver:
         # review queue, not fuzzy identity matching, and output remains
         # UNRESOLVED unless separate governed evidence validates it.
         if not candidates:
-            candidates = tuple(profile.canonical_account_id for profile in self.profiles[: self.cap])
+            candidates = generate_candidate_account_ids(
+                mention=subject.mention,
+                source_text="\n".join((observation.title, observation.structured_payload or "")),
+                profiles=self.profiles,
+                markets=event.markets,
+                cap=self.cap,
+            )
         if not candidates:
             return event
         labels = tuple(next((profile.legal_name for profile in self.profiles if profile.canonical_account_id == account_id), account_id) for account_id in candidates)
@@ -61,8 +110,11 @@ class EntityCandidateResolver:
         key = hashlib.sha256(json.dumps({"evidence": observation.source_version.content_hash, "request": request.__dict__, "provider": self.provider.name, "model": model}, sort_keys=True, default=list).encode()).hexdigest()
         cached = self.repository.entity_candidate_resolution(key) if self.repository else None
         if cached:
-            proposal = json.loads(cached["projection"])
-        else:
+            try:
+                proposal = json.loads(cached["projection"])
+            except (TypeError, json.JSONDecodeError):
+                cached = None
+        if not cached:
             try:
                 response = self.provider.propose_entity_candidate(request)
                 proposal = response.__dict__

@@ -64,7 +64,16 @@ class GovernedPublisher:
     enabled: bool = True
 
 
+DEFAULT_COMPANY_PUBLISHERS = (
+    GovernedPublisher("boeing-investor-press", "https://investors.boeing.com/rss/pressrelease.aspx", "boeing", "Boeing investor press releases"),
+    GovernedPublisher("lockheed-news-releases", "https://news.lockheedmartin.com/news-releases?pagetemplate=rss", "lockheed-martin", "Lockheed Martin news releases"),
+    GovernedPublisher("emerson-investor-news", "https://ir.emerson.com/news-events/press-releases/rss", "emerson", "Emerson investor news"),
+)
+
+
 def _governed_publishers(value: str, *, required_owner: bool) -> tuple[GovernedPublisher, ...]:
+    if required_owner and value.strip().upper() == "DEFAULT":
+        return DEFAULT_COMPANY_PUBLISHERS
     try:
         raw = json.loads(value or "[]")
     except json.JSONDecodeError as exc:

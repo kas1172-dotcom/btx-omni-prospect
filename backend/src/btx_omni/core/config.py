@@ -58,9 +58,9 @@ class Settings(BaseSettings):
     # Commerce's official content API uses a data.gov API key. Keeping this
     # separate from SAM prevents accidental cross-provider credential use.
     commerce_api_key: str | None = None
-    # These are explicit operator-approved registry entries, never a general
-    # URL crawl input. Empty registries intentionally leave sources disabled.
-    monitor_company_feed_registry: str = "[]"
+    # DEFAULT is a small reviewed official-feed cohort. Operators may replace
+    # it with explicit JSON entries; [] deliberately disables a registry.
+    monitor_company_feed_registry: str = "DEFAULT"
     monitor_state_source_registry: str = "[]"
     # SEC requires an organization/contact identifying User-Agent.  Never use a
     # plausible-looking default contact as a production identity.

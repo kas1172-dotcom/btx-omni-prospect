@@ -37,8 +37,11 @@ class MonitorCatalog:
                     mentions.append(candidate)
                     break
         identifier_resolution = resolve_entity(
-            text, self.profiles, source_identifiers=source_identifiers, source_url=source_url
-        ) if source_identifiers else None
+            text,
+            self.profiles,
+            source_identifiers=source_identifiers,
+            source_url=source_url,
+        )
         if identifier_resolution and identifier_resolution.state is ResolutionState.RESOLVED:
             return (identifier_resolution,)
         resolved = [resolve_entity(mention, self.profiles) for mention in dict.fromkeys(mentions)]

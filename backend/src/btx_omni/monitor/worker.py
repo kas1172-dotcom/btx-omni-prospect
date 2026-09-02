@@ -83,6 +83,7 @@ def run_worker(
         deadline = monotonic() + settings.monitor_worker_max_seconds
         runs = []
         deadline_exhausted = False
+        source_deadline_exceeded = False
         for index, source_id in enumerate(configured):
             remaining = deadline - monotonic()
             if remaining < settings.monitor_source_min_start_seconds:
@@ -105,9 +106,16 @@ def run_worker(
                 deadline_monotonic=source_deadline,
             )
             runs.append(run)
+            source_deadline_exceeded = source_deadline_exceeded or (
+                "DEADLINE_EXCEEDED" in run.failures
+            )
             if monotonic() >= deadline:
                 deadline_exhausted = True
                 break
+        # A timed-out source does not prevent later sources from running, but
+        # it consumes its reserved collection slice; do not start optional AI
+        # work after a bounded collection deadline condition.
+        deadline_exhausted = deadline_exhausted or source_deadline_exceeded
         synthesis = None
         technical: list[dict] = []
         explanations: list[dict] = []

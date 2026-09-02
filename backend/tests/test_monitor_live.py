@@ -20,7 +20,10 @@ from btx_omni.modules.scoring.account_attractiveness import (
     calculate_account_attractiveness,
 )
 from btx_omni.monitor.catalog import MonitorCatalog
-from btx_omni.monitor.entity_candidates import EntityCandidateResolver
+from btx_omni.monitor.entity_candidates import (
+    EntityCandidateResolver,
+    generate_candidate_account_ids,
+)
 from btx_omni.monitor.packs import PACKS
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
@@ -241,6 +244,33 @@ def test_entity_candidate_is_cached_and_never_promotes_canonical_identity() -> N
     assert event.subject_entities[0].canonical_account_id is None
     assert event.subject_entities[0].state.value == "UNRESOLVED"
     assert event.subject_entities[0].candidate_account_ids == ("one",)
+
+
+def test_candidate_generator_uses_governed_evidence_not_catalog_order() -> None:
+    profiles = (
+        AccountWatchProfile("first", "Unrelated Industrial Holdings"),
+        AccountWatchProfile("target", "Boeing Company", aliases=("Boeing",)),
+        AccountWatchProfile("other", "Boeing Precision", facilities=("Phoenix Plant",)),
+    )
+    candidates = generate_candidate_account_ids(
+        mention="Boeing", source_text="Boeing announces a Phoenix Plant expansion",
+        profiles=profiles, markets=("Commercial Aerospace",), cap=2,
+    )
+    assert candidates == ("other", "target")
+    assert "first" not in candidates
+    assert generate_candidate_account_ids(mention="Entirely Unknown", source_text="Unrelated association notice", profiles=profiles) == ()
+
+
+def test_governed_source_owner_resolves_without_native_identifier_but_identifier_wins() -> None:
+    profiles = (
+        AccountWatchProfile("boeing", "Boeing", domain="boeing.example"),
+        AccountWatchProfile("lockheed", "Lockheed Martin", sec_cik="0000936468"),
+    )
+    catalog = MonitorCatalog(profiles)
+    owned = catalog.resolve_subjects("Skunk Works announces an update", source_url="https://boeing.example/feed")
+    assert owned[0].canonical_account_id == "boeing"
+    conflicted = catalog.resolve_subjects("Skunk Works announces an update", source_url="https://boeing.example/feed", source_identifiers=(("sec_cik", "0000936468"),))
+    assert conflicted[0].canonical_account_id == "lockheed"
 
 
 def test_monitor_observations_cluster_with_multiple_evidence_and_source_update() -> None:
