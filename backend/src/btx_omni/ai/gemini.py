@@ -151,9 +151,9 @@ class GeminiProvider:
         content = self._generate_text(prompt, types.GenerateContentConfig(
             temperature=0, max_output_tokens=1800, response_mime_type="application/json"
         ))
-        return self._technical_result(content)
+        return self._technical_result(content, request)
 
-    def _technical_result(self, content: str) -> TechnicalDecompositionResult:
+    def _technical_result(self, content: str, request: TechnicalDecompositionRequest) -> TechnicalDecompositionResult:
         try:
             payload = json.loads(content)
         except (TypeError, json.JSONDecodeError) as error:
@@ -161,6 +161,7 @@ class GeminiProvider:
         allowed = {"event_summary", "product_candidates", "program_candidates", "technical_systems", "component_candidates", "uncertainties"}
         if not isinstance(payload, dict) or set(payload) != allowed:
             raise ValueError("Gemini technical decomposition output has unsupported fields.")
+        allowed_evidence_ids = {item.evidence_id for item in request.evidence}
         def candidates(value: object) -> tuple[TechnicalCandidate, ...]:
             if not isinstance(value, list):
                 raise TypeError("Gemini technical candidate collection is invalid.")
@@ -169,10 +170,16 @@ class GeminiProvider:
             for item in value:
                 if not isinstance(item, dict) or set(item) - keys:
                     raise ValueError("Gemini technical candidate has unsupported fields.")
+                basis = TechnicalBasis(item.get("basis"))
+                evidence_ids = tuple(item.get("evidence_ids", ()))
+                if any(not isinstance(evidence_id, str) or evidence_id not in allowed_evidence_ids for evidence_id in evidence_ids):
+                    raise ValueError("Gemini technical candidate references unsupported evidence.")
+                if basis is TechnicalBasis.SOURCE_STATED and (not evidence_ids or not str(item.get("source_support", "")).strip()):
+                    raise ValueError("SOURCE_STATED technical candidate requires governed evidence support.")
                 result.append(TechnicalCandidate(
-                    name=str(item.get("name", "")), basis=TechnicalBasis(item.get("basis")),
+                    name=str(item.get("name", "")), basis=basis,
                     reason=str(item.get("reason", "")), source_support=str(item.get("source_support", "")),
-                    evidence_ids=tuple(item.get("evidence_ids", ())), parent_system=item.get("parent_system"),
+                    evidence_ids=evidence_ids, parent_system=item.get("parent_system"),
                     parent_product=item.get("parent_product"), manufacturing_family=item.get("manufacturing_family"),
                 ))
             return tuple(result)

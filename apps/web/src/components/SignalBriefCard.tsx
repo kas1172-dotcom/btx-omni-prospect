@@ -23,6 +23,9 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
     {brief.summary_mode === 'GEMINI_ASSISTED' && <small>Language assisted; governed evidence unchanged.</small>}
     {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit">
       <div className="seller-signal-details technical-fit">
+        {brief.technical_opportunity.event_summary && <p>{brief.technical_opportunity.event_summary}</p>}
+        {brief.technical_opportunity.program_candidates.length > 0 && <div><strong>Program / product</strong><ul>{[...brief.technical_opportunity.program_candidates, ...brief.technical_opportunity.product_candidates].map((item, index) => <li key={`candidate-${index}`}>{item.name} · {display(item.basis)}</li>)}</ul></div>}
+        {brief.technical_opportunity.technical_systems.length > 0 && <div><strong>Technical context</strong><ul>{brief.technical_opportunity.technical_systems.map((item, index) => <li key={`system-${index}`}>{item.name} · {display(item.basis)}</li>)}</ul></div>}
         {brief.technical_opportunity.matches.length ? brief.technical_opportunity.matches.map((match, index) => <article key={`${match.candidate_name}:${index}`}>
           <p><strong>{match.candidate_name}</strong> · <span>{display(match.basis)}</span></p>
           {match.status === 'MATCHED' ? <>
@@ -30,6 +33,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
             <p>Applicable BU{match.business_units.length === 1 ? '' : 's'}: {match.business_units.map(unit => unit.name).join(', ') || 'Unavailable'}</p>
           </> : <p>{match.status === 'NO_MATCH' ? 'No controlled BTX capability match identified.' : match.status === 'POSSIBLE_MATCH_REVIEW_REQUIRED' ? 'Controlled taxonomy review required before a BTX match is asserted.' : 'Controlled BTX taxonomy is not specific enough for a match.'}</p>}
         </article>) : <p>{brief.technical_opportunity.provider_status === 'AVAILABLE' ? 'No manufactured component candidates were identified from the supplied public evidence.' : 'Technical decomposition is unavailable; the governed public signal remains available.'}</p>}
+        {brief.technical_opportunity.uncertainties.length > 0 && <div><strong>Uncertainties</strong><ul>{brief.technical_opportunity.uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
         <small>{brief.technical_opportunity.disclosure}</small>
       </div>
     </Disclosure>}

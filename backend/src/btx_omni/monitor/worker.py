@@ -105,20 +105,23 @@ def run_worker(
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
             provider = get_ai_provider(AiConfig.from_settings(settings))
             for brief in signal_briefs_for_monitor(runtime.monitor)[:settings.monitor_technical_decomposition_cap]:
+                account = next((item for item in runtime.sample.accounts if item.id in brief.canonical_account_ids), None)
+                program = next((item for item in runtime.sample.programs if item.id == brief.canonical_program_id), None)
                 request = TechnicalDecompositionRequest(
                     event_id=brief.id, event_type=brief.headline,
-                    canonical_customer_name=None,
-                    canonical_program_name=brief.canonical_program_id, market=brief.markets[0] if brief.markets else None,
+                    canonical_customer_name=account.name if account else None,
+                    canonical_program_name=program.name if program else None, market=brief.markets[0] if brief.markets else None,
                     evidence=(PublicEvidenceRecord(brief.evidence_ids[0] if brief.evidence_ids else brief.id, brief.what_happened, brief.what_happened, brief.source_url, brief.source_system),),
                 )
-                projection = runtime.technical_decomposition.process(request, provider)
-                repository.save_technical_decomposition(
+                cache_key = runtime.technical_decomposition.cache_key(request, model=runtime.technical_decomposition.provider_model(provider))
+                outcome = runtime.technical_decomposition.process(request, provider, cached=repository.technical_decomposition(brief.id, cache_key), now=runtime.observed_at())
+                projection = outcome.projection
+                if outcome.should_persist:
+                    repository.save_technical_decomposition(
                     event_id=brief.id, governed_content_hash=projection.governed_content_hash,
-                    projection=seller_projection(projection) if projection.decomposition else None,
-                    provider=projection.decomposition.provider if projection.decomposition else None,
-                    model=projection.decomposition.model if projection.decomposition else None,
-                    status=projection.provider_status.value, processed_at=runtime.observed_at(),
-                )
+                    projection=seller_projection(projection), provider=projection.language_provider,
+                    model=projection.language_model, status=projection.provider_status.value, processed_at=runtime.observed_at(),
+                    attempt_count=outcome.attempt_count, next_retry_at=outcome.next_retry_at)
                 technical.append({"event_id": brief.id, "provider_status": projection.provider_status.value, "matches": len(projection.matches)})
     failed = tuple(run.source_id for run in runs if run.failures)
     report = {

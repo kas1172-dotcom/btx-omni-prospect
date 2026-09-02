@@ -364,12 +364,30 @@ class MonitorRepository:
                 monitor_technical_decompositions.c.event_id == event_id,
                 monitor_technical_decompositions.c.governed_content_hash == governed_content_hash,
             )).mappings().one_or_none()
-        return dict(row) if row else None
+        if not row:
+            return None
+        value = dict(row)
+        value["next_retry_at"] = _database_timestamp(value["next_retry_at"]) if value["next_retry_at"] else None
+        value["processed_at"] = _database_timestamp(value["processed_at"])
+        return value
 
-    def save_technical_decomposition(self, *, event_id: str, governed_content_hash: str, projection: dict | None, provider: str | None, model: str | None, status: str, processed_at: datetime) -> None:
+    def technical_decomposition_for_event(self, event_id: str) -> dict | None:
+        """Read the worker-owned latest durable projection without reconstructing a provider model."""
+        with self.engine.connect() as connection:
+            row = connection.execute(select(monitor_technical_decompositions).where(
+                monitor_technical_decompositions.c.event_id == event_id
+            )).mappings().one_or_none()
+        if not row:
+            return None
+        value = dict(row)
+        value["next_retry_at"] = _database_timestamp(value["next_retry_at"]) if value["next_retry_at"] else None
+        value["processed_at"] = _database_timestamp(value["processed_at"])
+        return value
+
+    def save_technical_decomposition(self, *, event_id: str, governed_content_hash: str, projection: dict | None, provider: str | None, model: str | None, status: str, processed_at: datetime, attempt_count: int, next_retry_at: datetime | None) -> None:
         with self.engine.begin() as connection:
             connection.execute(delete(monitor_technical_decompositions).where(monitor_technical_decompositions.c.event_id == event_id))
-            connection.execute(insert(monitor_technical_decompositions).values(event_id=event_id, governed_content_hash=governed_content_hash, projection=_json(projection) if projection else None, provider=provider, model=model, status=status, attempt_count=1, next_retry_at=None, processed_at=processed_at))
+            connection.execute(insert(monitor_technical_decompositions).values(event_id=event_id, governed_content_hash=governed_content_hash, projection=_json(projection) if projection else None, provider=provider, model=model, status=status, attempt_count=attempt_count, next_retry_at=next_retry_at, processed_at=processed_at))
 
     def cluster(self, cluster_id: str) -> EventCluster | None:
         with self.engine.connect() as connection:

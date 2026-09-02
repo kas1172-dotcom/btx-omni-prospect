@@ -31,9 +31,13 @@ supplies the product or program.
 The contract accepts one to six distinguishable governed PUBLIC evidence records
 (title, extract, URL, evidence ID, and provenance), preparing the system for
 future bounded public-web research without treating one document as the only
-source. The worker-only service hashes public evidence, evidence IDs, contract
-version, prompt version, and model identity. A changed source or contract version
-does not reuse a cached result. Seller read endpoints do not call Gemini.
+source. One governed hash construction path hashes public evidence content and
+IDs, event identity, deterministic canonical context, contract/prompt versions,
+and model identity. The durable row stores that hash, provider/model metadata,
+attempt count, retry time, and a seller-safe projection. Seller reads retrieve
+the worker-owned row by event instead of guessing a runtime model. A changed
+source, context, contract, prompt, or model does not reuse a cached result.
+Seller read endpoints do not call Gemini.
 
 ## Deterministic matching
 
@@ -49,4 +53,9 @@ or relationships.
 
 The Monitor worker's bounded decomposition work is optional. `NOT_CONFIGURED`,
 authentication, timeout, quota, and unavailable outcomes preserve the underlying
-signal and are surfaced as provider state rather than fabricated technical fit.
+signal and persist an empty seller-safe technical opportunity rather than
+fabricated technical fit. Durable AVAILABLE rows are reused; retryable failures
+retain attempt count and use bounded status-specific cooldowns. Model evidence
+IDs must be from the supplied governed PUBLIC evidence set. SOURCE_STATED
+candidates require valid evidence and source support; Gemini cannot create
+application evidence.
