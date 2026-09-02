@@ -14,11 +14,28 @@
 
 Canonical SAMPLE projections are assembled by the application runtime; no separate demo-data system is required. Use Boeing/Lockheed public intelligence and customer context, the Federal Procurement fixture views, governed Action workflow, and the built-in relationship/map projections. Demo-created Actions are isolated to the selected database.
 
+## Phase 22 validation record
+
+Phase 22 was validated from fresh isolated PostgreSQL databases. The demo-reset database migrated from empty to `0018_action_context_concurrency`; runtime checks then returned governed SAMPLE projections for Today, Customers & Prospects, Intelligence, Federal Procurement, Map, Actions, Omni, and both server-issued development role contexts. The release-validation database reached the same head.
+
+- Backend: `uv run ruff check .` passed; `uv run pytest -q` passed **275 tests** with **7 warnings** (the known Starlette TestClient and Alembic configuration deprecations).
+- Frontend: `npm ci`, typecheck, lint, unit tests (**27 passed**), and production build passed.
+- Browser: focused demo journeys passed **19/19**, shared-risk coverage passed **32/32**, and the complete default-parallel suite passed **51/51 twice**.
+- Screenshot review covered Today, Customers & Prospects, Customer 360, Intelligence, both Federal Procurement views, Tactical Map, Actions, Omni, Settings, and representative mobile views. No blocking demo defect remained.
+
 ## Provider and deployment truth
 
 Commercial data is SAMPLE. HubSpot is an adapter boundary with no enabled live write. SAM.gov, Gemini, Map configuration, and Monitor sources are configuration-dependent; a missing configuration remains `NOT_CONFIGURED` or `UNAVAILABLE`. USAspending and curated public scenarios are not evidence of connected BTX commercial systems.
 
 The repository has a production Docker entrypoint, Fly release migration command, health endpoint, CORS configuration, and provider abstraction. A BTX sandbox still needs BTX-managed Postgres, origins/secrets, production identity, approved provider credentials, and explicit source configuration. Do not deploy or enable external writes from this candidate.
+
+## Sandbox readiness classification
+
+| Area | Classification | Boundary |
+| --- | --- | --- |
+| Docker, backend startup, frontend build, PostgreSQL, migrations | READY WITH CONFIGURATION | A BTX sandbox must supply its managed database, image/build environment, and migration step. |
+| Environment, secrets, CORS, production identity | READY WITH CONFIGURATION | No BTX secret or production origin is supplied by this repository. |
+| Map, Gemini, BigQuery/Prism, Paperless, HubSpot | BLOCKED ON BTX ACCESS | Adapters/boundaries exist where documented; credentials, approved scopes, and any live activation are BTX decisions. |
 
 ## Known limitations
 
