@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 test('shared disclosure and controls expose keyboard and selected-state contracts', async ({ page }) => {
   await page.goto('/')
 
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible({ timeout: 15_000 })
   const disclosure = page.getByRole('button', { name: /Workspace menu/ })
   await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
   await disclosure.focus()

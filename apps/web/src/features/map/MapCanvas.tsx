@@ -8,7 +8,7 @@ let configuredKey: string | undefined
 const markerZIndex = (marker: MapMarker, selected = false) => selected ? 4 : marker.kind === 'cluster' ? 3 : marker.kind === 'customer' || marker.kind === 'prospect' ? 2 : 1
 // Account markers may be legacy `account:<accountId>` or facility-scoped
 // `account:<accountId>:facility:<facilityId>`; clustering uses the canonical account.
-export const accountIdFromMarkerId = (id: string) => id.startsWith('account:') ? id.split(':')[1] : undefined
+const accountIdFromMarkerId = (id: string) => id.startsWith('account:') ? id.split(':')[1] : undefined
 
 function makeMarkerButton(marker: MapMarker, selected: boolean, onSelect: () => void) {
   const button = document.createElement('button'); button.type = 'button'; button.className = `map-marker map-marker-${marker.kind}${selected ? ' selected' : ''}`; button.style.minWidth = '44px'; button.style.minHeight = '44px'; button.setAttribute('aria-label', marker.accessibleLabel); button.setAttribute('aria-pressed', String(selected)); button.title = marker.label; button.addEventListener('click', event => { event.stopPropagation(); onSelect() }); return button
