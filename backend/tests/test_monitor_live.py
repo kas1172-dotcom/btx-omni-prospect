@@ -116,6 +116,40 @@ def test_governed_company_and_state_feed_registries_preserve_ownership() -> None
     assert state.collect(run_id="state", settings=state_settings)[0].source_identity.source_record_id == "release-1"
 
 
+def test_default_company_registry_is_bounded_and_one_broken_feed_is_isolated() -> None:
+    rss = b"<rss><channel><item><guid>release-2</guid><title>Boeing production update</title><link>https://official.example/release-2</link></item></channel></rss>"
+    calls = 0
+    def get(_url: str, _headers: dict[str, str]):
+        nonlocal calls
+        calls += 1
+        return (500, b"{}", {}) if calls == 1 else (200, rss, {})
+    adapter = CompanyNewsAdapter(get)
+    observations = adapter.collect(
+        run_id="company",
+        settings=Settings(_env_file=None, monitor_company_feed_registry="DEFAULT"),
+    )
+    assert len(observations) == 2
+    assert {item.source_identity.source_native_ids[0][1] for item in observations} == {"lockheed-martin", "emerson"}
+
+
+def test_company_source_owner_does_not_convert_article_third_party_to_customer() -> None:
+    from btx_omni.monitor.contracts import (
+        RawEvidenceReference,
+        SourceIdentity,
+        SourceObservation,
+        SourceVersion,
+    )
+    from btx_omni.monitor.normalization import normalize_structured_observation
+
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    identity = SourceIdentity("company_newsroom", "release", (("governed_source_owner", "boeing"),))
+    version = SourceVersion("release", None, "a" * 64, now, now)
+    observation = SourceObservation("observation-release", identity, version, now, "Third Party Logistics announces a partnership", RawEvidenceReference("evidence-release", identity, version, "https://publisher.example/release", now))
+    event = normalize_structured_observation(observation, catalog=MonitorCatalog((AccountWatchProfile("boeing", "Boeing"),))).event
+    assert event.subject_entities[0].canonical_account_id == "boeing"
+    assert event.subject_entities[0].method == "governed_source_ownership"
+
+
 def test_sec_requires_explicit_identifying_agent_and_preserves_filing_identity() -> None:
     payload = {
         "filings": {

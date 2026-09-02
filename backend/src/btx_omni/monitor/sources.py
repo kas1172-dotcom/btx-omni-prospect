@@ -504,16 +504,19 @@ class CompanyNewsAdapter(LiveSourceAdapter):
         publishers = self._publishers(settings)
         if not publishers: raise PermissionError("BTX_MONITOR_COMPANY_FEED_REGISTRY has no enabled governed official feeds")
         observations: list[SourceObservation] = []
+        failures: list[Exception] = []
         for publisher in publishers:
             try:
                 status, payload, _headers = self.get(publisher.url, self.headers(settings))
                 if status == 429: raise RuntimeError("RATE_LIMITED")
                 if status >= 400: raise RuntimeError(f"HTTP_{status}")
                 observations.extend(_rss_observations(self, payload, run_id=run_id, collected_at=collected_at, owner=publisher))
-            except Exception:
+            except Exception as exc:  # noqa: BLE001 - per-publisher isolation boundary
                 # Isolate one governed customer's broken feed; successful feeds
-                # remain durable and the source run reports the affected entry.
-                if not observations: raise
+                # remain durable. If every feed fails, the source reports it.
+                failures.append(exc)
+        if not observations and failures:
+            raise failures[0]
         return observations[:limit]
 
 
