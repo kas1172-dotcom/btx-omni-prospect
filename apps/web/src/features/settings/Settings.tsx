@@ -4,7 +4,7 @@ import { Button, Disclosure, Notice, Panel, StatusBadge } from '../../components
 import type { WorkspaceSettings } from '../../types/api'
 import './settings.css'
 
-const names: Record<string, string> = { google_maps: 'Google Maps', gemini: 'Gemini', hubspot: 'HubSpot / CRM', communications: 'Communication delivery', prism: 'Prism data boundary' }
+const names: Record<string, string> = { google_maps: 'Google Maps', gemini: 'Gemini', hubspot: 'HubSpot / CRM', communications: 'Communication delivery', prism: 'Commercial data boundary', sam_gov: 'SAM.gov', usaspending: 'USAspending' }
 const humanize = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/^./, char => char.toUpperCase())
 export function Settings({ settings, state, onSettings, onRetry, onSignOut }: { settings?: WorkspaceSettings; state: 'loading' | 'loaded' | 'error'; onSettings: (settings: WorkspaceSettings) => void; onRetry: () => void; onSignOut: () => void }) {
   const [notice, setNotice] = useState('')
