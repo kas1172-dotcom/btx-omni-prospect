@@ -14,6 +14,7 @@ from btx_omni.ai.contracts import PublicEvidenceRecord, TechnicalDecompositionRe
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.core.config import Settings
+from btx_omni.modules.intelligence.technical_fit import seller_projection
 from btx_omni.monitor.briefs import (
     BriefRetryPolicy,
     process_signal_brief_synthesis,
@@ -106,11 +107,18 @@ def run_worker(
             for brief in signal_briefs_for_monitor(runtime.monitor)[:settings.monitor_technical_decomposition_cap]:
                 request = TechnicalDecompositionRequest(
                     event_id=brief.id, event_type=brief.headline,
-                    canonical_customer_name=next((item.legal_name for item in runtime.sample.accounts if item.id in brief.canonical_account_ids), None),
+                    canonical_customer_name=None,
                     canonical_program_name=brief.canonical_program_id, market=brief.markets[0] if brief.markets else None,
                     evidence=(PublicEvidenceRecord(brief.evidence_ids[0] if brief.evidence_ids else brief.id, brief.what_happened, brief.what_happened, brief.source_url, brief.source_system),),
                 )
                 projection = runtime.technical_decomposition.process(request, provider)
+                repository.save_technical_decomposition(
+                    event_id=brief.id, governed_content_hash=projection.governed_content_hash,
+                    projection=seller_projection(projection) if projection.decomposition else None,
+                    provider=projection.decomposition.provider if projection.decomposition else None,
+                    model=projection.decomposition.model if projection.decomposition else None,
+                    status=projection.provider_status.value, processed_at=runtime.observed_at(),
+                )
                 technical.append({"event_id": brief.id, "provider_status": projection.provider_status.value, "matches": len(projection.matches)})
     failed = tuple(run.source_id for run in runs if run.failures)
     report = {

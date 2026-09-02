@@ -45,6 +45,7 @@ from btx_omni.persistence.models import (
     monitor_rejected_observations,
     monitor_source_health,
     monitor_source_versions,
+    monitor_technical_decompositions,
 )
 
 
@@ -356,6 +357,19 @@ class MonitorRepository:
     def brief_synthesis_count(self) -> int:
         with self.engine.connect() as connection:
             return len(connection.execute(select(monitor_brief_syntheses.c.brief_id)).all())
+
+    def technical_decomposition(self, event_id: str, governed_content_hash: str) -> dict | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(select(monitor_technical_decompositions).where(
+                monitor_technical_decompositions.c.event_id == event_id,
+                monitor_technical_decompositions.c.governed_content_hash == governed_content_hash,
+            )).mappings().one_or_none()
+        return dict(row) if row else None
+
+    def save_technical_decomposition(self, *, event_id: str, governed_content_hash: str, projection: dict | None, provider: str | None, model: str | None, status: str, processed_at: datetime) -> None:
+        with self.engine.begin() as connection:
+            connection.execute(delete(monitor_technical_decompositions).where(monitor_technical_decompositions.c.event_id == event_id))
+            connection.execute(insert(monitor_technical_decompositions).values(event_id=event_id, governed_content_hash=governed_content_hash, projection=_json(projection) if projection else None, provider=provider, model=model, status=status, attempt_count=1, next_retry_at=None, processed_at=processed_at))
 
     def cluster(self, cluster_id: str) -> EventCluster | None:
         with self.engine.connect() as connection:

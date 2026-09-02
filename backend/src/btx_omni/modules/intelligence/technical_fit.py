@@ -116,3 +116,18 @@ class TechnicalDecompositionService:
         if any(word in value for word in ("housing", "bracket", "manifold", "actuator", "valve")):
             return TechnicalFitMatch(candidate, TechnicalMatchStatus.INSUFFICIENT_TAXONOMY)
         return TechnicalFitMatch(candidate, TechnicalMatchStatus.NO_MATCH)
+
+
+def seller_projection(value: TechnicalOpportunityProjection) -> dict:
+    """JSON-safe backend-owned projection; UI never reconstructs match authority."""
+    return {
+        "provider_status": value.provider_status.value,
+        "matches": [
+            {"candidate_name": item.candidate.name, "basis": item.candidate.basis.value,
+             "status": item.status.value, "component_name": item.component_name,
+             "business_units": [{"id": unit_id, "name": name} for unit_id, name in item.business_units],
+             "match_rule": item.match_rule, "evidence_ids": list(item.candidate.evidence_ids)}
+            for item in value.matches
+        ],
+        "disclosure": "Technical decomposition is Gemini-assisted. BTX component, capability, and Business Unit matching is deterministic.",
+    }

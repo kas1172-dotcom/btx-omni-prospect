@@ -66,6 +66,7 @@ class SignalBrief:
     watchlist_eligible: bool = False
     priority_reasons: tuple[TargetReason, ...] = ()
     canonical_facility_id: str | None = None
+    technical_opportunity: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -332,15 +333,28 @@ def signal_briefs_for_monitor(
             if target.canonical_account_id in subject_ids
             for reason in target.reasons
         )
-        projected.append(
-            signal_brief(
+        brief = signal_brief(
                 event,
                 observation,
                 freshness_hours=monitor.freshness_threshold_hours(source_id),
                 now=now,
                 target_reasons=reasons,
             )
-        )
+        if monitor.repository:
+            # A durable row is accepted only when the worker's governed request hash matches.
+            from btx_omni.ai.contracts import (
+                PublicEvidenceRecord,
+                TechnicalDecompositionRequest,
+            )
+            from btx_omni.modules.intelligence.technical_fit import (
+                TechnicalDecompositionService,
+            )
+            request = TechnicalDecompositionRequest(brief.id, brief.headline, None, brief.canonical_program_id, brief.markets[0] if brief.markets else None, (PublicEvidenceRecord(brief.evidence_ids[0] if brief.evidence_ids else brief.id, brief.what_happened, brief.what_happened, brief.source_url, brief.source_system),))
+            cached = monitor.repository.technical_decomposition(brief.id, TechnicalDecompositionService.cache_key(request))
+            if cached and cached.get("projection"):
+                projected.append(replace(brief, technical_opportunity=json.loads(cached["projection"])))
+                continue
+        projected.append(brief)
     return tuple(projected)
 
 
