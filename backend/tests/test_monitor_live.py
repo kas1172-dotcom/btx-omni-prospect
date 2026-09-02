@@ -132,6 +132,18 @@ def test_default_company_registry_is_bounded_and_one_broken_feed_is_isolated() -
     assert {item.source_identity.source_native_ids[0][1] for item in observations} == {"lockheed-martin", "emerson"}
 
 
+def test_company_registry_apportions_bounded_results_across_all_publishers() -> None:
+    rss = b"<rss><channel><item><guid>release-3</guid><title>Official update</title><link>http://official.example/release-3</link></item></channel></rss>"
+    observations = CompanyNewsAdapter(lambda _url, _headers: (200, rss, {})).collect(
+        run_id="company",
+        settings=Settings(_env_file=None, monitor_company_feed_registry="DEFAULT"),
+        limit=3,
+    )
+    assert len(observations) == 3
+    assert {item.source_identity.source_native_ids[0][1] for item in observations} == {"boeing", "lockheed-martin", "emerson"}
+    assert all(item.raw_evidence.locator.startswith("https://") for item in observations)
+
+
 def test_company_source_owner_does_not_convert_article_third_party_to_customer() -> None:
     from btx_omni.monitor.contracts import (
         RawEvidenceReference,

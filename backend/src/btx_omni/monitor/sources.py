@@ -215,7 +215,10 @@ def _rss_observations(adapter: LiveSourceAdapter, payload: bytes, *, run_id: str
         raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
     rows: list[dict[str, Any]] = []
     for item in root.findall(".//item"):
-        rows.append({"id": item.findtext("guid") or item.findtext("link"), "title": item.findtext("title"), "url": item.findtext("link"), "publication_date": item.findtext("pubDate"), "publisher_owner": owner.owner_account_id if owner else None, "publisher_id": owner.id if owner else None})
+        link = item.findtext("link")
+        if owner and link and link.startswith("http://"):
+            link = "https://" + link.removeprefix("http://")
+        rows.append({"id": item.findtext("guid") or link, "title": item.findtext("title"), "url": link, "publication_date": item.findtext("pubDate"), "publisher_owner": owner.owner_account_id if owner else None, "publisher_id": owner.id if owner else None})
     atom = "{http://www.w3.org/2005/Atom}"
     for item in root.findall(f".//{atom}entry"):
         link = next((entry.attrib.get("href") for entry in item.findall(f"{atom}link") if entry.attrib.get("href")), None)
@@ -505,12 +508,21 @@ class CompanyNewsAdapter(LiveSourceAdapter):
         if not publishers: raise PermissionError("BTX_MONITOR_COMPANY_FEED_REGISTRY has no enabled governed official feeds")
         observations: list[SourceObservation] = []
         failures: list[Exception] = []
+        per_publisher = max(1, limit // len(publishers))
         for publisher in publishers:
             try:
                 status, payload, _headers = self.get(publisher.url, self.headers(settings))
                 if status == 429: raise RuntimeError("RATE_LIMITED")
                 if status >= 400: raise RuntimeError(f"HTTP_{status}")
-                observations.extend(_rss_observations(self, payload, run_id=run_id, collected_at=collected_at, owner=publisher))
+                observations.extend(
+                    _rss_observations(
+                        self,
+                        payload,
+                        run_id=run_id,
+                        collected_at=collected_at,
+                        owner=publisher,
+                    )[:per_publisher]
+                )
             except Exception as exc:  # noqa: BLE001 - per-publisher isolation boundary
                 # Isolate one governed customer's broken feed; successful feeds
                 # remain durable. If every feed fails, the source reports it.
