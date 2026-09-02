@@ -24,6 +24,19 @@ def _session_payload(session) -> dict:
     }
 
 
+def _set_session_cookie(response: Response, runtime: PocRuntime, session) -> None:
+    production = runtime.settings.environment != "development"
+    response.set_cookie(
+        runtime.settings.session_cookie_name,
+        session.id,
+        max_age=max(60, runtime.settings.session_ttl_seconds),
+        secure=production,
+        httponly=True,
+        samesite="none" if production else "lax",
+        path=runtime.settings.api_prefix,
+    )
+
+
 def principal(
     request: Request,
     runtime: PocRuntime = Depends(get_runtime),
@@ -71,27 +84,23 @@ def sign_in(
     session = runtime.sessions.exchange(body.access_code)
     if session is None:
         raise HTTPException(401, "The access code is invalid.")
-    production = runtime.settings.environment != "development"
-    response.set_cookie(
-        runtime.settings.session_cookie_name,
-        session.id,
-        max_age=max(60, runtime.settings.session_ttl_seconds),
-        secure=production,
-        httponly=True,
-        samesite="none" if production else "lax",
-        path=runtime.settings.api_prefix,
-    )
+    _set_session_cookie(response, runtime, session)
     return _session_payload(session)
 
 
 @router.get("")
 def session_status(
     request: Request,
+    response: Response,
     runtime: PocRuntime = Depends(get_runtime),
 ) -> dict:
     session = runtime.sessions.get(
         request.cookies.get(runtime.settings.session_cookie_name)
     )
+    if session is None:
+        session = runtime.sessions.create_sample_demo_salesperson()
+        if session is not None:
+            _set_session_cookie(response, runtime, session)
     if session is None:
         raise HTTPException(401, "A valid hosted session is required.")
     return _session_payload(session)

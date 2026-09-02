@@ -38,7 +38,6 @@ class SessionStore:
         )
 
     def exchange(self, access_code: str, *, now: datetime | None = None) -> Session | None:
-        clock = now or datetime.now(UTC)
         principal = None
         if compare_digest(access_code, self.settings.action_salesperson_token):
             principal = Principal("seller-1", "POC Salesperson", PrincipalRole.SALESPERSON)
@@ -46,6 +45,19 @@ class SessionStore:
             principal = Principal("manager-1", "POC Manager", PrincipalRole.MANAGER)
         if principal is None:
             return None
+        return self._create(principal, now=now)
+
+    def create_sample_demo_salesperson(self, *, now: datetime | None = None) -> Session | None:
+        """Issue the normal hosted session only for the explicit SAMPLE demo flag."""
+        if not self.settings.hosted_demo_access_bypass_enabled:
+            return None
+        return self._create(
+            Principal("seller-1", "POC Salesperson", PrincipalRole.SALESPERSON),
+            now=now,
+        )
+
+    def _create(self, principal: Principal, *, now: datetime | None = None) -> Session:
+        clock = now or datetime.now(UTC)
         session = Session(
             token_urlsafe(32),
             token_urlsafe(24),

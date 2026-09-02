@@ -15,9 +15,12 @@ primary_region = "iad"
   BTX_MONITOR_MODE = "live"
   BTX_MONITOR_DURABLE_STATE_ENABLED = "true"
   BTX_AI_PROVIDER = "gemini"
-BTX_GEMINI_MODEL = "gemini-3.6-flash"
+  BTX_GEMINI_MODEL = "gemini-3.6-flash"
   BTX_GEMINI_MODE = "vertex"
   BTX_GOOGLE_CLOUD_LOCATION = "global"
+  # Runtime enablement is intentionally secret-managed and only works when
+  # the backend is production + SAMPLE. CONNECTED data cannot use this path.
+  BTX_HOSTED_DEMO_ACCESS_BYPASS = "false"
   PORT = "8080"
 
 [http_service]

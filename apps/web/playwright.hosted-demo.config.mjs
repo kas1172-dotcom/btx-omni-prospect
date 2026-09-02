@@ -1,12 +1,11 @@
 import { defineConfig } from '@playwright/test'
 
-const apiPort = process.env.BTX_E2E_API_PORT ?? '8000'
-const webPort = process.env.BTX_E2E_WEB_PORT ?? '5173'
+const apiPort = process.env.BTX_HOSTED_DEMO_API_PORT ?? '8101'
+const webPort = process.env.BTX_HOSTED_DEMO_WEB_PORT ?? '5174'
 
 export default defineConfig({
   testDir: './e2e',
-  // This production-mode fixture has its own explicit SAMPLE bypass config.
-  testIgnore: 'hosted-demo-access.spec.mjs',
+  testMatch: 'hosted-demo-access.spec.mjs',
   timeout: 45_000,
   webServer: [
     {
@@ -17,14 +16,17 @@ export default defineConfig({
       timeout: 120_000,
       env: {
         ...process.env,
+        BTX_ENVIRONMENT: 'production',
+        BTX_DATA_MODE: 'SAMPLE',
+        BTX_HOSTED_DEMO_ACCESS_BYPASS: 'true',
         BTX_AI_PROVIDER: 'gemini',
         BTX_GEMINI_API_KEY: '',
         GEMINI_API_KEY: '',
         GOOGLE_API_KEY: '',
         BTX_MONITOR_OPERATOR_TOKEN: '',
         BTX_FEDERAL_PROCUREMENT_FIXTURE_MODE: 'true',
-        BTX_ACTION_SALESPERSON_TOKEN: 'development-salesperson',
-        BTX_ACTION_MANAGER_TOKEN: 'development-manager',
+        BTX_ACTION_SALESPERSON_TOKEN: 'hosted-demo-test-salesperson',
+        BTX_ACTION_MANAGER_TOKEN: 'hosted-demo-test-manager',
       },
     },
     {
@@ -40,7 +42,7 @@ export default defineConfig({
     },
   ],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? `http://127.0.0.1:${webPort}`,
+    baseURL: `http://127.0.0.1:${webPort}`,
     headless: true,
   },
 })

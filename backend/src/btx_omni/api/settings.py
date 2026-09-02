@@ -64,14 +64,18 @@ def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
             },
             "session": {
                 "state": (
-                    "DEVELOPMENT_ONLY"
+                    "SAMPLE_DEMO_AUTO_SESSION"
+                    if runtime.settings.hosted_demo_access_bypass_enabled
+                    else "DEVELOPMENT_ONLY"
                     if runtime.settings.environment == "development"
                     else "CONFIGURED"
                     if runtime.sessions.production_configured
                     else "NOT_CONFIGURED"
                 ),
                 "mode": (
-                    "EXPLICIT_DEVELOPMENT_PRINCIPAL"
+                    "SAMPLE_DEMO_AUTO_SESSION"
+                    if runtime.settings.hosted_demo_access_bypass_enabled
+                    else "EXPLICIT_DEVELOPMENT_PRINCIPAL"
                     if runtime.settings.environment == "development"
                     else "HOSTED_POC_SESSION"
                 ),

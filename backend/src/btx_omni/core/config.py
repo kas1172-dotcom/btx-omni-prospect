@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     frontend_origins: str = "http://localhost:5173"
     session_ttl_seconds: int = 1800
     session_cookie_name: str = "btx_poc_session"
+    hosted_demo_access_bypass: bool = False
     monitor_mode: str = "disabled"
     monitor_durable_state_enabled: bool = False
     monitor_operator_token: str | None = None
@@ -77,6 +78,15 @@ class Settings(BaseSettings):
         if value.startswith("postgresql://"):
             return "postgresql+psycopg://" + value.removeprefix("postgresql://")
         return value
+
+    @property
+    def hosted_demo_access_bypass_enabled(self) -> bool:
+        """Allow automatic sessions only for an explicitly configured SAMPLE demo."""
+        return (
+            self.hosted_demo_access_bypass
+            and self.environment.casefold() == "production"
+            and self.data_mode.upper() == "SAMPLE"
+        )
 
 
 @lru_cache

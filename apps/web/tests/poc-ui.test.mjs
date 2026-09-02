@@ -29,6 +29,7 @@ test('canonical navigation and mobile core flow are present', () => {
 test('frontend uses only canonical Omni Prospect API routes', () => {
   for (const route of ['/accounts', '/today', '/intelligence', '/map', '/actions', '/omni']) assert.match(client, new RegExp(route))
   assert.doesNotMatch(client, /\/v1|\/v2|\/poc/)
+  assert.doesNotMatch(app, /BTX_ACTION_(SALESPERSON|MANAGER)_TOKEN/)
 })
 
 test('mobile-first layout prevents horizontal overflow and exposes responsive Omni workspaces', () => {

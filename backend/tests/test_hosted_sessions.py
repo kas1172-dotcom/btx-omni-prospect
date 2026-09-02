@@ -8,13 +8,14 @@ from btx_omni.core.config import Settings
 from btx_omni.security.sessions import SessionStore
 
 
-def _production_app(monkeypatch) -> TestClient:
+def _production_app(monkeypatch, **overrides) -> TestClient:
     settings = Settings(
         _env_file=None,
         environment="production",
         frontend_origins="https://btx-omni-prospect.vercel.app",
         action_salesperson_token="hosted-seller-access",
         action_manager_token="hosted-manager-access",
+        **overrides,
     )
     monkeypatch.setattr(app_module, "get_settings", lambda: settings)
     return TestClient(app_module.create_app(), base_url="https://backend.test")
@@ -113,6 +114,49 @@ def test_session_expiration_is_enforced() -> None:
     assert session is not None
     assert store.get(session.id, now=clock + timedelta(seconds=59)) is not None
     assert store.get(session.id, now=clock + timedelta(seconds=61)) is None
+
+
+def test_sample_demo_bypass_issues_only_a_normal_salesperson_session(monkeypatch) -> None:
+    client = _production_app(monkeypatch, hosted_demo_access_bypass=True)
+    session = client.get("/api/session")
+    assert session.status_code == 200
+    assert session.json()["principal"] == {
+        "user_id": "seller-1",
+        "display_name": "POC Salesperson",
+        "role": "SALESPERSON",
+    }
+    assert "httponly" in session.headers["set-cookie"].casefold()
+    assert client.get("/api/actions").status_code == 200
+
+    created = client.post(
+        "/api/actions",
+        headers={"X-CSRF-Token": session.json()["csrf_token"]},
+        json={
+            "account_id": "boeing",
+            "title": f"SAMPLE demo approval {uuid4()}",
+            "priority": "MEDIUM",
+            "approval_required": True,
+        },
+    )
+    assert created.status_code == 200
+    assert (
+        client.post(
+            f"/api/actions/{created.json()['id']}/approval",
+            headers={"X-CSRF-Token": session.json()["csrf_token"]},
+            json={"decision": "APPROVED"},
+        ).status_code
+        == 403
+    )
+    assert _sign_in(client, "hosted-manager-access")["principal"]["role"] == "MANAGER"
+
+
+def test_demo_bypass_fails_closed_outside_sample_data(monkeypatch) -> None:
+    client = _production_app(
+        monkeypatch,
+        hosted_demo_access_bypass=True,
+        data_mode="CONNECTED",
+    )
+    assert client.get("/api/session").status_code == 401
 
 
 def test_credentialed_cors_allows_only_canonical_origin(monkeypatch) -> None:
