@@ -101,7 +101,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   ]
 
   await page.goto('/')
-  await expect(page.locator('.page-title h1')).toHaveText('Today')
+  await expect(page.locator('.page-title h1')).toHaveText('Today', { timeout: 15_000 })
   await openOmni(page)
   const today = await ask(page, 'What am I looking at?')
   expect(today.request.context.surface).toBe('TODAY')

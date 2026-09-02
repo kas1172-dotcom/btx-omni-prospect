@@ -16,7 +16,9 @@ test('seller creates a durable governed draft without recipient or autonomous de
   await editor.getByLabel('Subject').fill(subject)
   await editor.getByLabel('Message').fill('Human-reviewed SAMPLE outreach draft.')
   await expect(editor.getByText(/No verified deliverable email/)).toBeVisible()
+  const createResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/communications' && response.request().method() === 'POST' && response.status() === 200)
   await editor.getByRole('button', { name: 'Save draft' }).click()
+  await createResponse
   await expect(page.getByRole('heading', { name: subject })).toBeVisible()
   await expect(page.getByText(/remains unsent and requires human review/i)).toBeVisible()
   await expect(page.getByText('Recipient unavailable').first()).toBeVisible()
