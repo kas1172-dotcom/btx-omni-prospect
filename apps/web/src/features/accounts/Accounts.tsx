@@ -106,19 +106,114 @@ function SellerRelationshipCard({ path }: { path: SellerRelationshipPath }) {
   </article>
 }
 
+type RelationshipGraphNode = {
+  key: string
+  id: string
+  kind: string
+  name: string
+  level: number
+  states: SellerRelationshipPath['presentation_state'][]
+}
+
+type RelationshipGraphEdge = {
+  key: string
+  from: string
+  to: string
+  path: SellerRelationshipPath
+}
+
+const relationshipGraphEntityLabel = (kind: string) => ({
+  account: 'Canonical Customer / Prospect',
+  contact: 'Contact',
+  person: 'Person',
+  facility: 'Facility',
+  program: 'Program',
+  commercial_context: 'BTX commercial context',
+  quote: 'Commercial record',
+  order: 'Commercial record',
+}[kind.toLowerCase()] ?? 'Canonical entity')
+
+const relationshipGraphKindClass = (kind: string) => {
+  const normalized = kind.toLowerCase()
+  if (normalized === 'account') return 'account'
+  if (normalized === 'contact' || normalized === 'person') return 'person'
+  if (normalized === 'facility') return 'facility'
+  if (normalized === 'program') return 'program'
+  if (normalized === 'commercial_context' || normalized === 'quote' || normalized === 'order') return 'commercial'
+  return 'entity'
+}
+
+function RelationshipGraph({ paths }: { paths: SellerRelationshipPath[] }) {
+  const [selectedNodeKey, setSelectedNodeKey] = useState<string>()
+  const [selectedPathId, setSelectedPathId] = useState<string>()
+  const graph = useMemo(() => {
+    const nodes = new Map<string, RelationshipGraphNode>()
+    const edges: RelationshipGraphEdge[] = []
+    paths.forEach(path => path.steps.forEach((step, index) => {
+      const key = `${step.kind}:${step.id}`
+      const existing = nodes.get(key)
+      if (existing) {
+        existing.level = Math.min(existing.level, index)
+        existing.states.push(path.presentation_state)
+      } else nodes.set(key, { key, id: step.id, kind: step.kind, name: step.display_name, level: index, states: [path.presentation_state] })
+      if (index > 0) edges.push({ key: `${path.path_id}:${index}`, from: `${path.steps[index - 1].kind}:${path.steps[index - 1].id}`, to: key, path })
+    }))
+    const values = [...nodes.values()].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name) || a.key.localeCompare(b.key))
+    const byLevel = new Map<number, RelationshipGraphNode[]>()
+    values.forEach(node => byLevel.set(node.level, [...(byLevel.get(node.level) ?? []), node]))
+    const maxLevel = Math.max(0, ...values.map(node => node.level))
+    const positions = new Map<string, { x: number; y: number }>()
+    byLevel.forEach((nodesAtLevel, level) => nodesAtLevel.forEach((node, index) => positions.set(node.key, {
+      x: ((level + 0.5) / (maxLevel + 1)) * 100,
+      y: ((index + 1) / (nodesAtLevel.length + 1)) * 100,
+    })))
+    return { nodes: values, edges, positions }
+  }, [paths])
+  if (!paths.length) return <Empty>No eligible governed relationship path is available to visualize. Unusable paths are excluded from seller planning.</Empty>
+  const selectedPath = paths.find(path => path.path_id === selectedPathId) ?? paths[0]
+  const selectedNode = graph.nodes.find(node => node.key === selectedNodeKey) ?? graph.nodes.find(node => selectedPath.steps.some(step => `${step.kind}:${step.id}` === node.key)) ?? graph.nodes[0]
+  const selectPath = (path: SellerRelationshipPath, nodeKey?: string) => { setSelectedPathId(path.path_id); setSelectedNodeKey(nodeKey ?? `${path.steps[0].kind}:${path.steps[0].id}`) }
+  const isSelectedEdge = (edge: RelationshipGraphEdge) => edge.path.path_id === selectedPath.path_id
+  return <div className="relationship-graph-workbench">
+    <div className="relationship-graph-main">
+      <div className="relationship-graph-intro"><div><span className="eyebrow">Bounded graph view</span><p>Only governed, seller-eligible paths are shown. Select a connection or entity to inspect its evidence-backed context.</p></div><div className="relationship-graph-legend" aria-label="Relationship graph legend"><span><i className="relationship-legend-node account" aria-hidden="true" />Customer / Prospect</span><span><i className="relationship-legend-node person" aria-hidden="true" />Person</span><span><i className="relationship-legend-node program" aria-hidden="true" />Program</span><span><i className="relationship-legend-edge validated" aria-hidden="true" />Validated</span><span><i className="relationship-legend-edge needs-validation" aria-hidden="true" />Needs validation</span></div></div>
+      <div className="relationship-graph-canvas" role="group" aria-label="Governed relationship graph">
+        <svg className="relationship-graph-edges" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">{graph.edges.map(edge => {
+          const from = graph.positions.get(edge.from); const to = graph.positions.get(edge.to)
+          if (!from || !to) return null
+          return <line key={edge.key} className={`relationship-graph-edge ${edge.path.presentation_state === 'validated' ? 'validated' : 'needs-validation'} ${isSelectedEdge(edge) ? 'selected' : ''}`} x1={from.x * 10} y1={from.y * 5} x2={to.x * 10} y2={to.y * 5} />
+        })}</svg>
+        {graph.edges.map(edge => {
+          const from = graph.positions.get(edge.from); const to = graph.positions.get(edge.to)
+          if (!from || !to) return null
+          return <button key={`control:${edge.key}`} type="button" className="relationship-graph-edge-hitarea" aria-label={`Select ${edge.path.connection_label} connection`} style={{ left: `${(from.x + to.x) / 2}%`, top: `${(from.y + to.y) / 2}%` }} onClick={() => selectPath(edge.path)} />
+        })}
+        {graph.nodes.map(node => {
+          const position = graph.positions.get(node.key)!; const nodePath = paths.find(path => path.steps.some(step => `${step.kind}:${step.id}` === node.key)) ?? selectedPath
+          const state = node.states.every(value => value === 'validated') ? 'validated' : 'needs-validation'
+          return <button key={node.key} type="button" className={`relationship-graph-node ${relationshipGraphKindClass(node.kind)} ${state} ${selectedNode.key === node.key ? 'selected' : ''}`} style={{ left: `${position.x}%`, top: `${position.y}%` }} aria-pressed={selectedNode.key === node.key} onClick={() => selectPath(nodePath, node.key)}><span>{node.name}</span><small>{relationshipGraphEntityLabel(node.kind)}</small></button>
+        })}
+      </div>
+    </div>
+    <aside className="relationship-graph-detail" aria-live="polite"><span className="eyebrow">Selected context</span><h3>{selectedNode.name}</h3><div className="relationship-graph-detail-meta"><StatusBadge value={relationshipGraphEntityLabel(selectedNode.kind)} kind="relationship" /><State value={selectedPath.presentation_state === 'validated' ? 'VALIDATED' : 'NEEDS_VALIDATION'} /></div><MetadataRow label="Path" value={selectedPath.summary} /><MetadataRow label="Connection" value={selectedPath.connection_label} /><p><strong>Why it matters:</strong> {selectedPath.why_it_matters}</p><p><strong>Governed status:</strong> {selectedPath.seller_rationale}</p>{selectedPath.validation_requirements.length > 0 && <Notice tone="warning" title="Validate before use">{selectedPath.validation_requirements.join(' ')}</Notice>}<Disclosure title={`Evidence · ${selectedPath.evidence.length} ${selectedPath.evidence.length === 1 ? 'source' : 'sources'}`} defaultOpen>{selectedPath.evidence.length ? <div className="seller-relationship-evidence">{selectedPath.evidence.map((item, index) => <RelationshipEvidence key={`${selectedPath.path_id}:graph:${index}`} item={item} path={selectedPath} />)}</div> : <Empty>No supporting source is attached. This path is not presented as validated.</Empty>}</Disclosure></aside>
+  </div>
+}
+
 function RelationshipIntelligence({ accountId }: { accountId: string }) {
-  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(false); const [view, setView] = useState<'validated' | 'needs_validation'>('validated')
+  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(false); const [view, setView] = useState<'validated' | 'needs_validation' | 'graph'>('validated')
   useEffect(() => { let active = true; void api.relationships(accountId).then(result => { if (active) setRelationships(result) }).catch(() => { if (active) setError(true) }); return () => { active = false } }, [accountId])
   const projection = relationships?.seller_projection; const validated = projection?.validated ?? []; const needsValidation = projection?.needs_validation ?? []
+  const graphPaths = [...validated, ...needsValidation]
   const shown = view === 'validated' ? validated : needsValidation
   return <div className="relationship-content">
     <div className="relationship-intelligence-header"><div><span className="eyebrow">How this Customer is connected</span><p>Backend-governed paths explain the connection, evidence, business relevance, and a bounded next review.</p></div>{projection && <div className="relationship-counts"><span><strong>{projection.validated_count}</strong> validated</span><span><strong>{projection.needs_validation_count}</strong> to review</span></div>}</div>
     <Notice>Public professional contact research remains separate and does not establish a BTX relationship, introduction path, or relationship strength.</Notice>
-    <div className="relationship-view-toggle" role="tablist" aria-label="Relationship Intelligence view"><button role="tab" aria-selected={view === 'validated'} className={view === 'validated' ? 'selected' : ''} onClick={() => setView('validated')}>Validated connections</button><button role="tab" aria-selected={view === 'needs_validation'} className={view === 'needs_validation' ? 'selected' : ''} onClick={() => setView('needs_validation')}>Connections to review</button></div>
+    <div className="relationship-view-toggle" role="tablist" aria-label="Relationship Intelligence view"><button role="tab" aria-selected={view === 'validated'} className={view === 'validated' ? 'selected' : ''} onClick={() => setView('validated')}>Validated connections</button><button role="tab" aria-selected={view === 'needs_validation'} className={view === 'needs_validation' ? 'selected' : ''} onClick={() => setView('needs_validation')}>Connections to review</button><button role="tab" aria-selected={view === 'graph'} className={view === 'graph' ? 'selected' : ''} onClick={() => setView('graph')}>Graph view</button></div>
     {!relationships && !error && <p className="relationship-intelligence-loading">Loading canonical relationship records…</p>}
     {error && <Empty>Canonical relationship records could not be loaded for this Customer. No relationship conclusion is shown.</Empty>}
-    {relationships && shown.length === 0 && <Empty>{view === 'validated' ? 'No eligible validated connection is currently available for this Customer.' : 'No connection requiring validation is currently available for this Customer.'} This does not establish a real-world absence.</Empty>}
-    {shown.length > 0 && <div className="seller-relationship-list">{shown.map(path => <SellerRelationshipCard key={path.path_id} path={path} />)}</div>}
+    {relationships && view === 'graph' && <RelationshipGraph paths={graphPaths} />}
+    {relationships && view !== 'graph' && shown.length === 0 && <Empty>{view === 'validated' ? 'No eligible validated connection is currently available for this Customer.' : 'No connection requiring validation is currently available for this Customer.'} This does not establish a real-world absence.</Empty>}
+    {view !== 'graph' && shown.length > 0 && <div className="seller-relationship-list">{shown.map(path => <SellerRelationshipCard key={path.path_id} path={path} />)}</div>}
     {projection && (projection.omitted_count > 0 || projection.unusable_count > 0) && <p className="muted">{projection.omitted_count ? `${projection.omitted_count} additional eligible path(s) are omitted from this bounded view. ` : ''}{projection.unusable_count ? `${projection.unusable_count} unusable path(s) are excluded from seller planning.` : ''}</p>}
   </div>
 }

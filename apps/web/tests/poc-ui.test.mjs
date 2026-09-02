@@ -66,12 +66,18 @@ test('Customer 360 renders deterministic seller-facing canonical relationship pa
   assert.match(accounts, /api\.relationships\(accountId\)/)
   assert.match(accounts, /Validated connections/)
   assert.match(accounts, /Connections to review/)
+  assert.match(accounts, /Graph view/)
+  assert.match(accounts, /Governed relationship graph/)
+  assert.match(accounts, /Bounded graph view/)
+  assert.match(accounts, /No eligible governed relationship path is available to visualize/)
+  assert.match(accounts, /relationship-graph-node/)
   assert.match(accounts, /No connection requiring validation is currently available/)
   assert.match(accounts, /seller_projection/)
   assert.match(accounts, /path\.presentation_state/)
   assert.match(accounts, /Why it matters:/)
   assert.match(accounts, /Suggested move:/)
   assert.doesNotMatch(accounts, /Canonical 2-hop path|validated warm paths|Request intro/)
+  assert.doesNotMatch(accounts, /confidence score|strength percentage/)
 })
 
 test('Customer 360 renders backend-owned commercial source states without zero inference', () => {
