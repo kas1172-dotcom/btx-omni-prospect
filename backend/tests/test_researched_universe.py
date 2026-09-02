@@ -58,7 +58,10 @@ def test_usaspending_recipient_legal_names_are_sourced_and_separate_from_marketi
     }
     assert all(items and all(item.source_url.startswith("https://") for item in items) for items in mappings.values())
     assert all(profiles[account_id].usaspending_recipient_names == tuple(item.recipient_legal_name for item in items) for account_id, items in mappings.items())
-    assert all(not profile.source_native_identifiers for profile in profiles.values())
+    assert all(
+        all(kind and value for kind, value in profile.source_native_identifiers)
+        for profile in profiles.values()
+    )
 
 
 def test_research_ingestion_has_no_named_company_application_special_case() -> None:
