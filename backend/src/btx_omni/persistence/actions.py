@@ -49,6 +49,8 @@ class SqlActionRepository:
             updated_at=aware(row.updated_at),
             completed_at=aware(row.completed_at),
             canceled_at=aware(row.canceled_at),
+            version=row.version,
+            context_referents=tuple(tuple(item) for item in json.loads(row.context_referents or "[]")),
         )
 
     def get(self, action_id: str) -> Action | None:
@@ -72,7 +74,7 @@ class SqlActionRepository:
             rows = connection.execute(select(work_items)).all()
         return tuple(self._action(row) for row in rows)
 
-    def save(self, action: Action, event: ActionAuditEvent) -> Action:
+    def save(self, action: Action, event: ActionAuditEvent, expected_version: int | None = None) -> Action:
         values = {
             "account_id": action.account_id,
             "summary": action.title,
@@ -84,18 +86,23 @@ class SqlActionRepository:
             "approval_status": action.approval_status.value,
             "source_suggestion_id": action.source_suggestion_id,
             "evidence_ids": json.dumps(action.evidence_ids),
+            "context_referents": json.dumps(action.context_referents),
             "created_by": action.created_by,
             "created_at": action.created_at,
             "updated_at": action.updated_at,
             "completed_at": action.completed_at,
             "canceled_at": action.canceled_at,
+            "version": action.version,
             "idempotency_key": action.id,
         }
         with self.engine.begin() as connection:
             if event.event != "CREATED":
-                connection.execute(
-                    update(work_items).where(work_items.c.id == action.id).values(**values)
-                )
+                statement = update(work_items).where(work_items.c.id == action.id)
+                if expected_version is not None:
+                    statement = statement.where(work_items.c.version == expected_version)
+                result = connection.execute(statement.values(**values))
+                if result.rowcount != 1:
+                    raise ValueError("Action has changed; reload it before saving.")
                 connection.execute(
                     insert(work_audit_events).values(
                         work_item_id=event.action_id, event=event.event,

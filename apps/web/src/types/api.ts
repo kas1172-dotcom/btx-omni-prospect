@@ -9,7 +9,7 @@ export interface FederalProcurement { sam: { state: string; targeting: string };
 export type ActionStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED'
 export type ActionPriority = 'HIGH' | 'MEDIUM' | 'LOW'
 export type ApprovalStatus = 'NOT_REQUIRED' | 'PENDING' | 'APPROVED' | 'REJECTED'
-export interface Action { id: string; account_id: string; title: string; description?: string; owner_id?: string; priority: ActionPriority; due_date?: string; status: ActionStatus; approval_status: ApprovalStatus; source_suggestion_id?: string; evidence_ids: string[]; created_by: string; created_at: string; updated_at: string }
+export interface Action { id: string; account_id: string; title: string; description?: string; owner_id?: string; priority: ActionPriority; due_date?: string; status: ActionStatus; approval_status: ApprovalStatus; source_suggestion_id?: string; evidence_ids: string[]; context_referents: Array<[string, string]>; version: number; created_by: string; created_at: string; updated_at: string }
 export type WorkItem = Action
 export interface Suggestion { id: string; account_id: string; title: string; rationale: string; priority: ActionPriority; evidence_ids: string[]; source: string; observed_at: string; dismissed: boolean; converted_action_id?: string }
 export interface Principal { user_id: string; display_name: string; role: 'SALESPERSON' | 'MANAGER' }

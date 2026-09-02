@@ -114,6 +114,39 @@ def test_governed_action_lifecycle_audit_and_idempotency() -> None:
     )
 
 
+def test_action_context_referents_and_stale_version_are_governed() -> None:
+    service = WorkService()
+    created = service.create(
+        account_id="boeing",
+        summary="Review a selected signal",
+        evidence_ids=("signal-1",),
+        context_referents=(("INTELLIGENCE", "signal-1"), ("FACILITY", "facility-1")),
+        idempotency_key="phase19-context",
+        actor_id="seller",
+        occurred_at=NOW,
+    )
+    assert created.context_referents == (
+        ("INTELLIGENCE", "signal-1"),
+        ("FACILITY", "facility-1"),
+    )
+    updated = service.edit(
+        created.id,
+        title="Review governed signal",
+        principal=SELLER,
+        occurred_at=NOW,
+        expected_version=1,
+    )
+    assert updated.version == 2
+    with pytest.raises(ValueError, match="has changed"):
+        service.edit(
+            created.id,
+            title="Stale change",
+            principal=SELLER,
+            occurred_at=NOW,
+            expected_version=1,
+        )
+
+
 def test_crm_preview_requires_explicit_confirmation_and_unavailability_is_truthful() -> (
     None
 ):
@@ -1010,7 +1043,10 @@ def test_omni_cross_account_score_ranking_uses_canonical_scores_filters_and_boun
     assert "Boeing" in filtered.content and "Intel" not in filtered.content
     assert filtered.context_used == {"filters": {"market": "Defense"}}
     assert robotics.context_used == {"filters": {"market": "Robotics"}}
-    assert "1 matching account(s) have no available canonical attractiveness score." in robotics.missingness
+    assert (
+        "1 matching account(s) have no available canonical attractiveness score."
+        in robotics.missingness
+    )
 
 
 def test_omni_cross_account_work_intelligence_intersection_and_zero_results_are_read_only() -> (
@@ -1310,7 +1346,9 @@ def test_omni_conversation_facility_action_account_and_cleared_screen_context() 
     )
 
 
-def test_omni_natural_customer_follow_ups_switching_and_ambiguity_are_governed() -> None:
+def test_omni_natural_customer_follow_ups_switching_and_ambiguity_are_governed() -> (
+    None
+):
     sample = build_sample_environment()
     work, _item = create_selected_work_item()
     before = work.list()
@@ -1363,12 +1401,20 @@ def test_omni_natural_customer_follow_ups_switching_and_ambiguity_are_governed()
     assert boeing.account_id == "boeing" and boeing.citations
     assert changed.account_id == "boeing" and changed.citations
     assert changed.context_used["context_source"] == "conversation"
-    assert significance.account_id == "boeing" and "truth categories" in significance.content
-    assert "Suggested next move" in next_move.content and "read-only" in next_move.content
+    assert (
+        significance.account_id == "boeing"
+        and "truth categories" in significance.content
+    )
+    assert (
+        "Suggested next move" in next_move.content and "read-only" in next_move.content
+    )
     assert switched.account_id == "kla" and switched.account_name == "KLA Corporation"
     assert switched.context_used.get("context_source") is None
     assert "need a specific Customer" in ambiguous.content
-    assert ambiguous.missingness and AssistantProvenance.MISSING_UNAVAILABLE in ambiguous.provenance
+    assert (
+        ambiguous.missingness
+        and AssistantProvenance.MISSING_UNAVAILABLE in ambiguous.provenance
+    )
     assert "simulated POC data" in boeing.content and work.list() == before
 
 

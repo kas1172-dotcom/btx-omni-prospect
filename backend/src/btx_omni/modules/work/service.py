@@ -35,7 +35,7 @@ class ActionRepository(Protocol):
     def get(self, action_id: str) -> Action | None: ...
     def by_suggestion(self, suggestion_id: str) -> Action | None: ...
     def list(self) -> tuple[Action, ...]: ...
-    def save(self, action: Action, event: ActionAuditEvent) -> Action: ...
+    def save(self, action: Action, event: ActionAuditEvent, expected_version: int | None = None) -> Action: ...
     def history(self, action_id: str) -> tuple[ActionAuditEvent, ...]: ...
     def dismiss_suggestion(
         self, suggestion_id: str, actor_id: str, occurred_at: datetime
@@ -63,7 +63,10 @@ class MemoryActionRepository:
     def list(self) -> tuple[Action, ...]:
         return tuple(self.items.values())
 
-    def save(self, action: Action, event: ActionAuditEvent) -> Action:
+    def save(self, action: Action, event: ActionAuditEvent, expected_version: int | None = None) -> Action:
+        current = self.items.get(action.id)
+        if expected_version is not None and (not current or current.version != expected_version):
+            raise ActionConflictError("Action has changed; reload it before saving.")
         self.items[action.id] = action
         self.events.append(event)
         return action
@@ -125,6 +128,7 @@ class WorkService:
         priority: ActionPriority = ActionPriority.MEDIUM,
         due_date: date | None = None,
         evidence_ids: tuple[str, ...] = (),
+        context_referents: tuple[tuple[str, str], ...] = (),
         source_suggestion_id: str | None = None,
         approval_required: bool = False,
         idempotency_key: str | None = None,
@@ -165,6 +169,8 @@ class WorkService:
             principal.user_id,
             occurred_at,
             occurred_at,
+            version=1,
+            context_referents=context_referents,
         )
         return self.repository.save(
             action,
@@ -206,6 +212,7 @@ class WorkService:
         *,
         principal: Principal,
         occurred_at: datetime,
+        expected_version: int | None = None,
         **changes: object,
     ) -> Action:
         action = self.get(action_id)
@@ -221,7 +228,8 @@ class WorkService:
         }
         if not permitted:
             return action
-        updated = replace(action, **permitted, updated_at=occurred_at)
+        self._require_version(action, expected_version)
+        updated = replace(action, **permitted, updated_at=occurred_at, version=action.version + 1)
         metadata = {
             k: {"before": self._json(getattr(action, k)), "after": self._json(v)}
             for k, v in permitted.items()
@@ -230,7 +238,7 @@ class WorkService:
             updated,
             self._event(
                 action.id, principal, "EDITED", occurred_at, {"changes": metadata}
-            ),
+            ), expected_version=action.version,
         )
 
     def transition(
@@ -240,9 +248,11 @@ class WorkService:
         *,
         principal: Principal,
         occurred_at: datetime,
+        expected_version: int | None = None,
     ) -> Action:
         action = self.get(action_id)
         ActionPolicy.require_manage(principal, action)
+        self._require_version(action, expected_version)
         if status not in ALLOWED_TRANSITIONS[action.status]:
             raise ActionConflictError(
                 f"{action.status.value} cannot transition to {status.value}."
@@ -257,6 +267,7 @@ class WorkService:
             canceled_at=occurred_at
             if status is ActionStatus.CANCELED
             else action.canceled_at,
+            version=action.version + 1,
         )
         return self.repository.save(
             updated,
@@ -266,7 +277,7 @@ class WorkService:
                 "STATUS_CHANGED",
                 occurred_at,
                 {"before": action.status.value, "after": status.value},
-            ),
+            ), expected_version=action.version,
         )
 
     def decide_approval(
@@ -276,15 +287,17 @@ class WorkService:
         *,
         principal: Principal,
         occurred_at: datetime,
+        expected_version: int | None = None,
     ) -> Action:
         ActionPolicy.require_manager(principal)
         action = self.get(action_id)
+        self._require_version(action, expected_version)
         if action.approval_status is not ApprovalStatus.PENDING or decision not in {
             ApprovalStatus.APPROVED,
             ApprovalStatus.REJECTED,
         }:
             raise ActionConflictError("This Action has no pending approval decision.")
-        updated = replace(action, approval_status=decision, updated_at=occurred_at)
+        updated = replace(action, approval_status=decision, updated_at=occurred_at, version=action.version + 1)
         return self.repository.save(
             updated,
             self._event(
@@ -293,7 +306,7 @@ class WorkService:
                 "APPROVAL_DECIDED",
                 occurred_at,
                 {"before": action.approval_status.value, "after": decision.value},
-            ),
+            ), expected_version=action.version,
         )
 
     def preview_crm_action(
@@ -392,6 +405,11 @@ class WorkService:
             if isinstance(value, (date, datetime))
             else value
         )
+
+    @staticmethod
+    def _require_version(action: Action, expected_version: int | None) -> None:
+        if expected_version is not None and action.version != expected_version:
+            raise ActionConflictError("Action has changed; reload it before saving.")
 
 
 WorkStatus = ActionStatus
