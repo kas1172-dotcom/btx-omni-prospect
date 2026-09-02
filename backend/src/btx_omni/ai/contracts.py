@@ -75,11 +75,82 @@ class GroundedSynthesisRequest:
     evidence_ids: tuple[str, ...]
     missingness: tuple[str, ...]
     recent_turns: tuple[ConversationTurn, ...] = ()
+    public_research: tuple[PublicWebFinding, ...] = ()
+
+
+@dataclass(frozen=True)
+class PublicWebResearchRequest:
+    """Bounded read-only query over public web content; content is never authority."""
+
+    query: str
+    subject_display_name: str | None = None
+    governed_context: tuple[str, ...] = ()
+    max_findings: int = 5
+
+    def __post_init__(self) -> None:
+        if not self.query.strip() or len(self.query) > 800:
+            raise ValueError("Public research query exceeds bounds.")
+        if (
+            self.subject_display_name is not None
+            and len(self.subject_display_name) > 300
+        ):
+            raise ValueError("Public research subject exceeds bounds.")
+        if not 1 <= self.max_findings <= 6 or len(self.governed_context) > 8:
+            raise ValueError("Public research collection exceeds bounds.")
+        if any(not item.strip() or len(item) > 600 for item in self.governed_context):
+            raise ValueError("Public research context exceeds bounds.")
+
+
+@dataclass(frozen=True)
+class PublicWebFinding:
+    """Cited public finding returned by a provider; it is not a canonical Omni fact."""
+
+    evidence_id: str
+    title: str
+    url: str
+    publisher: str
+    extract: str
+    retrieval_provenance: str = "GEMINI_GOOGLE_SEARCH"
+
+    def __post_init__(self) -> None:
+        if not self.evidence_id.strip() or len(self.evidence_id) > 160:
+            raise ValueError("Public finding ID is invalid.")
+        if (
+            not self.title.strip()
+            or len(self.title) > 500
+            or not self.url.startswith(("https://", "http://"))
+        ):
+            raise ValueError("Public finding citation is invalid.")
+        if (
+            not self.publisher.strip()
+            or len(self.publisher) > 240
+            or not self.extract.strip()
+            or len(self.extract) > 1600
+        ):
+            raise ValueError("Public finding content exceeds bounds.")
+
+
+@dataclass(frozen=True)
+class PublicWebResearchResult:
+    findings: tuple[PublicWebFinding, ...]
+    provider: str
+    model: str
+    search_provenance: str = "GEMINI_GOOGLE_SEARCH"
+    limitations: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if len(self.findings) > 6:
+            raise ValueError("Public research findings exceed bounds.")
+        if len(self.limitations) > 6 or any(
+            not item.strip() or len(item) > 500 for item in self.limitations
+        ):
+            raise ValueError("Public research limitations exceed bounds.")
 
 
 @dataclass(frozen=True)
 class GovernedExplanationRequest:
     """Bounded facts from a deterministic Omni result, never raw application state."""
+
     explanation_type: ExplanationType
     subject_type: str
     subject_display_name: str
@@ -100,9 +171,16 @@ class GovernedExplanationRequest:
     prompt_version: str = "governed-explanation-prompt-v1"
 
     def __post_init__(self) -> None:
-        if not self.subject_type.strip() or not self.subject_display_name.strip() or len(self.subject_display_name) > 300:
+        if (
+            not self.subject_type.strip()
+            or not self.subject_display_name.strip()
+            or len(self.subject_display_name) > 300
+        ):
             raise ValueError("Governed explanation subject is invalid.")
-        if not self.deterministic_result.strip() or len(self.deterministic_result) > 6000:
+        if (
+            not self.deterministic_result.strip()
+            or len(self.deterministic_result) > 6000
+        ):
             raise ValueError("Governed explanation result exceeds bounds.")
         if any(
             value is not None and (not value.strip() or len(value) > 160)
@@ -117,8 +195,16 @@ class GovernedExplanationRequest:
             )
         ):
             raise ValueError("Governed explanation metadata exceeds bounds.")
-        for values in (self.key_drivers, self.limiting_factors, self.deterministic_matches, self.missingness, self.evidence_ids):
-            if len(values) > 12 or any(not value.strip() or len(value) > 600 for value in values):
+        for values in (
+            self.key_drivers,
+            self.limiting_factors,
+            self.deterministic_matches,
+            self.missingness,
+            self.evidence_ids,
+        ):
+            if len(values) > 12 or any(
+                not value.strip() or len(value) > 600 for value in values
+            ):
                 raise ValueError("Governed explanation collection exceeds bounds.")
 
 
@@ -138,7 +224,9 @@ class GovernedExplanation:
         if not self.summary.strip() or len(self.summary) > 1200:
             raise ValueError("Governed explanation summary exceeds bounds.")
         for values in (self.key_drivers, self.limitations, self.what_to_consider):
-            if len(values) > 6 or any(not value.strip() or len(value) > 500 for value in values):
+            if len(values) > 6 or any(
+                not value.strip() or len(value) > 500 for value in values
+            ):
                 raise ValueError("Governed explanation output exceeds bounds.")
 
 
@@ -167,10 +255,21 @@ class TechnicalCandidate:
     def __post_init__(self) -> None:
         for value in (self.name, self.reason, self.source_support):
             if not value.strip() or len(value) > 500:
-                raise ValueError("Technical candidate text is invalid or exceeds bounds.")
-        if len(self.evidence_ids) > 8 or any(not item.strip() or len(item) > 160 for item in self.evidence_ids):
+                raise ValueError(
+                    "Technical candidate text is invalid or exceeds bounds."
+                )
+        if len(self.evidence_ids) > 8 or any(
+            not item.strip() or len(item) > 160 for item in self.evidence_ids
+        ):
             raise ValueError("Technical candidate evidence IDs exceed bounds.")
-        if any(value is not None and len(value) > 240 for value in (self.parent_system, self.parent_product, self.manufacturing_family)):
+        if any(
+            value is not None and len(value) > 240
+            for value in (
+                self.parent_system,
+                self.parent_product,
+                self.manufacturing_family,
+            )
+        ):
             raise ValueError("Technical candidate context exceeds bounds.")
 
 
@@ -191,7 +290,9 @@ class TechnicalDecompositionRequest:
         if not self.event_id.strip() or len(self.event_id) > 160:
             raise ValueError("Technical decomposition event ID is invalid.")
         if not self.evidence or len(self.evidence) > 6:
-            raise ValueError("Technical decomposition requires one to six public evidence records.")
+            raise ValueError(
+                "Technical decomposition requires one to six public evidence records."
+            )
 
 
 @dataclass(frozen=True)
@@ -207,11 +308,20 @@ class TechnicalDecompositionResult:
 
     def __post_init__(self) -> None:
         if not self.event_summary.strip() or len(self.event_summary) > 1_200:
-            raise ValueError("Technical decomposition summary is invalid or exceeds bounds.")
-        for collection in (self.product_candidates, self.program_candidates, self.technical_systems, self.component_candidates):
+            raise ValueError(
+                "Technical decomposition summary is invalid or exceeds bounds."
+            )
+        for collection in (
+            self.product_candidates,
+            self.program_candidates,
+            self.technical_systems,
+            self.component_candidates,
+        ):
             if len(collection) > 8:
                 raise ValueError("Technical decomposition list exceeds bounds.")
-        if len(self.uncertainties) > 8 or any(not value.strip() or len(value) > 500 for value in self.uncertainties):
+        if len(self.uncertainties) > 8 or any(
+            not value.strip() or len(value) > 500 for value in self.uncertainties
+        ):
             raise ValueError("Technical decomposition uncertainty exceeds bounds.")
 
 
@@ -229,12 +339,20 @@ class LanguageProvider(Protocol):
     @property
     def configured(self) -> bool: ...
 
-    def interpret(self, request: IntentInterpretationRequest) -> IntentInterpretation: ...
+    def interpret(
+        self, request: IntentInterpretationRequest
+    ) -> IntentInterpretation: ...
 
     def synthesize(self, request: GroundedSynthesisRequest) -> LanguageResult: ...
+
+    def research_public_web(
+        self, request: PublicWebResearchRequest
+    ) -> PublicWebResearchResult: ...
 
     def decompose_technical_opportunity(
         self, request: TechnicalDecompositionRequest
     ) -> TechnicalDecompositionResult: ...
 
-    def explain_governed_result(self, request: GovernedExplanationRequest) -> GovernedExplanation: ...
+    def explain_governed_result(
+        self, request: GovernedExplanationRequest
+    ) -> GovernedExplanation: ...
