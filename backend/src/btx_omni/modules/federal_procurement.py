@@ -486,7 +486,9 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
                     date(x["posted_date"]) >= now - timedelta(days=7) for x in active
                 ),
                 "closing_within_14_days": sum(
-                    0 <= (date(x["response_deadline"]) - now).days <= 14 for x in active
+                    0 <= (date(x["response_deadline"]) - now).days <= 14
+                    for x in active
+                    if x.get("response_deadline")
                 ),
                 "sources_sought": sum(x["sources_sought"] for x in active),
             },

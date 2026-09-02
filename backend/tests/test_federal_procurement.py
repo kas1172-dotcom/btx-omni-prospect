@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from btx_omni.modules import federal_procurement
 from btx_omni.modules.federal_procurement import (
     fixture,
     market_for,
@@ -89,6 +90,44 @@ def test_notice_and_set_aside_filters() -> None:
 def test_deadline_and_sector_filters() -> None:
     projection = procurement_projection(_runtime(), deadline_bucket="14_DAYS", sector="Semiconductor")
     assert [x["opportunity_id"] for x in projection["active"]["opportunities"]] == ["SAM-2"]
+
+
+def test_projection_tolerates_live_sam_notice_without_response_deadline(
+    monkeypatch,
+) -> None:
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    runtime = SimpleNamespace(
+        observed_at=lambda: now,
+        monitor=SimpleNamespace(observations={}),
+        settings=SimpleNamespace(
+            monitor_sam_naics_verification_state="PENDING_VERIFICATION",
+            sam_api_key="configured",
+            federal_procurement_fixture_mode=True,
+        ),
+    )
+    monkeypatch.setattr(
+        federal_procurement,
+        "fixture",
+        lambda _now: (
+            [
+                {
+                    "opportunity_id": "live-no-deadline",
+                    "notice_category": "Solicitation",
+                    "sources_sought": False,
+                    "naics": None,
+                    "set_aside": None,
+                    "market": "UNRESOLVED",
+                    "response_deadline": None,
+                    "posted_date": now.isoformat(),
+                }
+            ],
+            [],
+        ),
+    )
+    projection = procurement_projection(runtime)
+    # A live SAM item without a response deadline is still a valid record;
+    # it must not make the federal-procurement reporting path crash.
+    assert projection["active"]["kpis"]["closing_within_14_days"] == 0
 
 
 def test_relevance_missing_context_is_conservative() -> None:
