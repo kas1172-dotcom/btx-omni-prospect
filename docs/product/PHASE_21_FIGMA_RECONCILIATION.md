@@ -10,7 +10,7 @@ The Figma target file is a visual and interaction reference only. Runtime projec
 | Customer 360 | `features/accounts/Accounts.tsx` | Partial by design: progressive sections organize identity, commercial context, evidence, facilities, relationships, and Actions | Missingness and SAMPLE/CONNECTED state are never hidden for visual density |
 | External Intelligence | `features/intelligence/Intelligence.tsx` | Match: feed, priority treatment, evidence, Radar, source health, and procurement navigation | No ticker percentages or inferred commercial claims |
 | Federal Procurement | Intelligence procurement views | Match: filters, density, detail, evidence, relevance, and responsive sheets | No probability-to-win or unavailable historic deltas |
-| Relationship Intelligence | Customer relationship projections | Match: readable paths, evidence, validation state, alternatives, and mobile disclosure | No graph, fake strength, or changed path classification |
+| Relationship Intelligence | Customer relationship projections | Match: readable paths, evidence, validation state, alternatives, mobile disclosure, and a bounded governed graph view | No fake strength, invented graph facts, or changed path classification |
 | Tactical Map | `features/map` | Match: compact controls and selected detail around the governed map canvas | No inferred geography or HQ fallback |
 | Actions | `features/actions/Actions.tsx` | Match: compact workbench, filters, drawer, detail/history, and touch layout | No external CRM/export implication; lifecycle remains governed |
 | Omni | `components/OmniDrawer.tsx` | Match: floating entry, quick/full progressive disclosure, context chips, evidence panel | Read-only; no assistant-created Action or entity guessing |
@@ -27,5 +27,5 @@ The deterministic desktop and responsive browser journeys were reviewed for Toda
 ## Intentional Figma divergences
 
 - Runtime provider and data-mode truth overrides illustrative connected states.
-- Unsupported monitor controls, CRM writes, exports, scoring, relationship graphs, and opportunity probabilities are not rendered as functional controls.
+- Unsupported monitor controls, CRM writes, exports, scoring, ungoverned relationship graph facts, and opportunity probabilities are not rendered as functional controls.
 - The application preserves required public/SAMPLE, missingness, validation, and source disclosures even where Figma examples are visually simpler.
