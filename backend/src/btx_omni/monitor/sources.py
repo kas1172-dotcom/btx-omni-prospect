@@ -52,6 +52,41 @@ class SourceDefinition:
     consumes_strategic_targets: bool = False
 
 
+@dataclass(frozen=True)
+class GovernedPublisher:
+    """A bounded operator-approved publisher, never a crawl target."""
+
+    id: str
+    url: str
+    owner_account_id: str | None = None
+    owner_label: str | None = None
+    source_type: str = "RSS"
+    enabled: bool = True
+
+
+def _governed_publishers(value: str, *, required_owner: bool) -> tuple[GovernedPublisher, ...]:
+    try:
+        raw = json.loads(value or "[]")
+    except json.JSONDecodeError as exc:
+        raise ValueError("MALFORMED_GOVERNED_SOURCE_REGISTRY") from exc
+    if not isinstance(raw, list):
+        raise TypeError("MALFORMED_GOVERNED_SOURCE_REGISTRY")
+    publishers: list[GovernedPublisher] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            raise TypeError("MALFORMED_GOVERNED_SOURCE_REGISTRY")
+        identifier, url, owner = item.get("id"), item.get("url"), item.get("canonical_account_id")
+        if not isinstance(identifier, str) or not identifier.strip() or not isinstance(url, str) or not url.startswith("https://"):
+            raise ValueError("MALFORMED_GOVERNED_SOURCE_REGISTRY")
+        if required_owner and (not isinstance(owner, str) or not owner.strip()):
+            raise ValueError("MALFORMED_GOVERNED_SOURCE_REGISTRY")
+        source_type = str(item.get("source_type", "RSS")).upper()
+        if source_type not in {"RSS", "ATOM"}:
+            raise ValueError("UNSUPPORTED_GOVERNED_SOURCE_TYPE")
+        publishers.append(GovernedPublisher(identifier.strip(), url, owner.strip() if isinstance(owner, str) and owner.strip() else None, str(item.get("owner_label") or "").strip() or None, source_type, bool(item.get("enabled", True))))
+    return tuple(item for item in publishers if item.enabled)
+
+
 HttpGet = Callable[[str, dict[str, str]], tuple[int, bytes, dict[str, str]]]
 HttpPost = Callable[[str, bytes, dict[str, str]], tuple[int, bytes, dict[str, str]]]
 
@@ -163,13 +198,35 @@ class LiveSourceAdapter:
         return SourceObservation(f"observation-{self.definition.source_id}-{content_hash[:16]}", identity, version, now, self.title(item), evidence, self.published(item), self.url(item), self.definition.source_tier.value, run_id, content)
 
 
+def _rss_observations(adapter: LiveSourceAdapter, payload: bytes, *, run_id: str, collected_at: datetime | None = None, owner: GovernedPublisher | None = None) -> list[SourceObservation]:
+    """Parse RSS/Atom only; a registry entry is not permission to crawl HTML."""
+    try:
+        root = element_tree.fromstring(payload)
+    except element_tree.ParseError as exc:
+        raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
+    rows: list[dict[str, Any]] = []
+    for item in root.findall(".//item"):
+        rows.append({"id": item.findtext("guid") or item.findtext("link"), "title": item.findtext("title"), "url": item.findtext("link"), "publication_date": item.findtext("pubDate"), "publisher_owner": owner.owner_account_id if owner else None, "publisher_id": owner.id if owner else None})
+    atom = "{http://www.w3.org/2005/Atom}"
+    for item in root.findall(f".//{atom}entry"):
+        link = next((entry.attrib.get("href") for entry in item.findall(f"{atom}link") if entry.attrib.get("href")), None)
+        rows.append({"id": item.findtext(f"{atom}id") or link, "title": item.findtext(f"{atom}title"), "url": link, "publication_date": item.findtext(f"{atom}published") or item.findtext(f"{atom}updated"), "publisher_owner": owner.owner_account_id if owner else None, "publisher_id": owner.id if owner else None})
+    observations = []
+    for row in rows:
+        observation = adapter._observation(row, run_id, collected_at=collected_at)
+        if owner and owner.owner_account_id:
+            observation = replace(observation, source_identity=SourceIdentity(adapter.definition.source_id, observation.source_identity.source_record_id, (("governed_source_owner", owner.owner_account_id), ("governed_publisher", owner.id))))
+        observations.append(observation)
+    return observations
+
+
 class SamAdapter(LiveSourceAdapter):
     definition = SourceDefinition("sam_gov", "SAM.gov Contract Opportunities", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "federal procurement", ("Defense", "Space", "Commercial Aerospace"), (EventType.SOLICITATION, EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION), "hourly", "search date range", "SAM_API_KEY required", "API key; obey published rate limits", "https://api.sam.gov/prod/opportunities/v2/search", "noticeId; UEI/CAGE when published", freshness_threshold_hours=2)
     def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.sam_api_key), "SAM_API_KEY is not configured"
     def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         today = (collected_at or datetime.now(UTC)).date()
         window_start = today - timedelta(days=14)
-        query: dict[str, object] = {'limit': limit, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')}
+        query: dict[str, object] = {'limit': limit, 'offset': 0, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')}
         # Do not apply unverified classifications to a production query.
         naics = tuple(
             code.strip() for code in getattr(self, "_sam_naics", ()) if code.strip()
@@ -178,12 +235,32 @@ class SamAdapter(LiveSourceAdapter):
             query["ncode"] = ",".join(naics)
         return f"{self.definition.api_base}?{urlencode(query)}"
     def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
-        self._sam_naics = (
-            tuple(value.strip() for value in settings.monitor_sam_naics.split(",") if value.strip())
-            if settings.monitor_sam_naics_verification_state == "VERIFIED" else ()
-        )
-        return super().collect(run_id=run_id, settings=settings, limit=limit, collected_at=collected_at)
-    def headers(self, settings: Any) -> dict[str, str]: return {"X-Api-Key": settings.sam_api_key, **super().headers(settings)}
+        self._sam_naics = (tuple(value.strip() for value in settings.monitor_sam_naics.split(",") if value.strip()) if settings.monitor_sam_naics_verification_state == "VERIFIED" else ())
+        allowed, reason = self.available(settings)
+        if not allowed:
+            raise PermissionError(reason or "SAM.gov is not configured")
+        observations: list[SourceObservation] = []
+        offset = 0
+        today = (collected_at or datetime.now(UTC)).date()
+        while len(observations) < limit:
+            query: dict[str, object] = {"limit": min(limit - len(observations), 100), "offset": offset, "api_key": settings.sam_api_key, "postedFrom": (today - timedelta(days=14)).strftime("%m/%d/%Y"), "postedTo": today.strftime("%m/%d/%Y")}
+            if self._sam_naics:
+                query["ncode"] = ",".join(self._sam_naics)
+            status, payload, _headers = self.get(f"{self.definition.api_base}?{urlencode(query)}", self.headers(settings))
+            if status == 429:
+                raise RuntimeError("RATE_LIMITED")
+            if status >= 400:
+                raise RuntimeError(f"HTTP_{status}")
+            try:
+                decoded = json.loads(payload)
+            except json.JSONDecodeError as exc:
+                raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
+            rows = self.items(decoded)
+            observations.extend(self._observation(row, run_id, collected_at=collected_at) for row in rows)
+            offset += len(rows)
+            if not rows or offset >= int(decoded.get("totalRecords", offset)):
+                break
+        return observations[:limit]
     def items(self, decoded: Any) -> list[dict[str, Any]]: return decoded.get("opportunitiesData", [])
 
 
@@ -374,13 +451,31 @@ class NasaAdapter(LiveSourceAdapter):
 
 
 class DodAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("dod", "US Department of Defense Contracts", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official publisher", ("Defense", "Space"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "contract release archive", "keyless", "publisher layout may change", "https://www.defense.gov/News/Contracts/", "contract number; UEI/CAGE if present", content_structure="UNCONFIGURED_PUBLISHER_PAGE", seller_promotion_permitted=False)
-    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official DoD machine-readable feed is not configured; web page collection is disabled"
+    definition = SourceDefinition("dod", "US Department of Defense Contract Announcements", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "DoD official RSS publisher", ("Defense", "Space"), (EventType.CONTRACT_AWARD, EventType.CONTRACT_MODIFICATION, EventType.SUPPLIER_AWARD), "daily", "official contract-announcement RSS", "keyless", "bounded official RSS; no general-site crawling", "https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=400&Site=945&max=10", "canonical official article URL", content_structure="OFFICIAL_RSS", seller_promotion_permitted=False)
+
+    def parse(self, payload: bytes, *, run_id: str, collected_at: datetime | None = None) -> list[SourceObservation]:
+        return _rss_observations(self, payload, run_id=run_id, collected_at=collected_at)
 
 
 class CommerceAdapter(LiveSourceAdapter):
-    definition = SourceDefinition("commerce", "Department of Commerce CHIPS", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "Commerce official publisher", ("Semiconductor",), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "announcement archive", "keyless", "publisher feed availability varies", "https://www.commerce.gov/news", "canonical release URL; award/project identifiers", content_structure="UNCONFIGURED_PUBLISHER_PAGE", seller_promotion_permitted=False)
-    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "official Commerce machine-readable feed is not configured; web page collection is disabled"
+    definition = SourceDefinition("commerce", "Department of Commerce News", SourceTier.TIER_1_AUTHORITATIVE_STRUCTURED, "Commerce official content API", ("Semiconductor", "Commercial Aerospace", "Energy"), (EventType.GOVERNMENT_FUNDING, EventType.GRANT_AWARD, EventType.CAPACITY_EXPANSION, EventType.NEW_FACILITY), "daily", "official news API", "COMMERCE_API_KEY required", "data.gov API key; bounded pagination", "https://api.commerce.gov/api/news", "Commerce content ID and canonical release URL", content_structure="OFFICIAL_JSON_API", seller_promotion_permitted=False)
+    _terms = ("chip", "semiconductor", "manufactur", "aerospace", "industrial", "facility", "supply chain", "investment", "production", "grant", "funding")
+    def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.commerce_api_key), "BTX_COMMERCE_API_KEY is not configured"
+    def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
+        return f"{self.definition.api_base}?{urlencode({'api_key': 'configured', 'page[limit]': limit, 'page[offset]': 0})}"
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        allowed, reason = self.available(settings)
+        if not allowed: raise PermissionError(reason or "Commerce is not configured")
+        status, payload, _headers = self.get(f"{self.definition.api_base}?{urlencode({'api_key': settings.commerce_api_key, 'page[limit]': min(limit, 50), 'page[offset]': 0})}", self.headers(settings))
+        if status == 429: raise RuntimeError("RATE_LIMITED")
+        if status >= 400: raise RuntimeError(f"HTTP_{status}")
+        try: rows = json.loads(payload).get("data", [])
+        except json.JSONDecodeError as exc: raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
+        return [self._observation(item, run_id, collected_at=collected_at) for item in rows if any(term in json.dumps(item).casefold() for term in self._terms)][:limit]
+    def record_id(self, item: dict[str, Any]) -> str: return str(item.get("id") or item.get("uuid") or super().record_id(item))
+    def title(self, item: dict[str, Any]) -> str: return str(item.get("title") or item.get("name") or item.get("attributes", {}).get("title") or super().title(item))
+    def url(self, item: dict[str, Any]) -> str: return str(item.get("url") or item.get("links", {}).get("self") or item.get("attributes", {}).get("url") or self.definition.api_base)
+    def published(self, item: dict[str, Any]) -> datetime | None: return super().published({**item, **item.get("attributes", {})})
 
 
 class FdaAdapter(LiveSourceAdapter):
@@ -391,12 +486,45 @@ class FdaAdapter(LiveSourceAdapter):
 
 class CompanyNewsAdapter(LiveSourceAdapter):
     definition = SourceDefinition("company_newsroom", "Official Company Newsroom", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "account official publisher", ("Commercial Aerospace", "Defense", "Space", "Robotics", "Semiconductor", "Medical", "Energy"), tuple(EventType), "daily", "per-account archive", "keyless", "only verified watch-profile URLs; RSS preferred", "", "canonical account domain and release URL", content_structure="UNCONFIGURED_ACCOUNT_FEED", seller_promotion_permitted=False)
-    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified account-watch-profile newsroom URL is required"
+    def _publishers(self, settings: Any) -> tuple[GovernedPublisher, ...]: return _governed_publishers(settings.monitor_company_feed_registry, required_owner=True)
+    def available(self, settings: Any) -> tuple[bool, str | None]:
+        try: publishers = self._publishers(settings)
+        except ValueError as exc: return False, str(exc)
+        return bool(publishers), "BTX_MONITOR_COMPANY_FEED_REGISTRY has no enabled governed official feeds"
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        publishers = self._publishers(settings)
+        if not publishers: raise PermissionError("BTX_MONITOR_COMPANY_FEED_REGISTRY has no enabled governed official feeds")
+        observations: list[SourceObservation] = []
+        for publisher in publishers:
+            try:
+                status, payload, _headers = self.get(publisher.url, self.headers(settings))
+                if status == 429: raise RuntimeError("RATE_LIMITED")
+                if status >= 400: raise RuntimeError(f"HTTP_{status}")
+                observations.extend(_rss_observations(self, payload, run_id=run_id, collected_at=collected_at, owner=publisher))
+            except Exception:
+                # Isolate one governed customer's broken feed; successful feeds
+                # remain durable and the source run reports the affected entry.
+                if not observations: raise
+        return observations[:limit]
 
 
 class StateEconomicAdapter(LiveSourceAdapter):
     definition = SourceDefinition("state_economic_development", "State Economic Development", SourceTier.TIER_2_AUTHORITATIVE_PUBLISHER, "state/local official publisher", ("Semiconductor", "Robotics", "Medical", "Commercial Aerospace", "Energy"), (EventType.FACILITY_EXPANSION, EventType.NEW_FACILITY, EventType.CAPITAL_INVESTMENT, EventType.GOVERNMENT_FUNDING), "weekly", "varies by state", "keyless", "adapter requires verified state publisher URL", "", "project ID/canonical release URL and facility geography", content_structure="UNCONFIGURED_PUBLISHER_FEED", freshness_threshold_hours=192, seller_promotion_permitted=False)
-    def available(self, settings: Any) -> tuple[bool, str | None]: return False, "verified state publisher URL is required"
+    def _publishers(self, settings: Any) -> tuple[GovernedPublisher, ...]: return _governed_publishers(settings.monitor_state_source_registry, required_owner=False)
+    def available(self, settings: Any) -> tuple[bool, str | None]:
+        try: publishers = self._publishers(settings)
+        except ValueError as exc: return False, str(exc)
+        return bool(publishers), "BTX_MONITOR_STATE_SOURCE_REGISTRY has no enabled official feeds"
+    def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
+        publishers = self._publishers(settings)
+        if not publishers: raise PermissionError("BTX_MONITOR_STATE_SOURCE_REGISTRY has no enabled official feeds")
+        observations: list[SourceObservation] = []
+        for publisher in publishers:
+            status, payload, _headers = self.get(publisher.url, self.headers(settings))
+            if status == 429: raise RuntimeError("RATE_LIMITED")
+            if status >= 400: raise RuntimeError(f"HTTP_{status}")
+            observations.extend(_rss_observations(self, payload, run_id=run_id, collected_at=collected_at, owner=publisher))
+        return observations[:limit]
 
 
 REGISTRY: dict[str, LiveSourceAdapter] = {adapter.definition.source_id: adapter for adapter in (SamAdapter(), UsaSpendingAdapter(), FederalRegisterAdapter(), SecEdgarAdapter(), NasaAdapter(), DodAdapter(), CommerceAdapter(), FdaAdapter(), CompanyNewsAdapter(), StateEconomicAdapter())}

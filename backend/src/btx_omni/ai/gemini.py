@@ -14,6 +14,8 @@ from google.genai.errors import APIError
 
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import (
+    EntityCandidateProposal,
+    EntityCandidateResolutionRequest,
     GovernedDraft,
     GovernedDraftingRequest,
     GovernedExplanation,
@@ -149,6 +151,33 @@ class GeminiProvider:
         return LanguageResult(
             content, self.name, self.config.model, request.evidence_ids
         )
+
+    def propose_entity_candidate(
+        self, request: EntityCandidateResolutionRequest
+    ) -> EntityCandidateProposal:
+        """Return only a supplied candidate; this cannot establish identity."""
+        allowed = dict(zip(request.candidate_account_ids, request.candidate_labels, strict=True))
+        prompt = (
+            "Interpret a public organization mention only against the supplied governed candidates. "
+            "You are not an identity authority: never create, modify, or resolve a Customer; never use an ID outside CANDIDATES; "
+            "never override identifiers; return null when evidence is insufficient. Return JSON only with proposed_canonical_account_id, candidate_account_ids, basis, uncertainties. "
+            f"MENTION: {request.mention}\nTITLE: {request.title}\nSOURCE: {request.source_url or 'None'}\n"
+            f"IDENTIFIERS: {list(request.source_identifiers)}\nCANDIDATES: {allowed}"
+        )
+        content = self._generate_text(prompt, types.GenerateContentConfig(temperature=0, max_output_tokens=400, response_mime_type="application/json"))
+        try:
+            payload = json.loads(content)
+        except (TypeError, json.JSONDecodeError) as error:
+            raise ValueError("Gemini entity candidate output is invalid.") from error
+        if not isinstance(payload, dict) or set(payload) != {"proposed_canonical_account_id", "candidate_account_ids", "basis", "uncertainties"}:
+            raise ValueError("Gemini entity candidate output has unsupported fields.")
+        proposed = payload["proposed_canonical_account_id"]
+        ranked = payload["candidate_account_ids"]
+        if proposed is not None and proposed not in allowed:
+            raise ValueError("Gemini proposed an ungoverned account ID.")
+        if not isinstance(ranked, list) or any(item not in allowed for item in ranked) or not isinstance(payload["basis"], str) or not isinstance(payload["uncertainties"], list) or any(not isinstance(item, str) for item in payload["uncertainties"]):
+            raise ValueError("Gemini entity candidate output is invalid.")
+        return EntityCandidateProposal(proposed, tuple(ranked), payload["basis"].strip(), tuple(payload["uncertainties"]))
 
     def draft_governed_content(self, request: GovernedDraftingRequest) -> GovernedDraft:
         """Generate only a seller-language proposal; recipients, approval, and writes stay governed."""

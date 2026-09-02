@@ -21,6 +21,7 @@ class MonitorCatalog:
         text: str,
         *,
         source_identifiers: tuple[tuple[str, str], ...] = (),
+        source_url: str | None = None,
     ) -> tuple[EntityResolution, ...]:
         """Find only exact governed names/aliases appearing in source text."""
         normalized = text.casefold()
@@ -36,7 +37,7 @@ class MonitorCatalog:
                     mentions.append(candidate)
                     break
         identifier_resolution = resolve_entity(
-            text, self.profiles, source_identifiers=source_identifiers
+            text, self.profiles, source_identifiers=source_identifiers, source_url=source_url
         ) if source_identifiers else None
         if identifier_resolution and identifier_resolution.state is ResolutionState.RESOLVED:
             return (identifier_resolution,)

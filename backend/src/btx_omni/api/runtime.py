@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
+from btx_omni.ai.config import AiConfig
+from btx_omni.ai.registry import get_ai_provider
 from btx_omni.core.config import Settings
 from btx_omni.modules.commercial.read import (
     CommercialAccountSnapshot,
@@ -17,6 +19,7 @@ from btx_omni.modules.communications.service import CommunicationService
 from btx_omni.modules.intelligence.technical_fit import TechnicalDecompositionService
 from btx_omni.modules.work.service import WorkService
 from btx_omni.monitor.catalog import MonitorCatalog
+from btx_omni.monitor.entity_candidates import EntityCandidateResolver
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.monitor.service import MonitorService
@@ -112,6 +115,11 @@ class PocRuntime:
             watch_profiles=usa_profiles,
             catalog=MonitorCatalog(
                 self.sample.watch_profiles, self.sample.programs, self.sample.facilities
+            ),
+            entity_candidate_resolver=EntityCandidateResolver(
+                get_ai_provider(AiConfig.from_settings(self.settings)), repository,
+                self.sample.watch_profiles,
+                cap=self.settings.monitor_entity_candidate_resolution_cap,
             ),
         )
         self.monitor.watch_targets = {

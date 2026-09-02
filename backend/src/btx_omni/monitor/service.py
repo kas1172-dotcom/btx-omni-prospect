@@ -26,6 +26,7 @@ from btx_omni.monitor.contracts import (
     SourceObservation,
     SourceOperationalStatus,
 )
+from btx_omni.monitor.entity_candidates import EntityCandidateResolver
 from btx_omni.monitor.health import SOURCE_HEALTH_WARNING
 from btx_omni.monitor.normalization import normalize_structured_observation
 from btx_omni.monitor.ontology import EventType, SourceHealthState
@@ -60,6 +61,7 @@ class MonitorService:
     catalog: MonitorCatalog = field(default_factory=MonitorCatalog)
     watch_targets: dict[str, tuple[WatchTarget, ...]] = field(default_factory=dict)
     clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
+    entity_candidate_resolver: EntityCandidateResolver | None = None
 
     @staticmethod
     def _collect_with_deadline(
@@ -175,6 +177,13 @@ class MonitorService:
                         catalog=self.catalog,
                         source_markets=adapter.definition.industries_supported,
                         now=started,
+                    )
+                if self.entity_candidate_resolver:
+                    candidate = replace(
+                        candidate,
+                        event=self.entity_candidate_resolver.apply(
+                            candidate.event, observation
+                        ),
                     )
                 self.observations[observation.id] = observation
                 self.events[candidate.event.id] = candidate.event

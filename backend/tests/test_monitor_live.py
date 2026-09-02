@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 
 from btx_omni.ai.config import AiConfig
+from btx_omni.ai.contracts import EntityCandidateProposal
 from btx_omni.ai.gemini import GeminiProvider
 from btx_omni.ai.registry import get_ai_provider
 from btx_omni.api.intelligence_projection import intelligence_signals
@@ -19,14 +20,19 @@ from btx_omni.modules.scoring.account_attractiveness import (
     calculate_account_attractiveness,
 )
 from btx_omni.monitor.catalog import MonitorCatalog
+from btx_omni.monitor.entity_candidates import EntityCandidateResolver
 from btx_omni.monitor.packs import PACKS
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
 from btx_omni.monitor.service import MonitorService
 from btx_omni.monitor.sources import (
+    CommerceAdapter,
+    CompanyNewsAdapter,
+    DodAdapter,
     FdaAdapter,
     SamAdapter,
     SecEdgarAdapter,
+    StateEconomicAdapter,
     UsaSpendingAdapter,
 )
 from btx_omni.persistence.models import metadata
@@ -74,6 +80,37 @@ def test_sam_naics_are_applied_only_after_explicit_verification() -> None:
     assert "ncode=" not in adapter.request_url(1)
     adapter.collect(run_id="verified", settings=verified)
     assert "ncode=336411%2C334413" in adapter.request_url(1)
+
+
+def test_sam_uses_documented_query_key_and_paginates() -> None:
+    urls: list[str] = []
+    def get(url: str, _headers: dict[str, str]):
+        urls.append(url)
+        offset = 0 if "offset=0" in url else 1
+        return 200, json.dumps({"totalRecords": 2, "opportunitiesData": [{"noticeId": f"N-{offset}", "title": "award"}]}).encode(), {}
+    observations = SamAdapter(get).collect(run_id="r", settings=Settings(_env_file=None, sam_api_key="key"), limit=2)
+    assert len(observations) == 2
+    assert all("api_key=key" in url and "postedFrom=" in url and "postedTo=" in url for url in urls)
+
+
+def test_new_official_adapters_are_bounded_and_shadow_only() -> None:
+    rss = b"<rss><channel><item><guid>one</guid><title>Contract award</title><link>https://official.example/one</link><pubDate>Tue, 01 Sep 2026 10:00:00 +0000</pubDate></item></channel></rss>"
+    dod = DodAdapter(lambda _url, _headers: (200, rss, {}))
+    assert dod.definition.seller_promotion_permitted is False
+    assert dod.collect(run_id="dod", settings=Settings(_env_file=None))[0].source_identity.source_record_id == "one"
+    commerce = CommerceAdapter(fake_get({"data": [{"id": "chips-1", "title": "CHIPS manufacturing investment", "url": "https://commerce.gov/n/1"}]}))
+    assert commerce.collect(run_id="commerce", settings=Settings(_env_file=None, commerce_api_key="key"))[0].source_identity.source_record_id == "chips-1"
+
+
+def test_governed_company_and_state_feed_registries_preserve_ownership() -> None:
+    rss = b"<rss><channel><item><guid>release-1</guid><title>Skunk Works program update</title><link>https://news.example/release-1</link></item></channel></rss>"
+    company = CompanyNewsAdapter(lambda _url, _headers: (200, rss, {}))
+    company_settings = Settings(_env_file=None, monitor_company_feed_registry='[{"id":"lockheed-news","canonical_account_id":"lockheed-martin","url":"https://news.example/feed"}]')
+    company_observation = company.collect(run_id="company", settings=company_settings)[0]
+    assert ("governed_source_owner", "lockheed-martin") in company_observation.source_identity.source_native_ids
+    state = StateEconomicAdapter(lambda _url, _headers: (200, rss, {}))
+    state_settings = Settings(_env_file=None, monitor_state_source_registry='[{"id":"pa-ed","url":"https://pa.gov/feed"}]')
+    assert state.collect(run_id="state", settings=state_settings)[0].source_identity.source_record_id == "release-1"
 
 
 def test_sec_requires_explicit_identifying_agent_and_preserves_filing_identity() -> None:
@@ -174,6 +211,36 @@ def test_entity_collision_is_ambiguous_and_ai_registry_is_provider_neutral() -> 
     provider = get_ai_provider(AiConfig("gemini", None, "test-model", "developer", None, "global", 1))
     assert isinstance(provider, GeminiProvider)
     assert not provider.configured
+
+
+def test_entity_candidate_is_cached_and_never_promotes_canonical_identity() -> None:
+    class CandidateProvider:
+        name = "fake-gemini"
+        config = type("Config", (), {"model": "test"})()
+        calls = 0
+        def propose_entity_candidate(self, request):
+            self.calls += 1
+            assert request.candidate_account_ids == ("one", "two")
+            return EntityCandidateProposal("one", ("one",), "linguistic candidate", ("legal proof absent",))
+
+    engine = create_engine("sqlite://")
+    metadata.create_all(engine)
+    profiles = (AccountWatchProfile("one", "Acme One", aliases=("Acme Systems",)), AccountWatchProfile("two", "Acme Two", aliases=("Acme Systems",)))
+    provider = CandidateProvider()
+    service = MonitorService(
+        Settings(_env_file=None, monitor_mode="live"),
+        {"fda": FdaAdapter(fake_get({"results": [{"id": "candidate-1", "title": "Acme Systems approval"}]}))},
+        repository=MonitorRepository(engine), watch_profiles=profiles,
+        catalog=MonitorCatalog(profiles),
+        entity_candidate_resolver=EntityCandidateResolver(provider, MonitorRepository(engine), profiles),
+    )
+    service.collect("fda")
+    service.collect("fda")
+    event = next(iter(service.events.values()))
+    assert provider.calls == 1
+    assert event.subject_entities[0].canonical_account_id is None
+    assert event.subject_entities[0].state.value == "UNRESOLVED"
+    assert event.subject_entities[0].candidate_account_ids == ("one",)
 
 
 def test_monitor_observations_cluster_with_multiple_evidence_and_source_update() -> None:

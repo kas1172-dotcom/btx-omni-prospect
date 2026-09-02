@@ -83,20 +83,28 @@ def run_worker(
         deadline = monotonic() + settings.monitor_worker_max_seconds
         runs = []
         deadline_exhausted = False
-        for source_id in configured:
+        for index, source_id in enumerate(configured):
             remaining = deadline - monotonic()
             if remaining < settings.monitor_source_min_start_seconds:
                 deadline_exhausted = True
                 break
+            # Reserve a fair minimum start window for each remaining provider.
+            # A slow upstream must be observable, but cannot starve every
+            # subsequent source by consuming the entire global deadline.
+            remaining_sources = len(configured) - index
+            source_deadline = min(
+                deadline,
+                monotonic() + max(
+                    settings.monitor_source_min_start_seconds,
+                    remaining / remaining_sources,
+                ),
+            )
             run = runtime.monitor.collect(
                 source_id,
                 limit=limit or settings.monitor_source_record_limit,
-                deadline_monotonic=deadline,
+                deadline_monotonic=source_deadline,
             )
             runs.append(run)
-            if "DEADLINE_EXCEEDED" in run.failures:
-                deadline_exhausted = True
-                break
             if monotonic() >= deadline:
                 deadline_exhausted = True
                 break

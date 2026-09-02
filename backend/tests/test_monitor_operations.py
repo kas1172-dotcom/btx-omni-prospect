@@ -81,7 +81,8 @@ def test_source_registry_truthfully_describes_collectability_and_requirements() 
     assert states["nasa"][0] is True
     assert states["fda_openfda"][0] is True
     assert states["sec_edgar"][0] is False
-    assert states["dod"][0] is False and states["commerce"][0] is False
+    assert states["dod"][0] is True
+    assert states["commerce"] == (False, "BTX_COMMERCE_API_KEY is not configured")
     assert states["company_newsroom"][0] is False
     assert states["state_economic_development"][0] is False
     assert (

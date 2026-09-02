@@ -305,6 +305,32 @@ class PublicEvidenceRecord:
 
 
 @dataclass(frozen=True)
+class EntityCandidateResolutionRequest:
+    """Bounded candidate interpretation; it is explicitly not an identity write."""
+    mention: str
+    title: str
+    source_url: str | None
+    source_identifiers: tuple[tuple[str, str], ...]
+    candidate_account_ids: tuple[str, ...]
+    candidate_labels: tuple[str, ...]
+    contract_version: str = "entity-candidate-resolution-v1"
+
+    def __post_init__(self) -> None:
+        if not self.mention.strip() or len(self.mention) > 300 or not 1 <= len(self.candidate_account_ids) <= 12:
+            raise ValueError("Entity candidate request exceeds bounds.")
+        if len(self.candidate_account_ids) != len(self.candidate_labels):
+            raise ValueError("Entity candidate labels must match supplied IDs.")
+
+
+@dataclass(frozen=True)
+class EntityCandidateProposal:
+    proposed_canonical_account_id: str | None
+    candidate_account_ids: tuple[str, ...]
+    basis: str
+    uncertainties: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class TechnicalCandidate:
     name: str
     basis: TechnicalBasis

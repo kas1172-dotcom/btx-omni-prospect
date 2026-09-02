@@ -45,7 +45,7 @@ def normalize_structured_observation(
     kind = event_type or classify_title(observation.title)
     catalog = catalog or MonitorCatalog()
     source_text = "\n".join(part for part in (observation.title, observation.structured_payload or "") if part)
-    subjects = (EntityResolution(subject_mention, None, ResolutionState.UNRESOLVED, "structured_source", "source record subject is supplied by source-specific normalizer"),) if subject_mention else catalog.resolve_subjects(source_text, source_identifiers=observation.source_identity.source_native_ids)
+    subjects = (EntityResolution(subject_mention, None, ResolutionState.UNRESOLVED, "structured_source", "source record subject is supplied by source-specific normalizer"),) if subject_mention else catalog.resolve_subjects(source_text, source_identifiers=observation.source_identity.source_native_ids, source_url=observation.raw_evidence.locator)
     resolution = subjects[0].state if len(subjects) == 1 else ResolutionState.AMBIGUOUS
     program = catalog.resolve_program(source_text)
     source_program = explicit_program_mention(observation)

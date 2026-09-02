@@ -38,6 +38,7 @@ from btx_omni.persistence.models import (
     monitor_brief_syntheses,
     monitor_candidate_promotion_audits,
     monitor_collection_runs,
+    monitor_entity_candidate_resolutions,
     monitor_event_clusters,
     monitor_events,
     monitor_observations,
@@ -773,6 +774,16 @@ class MonitorRepository:
         )
         value["processed_at"] = _database_timestamp(value["processed_at"])
         return value
+
+    def entity_candidate_resolution(self, cache_key: str) -> dict | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(select(monitor_entity_candidate_resolutions).where(monitor_entity_candidate_resolutions.c.cache_key == cache_key)).mappings().one_or_none()
+        return dict(row) if row else None
+
+    def save_entity_candidate_resolution(self, *, cache_key: str, projection: dict, provider: str | None, model: str | None, status: str, processed_at: datetime) -> None:
+        with self.engine.begin() as connection:
+            connection.execute(delete(monitor_entity_candidate_resolutions).where(monitor_entity_candidate_resolutions.c.cache_key == cache_key))
+            connection.execute(insert(monitor_entity_candidate_resolutions).values(cache_key=cache_key, projection=_json(projection), provider=provider, model=model, status=status, processed_at=processed_at))
 
     def technical_decomposition_for_event(self, event_id: str) -> dict | None:
         """Read the worker-owned latest durable projection without reconstructing a provider model."""

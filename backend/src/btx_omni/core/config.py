@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     monitor_sam_naics_verification_state: str = "PENDING_VERIFICATION"
     monitor_brief_synthesis_cap: int = 3
     monitor_technical_decomposition_cap: int = 2
+    monitor_entity_candidate_resolution_cap: int = 3
     monitor_brief_auth_retry_seconds: int = 3600
     monitor_brief_timeout_retry_seconds: int = 300
     monitor_brief_quota_retry_seconds: int = 21600
@@ -54,6 +55,13 @@ class Settings(BaseSettings):
     google_cloud_location: str = "global"
     ai_timeout_seconds: float = 20.0
     sam_api_key: str | None = None
+    # Commerce's official content API uses a data.gov API key. Keeping this
+    # separate from SAM prevents accidental cross-provider credential use.
+    commerce_api_key: str | None = None
+    # These are explicit operator-approved registry entries, never a general
+    # URL crawl input. Empty registries intentionally leave sources disabled.
+    monitor_company_feed_registry: str = "[]"
+    monitor_state_source_registry: str = "[]"
     # SEC requires an organization/contact identifying User-Agent.  Never use a
     # plausible-looking default contact as a production identity.
     sec_user_agent: str | None = None
