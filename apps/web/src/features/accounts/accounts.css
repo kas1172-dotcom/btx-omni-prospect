@@ -298,6 +298,17 @@
   font-size: 12px;
   line-height: 1.4;
 }
+.customer-action-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px auto;
+  gap: 8px;
+  align-items: end;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-default);
+}
+.customer-action-form .ui-field {
+  min-width: 0;
+}
 .evidence-list {
   display: grid;
   gap: 10px;
@@ -610,6 +621,9 @@
   .account-primary-grid,
   .account-secondary-grid {
     display: contents;
+  }
+  .customer-action-form {
+    grid-template-columns: 1fr;
   }
   .account-workspace {
     padding-bottom: 8px;
