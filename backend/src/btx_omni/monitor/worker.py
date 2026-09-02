@@ -142,7 +142,7 @@ def run_worker(
                 request = TechnicalDecompositionRequest(
                     event_id=brief.id,
                     event_type=brief.headline,
-                    canonical_customer_name=account.name if account else None,
+                    canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
                     evidence=(
