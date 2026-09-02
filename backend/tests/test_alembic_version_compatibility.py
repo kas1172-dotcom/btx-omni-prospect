@@ -12,7 +12,7 @@ from btx_omni.core.config import get_settings
 BACKEND_ROOT = Path(__file__).parents[1]
 REVISION_0009 = "0009_btx_facility_location_metadata"
 REVISION_0008 = "0008_commercial_and_edges"
-HEAD_REVISION = "0019_monitor_technical_decomposition"
+HEAD_REVISION = "0020_governed_explanations"
 
 
 def _config(database_url: str) -> Config:

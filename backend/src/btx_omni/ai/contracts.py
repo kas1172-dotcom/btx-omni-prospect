@@ -34,6 +34,14 @@ class TechnicalBasis(StrEnum):
     MODEL_INFERRED = "MODEL_INFERRED"
 
 
+class ExplanationType(StrEnum):
+    CUSTOMER_ATTRACTIVENESS = "CUSTOMER_ATTRACTIVENESS"
+    FEDERAL_OPPORTUNITY_RELEVANCE = "FEDERAL_OPPORTUNITY_RELEVANCE"
+    TECHNICAL_OPPORTUNITY_FIT = "TECHNICAL_OPPORTUNITY_FIT"
+    RELATIONSHIP_PATH = "RELATIONSHIP_PATH"
+    SIGNAL_PRIORITY = "SIGNAL_PRIORITY"
+
+
 class LanguageProviderError(RuntimeError):
     """Safe provider failure classification; messages never cross the API boundary."""
 
@@ -67,6 +75,71 @@ class GroundedSynthesisRequest:
     evidence_ids: tuple[str, ...]
     missingness: tuple[str, ...]
     recent_turns: tuple[ConversationTurn, ...] = ()
+
+
+@dataclass(frozen=True)
+class GovernedExplanationRequest:
+    """Bounded facts from a deterministic Omni result, never raw application state."""
+    explanation_type: ExplanationType
+    subject_type: str
+    subject_display_name: str
+    deterministic_result: str
+    deterministic_status: str
+    numeric_value: str | None = None
+    score_unit: str | None = None
+    configuration_version: str | None = None
+    key_drivers: tuple[str, ...] = ()
+    limiting_factors: tuple[str, ...] = ()
+    deterministic_matches: tuple[str, ...] = ()
+    missingness: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    data_mode: str = "UNAVAILABLE"
+    hypothesis_or_calibration: str | None = None
+    style: str = "SELLER_CONCISE"
+    contract_version: str = "governed-explanation-v1"
+    prompt_version: str = "governed-explanation-prompt-v1"
+
+    def __post_init__(self) -> None:
+        if not self.subject_type.strip() or not self.subject_display_name.strip() or len(self.subject_display_name) > 300:
+            raise ValueError("Governed explanation subject is invalid.")
+        if not self.deterministic_result.strip() or len(self.deterministic_result) > 6000:
+            raise ValueError("Governed explanation result exceeds bounds.")
+        if any(
+            value is not None and (not value.strip() or len(value) > 160)
+            for value in (
+                self.numeric_value,
+                self.score_unit,
+                self.configuration_version,
+                self.hypothesis_or_calibration,
+                self.style,
+                self.contract_version,
+                self.prompt_version,
+            )
+        ):
+            raise ValueError("Governed explanation metadata exceeds bounds.")
+        for values in (self.key_drivers, self.limiting_factors, self.deterministic_matches, self.missingness, self.evidence_ids):
+            if len(values) > 12 or any(not value.strip() or len(value) > 600 for value in values):
+                raise ValueError("Governed explanation collection exceeds bounds.")
+
+
+@dataclass(frozen=True)
+class GovernedExplanation:
+    summary: str
+    key_drivers: tuple[str, ...]
+    limitations: tuple[str, ...]
+    what_to_consider: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    explanation_type: ExplanationType
+    provider: str
+    model: str
+    contract_version: str
+
+    def __post_init__(self) -> None:
+        if not self.summary.strip() or len(self.summary) > 1200:
+            raise ValueError("Governed explanation summary exceeds bounds.")
+        for values in (self.key_drivers, self.limitations, self.what_to_consider):
+            if len(values) > 6 or any(not value.strip() or len(value) > 500 for value in values):
+                raise ValueError("Governed explanation output exceeds bounds.")
 
 
 @dataclass(frozen=True)
@@ -163,3 +236,5 @@ class LanguageProvider(Protocol):
     def decompose_technical_opportunity(
         self, request: TechnicalDecompositionRequest
     ) -> TechnicalDecompositionResult: ...
+
+    def explain_governed_result(self, request: GovernedExplanationRequest) -> GovernedExplanation: ...

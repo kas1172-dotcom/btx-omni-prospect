@@ -1,5 +1,6 @@
 import type { MonitorSignalBrief } from '../types/api'
 import { Button, Disclosure, EvidenceSource, State } from './UI'
+import { GovernedExplanationDisclosure } from './GovernedExplanationDisclosure'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
@@ -35,6 +36,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         </article>) : <p>{brief.technical_opportunity.provider_status === 'AVAILABLE' ? 'No manufactured component candidates were identified from the supplied public evidence.' : 'Technical decomposition is unavailable; the governed public signal remains available.'}</p>}
         {brief.technical_opportunity.uncertainties.length > 0 && <div><strong>Uncertainties</strong><ul>{brief.technical_opportunity.uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
         <small>{brief.technical_opportunity.disclosure}</small>
+        <GovernedExplanationDisclosure title="Why this technical fit may matter" explanation={brief.technical_opportunity.governed_explanation} />
       </div>
     </Disclosure>}
     <Disclosure title="Evidence, why it matters, and next step">

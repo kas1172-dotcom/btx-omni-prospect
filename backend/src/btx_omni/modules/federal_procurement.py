@@ -8,6 +8,12 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from btx_omni.ai.contracts import ExplanationType
+from btx_omni.modules.intelligence.governed_explanation_adapters import (
+    federal_opportunity_subject_key,
+    persisted_seller_explanation,
+)
+
 MARKETS = (
     "Commercial Aerospace",
     "Defense",
@@ -116,7 +122,10 @@ def opportunity(
             "collected_at": obs.observed_at.isoformat(),
         },
         "freshness": {"collected_at": obs.observed_at.isoformat()},
-        "history": {"first_seen_at": obs.source_version.first_seen_at.isoformat(), "last_seen_at": obs.source_version.last_seen_at.isoformat()},
+        "history": {
+            "first_seen_at": obs.source_version.first_seen_at.isoformat(),
+            "last_seen_at": obs.source_version.last_seen_at.isoformat(),
+        },
         "data_mode": "CONNECTED",
         "naics_targeting": "VERIFIED" if verified else "PENDING_CONFIRMATION",
         "market": market_for(str(n) if n else None, str(agency) if agency else None),
@@ -231,12 +240,26 @@ def period_comparison(
     """Fixed rolling seven-day contract; never turns missing history into zero."""
     start = now - timedelta(days=7)
     newly = sum(
-        bool(x.get("history", {}).get("first_seen_at") and date(x["history"]["first_seen_at"]) >= start)
+        bool(
+            x.get("history", {}).get("first_seen_at")
+            and date(x["history"]["first_seen_at"]) >= start
+        )
         for x in current
     )
     available = prior_count is not None
     delta = len(current) - prior_count if available else None
-    return {"current_count": len(current), "prior_count": prior_count, "delta": delta, "newly_observed_count": newly, "period_start": start.isoformat(), "period_end": now.isoformat(), "comparison_start": (start-timedelta(days=7)).isoformat(), "comparison_end": start.isoformat(), "available": available, "reason": None if available else "INSUFFICIENT_HISTORY"}
+    return {
+        "current_count": len(current),
+        "prior_count": prior_count,
+        "delta": delta,
+        "newly_observed_count": newly,
+        "period_start": start.isoformat(),
+        "period_end": now.isoformat(),
+        "comparison_start": (start - timedelta(days=7)).isoformat(),
+        "comparison_end": start.isoformat(),
+        "available": available,
+        "reason": None if available else "INSUFFICIENT_HISTORY",
+    }
 
 
 def fixture(now: datetime):
@@ -259,7 +282,12 @@ def fixture(now: datetime):
             "official_source_url": f"https://sam.gov/opp/{i}",
             "evidence": {"id": f"sample-{i}", "collected_at": now.isoformat()},
             "freshness": {"collected_at": now.isoformat()},
-            "history": {"first_seen_at": (now - timedelta(days=2 if i == "SAM-1" else 10)).isoformat(), "last_seen_at": now.isoformat()},
+            "history": {
+                "first_seen_at": (
+                    now - timedelta(days=2 if i == "SAM-1" else 10)
+                ).isoformat(),
+                "last_seen_at": now.isoformat(),
+            },
             "data_mode": "SAMPLE",
             "naics_targeting": "VERIFIED",
             "market": market_for(n, agency),
@@ -352,6 +380,12 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
         opp, aw = fixture(now)
     for x in opp:
         x.setdefault("relevance", relevance(x, now=now))
+        repository = getattr(getattr(runtime, "monitor", None), "repository", None)
+        x["governed_explanation"] = persisted_seller_explanation(
+            repository,
+            subject_key=federal_opportunity_subject_key(x),
+            explanation_type=ExplanationType.FEDERAL_OPPORTUNITY_RELEVANCE,
+        )
 
     def ok(x):
         days = (
@@ -462,7 +496,18 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
                 for m in (*MARKETS, "UNRESOLVED")
             ],
             "history": "INSUFFICIENT_HISTORY",
-        "pipeline": [dict({"type": n, "count": sum(x["notice_category"] == n for x in active)}, **period_comparison([x for x in active if x["notice_category"] == n], now=now)) for n in NOTICE.values()],
+            "pipeline": [
+                dict(
+                    {
+                        "type": n,
+                        "count": sum(x["notice_category"] == n for x in active),
+                    },
+                    **period_comparison(
+                        [x for x in active if x["notice_category"] == n], now=now
+                    ),
+                )
+                for n in NOTICE.values()
+            ],
             "filter_options": {
                 "naics": sorted({x["naics"] for x in opp if x["naics"]}),
                 "set_asides": sorted({x["set_aside"] for x in opp if x["set_aside"]}),

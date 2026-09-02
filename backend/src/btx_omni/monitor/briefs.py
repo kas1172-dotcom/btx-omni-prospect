@@ -10,10 +10,15 @@ from time import monotonic
 from typing import TYPE_CHECKING
 
 from btx_omni.ai.contracts import (
+    ExplanationType,
     GroundedSynthesisRequest,
     LanguageProvider,
     LanguageProviderError,
     ProviderStatus,
+)
+from btx_omni.modules.intelligence.governed_explanation_adapters import (
+    persisted_seller_explanation,
+    technical_opportunity_subject_key,
 )
 from btx_omni.monitor.contracts import IntelligenceEvent, SourceObservation
 from btx_omni.monitor.ontology import ResolutionState, SellerRelevanceState
@@ -146,7 +151,11 @@ def signal_brief(
         published, collected_at=collected, threshold_hours=freshness_hours, now=clock
     )
     event_timing = (
-        "UNKNOWN" if published is None else "UPCOMING" if published > clock else "OBSERVED"
+        "UNKNOWN"
+        if published is None
+        else "UPCOMING"
+        if published > clock
+        else "OBSERVED"
     )
     seller_state = event.seller_relevance_state.value
     if eligible and freshness != "CURRENT":
@@ -262,8 +271,7 @@ def synthesize_signal_brief_with_status(
 
 def is_synthesis_eligible(brief: SignalBrief) -> bool:
     return (
-        brief.seller_promotion_state
-        == SellerRelevanceState.RESOLVED_ELIGIBLE.value
+        brief.seller_promotion_state == SellerRelevanceState.RESOLVED_ELIGIBLE.value
         and brief.freshness == "CURRENT"
         and brief.resolution_state == ResolutionState.RESOLVED.value
         and brief.publication_timestamp is not None
@@ -334,18 +342,24 @@ def signal_briefs_for_monitor(
             for reason in target.reasons
         )
         brief = signal_brief(
-                event,
-                observation,
-                freshness_hours=monitor.freshness_threshold_hours(source_id),
-                now=now,
-                target_reasons=reasons,
-            )
+            event,
+            observation,
+            freshness_hours=monitor.freshness_threshold_hours(source_id),
+            now=now,
+            target_reasons=reasons,
+        )
         if monitor.repository:
             # Seller reads consume the exact worker-owned durable projection. They never
             # reconstruct a hash by guessing the configured provider model.
             cached = monitor.repository.technical_decomposition_for_event(brief.id)
             if cached and cached.get("projection"):
-                projected.append(replace(brief, technical_opportunity=json.loads(cached["projection"])))
+                technical = json.loads(cached["projection"])
+                technical["governed_explanation"] = persisted_seller_explanation(
+                    monitor.repository,
+                    subject_key=technical_opportunity_subject_key(brief.id),
+                    explanation_type=ExplanationType.TECHNICAL_OPPORTUNITY_FIT,
+                )
+                projected.append(replace(brief, technical_opportunity=technical))
                 continue
         projected.append(brief)
     return tuple(projected)
@@ -367,7 +381,9 @@ def process_signal_brief_synthesis(
     policy = retry_policy or BriefRetryPolicy()
     attempted = reused = deferred = assisted = 0
     statuses: list[ProviderStatus] = []
-    eligible = tuple(sorted(filter(is_synthesis_eligible, briefs), key=lambda item: item.id))
+    eligible = tuple(
+        sorted(filter(is_synthesis_eligible, briefs), key=lambda item: item.id)
+    )
     capped = False
     for brief in eligible:
         content_hash = governed_content_hash(brief)
