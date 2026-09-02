@@ -222,6 +222,12 @@ test('Map selection sends canonical Customer and facility context without invent
   assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
 })
 
+test('Map test renderer accepts legacy and facility-scoped canonical account marker IDs', () => {
+  assert.match(mapCanvas, /accountIdFromMarkerId/)
+  assert.match(mapCanvas, /split\(/)
+  assert.match(mapCanvas, /account:<accountId>:facility:<facilityId>/)
+})
+
 test('Actions sends the selected canonical work-item ID without leaking other passive selections', () => {
   assert.match(actions, /onActionSelect/)
   assert.match(actions, /onActionSelect\(selected\?\.id\)/)
