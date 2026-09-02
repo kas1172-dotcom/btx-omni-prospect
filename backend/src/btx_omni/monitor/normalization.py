@@ -10,7 +10,6 @@ from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.monitor.candidates import explicit_program_mention
 from btx_omni.monitor.catalog import MonitorCatalog
 from btx_omni.monitor.contracts import (
-    EntityResolution,
     EventEvidence,
     IntelligenceEvent,
     NormalizedClaim,
@@ -19,6 +18,7 @@ from btx_omni.monitor.contracts import (
 )
 from btx_omni.monitor.ontology import EventType, ResolutionState
 from btx_omni.monitor.policy import classify_markets, recency_state, seller_relevance
+from btx_omni.monitor.resolution import resolve_entity
 
 
 def classify_title(title: str) -> EventType:
@@ -45,7 +45,11 @@ def normalize_structured_observation(
     kind = event_type or classify_title(observation.title)
     catalog = catalog or MonitorCatalog()
     source_text = "\n".join(part for part in (observation.title, observation.structured_payload or "") if part)
-    subjects = (EntityResolution(subject_mention, None, ResolutionState.UNRESOLVED, "structured_source", "source record subject is supplied by source-specific normalizer"),) if subject_mention else catalog.resolve_subjects(source_text)
+    subjects = (
+        (resolve_entity(subject_mention, catalog.profiles, source_identifiers=observation.source_identity.source_native_ids, source_url=observation.raw_payload_locator),)
+        if subject_mention
+        else catalog.resolve_subjects(source_text)
+    )
     resolution = subjects[0].state if len(subjects) == 1 else ResolutionState.AMBIGUOUS
     program = catalog.resolve_program(source_text)
     source_program = explicit_program_mention(observation)

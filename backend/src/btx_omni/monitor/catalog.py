@@ -21,7 +21,12 @@ class MonitorCatalog:
         normalized = text.casefold()
         mentions: list[str] = []
         for profile in self.profiles:
-            for candidate in (profile.legal_name, *profile.aliases, *profile.subsidiaries):
+            for candidate in (
+                profile.legal_name,
+                *profile.aliases,
+                *profile.subsidiaries,
+                *profile.usaspending_recipient_names,
+            ):
                 if candidate and candidate.casefold() in normalized:
                     mentions.append(candidate)
                     break

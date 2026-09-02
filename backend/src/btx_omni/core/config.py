@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     monitor_worker_max_seconds: float = 240
     monitor_source_min_start_seconds: float = 2.0
     monitor_brief_synthesis_cap: int = 3
+    monitor_technical_decomposition_cap: int = 3
     monitor_brief_auth_retry_seconds: int = 3600
     monitor_brief_timeout_retry_seconds: int = 300
     monitor_brief_quota_retry_seconds: int = 21600
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
     google_cloud_location: str = "global"
     ai_timeout_seconds: float = 20.0
     sam_api_key: str | None = None
+    sec_user_agent: str | None = None
 
     database_url: str = Field(
         default=("postgresql+psycopg://btx_omni:btx_omni_dev@localhost:5432/btx_omni"),

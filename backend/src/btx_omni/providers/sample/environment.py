@@ -244,5 +244,23 @@ def build_sample_environment() -> SampleEnvironment:
     public_facilities_by_account: dict[str, list[str]] = {}
     for facility in public_facilities: public_facilities_by_account.setdefault(facility.account_id, []).append(facility.id)
     recipients = load_usaspending_recipient_identities()
-    watch_profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, newsroom_url=item.public_identity.newsroom_url.value if item.public_identity and item.public_identity.newsroom_url else None, investor_relations_url=item.public_identity.investor_relations_url.value if item.public_identity and item.public_identity.investor_relations_url else None, official_feed_urls=tuple(field.value for field in item.public_identity.official_feed_urls) if item.public_identity else (), facilities=tuple(public_facilities_by_account.get(item.id, ())), industries=item.industries, usaspending_recipient_names=tuple(identity.recipient_legal_name for identity in recipients.get(item.id, ())), usaspending_recipient_sources=tuple((identity.recipient_legal_name, identity.source_url) for identity in recipients.get(item.id, ()))) for item in accounts)
+    watch_profiles = tuple(
+        AccountWatchProfile(
+            item.id,
+            item.legal_name,
+            aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (),
+            subsidiaries=tuple(field.value for field in item.public_identity.subsidiaries) if item.public_identity else (),
+            domain=(item.public_identity.official_domain.value if item.public_identity and item.public_identity.official_domain else item.domain),
+            newsroom_url=item.public_identity.newsroom_url.value if item.public_identity and item.public_identity.newsroom_url else None,
+            investor_relations_url=item.public_identity.investor_relations_url.value if item.public_identity and item.public_identity.investor_relations_url else None,
+            sec_cik=item.public_identity.sec_cik.value if item.public_identity and item.public_identity.sec_cik else None,
+            source_native_identifiers=tuple(field.source_native_identifier for field in item.public_identity.source_native_identifiers if field.source_native_identifier) if item.public_identity else (),
+            official_feed_urls=tuple(field.value for field in item.public_identity.official_feed_urls) if item.public_identity else (),
+            facilities=tuple(public_facilities_by_account.get(item.id, ())),
+            industries=item.industries,
+            usaspending_recipient_names=tuple(identity.recipient_legal_name for identity in recipients.get(item.id, ())),
+            usaspending_recipient_sources=tuple((identity.recipient_legal_name, identity.source_url) for identity in recipients.get(item.id, ())),
+        )
+        for item in accounts
+    )
     return SampleEnvironment(accounts, all_facilities, contexts, paperless_accounts, quotes, orders, units, btx_facilities, capabilities, programs, components, edges, crm_companies, crm_contacts, crm_deals, crm_activities, {f"public:{item.legal_name.lower()}": item.id for item in accounts}, scenario_accounts, public_signals, scoring_inputs, tuple(item.event for item in rich_scenarios.values()), tuple(matching_components), tuple(matching_quotes), research_mappings, researched_accounts, watch_profiles, public_facilities, reference.accounts, reference.facilities, rich_scenarios, priority.scenarios)
