@@ -19,8 +19,8 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
   await expect(page.locator('.account-row').filter({ hasText: 'Symbotic' })).toBeVisible()
 
   await navigate(page, 'Intelligence')
-  await page.getByLabel('Filter Intelligence by industry').selectOption({ label: 'Robotics' })
-  await expect(page.locator('.intelligence-signal').filter({ hasText: 'Symbotic' })).toBeVisible()
+  await page.getByLabel('Filter Intelligence by market').selectOption({ label: 'Robotics' })
+  await expect(page.locator('.intelligence-card').filter({ hasText: 'Symbotic' })).toBeVisible()
 
   await navigate(page, 'Map')
   await page.getByRole('button', { name: 'Layers & filters' }).click()

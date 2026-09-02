@@ -148,7 +148,7 @@ export default function App() {
     surface === 'accounts' ? (
       <Accounts accounts={accounts} detail={detail} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onOmniContext={setViewContext} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => { clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext(); setSurface('actions'); setError(`Create an internal Action for ${accounts.find(account => account.id === brief.canonical_account_ids[0])?.name ?? 'the linked Customer'} using the governed next step.`) }} onOmniContext={setViewContext} />
     ) : surface === 'map' ? (
       <Map
         records={records}

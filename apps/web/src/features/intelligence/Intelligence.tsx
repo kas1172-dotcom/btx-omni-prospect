@@ -1,83 +1,671 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { Account, OmniContext, Signal } from '../../types/api'
-import { SignalBriefCard } from '../../components/SignalBriefCard'
-import { curatedSignalBrief } from '../../components/signalBriefModel'
-import { Button, Empty, FilterChip, Panel, SearchInput, SelectInput } from '../../components/UI'
-import './intelligence.css'
-import { FederalProcurementView } from './FederalProcurement'
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type {
+  Account,
+  CommandCenter,
+  MonitorHealth,
+  MonitorSignalBrief,
+  OmniContext,
+  Signal,
+  WorkspaceSettings,
+} from "../../types/api";
+import {
+  Button,
+  Disclosure,
+  Empty,
+  EvidenceSource,
+  FilterChip,
+  Panel,
+  SearchInput,
+  SelectInput,
+  State,
+} from "../../components/UI";
+import { curatedSignalBrief } from "../../components/signalBriefModel";
+import { FederalProcurementView } from "./FederalProcurement";
+import "./intelligence.css";
 
-type Filters = { customer: string; industry: string; kind: string; source: string; evidence: string }
-const emptyFilters: Filters = { customer: '', industry: '', kind: '', source: '', evidence: '' }
-const unique = (values: Array<string | undefined>) => [...new Set(values.filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b))
-const normalize = (value?: string) => (value ?? '').toLocaleLowerCase()
+type Filters = {
+  customer: string;
+  market: string;
+  source: string;
+  timing: string;
+};
+type Sort = "PRIORITY" | "MOST_RECENT" | "UPCOMING_EVENT" | "CUSTOMER";
+const empty: Filters = { customer: "", market: "", source: "", timing: "" };
+const markets = [
+  "Commercial Aerospace",
+  "Defense",
+  "Space",
+  "Semiconductor",
+  "Medical",
+  "Robotics",
+  "Energy",
+];
+const label = (value: string) =>
+  value
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/^./, (char) => char.toUpperCase());
+const date = (value?: string) =>
+  value
+    ? new Date(value).toLocaleDateString("en-US", { timeZone: "UTC" })
+    : "Unavailable";
+const when = (brief: MonitorSignalBrief) =>
+  brief.relevant_event_timestamp ??
+  brief.publication_timestamp ??
+  brief.collection_timestamp;
+const mode = (value: string) =>
+  ({
+    LIVE_PUBLIC: "CONNECTED public",
+    CURATED_PUBLIC: "SAMPLE public",
+    SAMPLE: "SAMPLE BTX context",
+  })[value] ?? label(value);
+const unique = (values: string[]) =>
+  [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
-function signalMatches(signal: Signal, account: Account | undefined, query: string, filters: Filters) {
-  const searchable = [signal.title, signal.relevance_explanation, account?.name, account?.legal_name, ...(account?.industries ?? []), signal.source_tier, signal.kind, signal.evidence_state, signal.source_validation_state].map(normalize)
-  if (query.trim() && !searchable.some(value => value.includes(normalize(query.trim())))) return false
-  if (filters.customer && signal.account_id !== filters.customer) return false
-  if (filters.industry && !account?.industries.includes(filters.industry)) return false
-  if (filters.kind && signal.kind !== filters.kind) return false
-  if (filters.source && signal.source_tier !== filters.source) return false
-  if (filters.evidence && signal.evidence_state !== filters.evidence && signal.source_validation_state !== filters.evidence) return false
-  return true
+function matches(
+  brief: MonitorSignalBrief,
+  account: Account | undefined,
+  query: string,
+  filters: Filters,
+) {
+  const text = [
+    brief.headline,
+    brief.seller_summary,
+    brief.what_happened,
+    brief.why_it_may_matter,
+    account?.name,
+    account?.legal_name,
+    ...brief.markets,
+    brief.source_system,
+    brief.canonical_program_id,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return (
+    (!query || text.includes(query.toLowerCase())) &&
+    (!filters.customer ||
+      brief.canonical_account_ids.includes(filters.customer)) &&
+    (!filters.market || brief.markets.includes(filters.market)) &&
+    (!filters.source ||
+      brief.source_system === filters.source ||
+      label(brief.source_system) === filters.source) &&
+    (!filters.timing || brief.event_timing === filters.timing)
+  );
 }
 
-export function Intelligence({ signals, accounts, onAccount, onEventSelect, onOmniContext }: { signals: Signal[]; accounts: Account[]; onAccount: (id: string) => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
-  const [workspace, setWorkspace] = useState<'monitor' | 'federal'>('monitor')
-  const [selectedEventId, setSelectedEventId] = useState<string>()
-  const [query, setQuery] = useState('')
-  const [filters, setFilters] = useState<Filters>(emptyFilters)
-  const accountById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts])
-  const visible = useMemo(() => signals.filter(signal => signalMatches(signal, accountById.get(signal.account_id ?? ''), query, filters)), [accountById, filters, query, signals])
-  const visibleRecordIds = useMemo(() => visible.slice(0, 50).map(signal => signal.id), [visible])
-  const options = useMemo(() => ({ customers: accounts.filter(account => signals.some(signal => signal.account_id === account.id)).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')), industries: unique(signals.flatMap(signal => accountById.get(signal.account_id ?? '')?.industries ?? [])), kinds: unique(signals.map(signal => signal.kind)), sources: unique(signals.map(signal => signal.source_tier)), evidence: unique(signals.flatMap(signal => [signal.evidence_state, signal.source_validation_state])) }), [accountById, accounts, signals])
-  const activeFilters = useMemo(() => {
-    const active: Record<string, string> = {}
-    if (query.trim()) active.search_query = query.trim()
-    if (filters.customer) active.account_id = filters.customer
-    if (filters.industry) active.market = filters.industry
-    if (filters.kind) active.signal_type = filters.kind
-    if (filters.source) active.source = filters.source
-    if (filters.evidence) active.evidence_state = filters.evidence
-    return active
-  }, [filters, query])
-  useEffect(() => () => onEventSelect(undefined), [onEventSelect])
-  useEffect(() => { onOmniContext({ active_filters: Object.keys(activeFilters).length ? activeFilters : undefined, visible_record_ids: visibleRecordIds }) }, [activeFilters, onOmniContext, visibleRecordIds])
-  useEffect(() => () => onOmniContext({}), [onOmniContext])
-  const selectEvent = (id: string) => { const next = selectedEventId === id ? undefined : id; setSelectedEventId(next); onEventSelect(next) }
-  const clearEventSelection = () => { if (selectedEventId) { setSelectedEventId(undefined); onEventSelect(undefined) } }
-  const setSearch = (value: string) => { clearEventSelection(); setQuery(value) }
-  const setFilter = (key: keyof Filters, value: string) => { clearEventSelection(); setFilters(current => ({ ...current, [key]: value })) }
-  const clearAll = () => { clearEventSelection(); setQuery(''); setFilters(emptyFilters) }
-  const customerName = (id?: string) => accountById.get(id ?? '')?.name ?? 'Unresolved Customer'
-  const filterLabels: Array<[keyof Filters, string]> = [['customer', filters.customer ? customerName(filters.customer) : ''], ['industry', filters.industry], ['kind', filters.kind.replaceAll('_', ' ')], ['source', filters.source.replaceAll('_', ' ')], ['evidence', filters.evidence.replaceAll('_', ' ')]]
-  if (workspace === 'federal') return <><div className="surface intelligence-surface"><div className="federal-tabs"><Button onClick={() => setWorkspace('monitor')}>Intelligence Monitor</Button><Button aria-current="page">Federal Procurement</Button></div></div><FederalProcurementView /></>
-  return <div className="surface intelligence-surface">
-    <div className="federal-tabs"><Button aria-current="page">Intelligence Monitor</Button><Button onClick={() => setWorkspace('federal')}>Federal Procurement</Button></div>
-    <header className="page-title intelligence-title"><span className="eyebrow">Public evidence</span><h1>Intelligence</h1><p>Find what changed and why it matters.</p></header>
-    <section className="intelligence-controls" aria-label="Intelligence search and filters">
-      <SearchInput aria-label="Search Intelligence" placeholder="Search title, summary, Customer, industry, source, signal type…" value={query} onChange={event => setSearch(event.target.value)} />
-      <div className="intelligence-filter-grid">
-        <SelectInput aria-label="Filter Intelligence by Customer" value={filters.customer} onChange={event => setFilter('customer', event.target.value)}><option value="">All Customers & Prospects</option>{options.customers.map(account => <option key={account.id} value={account.id}>{account.name ?? account.legal_name}</option>)}</SelectInput>
-        <SelectInput aria-label="Filter Intelligence by industry" value={filters.industry} onChange={event => setFilter('industry', event.target.value)}><option value="">All industries</option>{options.industries.map(value => <option key={value}>{value}</option>)}</SelectInput>
-        <SelectInput aria-label="Filter Intelligence by signal type" value={filters.kind} onChange={event => setFilter('kind', event.target.value)}><option value="">All signal types</option>{options.kinds.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}</SelectInput>
-        <SelectInput aria-label="Filter Intelligence by source" value={filters.source} onChange={event => setFilter('source', event.target.value)}><option value="">All sources</option>{options.sources.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}</SelectInput>
-        <SelectInput aria-label="Filter Intelligence by evidence state" value={filters.evidence} onChange={event => setFilter('evidence', event.target.value)}><option value="">All evidence states</option>{options.evidence.map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}</SelectInput>
-      </div>
-      {Object.keys(activeFilters).length > 0 && <div className="intelligence-active-filters" aria-label="Active Intelligence filters">
-        {query.trim() && <FilterChip selected onClear={() => setSearch('')}>{`Search: ${query.trim()}`}</FilterChip>}
-        {filterLabels.map(([key, label]) => label && <FilterChip key={key} selected onClear={() => setFilter(key, '')}>{label}</FilterChip>)}
-        <Button variant="ghost" onClick={clearAll}>Clear all</Button>
-      </div>}
-    </section>
-    <div className="intelligence-result-line" role="status"><strong>{visible.length}</strong> of {signals.length} governed signals</div>
-    <Panel className="intelligence-feed-panel">
-      {visible.length ? <div className="intelligence-signal-list">{visible.map(signal => {
-        const account = accountById.get(signal.account_id ?? '')
-        return <div className={`intelligence-signal ${selectedEventId === signal.id ? 'selected' : ''}`} key={signal.id}>
-          <SignalBriefCard brief={curatedSignalBrief(signal, account)} accountName={customerName} onAccount={onAccount} onUseInOmni={() => selectEvent(signal.id)} selected={selectedEventId === signal.id} />
+function Card({
+  brief,
+  rank,
+  name,
+  onAccount,
+  onSelect,
+  selected,
+  onCreateAction,
+}: {
+  brief: MonitorSignalBrief;
+  rank?: number;
+  name: (id: string) => string;
+  onAccount: (id: string) => void;
+  onSelect: (brief: MonitorSignalBrief) => void;
+  selected: boolean;
+  onCreateAction: (brief: MonitorSignalBrief) => void;
+}) {
+  const accountId = brief.canonical_account_ids[0];
+  return (
+    <article
+      className={`intelligence-card ${selected ? "selected" : ""}`}
+      data-signal-id={brief.id}
+    >
+      <header>
+        <div className="intelligence-card-kicker">
+          {rank && <b>#{rank}</b>}
+          <span>
+            {brief.event_timing === "UPCOMING"
+              ? "Forward radar"
+              : label(brief.source_system)}
+          </span>
+          <span>{date(when(brief))}</span>
         </div>
-      })}</div> : <Empty>No governed Intelligence matches the current search and filters. Clear filters to restore results.</Empty>}
-    </Panel>
-  </div>
+        <div className="intelligence-card-states">
+          <State value={mode(brief.data_mode)} />
+          <State value={label(brief.freshness)} />
+        </div>
+      </header>
+      <div className="intelligence-card-main">
+        <button
+          className="intelligence-customer-link"
+          disabled={!accountId}
+          onClick={() => accountId && onAccount(accountId)}
+        >
+          {accountId ? name(accountId) : "Customer association unavailable"}
+        </button>
+        <h3>{brief.headline}</h3>
+        <p>{brief.seller_summary}</p>
+      </div>
+      <section className="intelligence-bottom-line">
+        <span>Why it matters</span>
+        <strong>{brief.why_it_may_matter}</strong>
+        {brief.recommended_action && (
+          <p>
+            <b>Next:</b> {brief.recommended_action}
+          </p>
+        )}
+      </section>
+      <Disclosure title="Evidence, freshness, and context">
+        <div className="intelligence-evidence">
+          <p>
+            <b>What happened:</b> {brief.what_happened}
+          </p>
+          <p>
+            <b>Watch next:</b> {brief.what_to_watch}
+          </p>
+          <p>
+            <b>Published:</b> {date(brief.publication_timestamp)} ·{" "}
+            <b>Collected:</b> {date(brief.collection_timestamp)}
+            {brief.relevant_event_timestamp && (
+              <>
+                {" "}
+                · <b>Relevant event:</b> {date(brief.relevant_event_timestamp)}
+              </>
+            )}
+          </p>
+          <EvidenceSource
+            title={brief.headline}
+            source={brief.source_system}
+            date={brief.publication_timestamp}
+            evidenceState={brief.resolution_state}
+            validationState={brief.seller_promotion_state}
+            url={brief.source_url}
+            detail={`Evidence references: ${brief.evidence_ids.length ? brief.evidence_ids.join(", ") : "Unavailable"}`}
+          />
+        </div>
+      </Disclosure>
+      <div className="intelligence-card-actions">
+        <Button
+          variant={selected ? "primary" : "secondary"}
+          aria-pressed={selected}
+          onClick={() => onSelect(brief)}
+        >
+          {selected ? "Clear Omni event" : "Use in Omni"}
+        </Button>
+        {brief.recommended_action && accountId && (
+          <Button variant="ghost" onClick={() => onCreateAction(brief)}>
+            Create Action
+          </Button>
+        )}
+      </div>
+    </article>
+  );
+}
+
+export function Intelligence({
+  signals,
+  accounts,
+  commandCenter,
+  monitor,
+  settings,
+  onAccount,
+  onEventSelect,
+  onCreateAction,
+  onOmniContext,
+}: {
+  signals: Signal[];
+  accounts: Account[];
+  commandCenter?: CommandCenter;
+  monitor?: MonitorHealth;
+  settings?: WorkspaceSettings;
+  onAccount: (id: string) => void;
+  onEventSelect: (id?: string) => void;
+  onCreateAction: (brief: MonitorSignalBrief) => void;
+  onOmniContext: (
+    context: Pick<OmniContext, "active_filters" | "visible_record_ids">,
+  ) => void;
+}) {
+  const [workspace, setWorkspace] = useState<"monitor" | "federal">("monitor");
+  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<Filters>(empty);
+  const [sort, setSort] = useState<Sort>("PRIORITY");
+  const [selected, setSelected] = useState<string>();
+  const byId = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account])),
+    [accounts],
+  );
+  const name = useCallback(
+    (id: string) =>
+      byId.get(id)?.name ?? byId.get(id)?.legal_name ?? "Customer unavailable",
+    [byId],
+  );
+  const curated = useMemo(
+    () =>
+      signals.map((signal) =>
+        curatedSignalBrief(signal, byId.get(signal.account_id ?? "")),
+      ),
+    [byId, signals],
+  );
+  const priority = useMemo(
+    () =>
+      commandCenter?.priority_briefing
+        .filter((item) => item.kind === "PUBLIC_SIGNAL" && item.signal_brief)
+        .map((item) => item.signal_brief!) ?? [],
+    [commandCenter],
+  );
+  const current = useMemo(
+    () => commandCenter?.current_signal_briefs ?? [],
+    [commandCenter],
+  );
+  const base = useMemo(() => {
+    const items = new Map<string, MonitorSignalBrief>();
+    [...priority, ...current, ...curated].forEach((item) =>
+      items.set(item.id, item),
+    );
+    return [...items.values()];
+  }, [priority, current, curated]);
+  const visible = useMemo(
+    () =>
+      base.filter((item) =>
+        matches(
+          item,
+          byId.get(item.canonical_account_ids[0] ?? ""),
+          query,
+          filters,
+        ),
+      ),
+    [base, byId, filters, query],
+  );
+  const ordered = useMemo(
+    () =>
+      sort === "PRIORITY"
+        ? visible
+        : [...visible].sort((a, b) =>
+            sort === "MOST_RECENT"
+              ? when(b).localeCompare(when(a))
+              : sort === "UPCOMING_EVENT"
+                ? (a.relevant_event_timestamp ?? "9999").localeCompare(
+                    b.relevant_event_timestamp ?? "9999",
+                  )
+                : name(a.canonical_account_ids[0] ?? "").localeCompare(
+                    name(b.canonical_account_ids[0] ?? ""),
+                  ),
+          ),
+    [name, sort, visible],
+  );
+  const ranked = useMemo(
+    () =>
+      priority
+        .filter((item) =>
+          matches(
+            item,
+            byId.get(item.canonical_account_ids[0] ?? ""),
+            query,
+            filters,
+          ),
+        )
+        .slice(0, 5),
+    [byId, filters, priority, query],
+  );
+  const radar = useMemo(
+    () =>
+      (commandCenter?.upcoming_radar ?? []).filter(
+        (item) =>
+          item.relevant_event_timestamp &&
+          new Date(item.relevant_event_timestamp).getTime() > Date.now() &&
+          matches(
+            item,
+            byId.get(item.canonical_account_ids[0] ?? ""),
+            query,
+            filters,
+          ),
+      ),
+    [byId, commandCenter?.upcoming_radar, filters, query],
+  );
+  const active = useMemo(
+    () =>
+      Object.entries({ search: query, ...filters }).filter(
+        ([, value]) => value,
+      ),
+    [filters, query],
+  );
+  const sources = unique(base.map((item) => item.source_system));
+  const tracked = commandCenter?.watched_accounts ?? [];
+  useEffect(() => () => onEventSelect(undefined), [onEventSelect]);
+  useEffect(() => {
+    onOmniContext({
+      active_filters: Object.fromEntries(active),
+      visible_record_ids: ordered.map((item) => item.id).slice(0, 50),
+    });
+  }, [active, onOmniContext, ordered]);
+  useEffect(() => () => onOmniContext({}), [onOmniContext]);
+  const select = (brief: MonitorSignalBrief) => {
+    const next = selected === brief.id ? undefined : brief.id;
+    setSelected(next);
+    onEventSelect(next);
+  };
+  const tiles = [
+    {
+      title: "Public intelligence",
+      detail: `${current.length} current eligible signals`,
+      state: commandCenter?.daily_briefing.live_intelligence_available
+        ? "CONNECTED"
+        : "UNAVAILABLE",
+    },
+    {
+      title: "Internal commercial context",
+      detail: "BTX commercial context is SAMPLE",
+      state: "SAMPLE",
+    },
+    {
+      title: "CRM / contacts",
+      detail:
+        settings?.integrations.hubspot?.detail ?? "Provider status unavailable",
+      state: settings?.integrations.hubspot?.state ?? "NOT_CONFIGURED",
+    },
+    {
+      title: "Quotes / RFQs",
+      detail:
+        settings?.integrations.paperless?.detail ??
+        "Provider status unavailable",
+      state: settings?.integrations.paperless?.state ?? "NOT_CONFIGURED",
+    },
+  ];
+  if (workspace === "federal")
+    return (
+      <>
+        <div className="surface intelligence-surface">
+          <nav className="intelligence-tabs" aria-label="Intelligence modes">
+            <Button onClick={() => setWorkspace("monitor")}>
+              Intelligence Monitor
+            </Button>
+            <Button aria-current="page">Federal Procurement</Button>
+          </nav>
+        </div>
+        <FederalProcurementView />
+      </>
+    );
+  return (
+    <div className="surface intelligence-surface">
+      <nav className="intelligence-tabs" aria-label="Intelligence modes">
+        <Button aria-current="page">Intelligence Monitor</Button>
+        <Button onClick={() => setWorkspace("federal")}>
+          Federal Procurement
+        </Button>
+      </nav>
+      <header className="page-title intelligence-title">
+        <span className="eyebrow">External Intelligence</span>
+        <h1>Intelligence</h1>
+        <p>What changed: prioritized evidence, Customer context, and governed next steps.</p>
+      </header>
+      <section
+        className="intelligence-context-tiles"
+        aria-label="Source and context status"
+      >
+        {tiles.map((tile) => (
+          <article key={tile.title}>
+            <span>{tile.title}</span>
+            <strong>{tile.detail}</strong>
+            <State value={tile.state} />
+          </article>
+        ))}
+      </section>
+      <section
+        className="intelligence-priority"
+        aria-labelledby="priority-signals"
+      >
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">Backend ranked</span>
+            <h2 id="priority-signals">Today's Priority Signals</h2>
+          </div>
+          <span>{ranked.length} shown</span>
+        </div>
+        {ranked.length ? (
+          <ol>
+            {ranked.map((brief, index) => (
+              <li key={brief.id}>
+                <b>{index + 1}</b>
+                <div>
+                  <button
+                    onClick={() =>
+                      brief.canonical_account_ids[0] &&
+                      onAccount(brief.canonical_account_ids[0])
+                    }
+                  >
+                    {brief.canonical_account_ids[0]
+                      ? name(brief.canonical_account_ids[0])
+                      : "Customer unavailable"}
+                  </button>
+                  <strong>{brief.headline}</strong>
+                  <span>{brief.what_happened}</span>
+                </div>
+                <small>
+                  {date(when(brief))} · {mode(brief.data_mode)}
+                </small>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <Empty>No backend-ranked public signals are available.</Empty>
+        )}
+      </section>
+      <section
+        className="intelligence-tracked"
+        aria-labelledby="tracked-targets"
+      >
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">System recommended · read only</span>
+            <h2 id="tracked-targets">Tracked Customers & Prospects</h2>
+          </div>
+        </div>
+        {tracked.length ? (
+          <div>
+            {tracked.map((item) => (
+              <button
+                key={item.account_id}
+                onClick={() => onAccount(item.account_id)}
+              >
+                <strong>{item.name}</strong>
+                <span>{item.markets.join(" · ")}</span>
+                <small>
+                  {item.reasons.length
+                    ? "New signal context"
+                    : "No new activity"}
+                </small>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <Empty>No governed tracked targets are available.</Empty>
+        )}
+      </section>
+      <section
+        className="intelligence-controls"
+        aria-label="Intelligence search and filters"
+      >
+        <SearchInput
+          aria-label="Search Intelligence"
+          placeholder="Search headline, Customer, market, source, program…"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <div className="intelligence-filter-grid">
+          <SelectInput
+            aria-label="Filter Intelligence by Customer"
+            value={filters.customer}
+            onChange={(event) =>
+              setFilters((value) => ({
+                ...value,
+                customer: event.target.value,
+              }))
+            }
+          >
+            <option value="">All Customers & Prospects</option>
+            {accounts
+              .filter((account) =>
+                base.some((item) =>
+                  item.canonical_account_ids.includes(account.id),
+                ),
+              )
+              .map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name ?? account.legal_name}
+                </option>
+              ))}
+          </SelectInput>
+          <SelectInput
+            aria-label="Filter Intelligence by market"
+            value={filters.market}
+            onChange={(event) =>
+              setFilters((value) => ({ ...value, market: event.target.value }))
+            }
+          >
+            <option value="">All markets</option>
+            {markets
+              .filter((market) =>
+                base.some((item) => item.markets.includes(market)),
+              )
+              .map((market) => (
+                <option key={market}>{market}</option>
+              ))}
+          </SelectInput>
+          <SelectInput
+            aria-label="Filter Intelligence by source"
+            value={filters.source}
+            onChange={(event) =>
+              setFilters((value) => ({ ...value, source: event.target.value }))
+            }
+          >
+            <option value="">All sources</option>
+            {sources.map((item) => (
+              <option key={item}>{label(item)}</option>
+            ))}
+          </SelectInput>
+          <SelectInput
+            aria-label="Filter Intelligence by timing"
+            value={filters.timing}
+            onChange={(event) =>
+              setFilters((value) => ({ ...value, timing: event.target.value }))
+            }
+          >
+            <option value="">All timing</option>
+            <option value="OBSERVED">Observed</option>
+            <option value="UPCOMING">Upcoming</option>
+          </SelectInput>
+          <SelectInput
+            aria-label="Sort Intelligence"
+            value={sort}
+            onChange={(event) => setSort(event.target.value as Sort)}
+          >
+            <option value="PRIORITY">Sort: Priority</option>
+            <option value="MOST_RECENT">Sort: Most Recent</option>
+            <option value="UPCOMING_EVENT">Sort: Upcoming Event Date</option>
+            <option value="CUSTOMER">Sort: Customer</option>
+          </SelectInput>
+        </div>
+        {active.length > 0 && (
+          <div className="intelligence-active-filters">
+            {active.map(([key, value]) => (
+              <FilterChip
+                key={key}
+                selected
+                onClear={() =>
+                  key === "search"
+                    ? setQuery("")
+                    : setFilters((current) => ({
+                        ...current,
+                        [key as keyof Filters]: "",
+                      }))
+                }
+              >{`${label(key)}: ${value}`}</FilterChip>
+            ))}
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setQuery("");
+                setFilters(empty);
+                setSort("PRIORITY");
+              }}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
+      </section>
+      <Panel
+        title="Intelligence Feed"
+        action={
+          <span className="panel-kicker">
+            {ordered.length} governed signals ·{" "}
+            {sort === "PRIORITY" ? "backend priority" : label(sort)}
+          </span>
+        }
+        className="intelligence-feed-panel"
+      >
+        {ordered.length ? (
+          <div className="intelligence-signal-list">
+            {ordered.map((brief, index) => (
+              <Card
+                key={brief.id}
+                brief={brief}
+                rank={sort === "PRIORITY" ? index + 1 : undefined}
+                name={name}
+                onAccount={onAccount}
+                onSelect={select}
+                selected={selected === brief.id}
+                onCreateAction={onCreateAction}
+              />
+            ))}
+          </div>
+        ) : (
+          <Empty>
+            No governed Intelligence matches the current search and filters.
+          </Empty>
+        )}
+      </Panel>
+      <Panel
+        title="Forward Radar"
+        action={
+          <span className="panel-kicker">
+            Future source-supported event dates only
+          </span>
+        }
+        className="intelligence-radar"
+      >
+        {radar.length ? (
+          <div className="intelligence-signal-list">
+            {radar.map((brief) => (
+              <Card
+                key={brief.id}
+                brief={brief}
+                name={name}
+                onAccount={onAccount}
+                onSelect={select}
+                selected={selected === brief.id}
+                onCreateAction={onCreateAction}
+              />
+            ))}
+          </div>
+        ) : (
+          <Empty>
+            No upcoming source-supported events match the current filters.
+            Undated signals are excluded.
+          </Empty>
+        )}
+      </Panel>
+      <Disclosure
+        title={`Source health · ${monitor?.sources.length ?? 0} configured source records`}
+        className="intelligence-source-health"
+      >
+        <div>
+          {monitor?.sources.map((source) => (
+            <p key={source.source_id}>
+              <b>{source.source_name ?? source.source_id}</b> ·{" "}
+              {label(source.state ?? "UNAVAILABLE")} · last collection{" "}
+              {date(source.last_success_at)}
+            </p>
+          )) ?? <p>Monitor health is unavailable.</p>}
+        </div>
+      </Disclosure>
+    </div>
+  );
 }
