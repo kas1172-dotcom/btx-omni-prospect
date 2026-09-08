@@ -30,9 +30,6 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const latestResponse = [...messages].reverse().find(message => message.response)?.response
 
   useEffect(() => {
-    if (view !== 'closed') window.setTimeout(() => input.current?.focus(), 0)
-  }, [view])
-  useEffect(() => {
     const transcript = conversation.current
     if (transcript) transcript.scrollTo({ top: transcript.scrollHeight, behavior: 'auto' })
   }, [messages, loading, view])
@@ -57,14 +54,14 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const close = () => { setView('closed'); window.setTimeout(() => opener.current?.focus(), 0) }
   return <>
     <button className="omni-launch" ref={opener} onClick={() => setView('quick')} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
-    <Drawer open={view === 'quick'} onClose={close} titleId="quick-omni-title" className="quick-omni">
+    <Drawer open={view === 'quick'} onClose={close} titleId="quick-omni-title" className="quick-omni" initialFocus={input}>
       <header><h2 id="quick-omni-title">Ask Omni</h2><Button variant="ghost" onClick={() => setView('full')}>Open in Omni</Button><IconButton onClick={close} label="Minimize Omni">−</IconButton><IconButton onClick={close} label="Close Omni">×</IconButton></header>
       <div className="omni-awareness">Aware of: {activeAccount?.name ?? (context.surface && surfaceLabels[context.surface]) ?? 'current workspace'}{activeAccount && <button onClick={clearContext}>Clear</button>}{!activeAccount && accountId && <button onClick={useSelectedContext}>Use selected Customer</button>}</div>
       <Conversation messages={messages} loading={loading} compact transcriptRef={conversation} onStarter={prompt => void ask(prompt)} />
       <Composer value={question} loading={loading} inputRef={input} onChange={setQuestion} onKeyDown={onKeyDown} onSubmit={() => void ask()} />
       {error && <p className="omni-error" role="alert">{error}</p>}
     </Drawer>
-    <Drawer open={view === 'full'} onClose={close} titleId="full-omni-title" className="full-omni">
+    <Drawer open={view === 'full'} onClose={close} titleId="full-omni-title" className="full-omni" initialFocus={input}>
       <header><IconButton onClick={() => setView('quick')} label="Back to Quick Omni">‹</IconButton><div><span className="eyebrow">Research · Compare · Explain · Plan</span><h1 id="full-omni-title">Omni</h1></div><IconButton onClick={close} label="Close Full Omni">×</IconButton></header>
       <nav className="omni-modes" aria-label="Omni workspace modes" role="tablist">{(['conversation', 'evidence', 'customer'] as const).map(mode => <button id={`omni-tab-${mode}`} key={mode} className={fullMode === mode ? 'active' : ''} role="tab" aria-selected={fullMode === mode} aria-controls={`omni-panel-${mode}`} tabIndex={fullMode === mode ? 0 : -1} onClick={() => setFullMode(mode)}>{mode === 'customer' ? 'Customer context' : mode[0].toUpperCase() + mode.slice(1)}</button>)}</nav>
       <div className="full-omni-grid">

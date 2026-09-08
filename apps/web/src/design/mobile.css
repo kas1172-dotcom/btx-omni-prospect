@@ -5,7 +5,7 @@
   .topbar { min-height: var(--shell-mobile-header-height); margin: 0 calc(var(--space-4) * -1); padding: 10px var(--space-4); }
   .topbar-context strong { font-size: 18px; }
   .topbar-context { max-width: calc(100% - 196px); }
-  .mode { display: block; min-width: 0; max-width: 104px; margin-right: 108px; }
+  .mode { display: block; min-width: 0; max-width: 104px; margin-right: 120px; }
   .mode .ui-disclosure-trigger { min-height: var(--touch-target); padding-inline: var(--space-2); }
   .mode .ui-disclosure-body { position: absolute; top: calc(100% - 8px); right: 96px; width: min(280px, calc(100vw - 32px)); padding: var(--space-3); background: var(--surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); box-shadow: var(--shadow-elevated); }
   .mobile-secondary-links { display: grid; gap: var(--space-2); }
@@ -19,7 +19,7 @@
   .mobile-primary-nav button:hover { color: var(--text-primary); background: var(--interaction-hover); }
   .mobile-primary-nav button.active { color: var(--text-primary); background: var(--surface-selected); }
   .mobile-primary-nav button.active::before { position: absolute; top: 3px; left: 50%; width: 20px; height: 2px; background: var(--status-selected); border-radius: var(--radius-pill); content: ''; transform: translateX(-50%); }
-  .omni-launch { top: 11px !important; right: var(--space-4) !important; bottom: auto !important; left: auto !important; width: auto; min-width: 84px; min-height: var(--touch-target); padding-inline: 12px; border-radius: var(--radius-pill); font-size: 12px; }
+  .omni-launch { top: 11px !important; right: var(--space-4) !important; bottom: auto !important; left: auto !important; width: 104px; min-width: 84px; min-height: var(--touch-target); padding-inline: 10px; border-radius: var(--radius-pill); font-size: 12px; }
   .omni-launch span { display: inline; }
   .drawer-backdrop { padding-bottom: calc(var(--shell-mobile-nav-height) + env(safe-area-inset-bottom)); }
 }

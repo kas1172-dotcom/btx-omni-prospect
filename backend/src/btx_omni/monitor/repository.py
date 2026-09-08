@@ -243,6 +243,8 @@ def _program_candidate_from_row(
 class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+        from btx_omni.monitor.research_state import MonitorResearchJournal
+        self.research = MonitorResearchJournal(engine)
 
     @contextmanager
     def operational_lock(self):
@@ -553,6 +555,24 @@ class MonitorRepository:
             ).mappings().one_or_none()
         if row is None:
             return None
+        return self._document_projection(row, event_id)
+
+    def collection_documents(self, run_ids: tuple[str, ...], *, limit: int) -> tuple[dict, ...]:
+        """Bounded current-cycle public research input, without scanning history."""
+        if type(limit) is not int or not 0 <= limit <= 3 or len(run_ids) > 100:
+            raise ValueError('Invalid collection research bounds.')
+        if not run_ids or not limit:
+            return ()
+        with self.engine.connect() as connection:
+            rows = connection.execute(select(monitor_observations, monitor_events.c.event_payload,
+                monitor_events.c.id.label('event_id')).join(monitor_events,
+                    monitor_events.c.source_observation_id == monitor_observations.c.id)
+                .where(monitor_observations.c.collection_run_id.in_(run_ids))
+                .order_by(monitor_events.c.id).limit(limit)).mappings().all()
+        return tuple(self._document_projection(row, row['event_id']) for row in rows)
+
+    @staticmethod
+    def _document_projection(row, event_id: str) -> dict:
         payload = json.loads(row["structured_payload"] or "{}")
         event = json.loads(row["event_payload"])
         return {"event_id": event_id, "observation_id": row["id"], "source_id": row["source_id"],

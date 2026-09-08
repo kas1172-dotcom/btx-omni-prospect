@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     )
     monitor_source_record_limit: int = Field(default=25, ge=1, le=100)
     monitor_document_fetch_cap: int = Field(default=2, ge=0, le=5)
+    monitor_research_cap: int = Field(default=2, ge=0, le=3)
     monitor_source_target_limit: int = 25
     monitor_worker_max_seconds: float = Field(default=240, gt=0, le=900)
     monitor_source_min_start_seconds: float = Field(default=2.0, gt=0, le=60)

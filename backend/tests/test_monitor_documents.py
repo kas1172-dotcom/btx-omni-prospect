@@ -125,6 +125,13 @@ def test_real_monitor_service_persists_passages_and_restart_replay_is_identical(
     assert first.funnel['observation_lineage'][0]['observation_id']
     before = repository.snapshot()
     assert before['runs'][0]['funnel'] == first.funnel
+    candidates = repository.collection_documents((first.id,), limit=1)
+    assert len(candidates) == 1
+    assert candidates[0] == repository.event_document(candidates[0]['event_id'])
+    assert repository.collection_documents(('unrelated-cycle',), limit=1) == ()
+    assert repository.collection_documents((first.id,), limit=0) == ()
+    with pytest.raises(ValueError, match='bounds'):
+        repository.collection_documents((first.id,), limit=4)
     restarted = MonitorService(settings, {'nasa': NasaAdapter(fetch)}, repository=MonitorRepository(engine))
     second = restarted.collect('nasa', limit=1)
     after = repository.snapshot()
@@ -133,6 +140,8 @@ def test_real_monitor_service_persists_passages_and_restart_replay_is_identical(
     assert second.funnel['observation_lineage'][0]['content_hash'] == first.funnel['observation_lineage'][0]['content_hash']
     assert len(after['events']) == len(before['events'])
     assert after['events'][0]['source_observation_id'] == before['events'][0]['source_observation_id']
+    assert repository.collection_documents((first.id,), limit=1) == ()
+    assert repository.collection_documents((second.id,), limit=1)[0]['event_id'] == candidates[0]['event_id']
     document = repository.event_document(after['events'][0]['id'])['document']
     assert document['passages'][0]['text'].startswith('NASA research passage.')
     assert document['checksum_sha256'] and document['retrieved_at']

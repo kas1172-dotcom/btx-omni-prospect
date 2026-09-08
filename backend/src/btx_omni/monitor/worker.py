@@ -35,6 +35,7 @@ from btx_omni.monitor.briefs import (
     signal_briefs_for_monitor,
 )
 from btx_omni.monitor.documents import document_evidence
+from btx_omni.monitor.research import MonitorResearchCoordinator
 
 
 def run_worker(
@@ -122,6 +123,7 @@ def run_worker(
         # work after a bounded collection deadline condition.
         deadline_exhausted = deadline_exhausted or source_deadline_exceeded
         synthesis = None
+        investigations = []
         technical: list[dict] = []
         explanations: list[dict] = []
         optional_budget_stops: list[str] = []
@@ -135,6 +137,17 @@ def run_worker(
                 return False
             return True
         if runs and not deadline_exhausted and repository:
+            research_provider = get_ai_provider(AiConfig.from_settings(settings, purpose='monitor_public_research'))
+            coordinator = MonitorResearchCoordinator(repository, research_provider)
+            # Investigate only this collection cycle, not arbitrary private or
+            # historical account rows. Public relevance still controls publication.
+            candidates = (repository.collection_documents(tuple(run.id for run in runs), limit=settings.monitor_research_cap)
+                          if getattr(research_provider, 'configured', False) and settings.monitor_research_cap else ())
+            for document in candidates:
+                if not can_start_optional('RESEARCH_COORDINATOR'):
+                    break
+                investigations.append(coordinator.investigate(document, source_revision=document['content_hash'],
+                    deadline_monotonic=min(deadline, monotonic() + 90)))
             synthesis = process_signal_brief_synthesis(
                 signal_briefs_for_monitor(runtime.monitor),
                 provider=get_ai_provider(AiConfig.from_settings(settings)),
@@ -178,7 +191,7 @@ def run_worker(
                     canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
-                    evidence=document_evidence(repository.event_document(brief.id)) or (
+                    evidence=document_evidence(repository.event_document(brief.id), max_passages=6) or (
                         PublicEvidenceRecord(
                             brief.evidence_ids[0] if brief.evidence_ids else brief.id,
                             brief.what_happened,
@@ -321,6 +334,7 @@ def run_worker(
         "runs": tuple(asdict(run) for run in runs),
         "brief_synthesis": asdict(synthesis) if synthesis else None,
         "technical_decomposition": technical,
+        "research_investigations": investigations,
         "governed_explanations": explanations,
         "optional_budget_stops": optional_budget_stops,
         "market_refresh": market_refresh,

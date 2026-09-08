@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import './ui.css'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
@@ -46,16 +46,19 @@ export function SortableHeader({ children, direction = 'none', ...props }: Butto
 export function TableRow({ children, selected = false, interactive = false, className = '' }: { children: ReactNode; selected?: boolean; interactive?: boolean; className?: string }) { return <div className={`ui-table-row ${selected ? 'selected' : ''} ${interactive ? 'interactive' : ''} ${className}`.trim()} role="row" aria-selected={selected || undefined}>{children}</div> }
 export function MobileListRow({ title, metadata, tertiary, selected = false, onClick }: { title: ReactNode; metadata?: ReactNode; tertiary?: ReactNode; selected?: boolean; onClick?: () => void }) { const content = <><strong>{title}</strong>{metadata && <span>{metadata}</span>}{tertiary && <small>{tertiary}</small>}</>; return onClick ? <button type="button" className={`ui-mobile-row ${selected ? 'selected' : ''}`} aria-pressed={selected} onClick={onClick}>{content}</button> : <article className={`ui-mobile-row ${selected ? 'selected' : ''}`}>{content}</article> }
 
-export function Drawer({ open, onClose, titleId, children, className = '' }: { open: boolean; onClose: () => void; titleId: string; children: ReactNode; className?: string }) {
+export function Drawer({ open, onClose, titleId, children, className = '', initialFocus }: { open: boolean; onClose: () => void; titleId: string; children: ReactNode; className?: string; initialFocus?: RefObject<HTMLElement | null> }) {
   const dialog = useRef<HTMLElement>(null)
   const closeRef = useRef(onClose)
   useEffect(() => { closeRef.current = onClose }, [onClose])
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    const focusTimer = window.setTimeout(() => dialog.current?.querySelector<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus(), 0)
+    // Focus before paint, never from a late timer that can steal a user's first
+    // keystroke or race an input operation (notably in WebKit).
+    const target = initialFocus?.current ?? dialog.current?.querySelector<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')
+    if (target && dialog.current?.contains(target)) target.focus()
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
       if (event.key !== 'Tab' || !dialog.current) return
@@ -66,8 +69,8 @@ export function Drawer({ open, onClose, titleId, children, className = '' }: { o
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
     }
     document.addEventListener('keydown', onKey)
-    return () => { window.clearTimeout(focusTimer); document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previouslyFocused?.isConnected) previouslyFocused.focus() }
-  }, [open])
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previouslyFocused?.isConnected) previouslyFocused.focus() }
+  }, [open, initialFocus])
   if (!open) return null
   return <div className="drawer-backdrop ui-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside ref={dialog} className={`ui-drawer ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby={titleId}>{children}</aside></div>
 }
