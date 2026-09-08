@@ -53,6 +53,7 @@ class OmniService:
         public_evidence_reader: Callable[[str, str | None], tuple[PublicEvidenceRecord, ...]] | None = None,
         market_reader: Callable[[dict], dict] | None = None,
     ) -> OmniResponse:
+        operational_contract = self._operational_contract(question)
         recent_turns = self._recent_turns(context.get("prior_turns"))
         work_items = tuple(work_items)
         routing_context = dict(context)
@@ -137,17 +138,17 @@ class OmniService:
                                                   "selected_public_evidence_status": "PERSISTED_SCOPED_EVIDENCE"} if stored_findings else {})},
                                     missingness=deterministic.missingness + (() if stored_findings else ("No retained public passages were available for this event and account scope.",)))
         if self.provider is None or not self.provider.configured:
-            return replace(
+            return self._apply_operational_contract(replace(
                 deterministic,
                 provider_status=ProviderStatus.NOT_CONFIGURED.value,
                 language_provider="deterministic",
-            )
+            ), operational_contract)
         if interpretation_failure is not None:
-            return replace(
+            return self._apply_operational_contract(replace(
                 deterministic,
                 provider_status=interpretation_failure.value,
                 language_provider="deterministic",
-            )
+            ), operational_contract)
         if deterministic.context_used.get("interpretation_status") == "CLARIFICATION":
             return replace(
                 deterministic,
@@ -267,7 +268,9 @@ class OmniService:
             enriched.content + ("\nExpanded canonical evidence:\n" + enriched.structured_relationship["expanded_content"] if enriched.structured_relationship else "")
             + ("\nCanonical public market series (macro context only; no score changes/customer orders/region allocation):\n" + json.dumps(enriched.structured_market) if enriched.structured_market else "")
             + ("\nAdditional scoped canonical tool reads (money display and major_units are already scaled by server code; do not rescale. Preserve currency and quoted/shipped/accepted/revenue distinctions):\n"
-               + json.dumps(model_reads, default=str) if retrieval else ""),
+               + json.dumps(model_reads, default=str) if retrieval else "")
+            + ("\nServer-owned operational boundary (preserve this outcome and do not substitute an unrelated next action):\n"
+               + operational_contract[1] + "\nRequired next action: " + operational_contract[2] if operational_contract else ""),
             enriched.citations, enriched.missingness, recent_turns, public_findings, preferences,
         )
         try:
@@ -275,23 +278,23 @@ class OmniService:
                 synthesis_request
             )
         except LanguageProviderError as error:
-            return replace(
+            return self._apply_operational_contract(replace(
                 enriched,
                 provider_status=error.status.value,
                 language_provider="deterministic",
-            )
+            ), operational_contract)
         except TimeoutError:
-            return replace(
+            return self._apply_operational_contract(replace(
                 enriched,
                 provider_status=ProviderStatus.TIMEOUT.value,
                 language_provider="deterministic",
-            )
+            ), operational_contract)
         except (RuntimeError, ValueError):
-            return replace(
+            return self._apply_operational_contract(replace(
                 enriched,
                 provider_status=ProviderStatus.UNAVAILABLE.value,
                 language_provider="deterministic",
-            )
+            ), operational_contract)
         validation_details = {}
         rejection = synthesis_rejection(
             synthesis.content, synthesis_request.governed_answer + "\n" + "\n".join(f.extract + "\n" + f.retrieval_provenance for f in public_findings),
@@ -299,16 +302,94 @@ class OmniService:
             diagnostics=validation_details,
         )
         if rejection:
-            return replace(enriched, language_provider="deterministic", provider_status=ProviderStatus.UNAVAILABLE.value,
+            return self._apply_operational_contract(replace(enriched, language_provider="deterministic", provider_status=ProviderStatus.UNAVAILABLE.value,
                            context_used={**enriched.context_used, "synthesis_validation": rejection, "synthesis_validation_details": validation_details},
-                           missingness=(*enriched.missingness, "Model wording did not pass the evidence checks; the canonical answer and completed reads remain available."))
-        return replace(
+                           missingness=(*enriched.missingness, "Model wording did not pass the evidence checks; the canonical answer and completed reads remain available.")), operational_contract)
+        return self._apply_operational_contract(replace(
             enriched,
             content=(retrieval_notice + '\n\n' if retrieval_notice and not synthesis.content.startswith(retrieval_notice) else '') + synthesis.content,
             language_provider=synthesis.provider,
             language_model=synthesis.model,
             provider_status=ProviderStatus.AVAILABLE.value,
+        ), operational_contract)
+
+    @staticmethod
+    def _apply_operational_contract(
+        response: OmniResponse,
+        contract: tuple[str, str, str] | None,
+    ) -> OmniResponse:
+        if not contract:
+            return response
+        contract_key, disclosure, contract_action = contract
+        marker = "Operational boundary: " + disclosure
+        content = response.content if marker in response.content else response.content.rstrip() + "\n\n" + marker
+        return replace(
+            response,
+            content=content,
+            recommended_action=contract_action,
+            context_used={
+                **response.context_used,
+                "operational_contract": contract_key,
+                "operational_outcome": "NO_EXTERNAL_OR_CANONICAL_WRITE",
+            },
         )
+
+    @staticmethod
+    def _operational_contract(question: str) -> tuple[str, str, str] | None:
+        """Return a narrow server-owned outcome for bounded high-risk intents.
+
+        Gemini still selects reads and explains the evidence. This layer keeps the
+        action field, prose, and actual read-only execution outcome consistent.
+        """
+        query = question.casefold()
+        if (
+            ("send" in query or "email" in query or "commit" in query)
+            and ("buyer" in query or "recipient" in query or "deliverable" in query)
+        ):
+            return (
+                "OUTBOUND_COMMITMENT_REQUIRES_APPROVAL",
+                "No email, CRM write, buyer commitment, or external delivery was performed. A proposed date is not buyer acceptance, and a deliverable recipient must be verified before an approved send.",
+                "Prepare a reviewable local draft, verify buyer acceptance and a deliverable recipient, and obtain approval before any send or commitment.",
+            )
+        if (
+            ("remember" in query or "save my preference" in query or "store my preference" in query)
+            and ("score" in query or "pwin" in query or "official" in query)
+        ):
+            return (
+                "CHAT_MEMORY_AND_SCORE_WRITE_NOT_PERFORMED",
+                "This chat did not save a memory or change any deterministic score, formula, or evidence. Presentation preferences must be saved explicitly in Personalization and cannot establish business facts or alter scores.",
+                "Leave the official score unchanged, resolve its cited evidence gaps through governed records, and save any presentation preference separately in Personalization.",
+            )
+        if (
+            "exchange rate" in query
+            or "conversion date" in query
+            or "currency conversion" in query
+            or " in euro" in query
+        ):
+            return (
+                "UNSUPPORTED_CURRENCY_CONVERSION",
+                "No currency conversion was performed. Keep the stored currency unless an approved exchange-rate source and conversion date are available.",
+                "Retain the stored currency and obtain an approved exchange-rate source and conversion date before converting or relabeling the amount.",
+            )
+        if (
+            "shared industry keyword" in query
+            or ("general" in query and "article" in query and "award" in query and "order" in query)
+        ):
+            return (
+                "GENERIC_PUBLIC_MENTION_NOT_CANONICAL_EVIDENCE",
+                "A generic article or shared keyword is not canonical account evidence and did not create or publish a customer award, RFQ, opportunity, or internal order. Existing records retain their canonical types.",
+                "Leave the customer attachment and order unresolved until source evidence passes canonical identity and publication review.",
+            )
+        if (
+            ("assume" in query or "hypothetical" in query)
+            and ("certificate" in query or "certification" in query)
+        ):
+            return (
+                "HYPOTHETICAL_QUALIFICATION_NOT_EVIDENCE",
+                "The assumed certificate expiry is hypothetical, not verified current certificate evidence. Relationship utility cannot override qualification or delivery-feasibility gates.",
+                "Verify the facility-scoped certificate and qualification validity before any commitment; do not rely on relationship utility alone.",
+            )
+        return None
 
     @staticmethod
     def _recent_turns(value: object) -> tuple[ConversationTurn, ...]:

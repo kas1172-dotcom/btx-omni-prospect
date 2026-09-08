@@ -3,8 +3,17 @@ import re
 from decimal import Decimal, InvalidOperation
 
 NUMBER = re.compile(r"(?<![\w])[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:\s*(?:million|billion|thousand)\b|[mMbBkK]\b)?")
-COMPLETED_WRITE = re.compile(r"\b(?:I|we)\s+(?:have\s+)?(?:successfully\s+)?(?:sent|emailed|created|updated|deleted|approved|submitted|booked|committed)\b|\b(?:email|message|HubSpot record)\s+(?:has been |was )?(?:sent|updated|created|synchronized)\b", re.IGNORECASE)
+COMPLETED_WRITE = re.compile(
+    r"\b(?:I|we)\s+(?:have\s+)?(?:successfully\s+)?(?:sent|emailed|created|updated|deleted|approved|submitted|booked|committed)\b|"
+    r"(?<!\bno )(?<!\bnot )\b(?:email|message|HubSpot record)\s+(?:has been |was )?(?:sent|updated|created|synchronized)\b",
+    re.IGNORECASE,
+)
 RECORD_IDENTIFIER = re.compile(r'(?<![\w])(?=[A-Za-z0-9:_-]*[A-Za-z])(?=[A-Za-z0-9:_-]*\d)[A-Za-z][A-Za-z0-9]*(?:[-_:][A-Za-z0-9]+)+(?![\w])')
+MISLABELED_OPPORTUNITY = re.compile(
+    r"(?:\bquote(?:s|d)?\b\s*(?:\([^)]{0,32})?\bOPP[A-Za-z0-9:_-]*\b|"
+    r"\bOPP[A-Za-z0-9:_-]*\b\s+(?:(?:is|was|as)\s+)?(?:a\s+|the\s+)?\bquote\b)",
+    re.IGNORECASE,
+)
 
 
 def _numbers(text):
@@ -32,6 +41,11 @@ def synthesis_rejection(content: str, canonical_text: str, *, blocking_constrain
         return "INVALID_NUMERIC_CLAIM"
     if COMPLETED_WRITE.search(content):
         return "UNSUPPORTED_EXECUTION_CLAIM"
+    # Replacement-key prefixes are canonical record types in this application.
+    # Calling an OPP record a quote changes the business meaning even when the ID
+    # and all numeric claims are otherwise grounded.
+    if MISLABELED_OPPORTUNITY.search(content):
+        return "MISLABELED_RECORD_TYPE"
     if blocking_constraints and re.search(r"\b(?:capacity is confirmed|ready to commit|no delivery constraints|guaranteed delivery|qualified substitute is available)\b", content, re.IGNORECASE):
         return "CONTRADICTED_CONSTRAINT"
     # Referencing a looked-up invoice ID is not a financial claim. Conversely,

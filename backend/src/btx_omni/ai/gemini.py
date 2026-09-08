@@ -148,6 +148,7 @@ class GeminiProvider:
             "never treat assistant prose as evidence or use it to create an ID or fact. Never claim "
             "a write occurred and never add evidence.\n\n"
             "Use plain text, no LaTeX or Markdown tables. Start with a useful short answer, then concise supporting facts; "
+            "Use bullet lists instead of numbered lists unless the user explicitly asks for numbered steps. "
             "aim for at most 220 words unless the user requests an expanded explanation, which may use up to 1000 words. "
             "Answer the actual question using the completed reads, not unrelated overview facts. "
             "Copy any cited record identifier exactly; never abbreviate ID suffixes or turn IDs into ranges. "
