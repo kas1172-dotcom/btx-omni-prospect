@@ -21,7 +21,10 @@ from btx_omni.modules.intelligence.governed_explanation_adapters import (
     persisted_seller_explanation,
     technical_opportunity_subject_key,
 )
-from btx_omni.modules.scoring.public_inputs import public_signal_assessment
+from btx_omni.modules.scoring.public_inputs import (
+    public_risk_assessment,
+    public_signal_assessment,
+)
 from btx_omni.monitor.contracts import IntelligenceEvent, SourceObservation
 from btx_omni.monitor.ontology import ResolutionState, SellerRelevanceState
 from btx_omni.monitor.targeting import TargetReason
@@ -75,6 +78,7 @@ class SignalBrief:
     canonical_facility_id: str | None = None
     technical_opportunity: dict | None = None
     signal_confidence: dict | None = None
+    risk_severity: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -220,6 +224,7 @@ def signal_brief(
         priority_reasons=target_reasons,
         canonical_facility_id=event.canonical_facility_id,
         signal_confidence=public_signal_assessment(event, observation, now=clock, freshness_hours=freshness_hours),
+        risk_severity=public_risk_assessment(event, observation, now=clock),
     )
 
 

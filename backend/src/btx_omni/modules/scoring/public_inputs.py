@@ -15,6 +15,17 @@ VERSION = 'BTX_PUBLIC_SIGNAL_INPUTS_POC_1'
 SOURCE_POINTS = {'TIER_1_AUTHORITATIVE_STRUCTURED': 100,
                  'TIER_2_AUTHORITATIVE_PUBLISHER': 90,
                  'TIER_3_REPUTABLE_SECONDARY': 70, 'TIER_4_DISCOVERY': 40}
+RISK_INPUT_VERSION = 'BTX_PUBLIC_RISK_INPUTS_POC_1'
+RISK_EVENT_TYPES = {
+    EventType.CONTRACT_REDUCTION, EventType.PROGRAM_CANCELLATION,
+    EventType.FACILITY_CLOSURE, EventType.WORKFORCE_REDUCTION,
+    EventType.FINANCIAL_DISTRESS, EventType.EXPORT_RESTRICTION,
+    EventType.PRODUCTION_DELAY,
+}
+LEVEL_POINTS = {'LOW': 25, 'MODERATE': 50, 'HIGH': 75, 'CRITICAL': 100}
+PERSISTENCE_POINTS = {'TRANSIENT': 25, 'MONTHS': 50, 'ONE_YEAR': 75, 'STRUCTURAL': 100}
+BREADTH_POINTS = {'RECORD': 25, 'FACILITY': 50, 'PROGRAM': 75, 'ENTERPRISE': 100}
+REVERSIBILITY_POINTS = {'READY_MITIGATION': 25, 'MITIGATION_UNCERTAIN': 50, 'DIFFICULT': 75, 'IRREVERSIBLE': 100}
 
 
 def public_signal_assessment(event, observation, *, now, freshness_hours):
@@ -76,4 +87,68 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
     result['input_configuration_version'] = VERSION
     result['freshness_threshold_hours'] = freshness_hours
     result['band'] = ('HIGH' if result['score'] >= 70 else 'MEDIUM' if result['score'] >= 40 else 'LOW') if result['score'] is not None else 'INSUFFICIENT_EVIDENCE'
+    return result
+
+
+def public_risk_assessment(event, observation, *, now):
+    """Map source-scoped risk assertions to the separate severity family.
+
+    Only deterministic normalized claims may populate points. A model summary,
+    headline sentiment, or a generic regulatory event cannot manufacture risk.
+    """
+    if now.tzinfo is None:
+        raise ValueError('Public risk assessments require an aware clock.')
+    evidence = {item.evidence_id for item in event.evidence}
+    claims = {}
+    for claim in event.claims:
+        if claim.predicate not in claims and claim.evidence_ids and set(claim.evidence_ids) <= evidence:
+            claims[claim.predicate] = claim
+    explicit_negative = claims.get('risk_direction')
+    eligible = event.event_type in RISK_EVENT_TYPES or bool(
+        explicit_negative and explicit_negative.value.strip().upper() == 'NEGATIVE'
+    )
+    if not eligible:
+        return None
+
+    def categorical(predicate, mapping, label):
+        claim = claims.get(predicate)
+        key = claim.value.strip().upper() if claim else None
+        points = mapping.get(key)
+        ids = tuple(sorted(set(claim.evidence_ids))) if claim and points is not None else ()
+        return FactorInput(
+            Decimal(points) if points is not None else None, ids,
+            f'{label}: {key.replace("_", " ").lower()}.' if points is not None else f'{label} is not established by a scoped source assertion.',
+            raw_value=key, period=now.date().isoformat(), truth_class='PUBLIC_SOURCE',
+            required_fields=(predicate,), observed_fields=(predicate,) if points is not None else (),
+        )
+
+    inputs = {
+        'impact': categorical('risk_impact_level', LEVEL_POINTS, 'Potential BTX impact'),
+        'materiality': categorical('risk_materiality_level', LEVEL_POINTS, 'Affected program, site, or business materiality'),
+        'imminence': categorical('risk_imminence_level', LEVEL_POINTS, 'Timing imminence'),
+        'persistence': categorical('risk_persistence', PERSISTENCE_POINTS, 'Expected persistence'),
+        'breadth': categorical('risk_breadth', BREADTH_POINTS, 'Affected scope'),
+        'reversibility': categorical('risk_reversibility', REVERSIBILITY_POINTS, 'Mitigation difficulty'),
+    }
+    revision = sha256(repr((RISK_INPUT_VERSION, event.id, event.event_type,
+                           tuple(sorted((key, value.value, tuple(value.evidence_ids)) for key, value in claims.items())),
+                           observation.source_version.content_hash if observation else None)).encode()).hexdigest()
+    result = assess(
+        'risk_severity', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
+        revision=revision, inputs=inputs, eligible=True,
+        eligibility_reasons=('A negative public event is assessed independently from Signal Confidence and opportunity priority.',),
+    )
+    score = result['score']
+    confidence = public_signal_assessment(event, observation, now=now, freshness_hours=24 * 30)['score']
+    severity_band = 'HIGH' if score is not None and score >= 70 else 'MEDIUM' if score is not None and score >= 40 else 'LOW' if score is not None else 'INSUFFICIENT_EVIDENCE'
+    confidence_band = 'HIGH' if confidence is not None and confidence >= 70 else 'MEDIUM' if confidence is not None and confidence >= 40 else 'LOW'
+    disposition = ('INSUFFICIENT_EVIDENCE' if score is None else
+                   'ESCALATE_NOW' if severity_band == 'HIGH' and confidence_band == 'HIGH' else
+                   'VALIDATE_IMMEDIATELY' if severity_band == 'HIGH' else
+                   'ACT_OR_MONITOR' if severity_band == 'MEDIUM' and confidence_band == 'HIGH' else
+                   'RESEARCH_FURTHER' if severity_band == 'MEDIUM' else
+                   'MONITOR' if confidence_band == 'HIGH' else 'FEED_ONLY')
+    result.update({'input_configuration_version': RISK_INPUT_VERSION,
+                   'band': severity_band, 'evidence_confidence_band': confidence_band,
+                   'disposition': disposition})
     return result

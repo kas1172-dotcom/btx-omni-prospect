@@ -24,7 +24,20 @@ from btx_omni.monitor.policy import classify_markets, recency_state, seller_rele
 
 def classify_title(title: str) -> EventType:
     value = title.casefold()
-    rules = (("modification", EventType.CONTRACT_MODIFICATION), ("solicitation", EventType.SOLICITATION), ("award", EventType.CONTRACT_AWARD), ("grant", EventType.GRANT_AWARD), ("funding", EventType.GOVERNMENT_FUNDING), ("approval", EventType.REGULATORY_APPROVAL), ("facility", EventType.NEW_FACILITY), ("capacity", EventType.CAPACITY_EXPANSION), ("partnership", EventType.PARTNERSHIP), ("acquisition", EventType.M_AND_A), ("earnings", EventType.EARNINGS_SIGNAL), ("backlog", EventType.BACKLOG_CHANGE), ("launch", EventType.PRODUCT_LAUNCH))
+    rules = (("contract reduction", EventType.CONTRACT_REDUCTION), ("contract cut", EventType.CONTRACT_REDUCTION),
+             ("program cancellation", EventType.PROGRAM_CANCELLATION), ("program canceled", EventType.PROGRAM_CANCELLATION),
+             ("facility closure", EventType.FACILITY_CLOSURE), ("plant closure", EventType.FACILITY_CLOSURE),
+             ("layoff", EventType.WORKFORCE_REDUCTION), ("workforce reduction", EventType.WORKFORCE_REDUCTION),
+             ("bankruptcy", EventType.FINANCIAL_DISTRESS), ("liquidity warning", EventType.FINANCIAL_DISTRESS),
+             ("export restriction", EventType.EXPORT_RESTRICTION), ("sanction", EventType.EXPORT_RESTRICTION),
+             ("production delay", EventType.PRODUCTION_DELAY), ("schedule delay", EventType.PRODUCTION_DELAY),
+             ("modification", EventType.CONTRACT_MODIFICATION), ("solicitation", EventType.SOLICITATION),
+             ("award", EventType.CONTRACT_AWARD), ("grant", EventType.GRANT_AWARD),
+             ("funding", EventType.GOVERNMENT_FUNDING), ("approval", EventType.REGULATORY_APPROVAL),
+             ("facility", EventType.NEW_FACILITY), ("capacity", EventType.CAPACITY_EXPANSION),
+             ("partnership", EventType.PARTNERSHIP), ("acquisition", EventType.M_AND_A),
+             ("earnings", EventType.EARNINGS_SIGNAL), ("backlog", EventType.BACKLOG_CHANGE),
+             ("launch", EventType.PRODUCT_LAUNCH))
     return next((event_type for needle, event_type in rules if needle in value), EventType.UNCLASSIFIED_PUBLIC_UPDATE)
 
 

@@ -34,6 +34,13 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         <small>{brief.signal_confidence.decision_id} · {brief.signal_confidence.configuration_version} · {brief.signal_confidence.input_configuration_version}</small>
       </div>
     </Disclosure>}
+    {brief.risk_severity && <Disclosure title={`Risk severity · ${brief.risk_severity.score == null ? 'More evidence needed' : `${brief.risk_severity.score}/100`}`}>
+      <div className="signal-score-detail">
+        <p><strong>{brief.risk_severity.disposition.replaceAll('_', ' ')}</strong> · severity remains separate from evidence confidence.</p>
+        <p>{brief.risk_severity.data_coverage.present} of {brief.risk_severity.data_coverage.applicable} applicable risk fields are supported.</p>
+        <ul>{brief.risk_severity.factors.map(factor => <li key={factor.key}><strong>{factor.key.replaceAll('_', ' ')}</strong>: {factor.reason}</li>)}</ul>
+      </div>
+    </Disclosure>}
     {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit">
       <div className="seller-signal-details technical-fit">
         {brief.technical_opportunity.event_summary && <p>{brief.technical_opportunity.event_summary}</p>}
