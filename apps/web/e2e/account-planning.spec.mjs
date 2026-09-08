@@ -11,6 +11,10 @@ async function openAccount(page, name) {
 test('seller saves a dated private research shortlist and filters the same portfolio', async ({ page }) => {
   await openAccount(page, 'KLA Corporation')
   await expect(page.getByRole('heading', { name: 'Growth & research planning' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sales planning gap' }).click()
+  const gap = page.getByText('No governed sales target is present, so a sales shortfall cannot be calculated.')
+  await expect(gap).toBeVisible()
+  await expect(page.getByText(/Governed target:/).locator('..')).toContainText('Unavailable')
   await page.getByLabel('Shortlist purpose').selectOption('RESEARCH')
   await page.getByLabel('Planning objective').fill('Confirm technical qualification and the correct buyer role.')
   await page.getByLabel('Target date').fill('2026-10-15')

@@ -8,6 +8,7 @@ from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.session import principal
 from btx_omni.domain.work import Principal, PrincipalRole
+from btx_omni.modules.work.planning_gaps import sales_planning_gap
 from btx_omni.persistence.account_planning import AccountPlanningConflict
 
 router = APIRouter(prefix="/planning", tags=["account-planning"])
@@ -41,8 +42,15 @@ def _account(runtime: PocRuntime, account_id: str):
 
 @router.get("")
 def planning(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
-    return {**runtime.account_planning.view(current.user_id),
-            "can_manage_partnerships": current.role is PrincipalRole.MANAGER}
+    sample = runtime.environment()
+    return {
+        **runtime.account_planning.view(current.user_id),
+        "can_manage_partnerships": current.role is PrincipalRole.MANAGER,
+        "planning_gaps": [
+            sales_planning_gap(account, canonical_account_id=account_id, revision=sample.commercial_revision)
+            for account_id, account in sorted(sample.commercial_ledgers.items())
+        ],
+    }
 
 
 @router.post("/partnerships/{account_id}")

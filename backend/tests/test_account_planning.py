@@ -9,6 +9,7 @@ from btx_omni.api.account_planning import router
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.session import principal
 from btx_omni.domain.work import Principal, PrincipalRole
+from btx_omni.modules.work.planning_gaps import sales_planning_gap
 from btx_omni.persistence.account_planning import (
     AccountPlanningConflict,
     AccountPlanningRepository,
@@ -83,4 +84,20 @@ def test_api_authorizes_designation_and_validates_canonical_accounts(repository)
     view = client.get("/api/planning").json()
     assert view["shortlist"][0]["account_id"] == "kla"
     assert view["strategic_partnerships"][0]["account_id"] == "boeing"
+    assert view["planning_gaps"] == []  # the minimal unit runtime has no imported ledger
     assert client.post("/api/planning/shortlist", json={**shortlist, "account_id": "absent", "idempotency_key": "api-shortlist-two"}).status_code == 404
+
+
+def test_sales_gap_never_turns_a_missing_target_into_zero():
+    account = {
+        "currency": "USD", "ttm_summary": {"period": "2025-09-01/2026-08-31", "bookings_minor": 800},
+        "commercial_requirements": {}, "components": [{"business_unit_id": "BU-A"}],
+        "monthly_commercial_history": [{"snapshot_id": "month-1"}],
+    }
+    missing = sales_planning_gap(account, canonical_account_id="customer", revision="r1")
+    assert missing["status"] == "TARGET_UNAVAILABLE" and missing["shortfall_minor"] is None
+    measured = sales_planning_gap(
+        {**account, "commercial_requirements": {"sales_target_minor": 1000}},
+        canonical_account_id="customer", revision="r1",
+    )
+    assert measured["status"] == "SHORTFALL" and measured["shortfall_minor"] == 200
