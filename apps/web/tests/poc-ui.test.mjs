@@ -89,7 +89,7 @@ test('Technical Opportunity disclosure preserves the model hypothesis and contro
 test('Customer 360 distinguishes public evidence from simulated BTX context', () => {
   assert.match(accounts, /Public professional contact research/)
   assert.match(app, /aria-label="Demonstration environment"/)
-  assert.match(app, /Simulated BTX commercial context/)
+  assert.match(app, /Simulated data environment/)
   assert.match(accounts, /Customer Attractiveness · simulated hypothesis/)
   assert.match(accounts, /Coverage/)
   assert.match(accounts, /Curated scenarios/)
@@ -124,7 +124,7 @@ test('Customer 360 renders backend-owned commercial source states without zero i
   assert.match(accounts, /\$\{label\} integration is not configured/)
   assert.match(accounts, /\$\{label\} context is currently unavailable/)
   assert.match(accounts, /source_state === 'AVAILABLE'/)
-  assert.match(app, /Simulated BTX commercial context/)
+  assert.match(app, /Simulated data environment/)
 })
 
 test('Omni shares governed conversation state across Quick and Full responsive workspaces', () => {
@@ -294,11 +294,12 @@ test('list surfaces publish only their current filters and bounded canonical vis
   assert.match(intelligence, /ordered\.map\(\(item\) => item\.id\)\.slice\(0, 50\)/)
   assert.match(intelligence, /onOmniContext\(\{[\s\S]*active_filters: Object\.fromEntries\(active\),[\s\S]*visible_record_ids:/)
   assert.match(actions, /action_status: 'ACTIVE'/)
-  assert.match(actions, /visible\.map\(item => item\.id\)\.slice\(0, 50\)/)
+  assert.match(actions, /\(tab === 'SUGGESTIONS' \? scopedSuggestions : visible\)\.map\(item => item\.id\)\.slice\(0, 50\)/)
   assert.match(actions, /onOmniContext\(\{ active_filters: activeFilters, visible_record_ids:/)
   assert.match(today, /visibleIds = useMemo\(\(\) => \[\.\.\.new Set\(\[\.\.\.priority\.map/)
   assert.match(today, /\.slice\(0, 50\)/)
-  assert.match(today, /active_filters: market \? \{ market \} : undefined/)
+  assert.match(today, /active_filters: \{ market, priority_kind: filters\.kind, account_id: filters\.accountId, business_unit_id: filters\.businessUnit \}/)
+  assert.match(today, /watchOpen \? \[\.\.\.visibleCurrent/)
 })
 
 test('shell clears stale list, detail, and passive entity context across surface changes', () => {
@@ -327,7 +328,7 @@ test('Monitor keeps inactive collection separate from curated public preview sig
 })
 
 test('Seller Command Center reuses governed Signal Briefs with market, Radar, and watch truth', () => {
-  assert.match(today, /Seller Command Center/)
+  assert.match(today, /Your next commercial decisions/)
   assert.match(today, /What changed \/ needs attention/)
   assert.match(today, /Current public intelligence/)
   assert.match(today, /Market Hubs/)
@@ -335,9 +336,10 @@ test('Seller Command Center reuses governed Signal Briefs with market, Radar, an
   assert.match(today, /Upcoming Radar/)
   assert.match(today, /System recommended · read only/)
   assert.match(today, /Unknown dates are not promoted into Radar/)
-  assert.match(today, /active_filters: market \? \{ market \} : undefined/)
+  assert.match(today, /priority_kind: filters\.kind/)
   assert.match(today, /setSelectedProgramId\(next \? brief\.canonical_program_id : undefined\)/)
-  assert.match(today, /priority\.map\(item => item\.kind === 'COMMERCIAL_REVIEW'/)
+  assert.match(today, /priority\.map\(\(item, index\)/)
+  assert.match(today, /priority\.slice\(0, 3\)\.map/)
   assert.match(today, /data-priority-id=\{item\.id\}/)
   assert.match(today, /alertById\.get\(item\.id\).*Create action/)
   assert.match(today, /selectedHub\?\.current_signal_ids/)

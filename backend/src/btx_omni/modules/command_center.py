@@ -78,6 +78,7 @@ def build_command_center(
             "evidence_ids": item.evidence_ids,
             "observed_at": item.observed_at,
             "data_mode": "SAMPLE",
+            "business_unit_ids": (item.business_unit,) if getattr(item, 'business_unit', None) else (),
         }
         for item in alerts
     ]
@@ -103,6 +104,10 @@ def build_command_center(
             "watchlist_eligible": brief.watchlist_eligible,
             "priority_reasons": tuple(asdict(reason) for reason in brief.priority_reasons),
             "signal_brief": _brief_dict(brief),
+            "business_unit_ids": tuple(sorted({unit['id']
+                for match in (brief.technical_opportunity or {}).get('matches', ())
+                if match.get('status') in {'MATCHED', 'POSSIBLE_MATCH_REVIEW_REQUIRED'}
+                for unit in match.get('business_units', ()) if unit.get('id')})),
         }
         for brief in current
     ]
@@ -234,7 +239,9 @@ def build_command_center(
             "worker_runtime_state": monitor_snapshot.get("worker_runtime_state"),
             "live_intelligence_available": bool(current),
         },
-        "priority_briefing": (*alert_items[:8], *signal_items[:4]),
+        # Filter consumers need the whole governed sequence, not eight alerts
+        # selected before customer/BU scope. Cards are a projection of this list.
+        "priority_briefing": (*alert_items, *signal_items),
         "current_signal_briefs": tuple(_brief_dict(item) for item in current),
         "upcoming_radar": tuple(_brief_dict(item) for item in upcoming),
         "market_hubs": tuple(market_hubs),

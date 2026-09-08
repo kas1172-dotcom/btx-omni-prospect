@@ -4,7 +4,7 @@ import { OmniDrawer } from '../components/OmniDrawer'
 import { Disclosure } from '../components/UI'
 import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
-import { Today } from '../features/today/Today'
+import { Today, type TodayFilters } from '../features/today/Today'
 import { workspaceHash, workspaceLocation, type Surface } from './navigation'
 import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
@@ -43,6 +43,7 @@ export default function App() {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'required'>(import.meta.env.DEV ? 'authenticated' : 'checking')
   const [commandCenter, setCommandCenter] = useState<CommandCenter>()
   const [todayState, setTodayState] = useState<'loading' | 'loaded' | 'unavailable'>('loading')
+  const [todayFilters, setTodayFilters] = useState<TodayFilters>({ kind: 'ALL', accountId: '', businessUnit: '' })
   const [surface, setSurface] = useState<Surface>(() => workspaceLocation(window.location.hash).surface)
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -75,13 +76,14 @@ export default function App() {
   const [selectedMapAccountId, setSelectedMapAccountId] = useState<string>()
   const [selectedMapFacilityId, setSelectedMapFacilityId] = useState<string>()
   const [selectedActionId, setSelectedActionId] = useState<string>()
+  const [actionSourceAlertId, setActionSourceAlertId] = useState<string>()
   const [viewContext, setViewContext] = useState<OmniViewContext>({})
   const clearSelectedEvent = useCallback(() => setSelectedEventId(undefined), [])
   const clearMapSelection = useCallback(() => {
     setSelectedMapAccountId(undefined)
     setSelectedMapFacilityId(undefined)
   }, [])
-  const clearSelectedAction = useCallback(() => setSelectedActionId(undefined), [])
+  const clearSelectedAction = useCallback(() => { setSelectedActionId(undefined); setActionSourceAlertId(undefined) }, [])
   const clearViewContext = useCallback(() => setViewContext({}), [])
   const selectMapFacility = useCallback((facilityId?: string, accountId?: string) => { setSelectedMapFacilityId(facilityId); setSelectedMapAccountId(accountId) }, [])
   const select = useCallback(async (id: string, recordHistory = true) => {
@@ -182,7 +184,7 @@ export default function App() {
         onOmniContext={setViewContext}
       />
     ) : surface === 'actions' ? (
-      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} />
+      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} />
     ) : surface === 'communications' ? (
       <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
@@ -201,6 +203,8 @@ export default function App() {
       />
     ) : (
       <Today
+        filters={todayFilters}
+        onFilters={setTodayFilters}
         commandCenter={commandCenter}
         state={todayState}
         alerts={alerts}
@@ -216,7 +220,8 @@ export default function App() {
           clearSelectedAction()
           clearViewContext()
           navigate('actions')
-          setError(`Ready to create action for ${accounts.find((account) => account.id === alert.account_id)?.name ?? 'selected Customer'}.`)
+          setActionSourceAlertId(alert.id)
+          setError('')
         }}
         onOmniContext={setViewContext}
       />
@@ -277,15 +282,19 @@ export default function App() {
             <span className="eyebrow">BTX Omni Prospect</span>
             <strong>{surfaceLabels[surface]}</strong>
           </div>
+          <div className="topbar-controls">
+          {actionPrincipal && <div className="signed-in-user" aria-label="Signed-in user"><span aria-hidden="true">{actionPrincipal.display_name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span><strong>{actionPrincipal.display_name}</strong></div>}
           <Disclosure className="mode" title="Workspace menu" open={workspaceMenuOpen} onOpenChange={setWorkspaceMenuOpen}>
             <div className="mobile-secondary-links">
               <button onClick={() => navigate('communications')}>Communications</button>
               <button onClick={() => navigate('settings')}>Settings</button>
             </div>
             <p>Public evidence and SAMPLE commercial context remain explicitly separated.</p>
+            {actionPrincipal && <p className="mobile-user-identity">Signed in as {actionPrincipal.display_name}</p>}
           </Disclosure>
+          </div>
         </header>
-        <aside className="demonstration-banner" aria-label="Demonstration environment"><strong>Demonstration workspace</strong><span>Simulated BTX commercial context</span><span>Public claims retain their source evidence and dates. No external message or CRM write is implied.</span></aside>
+        <aside className="demonstration-banner" aria-label="Demonstration environment">Simulated data environment</aside>
         {error && <div className="api-notice">{error}</div>}
         {accountOpening && <div className="api-notice" role="status">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'account'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></div>}
         {surface !== 'settings' && resourceState[surface] === 'error' && <div className="api-notice" role="alert">{surfaceLabels[surface]} could not refresh. Previously loaded content is retained, if available. <button type="button" onClick={() => setRefreshVersion(version => version + 1)}>Retry workspace reads</button></div>}

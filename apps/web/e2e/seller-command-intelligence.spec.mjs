@@ -7,14 +7,15 @@ async function navigate(page, name) {
 test('desktop Today presents truthful priority, meaning, action, and evidence', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
-  const distribution = page.getByRole('region', { name: 'Commercial Review priority distribution' })
-  await expect(distribution).toContainText('High')
-  await expect(distribution).toContainText('Medium')
-  await expect(distribution).toContainText('Low')
+  const priorities = page.getByRole('region', { name: 'Top priorities' })
+  await expect(priorities.locator('[data-summary-id]')).toHaveCount(3)
+  await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
   const attention = page.getByRole('heading', { name: 'What changed / needs attention' }).locator('..').locator('..')
   await expect(attention).toContainText('Why:')
   await expect(attention).toContainText('Next:')
+  await attention.getByRole('button', { name: 'Evidence and governed action' }).first().click()
   await expect(attention).toContainText('SAMPLE BTX commercial context')
+  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   await expect(page.getByRole('heading', { name: 'Public intelligence', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'View Intelligence' }).click()
   await expect(page.getByRole('heading', { name: 'Intelligence', level: 1 })).toBeVisible()
@@ -36,14 +37,16 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
 
   const commercial = payload.command_center.priority_briefing.filter(item => item.kind === 'COMMERCIAL_REVIEW')
   const publicSignals = payload.command_center.priority_briefing.filter(item => item.kind === 'PUBLIC_SIGNAL')
-  await expect(page.locator('[data-priority-id]').filter({ hasText: 'SAMPLE BTX commercial context' })).toHaveCount(commercial.length)
+  expect(await page.locator('[data-summary-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-summary-id')))).toEqual(projectedPriority.slice(0, 3))
   for (const item of commercial) {
     const card = page.locator(`[data-priority-id="${item.id}"]`)
     await card.getByRole('button', { name: 'Evidence and governed action' }).click()
+    await expect(card).toContainText('SAMPLE BTX commercial context')
     await expect(card.getByRole('button', { name: 'Create action' })).toBeVisible()
   }
   for (const item of publicSignals) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)
 
+  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   const defense = payload.command_center.market_hubs.find(hub => hub.market === 'Defense')
   await page.getByRole('navigation', { name: 'Market hubs' }).getByRole('button', { name: /Defense/ }).click()
   await expect(page.getByRole('heading', { name: 'Defense coverage and gaps' })).toBeVisible()

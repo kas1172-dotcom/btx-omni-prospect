@@ -1,4 +1,8 @@
 @media (max-width: 760px) {
+  .topbar-controls { display: contents; }
+  .signed-in-user { display: none; }
+  .mobile-user-identity { display: block; }
+  .demonstration-banner { margin-inline: calc(var(--space-4) * -1); }
   .app-shell:not(.app-shell-loading) { display: block; min-height: 100dvh; }
   .app-sidebar { display: none; }
   .app-workspace { min-height: 100dvh; padding: 0 var(--space-4) calc(var(--shell-mobile-nav-height) + env(safe-area-inset-bottom) + var(--space-8)); }
@@ -25,6 +29,7 @@
 }
 
 @media (max-width: 360px) {
+  .demonstration-banner { margin-inline: calc(var(--space-3) * -1); }
   .app-workspace { padding-inline: var(--space-3); }
   .topbar { margin-inline: calc(var(--space-3) * -1); padding-inline: var(--space-3); }
   .mobile-primary-nav button { font-size: 9px; }

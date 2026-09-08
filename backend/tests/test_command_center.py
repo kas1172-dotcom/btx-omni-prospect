@@ -134,7 +134,18 @@ def test_degraded_projection_does_not_claim_live_collection() -> None:
     assert result["source_health_warnings"][0]["state"] == "NEVER_ATTEMPTED"
 
 
-def test_priority_projection_is_bounded_ordered_and_self_describing() -> None:
+def test_filter_consumers_receive_priorities_beyond_old_eight_item_cutoff():
+    alerts = tuple(SimpleNamespace(id=f'alert-{index:02}', account_id=f'customer-{index}', severity='HIGH',
+        trigger_reason='Actual source reason', recommended_action='Actual next action',
+        evidence_ids=(f'source-{index}',), observed_at=NOW, business_unit='bu-scoped' if index == 10 else None)
+        for index in range(12))
+    items = projection(alerts=alerts)['priority_briefing']
+    assert [item['id'] for item in items] == [alert.id for alert in alerts]
+    assert items[10]['business_unit_ids'] == ('bu-scoped',)
+    assert items[0]['business_unit_ids'] == ()  # No inferred account-level fallback.
+
+
+def test_priority_projection_is_ordered_and_self_describing() -> None:
     def alert(alert_id: str, severity: str, observed_at: datetime):
         return SimpleNamespace(
             id=alert_id,
