@@ -67,3 +67,24 @@ test('manager creates an audited partnership designation and portfolio include/e
   await page.getByRole('button', { name: 'Remove strategic partnership' }).click()
   await expect(page.getByText('Strategic partnership designation')).toHaveCount(0)
 })
+
+test('a late planning read cannot overwrite a seller draft', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')
+  let releasePlanning
+  const planningReleased = new Promise(resolve => { releasePlanning = resolve })
+  await page.route('**/api/planning', async route => {
+    if (route.request().method() !== 'GET') return route.continue()
+    const response = await route.fetch()
+    await planningReleased
+    await route.fulfill({ response })
+  })
+  await page.locator('.account-row').filter({ hasText: 'KLA Corporation' }).first().click()
+  const objective = 'Preserve this seller-authored qualification review.'
+  await page.getByLabel('Planning objective').fill(objective)
+  releasePlanning()
+  await expect(page.getByRole('button', { name: 'Sales planning gap' })).toBeVisible()
+  await expect(page.getByLabel('Planning objective')).toHaveValue(objective)
+  await expect(page.getByRole('button', { name: 'Add to shortlist' })).toBeEnabled()
+})
