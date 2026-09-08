@@ -166,7 +166,8 @@ class MonitorResearchCoordinator:
             stop = 'JOURNAL_BUDGET_EXHAUSTED'
         except ResearchLeaseUnavailable:
             return {'run_id': identifier, 'status': 'LEASE_EXPIRED', 'published': False}
-        result = {'run_id': identifier, 'status': stop, 'reused': False,
+        result = {'run_id': identifier, 'event_id': public['event_id'], 'source_revision': source_revision,
+                  'status': stop, 'reused': False,
                   'provider': self.provider.name, 'model': model, 'configuration_version': VERSION,
                   'documents': documents, 'searched_focuses': sorted(searched), 'tools_used': tools_used,
                   'published': False, 'publication_state': 'REQUIRES_CANONICAL_PUBLICATION_GATES',

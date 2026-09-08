@@ -181,6 +181,24 @@ class MonitorResearchJournal:
                 status='COMPLETED' if complete else 'PAUSED', result=encoded,
                 updated_at=now, lease_token=None, lease_until=None))
 
+    def record_publication(self, identifier, *, outcome, now):
+        """Attach the deterministic downstream publication outcome to a finished run."""
+        if now.tzinfo is None:
+            raise ValueError('An aware publication clock is required.')
+        encoded_outcome = _json(outcome, 16000)
+        with self._transaction() as connection:
+            row = connection.execute(select(runs).where(runs.c.id == identifier).with_for_update()).mappings().one_or_none()
+            if row is None or row['status'] != 'COMPLETED' or not row['result']:
+                raise ValueError('Only completed public research can receive a publication outcome.')
+            result = json.loads(row['result'])
+            if _json(result.get('publication_outcome'), 16000) == encoded_outcome:
+                return
+            result['published'] = bool(outcome.get('published'))
+            result['publication_state'] = outcome.get('state')
+            result['publication_outcome'] = outcome
+            connection.execute(update(runs).where(runs.c.id == identifier).values(
+                result=_json(result, 160000), updated_at=now))
+
     def get(self, identifier):
         with self.engine.connect() as connection:
             row = connection.execute(select(runs).where(runs.c.id == identifier)).mappings().one_or_none()

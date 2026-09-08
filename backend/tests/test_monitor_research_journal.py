@@ -60,6 +60,23 @@ def test_completed_run_replay_reuses_steps_without_provider_call(journal):
     assert 'lease_token' not in state
 
 
+def test_completed_run_records_idempotent_deterministic_publication_outcome(journal):
+    identifier, token = acquire(journal)
+    journal.finish(identifier, token, result={'status': 'RESEARCH_RECORDED', 'published': False}, now=NOW, complete=True)
+    outcome = {'published': True, 'state': 'PUBLISHED_SELLER_BRIEF', 'event_id': 'source:public-event',
+               'gates': {'canonical_identity_resolved': True}, 'decided_at': NOW.isoformat()}
+    journal.record_publication(identifier, outcome=outcome, now=NOW + timedelta(seconds=1))
+    journal.record_publication(identifier, outcome=outcome, now=NOW + timedelta(seconds=2))
+    state = journal.get(identifier)
+    assert state['result']['published'] is True
+    assert state['result']['publication_outcome'] == outcome
+
+    paused, paused_token = acquire(journal, revision='b' * 64)
+    journal.finish(paused, paused_token, result={'status': 'NO_RETRIEVED_PASSAGES'}, now=NOW, complete=False)
+    with pytest.raises(ValueError, match='Only completed'):
+        journal.record_publication(paused, outcome=outcome, now=NOW + timedelta(seconds=1))
+
+
 def test_active_lease_overlap_and_late_expired_completion_are_fenced(journal):
     identifier, old = acquire(journal)
     number = journal.start_step(identifier, old, tool='search_public', arguments={}, now=NOW)

@@ -31,6 +31,8 @@ from btx_omni.modules.scoring.account_attractiveness import (
 )
 from btx_omni.monitor.briefs import (
     BriefRetryPolicy,
+    apply_cached_synthesis,
+    governed_content_hash,
     process_signal_brief_synthesis,
     signal_briefs_for_monitor,
 )
@@ -148,20 +150,6 @@ def run_worker(
                     break
                 investigations.append(coordinator.investigate(document, source_revision=document['content_hash'],
                     deadline_monotonic=min(deadline, monotonic() + 90)))
-            synthesis = process_signal_brief_synthesis(
-                signal_briefs_for_monitor(runtime.monitor),
-                provider=get_ai_provider(AiConfig.from_settings(settings)),
-                repository=repository,
-                cap=settings.monitor_brief_synthesis_cap,
-                retry_policy=BriefRetryPolicy(
-                    auth_failed_seconds=settings.monitor_brief_auth_retry_seconds,
-                    timeout_seconds=settings.monitor_brief_timeout_retry_seconds,
-                    quota_seconds=settings.monitor_brief_quota_retry_seconds,
-                    unavailable_seconds=settings.monitor_brief_unavailable_retry_seconds,
-                ),
-                deadline_monotonic=deadline,
-                minimum_attempt_seconds=settings.ai_timeout_seconds,
-            )
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
             provider = get_ai_provider(AiConfig.from_settings(settings))
             for brief in signal_briefs_for_monitor(runtime.monitor)[
@@ -246,6 +234,62 @@ def run_worker(
                         "matches": len(projection.matches),
                     }
                 )
+            # Brief synthesis runs after technical investigation so the governed
+            # content hash and seller prose include the current persisted research
+            # projection. A stale pre-investigation summary cannot remain current.
+            synthesis = process_signal_brief_synthesis(
+                signal_briefs_for_monitor(runtime.monitor),
+                provider=get_ai_provider(AiConfig.from_settings(settings)),
+                repository=repository,
+                cap=settings.monitor_brief_synthesis_cap,
+                retry_policy=BriefRetryPolicy(
+                    auth_failed_seconds=settings.monitor_brief_auth_retry_seconds,
+                    timeout_seconds=settings.monitor_brief_timeout_retry_seconds,
+                    quota_seconds=settings.monitor_brief_quota_retry_seconds,
+                    unavailable_seconds=settings.monitor_brief_unavailable_retry_seconds,
+                ),
+                deadline_monotonic=deadline,
+                minimum_attempt_seconds=settings.ai_timeout_seconds,
+            )
+            # Publication remains a deterministic server decision. Gemini may
+            # select public reads and improve prose, but cannot pass these gates.
+            final_briefs = []
+            briefs_by_id = {}
+            for deterministic in signal_briefs_for_monitor(runtime.monitor):
+                cached = repository.brief_synthesis(
+                    deterministic.id, governed_content_hash(deterministic)
+                )
+                rendered = apply_cached_synthesis(deterministic, cached)
+                briefs_by_id[rendered.id] = rendered
+            for investigation in investigations:
+                state = repository.research.get(investigation['run_id'])
+                event_id = investigation.get('event_id') or (state or {}).get('event_reference')
+                brief = briefs_by_id.get(event_id)
+                has_passages = any(
+                    document.get('document', {}).get('passages')
+                    for document in investigation.get('documents', ())
+                )
+                gates = {
+                    'research_completed': investigation.get('status') == 'RESEARCH_RECORDED' and has_passages,
+                    'canonical_identity_resolved': bool(brief and brief.resolution_state == 'RESOLVED' and brief.canonical_account_ids),
+                    'seller_relevance_eligible': bool(brief and brief.seller_promotion_state == 'RESOLVED_ELIGIBLE'),
+                    'publication_current': bool(brief and brief.freshness == 'CURRENT'),
+                    'technical_investigation_available': bool(brief and brief.technical_opportunity and brief.technical_opportunity.get('provider_status') == 'AVAILABLE'),
+                    'gemini_brief_available': bool(brief and brief.summary_mode == 'GEMINI_ASSISTED'),
+                }
+                published = all(gates.values())
+                outcome = {
+                    'published': published,
+                    'state': 'PUBLISHED_SELLER_BRIEF' if published else 'WITHHELD_BY_CANONICAL_GATES',
+                    'event_id': event_id,
+                    'brief_id': brief.id if brief else None,
+                    'gates': gates,
+                    'decided_at': runtime.observed_at().isoformat(),
+                }
+                if state and state.get('status') == 'COMPLETED':
+                    repository.research.record_publication(investigation['run_id'], outcome=outcome, now=runtime.observed_at())
+                investigation.update({'published': published, 'publication_state': outcome['state'], 'publication_gates': gates})
+                final_briefs.append(outcome)
             # Customer/Federal explanation calls share the bounded worker and durable cache.
             explanation_provider = get_ai_provider(AiConfig.from_settings(settings))
             cap = settings.monitor_technical_decomposition_cap
@@ -335,6 +379,7 @@ def run_worker(
         "brief_synthesis": asdict(synthesis) if synthesis else None,
         "technical_decomposition": technical,
         "research_investigations": investigations,
+        "seller_publication": final_briefs if 'final_briefs' in locals() else [],
         "governed_explanations": explanations,
         "optional_budget_stops": optional_budget_stops,
         "market_refresh": market_refresh,

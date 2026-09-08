@@ -303,9 +303,11 @@ class _BriefProvider:
 
     def __init__(self) -> None:
         self.calls = 0
+        self.request = None
 
     def synthesize(self, request):
         self.calls += 1
+        self.request = request
         return LanguageResult(
             "Seller-readable governed summary.", "gemini", "fake", request.evidence_ids
         )
@@ -380,6 +382,16 @@ def test_gemini_brief_synthesis_cannot_change_governed_metadata(tmp_path) -> Non
         == brief
     )
     assert synthesize_signal_brief(brief, _FailingProvider()) == brief
+
+    researched = replace(brief, technical_opportunity={
+        "event_summary": "A public source describes a new machining program.",
+        "matches": ({"candidate_name": "Actuator housing", "component_name": "Actuator housing", "status": "MATCHED"},),
+        "uncertainties": ("Facility scope remains unverified.",),
+    })
+    provider = _BriefProvider()
+    synthesize_signal_brief(researched, provider)
+    assert "Actuator housing → Actuator housing" in provider.request.governed_answer
+    assert "Facility scope remains unverified" in provider.request.governed_answer
 
 
 def test_brief_synthesis_never_invokes_provider_for_ineligible_truth_states(tmp_path) -> None:

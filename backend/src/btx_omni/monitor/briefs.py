@@ -241,11 +241,23 @@ def synthesize_signal_brief_with_status(
         return BriefSynthesisOutcome(brief, ProviderStatus.UNAVAILABLE)
     if not provider.configured:
         return BriefSynthesisOutcome(brief, ProviderStatus.NOT_CONFIGURED)
+    technical = brief.technical_opportunity or {}
+    matched = tuple(
+        f"{item.get('candidate_name')} → {item.get('component_name') or item.get('status')}"
+        for item in technical.get("matches", ())[:6]
+    )
+    investigated = (
+        f"\nInvestigated public context: {technical.get('event_summary') or 'No additional event summary.'}"
+        f"\nControlled component review: {'; '.join(matched) if matched else 'No controlled BTX component match.'}"
+        f"\nResearch uncertainties: {'; '.join(technical.get('uncertainties', ())[:6]) or 'None recorded.'}"
+        if technical
+        else "\nInvestigated public context: no current persisted technical investigation is available."
+    )
     governed = (
         f"Headline: {brief.headline}\nWhat happened: {brief.what_happened}\n"
         f"Why it may matter: {brief.why_it_may_matter}\nWhat to watch: {brief.what_to_watch}\n"
         f"Recommended action: {brief.recommended_action or 'Unavailable'}\n"
-        f"Freshness: {brief.freshness}\nData mode: {brief.data_mode}"
+        f"Freshness: {brief.freshness}\nData mode: {brief.data_mode}{investigated}"
     )
     try:
         result = provider.synthesize(
