@@ -28,6 +28,7 @@ from btx_omni.monitor.service import MonitorService
 from btx_omni.monitor.sources import REGISTRY, SecEdgarAdapter, UsaSpendingAdapter
 from btx_omni.monitor.targeting import StrategicWatchUniverse
 from btx_omni.monitor.usaspending import recipient_query_names
+from btx_omni.persistence.account_planning import AccountPlanningRepository
 from btx_omni.persistence.actions import SqlActionRepository
 from btx_omni.persistence.commercial_import import CommercialImportRepository
 from btx_omni.persistence.communications import SqlCommunicationRepository
@@ -60,6 +61,7 @@ class PocRuntime:
     omni_runs: OmniRunRepository = field(init=False)
     work_feedback: SuggestionFeedbackRepository = field(init=False)
     itineraries: ItineraryRepository = field(init=False)
+    account_planning: AccountPlanningRepository = field(init=False)
     markets: MarketService = field(init=False)
     durable_accounts: DurablePublicAccountRepository | None = field(
         init=False, default=None
@@ -86,6 +88,7 @@ class PocRuntime:
         self.reference_fields = ReferenceFieldRepository(application_engine)
         self.work_feedback = SuggestionFeedbackRepository(application_engine)
         self.itineraries = ItineraryRepository(application_engine)
+        self.account_planning = AccountPlanningRepository(application_engine)
         self.markets = MarketService(MarketSeriesRepository(application_engine), worker_enabled=self.settings.market_refresh_enabled,
                                      scheduler_configured=self.settings.monitor_schedule_configured)
         if self.settings.commercial_durable_state_enabled:

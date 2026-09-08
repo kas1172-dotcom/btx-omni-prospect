@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from btx_omni.api.account_planning import router as account_planning_router
 from btx_omni.api.accounts import router as accounts_router
 from btx_omni.api.actions import router as actions_router
 from btx_omni.api.commercial import router as commercial_router
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
         session_router,
         today_router,
         accounts_router,
+        account_planning_router,
         reference_fields_router,
         commercial_router,
         relationships_router,
