@@ -79,6 +79,7 @@ class SignalBrief:
     technical_opportunity: dict | None = None
     signal_confidence: dict | None = None
     risk_severity: dict | None = None
+    event_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -225,6 +226,7 @@ def signal_brief(
         canonical_facility_id=event.canonical_facility_id,
         signal_confidence=public_signal_assessment(event, observation, now=clock, freshness_hours=freshness_hours),
         risk_severity=public_risk_assessment(event, observation, now=clock),
+        event_type=event.event_type.value,
     )
 
 

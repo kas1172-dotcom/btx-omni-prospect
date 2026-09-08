@@ -10,12 +10,14 @@ from btx_omni.domain.work import Principal
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
 from btx_omni.modules.scoring.commercial_decisions import customer_decisions
+from btx_omni.modules.scoring.families import customer_risk_projection
 from btx_omni.modules.work.commercial_followup import confirm_followup, followup_preview
 from btx_omni.modules.work.service import (
     ActionConflictError,
     ActionForbiddenError,
     ActionNotFoundError,
 )
+from btx_omni.monitor.briefs import signal_briefs_for_monitor
 from btx_omni.persistence.commercial_import import digest
 from btx_omni.persistence.commercial_schema import COLLECTION_TABLES
 from btx_omni.providers.research.enriched_evidence import public_sources
@@ -82,9 +84,19 @@ def commercial_evidence(
         return fulfillment_state(ledger, canonical_account_id=account_id, revision=sample.commercial_revision)
     if collection == "decisions":
         account = next(a for a in sample.accounts if a.id == account_id)
-        return customer_decisions(ledger, account_id=account_id, revision=sample.commercial_revision,
-                                  current_customer=account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"},
-                                  work_items=tuple(runtime.work.list(actor)))
+        current_customer = account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}
+        decisions = customer_decisions(ledger, account_id=account_id, revision=sample.commercial_revision,
+                                       current_customer=current_customer,
+                                       work_items=tuple(runtime.work.list(actor)))
+        return {
+            **decisions,
+            **customer_risk_projection(
+                account_id=account_id,
+                current_customer=current_customer,
+                internal_decision=decisions["internal_commercial_risk"],
+                signal_briefs=signal_briefs_for_monitor(runtime.monitor),
+            ),
+        }
     if collection == "reference":
         return {"account_id": account_id, "revision": sample.commercial_revision,
                 "reference": {k: v for k, v in ledger.items() if k not in COLLECTION_TABLES}}

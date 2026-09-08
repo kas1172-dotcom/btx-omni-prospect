@@ -28,3 +28,22 @@ test('retained reference fields and paginated lifecycle records use canonical AP
   await expect(recordSummary(next.records[0][next.record_key])).toBeVisible()
   await expect(disclosure.getByText(id, { exact: true })).toHaveCount(0)
 })
+
+test('customer risk view keeps public severity separate and preserves missingness', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
+  await page.getByRole('row', { name: /^Boeing/ }).first().click()
+  await page.getByText('Commercial decisions & follow-ups', { exact: true }).click()
+  const decision = page.locator('.commercial-decision').filter({ hasText: /^overall customer risk/ })
+  await expect(decision.locator('summary')).toContainText('insufficient evidence')
+  await decision.locator('summary').click()
+  await expect(decision).toContainText('Internal commercial risk and public event severity remain separately inspectable.')
+  await expect(decision).toContainText('Missing public risk evidence is not a zero-risk observation.')
+
+  const response = await page.request.get('/api/accounts/boeing/commercial/decisions')
+  expect(response.ok()).toBeTruthy()
+  const payload = await response.json()
+  expect(payload.overall_customer_risk.status).toBe('INSUFFICIENT_EVIDENCE')
+  expect(payload.overall_customer_risk.missing_fields).toContain('public_risk_rollup')
+  expect(payload.public_risk_rollup.score).toBeNull()
+})

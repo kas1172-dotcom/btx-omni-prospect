@@ -60,6 +60,13 @@ export function CommercialDecisions({ accountId, onWorkChanged }: { accountId: s
   return <div className="commercial-decisions"><p>Separate decisions answer different questions. Missing qualification, capacity and buyer evidence cannot be replaced by a high relationship index.</p>
     {error && <p role="alert">Decisions could not be refreshed. Displayed results may be outdated. <button onClick={() => setRefresh(n => n + 1)}>Retry decisions</button></p>}
     {result ? <><Decision decision={result.customer_health} onEvidence={setEvidence} /><Decision decision={result.internal_commercial_risk} onEvidence={setEvidence} />
+      <details className="commercial-decision"><summary>overall customer risk · {index(result.overall_customer_risk.score) ?? words(result.overall_customer_risk.status)}</summary>
+        <p>{result.overall_customer_risk.interpretation}</p>
+        <p>Internal commercial risk and public event severity remain separately inspectable. Missing public risk evidence is not a zero-risk observation.</p>
+        <p><strong>Public risk rollup:</strong> {index(result.public_risk_rollup.score) ?? 'More source evidence needed'} · {result.public_risk_rollup.independent_event_ids.length} independent current event{result.public_risk_rollup.independent_event_ids.length === 1 ? '' : 's'}.</p>
+        {result.public_risk_events.length > 0 && <ul>{result.public_risk_events.map(event => <li key={event.underlying_event_id}><strong>{words(event.risk_domain)}</strong> · {index(event.severity)} · {event.active ? 'current and eligible' : 'retained, not active in rollup'}</li>)}</ul>}
+        <small>Provisional configuration {result.overall_customer_risk.configuration_version}. Public confidence does not replace severity and no macro signal proves an account order.</small>
+      </details>
       {result.opportunities.map(opportunity => <section key={opportunity.opportunity_id}><h3>{opportunity.opportunity_id} · {opportunity.component_id}</h3><p>{words(opportunity.stage)} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: opportunity.currency }).format(opportunity.value_minor / 100)} quoted opportunity</p>
         <p>{words(opportunity.qualification_status)} · {words(opportunity.durability_status)}</p>
         {[opportunity.opportunity_priority, opportunity.pwin, opportunity.delivery_feasibility].map(decision => <Decision key={decision.family} decision={decision} onEvidence={setEvidence} />)}</section>)}

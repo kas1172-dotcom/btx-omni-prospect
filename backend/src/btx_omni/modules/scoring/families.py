@@ -174,3 +174,55 @@ def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | N
             "critical_override_evidence_ids": critical_override_evidence_ids,
             "applicable_floors": floors if current_customer else [], "missing_fields": missing,
             "interpretation": "Unknown coverage cannot create an overall score; independent critical conditions remain visible even when the combined index is unavailable."}
+
+
+def customer_risk_projection(
+    *,
+    account_id: str,
+    current_customer: bool,
+    internal_decision: Mapping[str, object],
+    signal_briefs: tuple[object, ...],
+) -> dict:
+    """Join current public risk and canonical internal risk without conflating them."""
+    public_events: list[dict] = []
+    confirmed_event_ids: list[str] = []
+    for brief in sorted(signal_briefs, key=lambda item: str(getattr(item, "id", ""))):
+        if account_id not in tuple(getattr(brief, "canonical_account_ids", ())):
+            continue
+        risk = getattr(brief, "risk_severity", None)
+        if not isinstance(risk, Mapping) or risk.get("score") is None:
+            continue
+        active = (
+            getattr(brief, "freshness", None) == "CURRENT"
+            and getattr(brief, "seller_promotion_state", None) == "RESOLVED_ELIGIBLE"
+        )
+        event_id = str(brief.id)
+        public_events.append(
+            {
+                "active": active,
+                "severity": risk["score"],
+                "underlying_event_id": event_id,
+                "risk_domain": str(getattr(brief, "event_type", None) or "UNCLASSIFIED_RISK"),
+            }
+        )
+        confidence = getattr(brief, "signal_confidence", None)
+        if active and isinstance(confidence, Mapping) and confidence.get("status") == "SCORED":
+            confirmed_event_ids.append(event_id)
+    public = public_risk_rollup(tuple(public_events))
+    internal_value = internal_decision.get("score")
+    internal_score = Decimal(str(internal_value)) if internal_value is not None else None
+    public_score = Decimal(str(public["score"])) if public["score"] is not None else None
+    combined = overall_customer_risk(
+        current_customer=current_customer,
+        internal_score=internal_score,
+        public_score=public_score,
+        public_confirmed=bool(confirmed_event_ids),
+    )
+    return {
+        "account_id": account_id,
+        "public_risk_rollup": public,
+        "overall_customer_risk": combined,
+        "public_risk_events": tuple(public_events),
+        "confirmed_public_event_ids": tuple(confirmed_event_ids),
+        "interpretation": "Public event severity, internal commercial risk, and combined customer risk remain separate governed views.",
+    }

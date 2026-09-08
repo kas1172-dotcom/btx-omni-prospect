@@ -1,4 +1,5 @@
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -6,6 +7,7 @@ from btx_omni.modules.scoring.families import (
     FAMILIES,
     FactorInput,
     assess,
+    customer_risk_projection,
     overall_customer_risk,
     public_risk_rollup,
 )
@@ -52,6 +54,30 @@ def test_duplicate_articles_never_strengthen_public_risk():
     other = {**event, "underlying_event_id": "credit", "risk_domain": "finance"}
     assert public_risk_rollup((event, other))["score"] == 90
     assert public_risk_rollup(())["score"] is None
+
+
+def test_customer_risk_projection_keeps_public_internal_and_missingness_separate():
+    current = SimpleNamespace(
+        id="risk-1", canonical_account_ids=("boeing",), freshness="CURRENT",
+        seller_promotion_state="RESOLVED_ELIGIBLE", event_type="PRODUCTION_DELAY",
+        risk_severity={"score": 80}, signal_confidence={"status": "SCORED"},
+    )
+    copied = SimpleNamespace(**{**current.__dict__, "id": "risk-2", "canonical_account_ids": ("kla",)})
+    result = customer_risk_projection(
+        account_id="boeing", current_customer=True,
+        internal_decision={"score": 60}, signal_briefs=(copied, current),
+    )
+    assert result["public_risk_rollup"]["score"] == 80
+    assert result["public_risk_rollup"]["independent_event_ids"] == ("risk-1",)
+    assert result["overall_customer_risk"]["score"] == 68
+    assert result["confirmed_public_event_ids"] == ("risk-1",)
+
+    missing = customer_risk_projection(
+        account_id="boeing", current_customer=True,
+        internal_decision={"score": 60}, signal_briefs=(),
+    )
+    assert missing["overall_customer_risk"]["score"] is None
+    assert missing["overall_customer_risk"]["missing_fields"] == ("public_risk_rollup",)
 
 
 def test_opportunity_keeps_six_factors_and_pwin_is_not_probability():

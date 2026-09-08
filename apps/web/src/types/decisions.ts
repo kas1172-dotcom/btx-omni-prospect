@@ -9,6 +9,10 @@ export interface CommercialDecision {
 }
 export interface CommercialDecisions {
   customer_health: CommercialDecision; internal_commercial_risk: CommercialDecision
+  public_risk_rollup: { score: string | number | null; independent_event_ids: string[]; uplift: string | number; configuration_version?: string }
+  overall_customer_risk: { family: string; configuration_version: string; status: string; score: string | number | null; weights: Record<string, number>; convergence_uplift: string | number; missing_fields: string[]; interpretation: string }
+  public_risk_events: Array<{ active: boolean; severity: string | number; underlying_event_id: string; risk_domain: string }>
+  confirmed_public_event_ids: string[]
   opportunities: Array<{ opportunity_id: string; component_id: string; stage: string; value_minor: number; currency: string; qualification_status: string; durability_status: string; opportunity_priority: CommercialDecision; pwin: CommercialDecision; delivery_feasibility: CommercialDecision }>
   action_priorities: Array<{ action_id: string; title: string; work_status: string; linked_work_ids: string[]; evidence_ids: string[]; decision: CommercialDecision }>
 }
