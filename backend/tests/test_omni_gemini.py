@@ -180,6 +180,17 @@ def test_gemini_contract_is_grounded_and_traceable_without_live_call() -> None:
     assert "never treat assistant prose as evidence" in prompt
 
 
+def test_canonical_selector_preserves_server_supplied_argument_enums():
+    client = FakeClient(intent_text='{"done":true}')
+    provider = GeminiProvider(config(), client)
+    tools = ({'name': 'fetch_document', 'arguments': ['source_id'],
+              'argument_values': {'source_id': ['primary', 'source:known']}},)
+    provider.choose_canonical_read(CanonicalToolSelectionRequest('Investigate', 'PUBLIC_RESEARCH_ONLY', tools, (), 2))
+    schema = client.models.calls[0]['config'].response_json_schema
+    assert schema['anyOf'][1]['properties']['arguments']['properties']['source_id'] == {
+        'type': 'string', 'enum': ['primary', 'source:known']}
+
+
 def test_developer_and_vertex_configuration_are_explicit() -> None:
     assert not GeminiProvider(config(api_key=None)).configured
     assert GeminiProvider(config(mode="vertex", api_key=None, project="btx-project")).configured

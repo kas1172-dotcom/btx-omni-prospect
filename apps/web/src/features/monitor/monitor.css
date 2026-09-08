@@ -12,6 +12,8 @@
 .monitor-status-grid p, .monitor-intro { margin: 0; color: var(--text-secondary); line-height: 1.45; }
 .monitor-status-grid small { color: var(--text-tertiary); line-height: 1.4; }
 .monitor-source-list .line, .monitor-live-list .line { padding: 10px 0; }
+.monitor-status-grid .panel > *, .monitor-source-list .line > span { min-width: 0; overflow-wrap: anywhere; }
+.monitor-collected-record, .monitor-run-funnel { min-width: 0; overflow-wrap: anywhere; }
 
 .monitor-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 12px; }
 .monitor-preview-card { display: grid; gap: 12px; padding: 16px; background: var(--surface-elevated); border-color: var(--border-default); }
@@ -27,6 +29,9 @@
 .monitor-preview-meta strong { color: var(--text-tertiary); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
 
 @media (max-width: 760px) {
+  .monitor-source-list .line { flex-wrap: wrap; }
+  .monitor-source-list .line > span:first-child { flex: 1 1 210px; }
+  .monitor-preview-grid { grid-template-columns: minmax(0, 1fr); }
   .monitor-summary-grid, .monitor-status-grid, .monitor-preview-meta { grid-template-columns: 1fr; }
   .monitor-preview-head { display: grid; }
   .monitor-states { justify-content: flex-start; }

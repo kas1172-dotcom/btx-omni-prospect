@@ -198,7 +198,9 @@ class GeminiProvider:
             {"type": "object", "properties": {"done": {"type": "boolean", "enum": [True]}}, "required": ["done"], "additionalProperties": False},
             *[{"type": "object", "properties": {
                 "tool": {"type": "string", "enum": [tool['name']]},
-                "arguments": {"type": "object", "properties": {key: {"type": "string"} for key in tool['arguments']},
+                "arguments": {"type": "object", "properties": {key: {"type": "string", **(
+                    {"enum": tool['argument_values'][key]} if key in tool.get('argument_values', {}) else {}
+                )} for key in tool['arguments']},
                               "required": tool['arguments'], "additionalProperties": False}},
                "required": ["tool", "arguments"], "additionalProperties": False} for tool in request.tools],
         ]}
@@ -314,6 +316,7 @@ class GeminiProvider:
                 types.GenerateContentConfig(
                     temperature=0,
                     max_output_tokens=1000,
+                    thinking_config=self._read_thinking(),
                     tools=[types.Tool(google_search=types.GoogleSearch())],
                 ),
             )

@@ -44,6 +44,24 @@ from btx_omni.providers.research.deadline import (
 from btx_omni.providers.research.deadline import bounded_public_read
 
 
+def current_event_contexts(monitor):
+    """Read one immutable canonical snapshot; never cache a worker's public writes."""
+    if getattr(monitor, 'repository', None):
+        return monitor.repository.event_contexts()
+    observations = {item.raw_evidence.id: item for item in getattr(monitor, 'observations', {}).values()}
+    return tuple((event, next((observations[item.evidence_id] for item in event.evidence
+                              if item.evidence_id in observations), None))
+                 for event in tuple(monitor.events.values()))
+
+
+def current_source_observations(monitor):
+    """Canonical current observations for existing source-specific projections."""
+    if not getattr(monitor, 'repository', None):
+        return tuple(monitor.observations.values())
+    return tuple({observation.id: observation for _event, observation in current_event_contexts(monitor)
+                  if observation is not None}.values())
+
+
 @dataclass
 class MonitorService:
     settings: Settings

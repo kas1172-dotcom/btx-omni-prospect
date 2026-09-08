@@ -191,7 +191,7 @@ def run_worker(
                     canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
-                    evidence=document_evidence(repository.event_document(brief.id), max_passages=6) or (
+                    evidence=document_evidence(repository.event_document(brief.id, include_research=True), max_passages=6) or (
                         PublicEvidenceRecord(
                             brief.evidence_ids[0] if brief.evidence_ids else brief.id,
                             brief.what_happened,

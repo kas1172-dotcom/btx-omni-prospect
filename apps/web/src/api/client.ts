@@ -9,6 +9,7 @@ import type { WorkbookPage } from '../features/accounts/WorkbookFields'
 import type { CrmProposal, CrmDecision, CrmAttempt, CrmHistory } from '../types/crm'
 import type { AiUsageSummary } from '../features/settings/AiUsage'
 import type { OmniRun } from '../types/omniRun'
+import type { PublicSourceEvidence } from '../types/publicEvidence'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -43,7 +44,7 @@ export const api = {
   intelligence: (signal?: AbortSignal) => request<{ signals: Signal[] }>('/intelligence', { signal }),
   markets: (kind: MarketTransformation, average: boolean, signal?: AbortSignal) => actionRequest<MarketOverview>(`/markets?kind=${kind}&moving_average=${average}`, { signal }),
   marketSeries: (id: string, kind: MarketTransformation, average: boolean, signal?: AbortSignal) => actionRequest<MarketDetail>(`/markets/${encodeURIComponent(id)}?kind=${kind}&moving_average=${average}`, { signal }),
-  intelligenceEvidence: (eventId: string, signal?: AbortSignal) => request<{ event_id: string; title: string; observation_id: string; source_url: string; content_hash: string; availability: string; collection_run_id: string; document: { extraction_status: string; extraction_complete: boolean; completeness_note?: string; checksum_sha256?: string; publication_date?: string; retrieved_at?: string; publisher_host?: string; final_url?: string; retained_after_unsuccessful_refresh?: boolean; latest_refresh_attempt?: { extraction_status: string }; passages: Array<{ id: string; text: string; start_character: number; end_character: number }> } | null }>(`/intelligence/${encodeURIComponent(eventId)}/evidence`, { signal }),
+  intelligenceEvidence: (eventId: string, signal?: AbortSignal) => request<PublicSourceEvidence>(`/intelligence/${encodeURIComponent(eventId)}/evidence`, { signal }),
   federalProcurement: (params = '') => request<FederalProcurement>(`/federal-procurement${params}`),
   map: (industry?: string, signal?: AbortSignal) => request<{ layers: string[]; accounts: MapRecord[]; pending_accounts?: PendingMapAccount[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : ''), { signal }),
   actions: (signal?: AbortSignal) => actionRequest<{ items: Action[]; suggestions: Suggestion[]; principal: Principal; persistence: string; warning: string }>('/actions', { signal }),

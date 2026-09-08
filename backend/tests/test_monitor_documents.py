@@ -99,7 +99,7 @@ def test_document_fetch_preserves_outer_worker_deadline():
         enrich_feed_documents([observation], fetch=expired, cap=1)
 
 
-def test_real_monitor_service_persists_passages_and_restart_replay_is_identical(tmp_path):
+def test_real_monitor_service_persists_passages_and_restart_replay_is_identical(tmp_path, monkeypatch):
     from btx_omni.core.config import Settings
     from btx_omni.monitor.repository import MonitorRepository
     from btx_omni.monitor.service import MonitorService
@@ -156,7 +156,60 @@ def test_real_monitor_service_persists_passages_and_restart_replay_is_identical(
     assert retained['retrieved_at'] == retained_at
     assert retained['retained_after_unsuccessful_refresh'] is True
     assert retained['latest_refresh_attempt']['extraction_status'] == 'DOCUMENT_BUDGET_NOT_ATTEMPTED'
+    # Actual Monitor -> journal/coordinator -> persisted source API. The provider
+    # is explicitly injected; this does not claim a live research execution.
+    from time import monotonic
+
+    from test_hosted_sessions import _production_app, _sign_in
+    from test_monitor_research_coordinator import NOW, Provider
+
+    from btx_omni.monitor.documents import document_evidence
+    from btx_omni.monitor.research import MonitorResearchCoordinator
+    from btx_omni.providers.research.http import PublicResponse
+
+    original = repository.event_document(candidates[0]['event_id'])
+    provider = Provider([{'tool': 'fetch_document', 'arguments': {'source_id': 'primary'}}, {'done': True}])
+    coordinator = MonitorResearchCoordinator(repository, provider, clock=lambda: NOW,
+        fetch=lambda url, **_: PublicResponse(200, b'<main>Additional retrieved scientific context, not a customer award.</main>', {'content-type': 'text/html'}, url, 0))
+    researched = coordinator.investigate(original, source_revision=original['content_hash'], deadline_monotonic=monotonic() + 30)
+    joined = repository.event_document(original['event_id'], include_research=True)
+    assert joined['document'] == original['document']
+    assert joined['research']['run_id'] == researched['run_id']
+    evidence = document_evidence(joined)
+    assert len(evidence) == 2 and 'Additional retrieved' in evidence[1].extract
+    assert researched['run_id'] in evidence[1].provenance
+    assert repository.research.latest_for_source(original['event_id'], 'b' * 64) is None
+    client = _production_app(monkeypatch, database_url=str(engine.url), monitor_mode='live', monitor_durable_state_enabled=True)
+    endpoint = f"/api/intelligence/{original['event_id']}/evidence"
+    assert client.get(endpoint).status_code == 401
+    _sign_in(client, 'hosted-seller-access')
+    response = client.get(endpoint)
+    assert response.status_code == 200
+    assert response.headers['cache-control'] == 'private, no-store'
+    assert response.json()['research']['run_id'] == researched['run_id']
+    assert 'lease_token' not in response.text
     engine.dispose()
+
+
+def test_shared_research_evidence_excludes_stale_revision_and_distributes_bounded_passages():
+    from btx_omni.monitor.documents import document_evidence
+
+    primary = extract_document(b'Original primary passage.' * 150, 'text/plain')
+    followup = extract_document(b'Source follow-up detail.' * 150, 'text/plain')
+    research = {'run_id': 'run-1', 'source_revision': 'a' * 64, 'status': 'PAUSED',
+        'result': {'run_id': 'run-1', 'status': 'TOOL_BUDGET_EXHAUSTED', 'documents': [
+            {'source_id': 'followup', 'url': 'https://example.com/followup', 'title': 'Follow-up', 'document': followup},
+            {'source_id': 'copy', 'url': 'https://example.com/copy', 'title': 'Copy', 'document': followup},
+        ]}}
+    record = {'content_hash': 'a' * 64, 'source_id': 'primary', 'source_url': 'https://example.com/primary',
+              'document': primary, 'research': research}
+    passages = document_evidence(record, max_passages=6)
+    assert len(passages) == 6 and len({p.evidence_id for p in passages}) == 6
+    assert passages[0].source_url.endswith('/primary') and passages[1].source_url.endswith('/followup')
+    assert 'PAUSED' in passages[1].provenance
+    assert document_evidence(record, max_passages=0) == ()
+    stale = document_evidence({**record, 'content_hash': 'b' * 64})
+    assert all(item.source_url.endswith('/primary') for item in stale)
 
 
 @pytest.mark.parametrize('status,changed_feed,retained', [(503, False, True), (429, False, True), (404, False, False), (410, False, False), (503, True, False)])

@@ -102,3 +102,28 @@ def test_provider_unavailable_is_reported_without_starting_a_journal_or_call(rep
     provider = Provider([])
     provider.configured = False
     assert run(repository, provider)['status'] == 'NOT_CONFIGURED'
+
+
+def test_selector_sees_later_retained_evidence_and_only_remaining_values(repository):
+    provider = Provider([{'tool': 'fetch_document', 'arguments': {'source_id': 'primary'}}, {'done': True}])
+    def long_fetch(url, **kwargs):
+        return PublicResponse(200, ('<article>' + 'Dated public manufacturing evidence. ' * 130 +
+            ' Material qualification limitation in the final paragraph.</article>').encode(),
+            {'content-type': 'text/html'}, url, 0)
+    result = MonitorResearchCoordinator(repository, provider, fetch=long_fetch, clock=lambda: NOW).investigate(
+        RECORD, source_revision='b' * 64, deadline_monotonic=monotonic() + 30)
+    assert result['status'] == 'RESEARCH_RECORDED'
+    initial, after_fetch = provider.reads
+    assert initial.tools[0]['argument_values'] == {'source_id': ['primary']}
+    assert [tool['name'] for tool in after_fetch.tools] == ['search_public']
+    assert after_fetch.tools[0]['argument_values'] == {'focus': ['components', 'contacts', 'program']}
+    visible = after_fetch.completed_reads[0]['documents'][0]['document']['passages']
+    assert len(visible) > 2 and 'final paragraph' in visible[-1]['text']
+
+
+def test_repeated_fetch_remains_server_rejected_even_if_provider_ignores_schema(repository):
+    choice = {'tool': 'fetch_document', 'arguments': {'source_id': 'primary'}}
+    result = run(repository, Provider([choice, choice]))
+    assert result['status'] == 'PROVIDER_OR_SELECTION_FAILED'
+    assert result['tools_used'] == 1
+    assert len(result['documents']) == 1

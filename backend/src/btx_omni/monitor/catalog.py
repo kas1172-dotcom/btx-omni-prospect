@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from btx_omni.domain.accounts import AccountFacility
 from btx_omni.domain.programs import Program
@@ -55,7 +55,10 @@ class MonitorCatalog:
             source_url=source_url,
         )
         if identifier_resolution and identifier_resolution.state is ResolutionState.RESOLVED:
-            return (identifier_resolution,)
+            profile = next(item for item in self.profiles if item.canonical_account_id == identifier_resolution.canonical_account_id)
+            # Identifier/publisher ownership is the recorded resolution basis.
+            # The entire article/JSON is evidence, never an entity display name.
+            return (replace(identifier_resolution, mention=profile.legal_name),)
         resolved = [resolve_entity(mention, self.profiles) for mention in dict.fromkeys(mentions)]
         return tuple(resolved) or (
             EntityResolution("unresolved source subject", None, ResolutionState.UNRESOLVED, "no_governed_match", "source text has no exact governed account name"),

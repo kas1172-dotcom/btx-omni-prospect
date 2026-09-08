@@ -110,7 +110,7 @@ def omni(
 
     def selected_public_evidence(event_id: str, account_id: str | None):
         repository = runtime.monitor.repository
-        record = repository.event_document(event_id) if repository else None
+        record = repository.event_document(event_id, include_research=True) if repository else None
         if record is None or (account_id is not None and account_id not in record["canonical_account_ids"]):
             return ()
         return document_evidence(record)

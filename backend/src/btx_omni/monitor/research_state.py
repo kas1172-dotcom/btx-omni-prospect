@@ -192,3 +192,12 @@ class MonitorResearchJournal:
         result['steps'] = [{**dict(item), 'result': json.loads(item['result']) if item['result'] else None} for item in records]
         result['contract_version'] = VERSION
         return result
+
+    def latest_for_source(self, event_reference, source_revision):
+        """Only the exact current source assertion can supply investigation context."""
+        with self.engine.connect() as connection:
+            identifier = connection.execute(select(runs.c.id).where(
+                runs.c.event_reference == event_reference, runs.c.source_revision == source_revision,
+                runs.c.status.in_(('COMPLETED', 'PAUSED')),
+            ).order_by(runs.c.updated_at.desc(), runs.c.id).limit(1)).scalar_one_or_none()
+        return self.get(identifier) if identifier else None

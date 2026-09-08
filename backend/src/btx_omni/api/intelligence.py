@@ -21,7 +21,7 @@ def intelligence_evidence(event_id: str, response: Response, actor: Principal = 
     repository = runtime.monitor.repository
     if repository is None:
         raise HTTPException(503, "Persistent public evidence is not configured.")
-    document = repository.event_document(event_id)
+    document = repository.event_document(event_id, include_research=True)
     if document is None:
         raise HTTPException(404, "No persisted public source for the selected event.")
     return document

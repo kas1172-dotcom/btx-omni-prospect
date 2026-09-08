@@ -94,6 +94,38 @@ def retain_document_after_failed_refresh(observation: SourceObservation, previou
 
 def document_evidence(record: dict | None, *, max_passages: int = 8) -> tuple[PublicEvidenceRecord, ...]:
     """One shared persisted-source projection for Gemini consumers."""
+    if not record:
+        return ()
+    cap = max(0, min(max_passages, 8))
+    pools = [_single_document_evidence(record, max_passages=cap)]
+    research = record.get('research') or {}
+    result = research.get('result') or {}
+    if (research.get('source_revision') == record.get('content_hash')
+            and research.get('status') in {'COMPLETED', 'PAUSED'}
+            and result.get('run_id') == research.get('run_id')):
+        for source in result.get('documents', [])[:4]:
+            pools.append(_single_document_evidence({
+                'source_id': source['source_id'], 'source_url': source['url'], 'title': source['title'],
+                'research_lineage': {'run_id': research['run_id'], 'source_revision': research['source_revision'],
+                    'observation_id': record.get('observation_id'), 'status': research['status'],
+                    'research_outcome': result.get('status')},
+                'document': {**source['document'], 'retrieved_at': source.get('retrieved_at'),
+                    'publication_date': source.get('publication_date'), 'final_url': source['url']},
+            }, max_passages=cap))
+    # Give each actually retrieved document a chance within the same caller
+    # budget. Identical copied text does not become independent corroboration.
+    selected, seen = [], set()
+    for index in range(cap):
+        for pool in pools:
+            if index < len(pool) and pool[index].evidence_id not in seen:
+                selected.append(pool[index])
+                seen.add(pool[index].evidence_id)
+                if len(selected) == cap:
+                    return tuple(selected)
+    return tuple(selected)
+
+
+def _single_document_evidence(record: dict | None, *, max_passages: int) -> tuple[PublicEvidenceRecord, ...]:
     if not record or not record.get("document"):
         return ()
     document = record["document"]
@@ -107,6 +139,7 @@ def document_evidence(record: dict | None, *, max_passages: int = 8) -> tuple[Pu
                     "extraction_complete": document["extraction_complete"], "extraction_status": document["extraction_status"],
                     "retained_after_unsuccessful_refresh": document.get('retained_after_unsuccessful_refresh', False),
                     "latest_refresh_attempt": document.get('latest_refresh_attempt'),
+                    "research_lineage": record.get('research_lineage'),
                     "selected_passages": min(max_passages, len(document.get("passages", []))),
                     "available_passages": len(document.get("passages", []))}, sort_keys=True),
     ) for passage in document.get("passages", [])[:max(0, min(max_passages, 8))])

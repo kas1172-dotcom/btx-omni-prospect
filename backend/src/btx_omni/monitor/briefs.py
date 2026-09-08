@@ -328,17 +328,10 @@ def signal_briefs_for_monitor(
     monitor: MonitorService, *, now: datetime | None = None
 ) -> tuple[SignalBrief, ...]:
     """Project governed briefs without invoking any language provider."""
+    from btx_omni.monitor.service import current_event_contexts
+
     projected: list[SignalBrief] = []
-    for event in monitor.events.values():
-        evidence_ids = {item.evidence_id for item in event.evidence}
-        observation = next(
-            (
-                item
-                for item in monitor.observations.values()
-                if item.raw_evidence.id in evidence_ids
-            ),
-            None,
-        )
+    for event, observation in current_event_contexts(monitor):
         source_id = event.provenance.source_system
         subject_ids = {
             item.canonical_account_id

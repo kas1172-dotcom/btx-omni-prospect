@@ -23,9 +23,12 @@ from btx_omni.monitor.contracts import (
     OrganizationCandidate,
     ProgramCandidate,
     ProgramResolution,
+    RawEvidenceReference,
     RejectedObservation,
     SourceHealth,
+    SourceIdentity,
     SourceObservation,
+    SourceVersion,
 )
 from btx_omni.monitor.ontology import (
     CandidateReviewState,
@@ -33,6 +36,7 @@ from btx_omni.monitor.ontology import (
     ResolutionState,
     SellerRelevanceState,
 )
+from btx_omni.monitor.research_state import MonitorResearchJournal
 from btx_omni.persistence.models import (
     governed_explanations,
     monitor_brief_syntheses,
@@ -243,7 +247,6 @@ def _program_candidate_from_row(
 class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
-        from btx_omni.monitor.research_state import MonitorResearchJournal
         self.research = MonitorResearchJournal(engine)
 
     @contextmanager
@@ -517,9 +520,21 @@ class MonitorRepository:
 
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
+        return tuple(event for event, _observation in self.event_contexts())
+
+    def event_contexts(self) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
+        """One committed current-source snapshot for every public read consumer.
+
+        Reconstitute only stored source fields, without rerunning identity or
+        claiming missing original native identifiers/headers were retained.
+        """
         with self.engine.connect() as connection:
             rows = connection.execute(
-                select(monitor_events.c.event_payload, monitor_observations.c.published_at).outerjoin(
+                select(monitor_events.c.event_payload, monitor_observations,
+                    monitor_source_versions.c.first_seen_at.label('version_first_seen'),
+                    monitor_source_versions.c.last_seen_at.label('version_last_seen'),
+                    monitor_source_versions.c.changed_at.label('version_changed_at'),
+                ).select_from(monitor_events).outerjoin(
                     monitor_observations, monitor_events.c.source_observation_id == monitor_observations.c.id
                 ).outerjoin(
                     monitor_source_versions,
@@ -529,13 +544,25 @@ class MonitorRepository:
                     monitor_events.c.updated_at.desc()
                 )
             ).mappings()
-            events = []
+            contexts = []
             for row in rows:
                 event = _event_from_payload(row["event_payload"])
                 if event.source_published_at is None and row["published_at"] is not None:
                     event = replace(event, source_published_at=_database_timestamp(row["published_at"]))
-                events.append(event)
-            return tuple(events)
+                primary = tuple(item.evidence_id for item in event.evidence if item.role == 'PRIMARY')
+                observation = None
+                if row['id'] is not None and len(primary) == 1 and row['version_first_seen'] is not None:
+                    identity = SourceIdentity(row['source_id'], row['source_record_id'])
+                    version = SourceVersion(row['source_record_id'], row['source_version'], row['content_hash'],
+                        _database_timestamp(row['version_first_seen']), _database_timestamp(row['version_last_seen']),
+                        _database_timestamp(row['version_changed_at']) if row['version_changed_at'] else None)
+                    retrieved = _database_timestamp(row['retrieved_at'])
+                    observation = SourceObservation(row['id'], identity, version, retrieved, row['title'] or '',
+                        RawEvidenceReference(primary[0], identity, version, row['canonical_url'], retrieved),
+                        _database_timestamp(row['published_at']) if row['published_at'] else None,
+                        row['payload_reference'], row['source_tier'], row['collection_run_id'], row['structured_payload'])
+                contexts.append((event, observation))
+            return tuple(contexts)
 
     def source_observation_payload(self, source_id: str, source_record_id: str) -> str | None:
         """Current exact source assertion, for conservative failed-refresh retention."""
@@ -545,7 +572,7 @@ class MonitorRepository:
             ).where(monitor_source_versions.c.source_id == source_id,
                     monitor_source_versions.c.source_record_id == source_record_id)).scalar_one_or_none()
 
-    def event_document(self, event_id: str) -> dict | None:
+    def event_document(self, event_id: str, *, include_research: bool = False) -> dict | None:
         """One exact event's persisted source; never a global evidence search."""
         with self.engine.connect() as connection:
             row = connection.execute(
@@ -555,7 +582,16 @@ class MonitorRepository:
             ).mappings().one_or_none()
         if row is None:
             return None
-        return self._document_projection(row, event_id)
+        document = self._document_projection(row, event_id)
+        if include_research:
+            state = self.research.latest_for_source(event_id, document['content_hash'])
+            document['research'] = None if state is None else {
+                'run_id': state['id'], 'source_revision': state['source_revision'], 'status': state['status'],
+                'updated_at': state['updated_at'], 'attempt_count': state['attempt_count'],
+                'result': state['result'], 'steps': [{key: step[key] for key in
+                    ('number', 'tool', 'status', 'started_at', 'completed_at')} for step in state['steps']],
+            }
+        return document
 
     def collection_documents(self, run_ids: tuple[str, ...], *, limit: int) -> tuple[dict, ...]:
         """Bounded current-cycle public research input, without scanning history."""
