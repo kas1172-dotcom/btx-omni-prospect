@@ -11,10 +11,13 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
     sample = runtime.environment()
     names = {item.legal_name: item.id for item in sample.accounts}
     accounts = {item.id: item for item in sample.accounts}
+    # Public-source membership is independent of replaced commercial scenarios.
+    # An enriched ledger must not hide pre-existing public evidence for its account.
+    curated_membership = {(item.id, item.account_id) for item in sample.public_signals}
     stored = [
         normalize_signal(item, account_name_to_id=names, provenance=accounts[names[item.account_name]].provenance)
         for item in sample.intelligence_events
-        if item.account_name in names and names[item.account_name] in sample.rich_scenarios
+        if item.account_name in names and (item.source_id, names[item.account_name]) in curated_membership
     ]
     live: list[dict] = []
     for event in runtime.monitor.events.values():

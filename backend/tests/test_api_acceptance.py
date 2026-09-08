@@ -180,7 +180,18 @@ async def test_map_projects_existing_sample_commercial_segments_without_public_i
 
 
 @pytest.mark.asyncio
-async def test_actions_are_idempotent_confirmed_and_audited() -> None:
+async def test_actions_are_idempotent_confirmed_and_audited(tmp_path, monkeypatch) -> None:
+    from sqlalchemy import create_engine
+
+    import btx_omni.app as app_module
+    from btx_omni.core.config import Settings
+    from btx_omni.persistence.models import metadata
+
+    # Repeated qualification must not inherit the previous run's transitioned
+    # Action or mutate the operator's preview database using fixed request keys.
+    settings = Settings(_env_file=None, database_url=f'sqlite:///{tmp_path / "work-api.db"}')
+    metadata.create_all(create_engine(settings.database_url))
+    monkeypatch.setattr(app_module, 'get_settings', lambda: settings)
     async with AsyncClient(
         transport=ASGITransport(app=create_app()), base_url="http://test"
     ) as client:

@@ -1,0 +1,25 @@
+.market-intelligence { min-width: 0; }
+.market-intelligence p, .market-intelligence dd { overflow-wrap: anywhere; }
+.market-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-top: 20px; }
+.market-controls label { display: grid; gap: 6px; max-width: 100%; }
+.market-controls select { min-height: 44px; max-width: 100%; border: 1px solid #bbb; border-radius: 8px; padding: 8px; background: white; color: #171717; }
+.market-controls input { width: 24px; height: 24px; }
+.market-scorecard { display: grid; gap: 8px; padding: 20px; background: #f3f3f3; border-radius: 12px; }
+.market-scorecard strong { font-size: 2rem; }
+.market-trend { margin: 24px 0; }
+.market-trend svg { width: 100%; max-height: 280px; }
+.market-trend line { stroke: #222; stroke-width: 2; }
+.market-trend circle { fill: #111; }
+.market-trend text { fill: #444; font-size: 12px; }
+.market-table-scroll { width: 100%; overflow-x: auto; margin: 16px 0; border: 1px solid #ccc; border-radius: 8px; }
+.market-table-scroll table { border-collapse: collapse; min-width: max-content; font-variant-numeric: tabular-nums; }
+.market-table-scroll caption { text-align: left; padding: 12px; }
+.market-table-scroll th, .market-table-scroll td { padding: 10px; border: 1px solid #ddd; text-align: right; white-space: nowrap; }
+.market-table-scroll th:first-child { position: sticky; left: 0; background: white; text-align: left; z-index: 1; }
+.market-table-scroll th button { min-height: 44px; border: 0; background: none; color: #222; cursor: pointer; text-align: left; }
+.market-table-scroll th:first-child button { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+.market-table-scroll th button[aria-pressed=true] { font-weight: 800; text-decoration: underline; }
+.market-table-scroll td.high { background: #343434; color: white; }
+.market-table-scroll td.low { background: #e7e7e7; color: #151515; }
+.market-intelligence li { margin-block: 8px; }
+@media (max-width: 600px) { .market-controls { display: grid; grid-template-columns: minmax(0, 1fr); } .market-intelligence { padding-inline: 14px; } .market-table-scroll th:first-child { max-width: 115px; white-space: normal; } }

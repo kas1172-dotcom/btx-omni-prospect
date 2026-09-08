@@ -1,6 +1,8 @@
 import type { MonitorHealth, MonitorPreviewSignal } from "../../types/api";
 import { SignalBriefCard } from "../../components/SignalBriefCard";
 import { Empty, Panel, State } from "../../components/UI";
+import { CanonicalRecord } from "../../components/CanonicalRecord";
+import { EvidencePassages } from "../../components/EvidencePassages";
 import "./monitor.css";
 
 const validation = (state: string) =>
@@ -84,7 +86,7 @@ export function Monitor({
   onIntelligence: () => void;
 }) {
   const collected =
-    health?.events?.filter((event) => event.data_mode === "LIVE_PUBLIC") ?? [];
+    health?.events?.filter((event) => event.data_mode === "LIVE_PUBLIC" && event.is_current_source_version !== false) ?? [];
   const live =
     health?.signal_briefs?.filter(
       (brief) =>
@@ -145,6 +147,7 @@ export function Monitor({
                 Only a successful recent collection may be labeled live public
                 evidence. This UI cannot start, schedule, or alter collection.
               </small>
+              {health.last_runs.map((run, index) => <details key={run.id ?? `${run.source_id}:${run.completed_at}:${index}`} className="monitor-run-funnel"><summary>{run.source_id} · {run.completed_at ? utcDate(run.completed_at) : 'Run unfinished'} · collection diagnostics</summary><p>Run {run.id ?? 'identifier unavailable'}. Collection eligibility does not prove publication or execution.</p>{run.funnel ? <CanonicalRecord value={run.funnel} /> : <p>No stage-level diagnostics were recorded for this historical run.</p>}</details>)}
             </Panel>
             <Panel
               title="Source freshness"
@@ -213,6 +216,7 @@ export function Monitor({
               </Empty>
             )}
           </Panel>
+          {collected.length > 0 && <Panel title="Collected operational evidence"><p>These source records may be unresolved or rejected. Inspecting them does not make them seller recommendations.</p>{collected.map(event => <details key={event.id} className="monitor-collected-record"><summary>{event.source_id} · {event.id} · {event.resolution_state.replaceAll('_', ' ')}</summary><p>Relevance: {event.seller_relevance_state?.replaceAll('_', ' ') ?? 'not evaluated'}</p><EvidencePassages eventId={event.id} /></details>)}</Panel>}
           <Panel
             title="Curated POC signal preview"
             action={

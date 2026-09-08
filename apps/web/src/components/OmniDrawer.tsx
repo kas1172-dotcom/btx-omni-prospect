@@ -2,7 +2,9 @@ import { type KeyboardEvent, type RefObject, useEffect, useRef, useState } from 
 import { api } from '../api/client'
 import { Button, Disclosure, Drawer, EvidenceSource, IconButton } from './UI'
 import type { OmniContext, OmniConversationReferent, OmniResponse } from '../types/api'
+import { OmniRunReceipt } from './OmniRunReceipt'
 import './omni-drawer.css'
+import { CanonicalRecord } from './CanonicalRecord'
 
 type Message = { role: 'user' | 'assistant'; text: string; response?: OmniResponse }
 type SessionAccount = { id: string; name: string }
@@ -43,7 +45,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     const history = messages.slice(-6).map(message => `${message.role}: ${message.text}`).join('\n').slice(-1600)
     setMessages(old => [...old, { role: 'user', text }]); setQuestion(''); setLoading(true); setError('')
     try {
-      const response = await api.omni(activeAccount?.id, text, { ...context, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
+      const response = await api.omni(activeAccount?.id, text, { ...context, relationship_selection: activeAccount ? context.relationship_selection : undefined, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
       if (response.account_id && response.account_name) setSessionAccount({ id: response.account_id, name: response.account_name })
       setConversationReferent(response.conversation_referent ?? undefined)
       setMessages(old => [...old, { role: 'assistant', text: response.content, response }])
@@ -90,9 +92,13 @@ const fallbackLabels: Record<Exclude<OmniResponse['provider_status'], 'AVAILABLE
   UNAVAILABLE: 'Gemini temporarily unavailable · governed fallback',
 }
 
-function ResponseDetails({ response }: { response: OmniResponse }) { return <div className="omni-response-summary"><Disclosure title={`${response.citation_links?.length ?? 0} sources · Inspect evidence`}><EvidencePanel response={response} /></Disclosure>{response.provider_status !== 'AVAILABLE' && <small>{fallbackLabels[response.provider_status]}</small>}</div> }
+function ResponseDetails({ response }: { response: OmniResponse }) { return <div className="omni-response-summary">{response.run_id && <Disclosure title="Private answer run · inspect outcome"><OmniRunReceipt key={response.run_id} id={response.run_id} /></Disclosure>}{response.structured_relationship && <Disclosure title="Canonical selected route · factors and constraints"><ol>{response.structured_relationship.route.steps.map(step => <li key={step.id}>{step.label}</li>)}</ol><p>{response.structured_relationship.route.hop_count} actual edges · utility {response.structured_relationship.route.utility}, not a probability · {response.structured_relationship.rubric_version}</p>{response.structured_relationship.route.constraints.map(c => <p key={c.id}>{c.reason}</p>)}<p>{response.structured_relationship.route.next_action}</p><small>Graph revision {response.structured_relationship.graph_revision}</small></Disclosure>}
+    {response.structured_reads && <Disclosure title={`${response.structured_reads.steps.length} canonical reads · inspect linked records`}><p>{response.structured_reads.model_requested_stop ? 'The model finished selecting reads; this is not proof that every evidence gap is closed.' : `The bounded read sequence stopped: ${response.structured_reads.stop_reason.toLowerCase().replaceAll('_', ' ')}. Completed records remain available.`}</p>
+      {response.structured_reads.reads.map((read, index) => <Disclosure key={`${index}:${read.tool}`} title={read.tool.replaceAll('_', ' ')}><div className="commercial-evidence-detail"><CanonicalRecord value={read.result} /></div></Disclosure>)}
+      <small>{response.structured_reads.configuration_version} · {response.structured_reads.elapsed_ms} ms · canonical revision {response.structured_reads.revision}</small></Disclosure>}
+    <Disclosure title={`${response.citation_links?.length ?? 0} public sources · Inspect evidence`}><EvidencePanel response={response} /></Disclosure>{response.provider_status !== 'AVAILABLE' && <small>{response.context_used?.synthesis_validation ? 'Showing canonical records because the model wording did not pass evidence checks.' : fallbackLabels[response.provider_status]}</small>}</div> }
 
 function EvidencePanel({ response }: { response?: OmniResponse }) {
   if (!response) return <p className="muted">Sources appear here when a response uses evidence.</p>
-  return <div className="omni-evidence-list">{response.citation_links?.map(citation => <EvidenceSource key={`${citation.url}:${citation.label}`} title={citation.label} source="Public evidence" evidenceState="VERIFIED" url={citation.url} />)}{!response.citation_links?.length && <p className="muted">No external source link was supplied for this response.</p>}{response.missingness.length > 0 && <section><strong>Unavailable or needs research</strong><p>{response.missingness.join(' ')}</p></section>}</div>
+  return <div className="omni-evidence-list">{response.citation_links?.map(citation => <EvidenceSource key={`${citation.url}:${citation.label}`} title={citation.label} source="Cited public source" evidenceState="CITED" url={citation.url} />)}{!response.citation_links?.length && <p className="muted">No external source link was supplied for this response.</p>}{response.missingness.length > 0 && <section><strong>Unavailable or needs research</strong><p>{response.missingness.join(' ')}</p></section>}</div>
 }

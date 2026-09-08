@@ -134,10 +134,13 @@ class IntelligenceEvent:
     markets: tuple[str, ...] = ()
     recency_state: str = "UNKNOWN"
     canonical_facility_id: str | None = None
+    source_published_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if self.event_date is not None:
             require_aware(self.event_date, "event_date")
+        if self.source_published_at is not None:
+            require_aware(self.source_published_at, "source_published_at")
         if not self.evidence:
             raise ValueError("intelligence events require evidence lineage")
 
@@ -182,6 +185,7 @@ class CollectionRun:
     events_matched: int = 0
     failures: tuple[str, ...] = ()
     latency_ms: int | None = None
+    funnel: dict | None = None
 
 
 @dataclass(frozen=True)

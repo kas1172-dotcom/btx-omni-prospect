@@ -1,0 +1,1537 @@
+{
+  "schema_version": "1.0",
+  "source_package": "BTX_Omni_Master_Implementation_v3.3",
+  "edges": [
+    {
+      "edge_id": "EDGE-SUP2-HONEYWELL-1",
+      "from_id": "BU-ERA",
+      "to_id": "ACC-HONEYWELL",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-HONEYWELL-01",
+      "program_id": "P2-HONEYWELL-01",
+      "evidence_ids": [
+        "SUP2-HONEYWELL-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-HONEYWELL-2",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-HONEYWELL",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-HONEYWELL-02",
+      "program_id": "P2-HONEYWELL-01",
+      "evidence_ids": [
+        "SUP2-HONEYWELL-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-HONEYWELL-3",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-HONEYWELL",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-HONEYWELL-03",
+      "program_id": "P2-HONEYWELL-01",
+      "evidence_ids": [
+        "SUP2-HONEYWELL-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-HONEYWELL-01",
+      "from_id": "REAL-HONEYWELL-01",
+      "to_id": "ACC-HONEYWELL",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "H03"
+      ],
+      "role_scope": "Aerospace leadership; operational buyer unresolved",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-HONEYWELL-02",
+      "from_id": "REAL-HONEYWELL-02",
+      "to_id": "ACC-HONEYWELL",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "H02"
+      ],
+      "role_scope": "Product-division leadership",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-HONEYWELL-01",
+      "from_id": "BTX-FAC-BU-ERA",
+      "to_id": "C2-HONEYWELL-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "H01",
+        "B01",
+        "B02",
+        "B10"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-HONEYWELL-02",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-HONEYWELL-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "H01",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-HONEYWELL-03",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-HONEYWELL-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "H01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-BOEING-1",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-BOEING",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-BOEING-01",
+      "program_id": "P2-BOEING-01",
+      "evidence_ids": [
+        "SUP2-BOEING-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-BOEING-2",
+      "from_id": "BU-HTS",
+      "to_id": "ACC-BOEING",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-BOEING-02",
+      "program_id": "P2-BOEING-01",
+      "evidence_ids": [
+        "SUP2-BOEING-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-BOEING-3",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-BOEING",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-BOEING-03",
+      "program_id": "P2-BOEING-01",
+      "evidence_ids": [
+        "SUP2-BOEING-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-BOEING-01",
+      "from_id": "REAL-BOEING-01",
+      "to_id": "ACC-BOEING",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "BO03"
+      ],
+      "role_scope": "KC-46 only; not assigned to 737",
+      "valid_at": "2026-04-07",
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-BOEING-02",
+      "from_id": "REAL-BOEING-02",
+      "to_id": "ACC-BOEING",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "BO03"
+      ],
+      "role_scope": "KC-46 only",
+      "valid_at": "2026-04-07",
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-BOEING-01",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-BOEING-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "BO02",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-BOEING-02",
+      "from_id": "BTX-FAC-BU-HTS",
+      "to_id": "C2-BOEING-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "BO02",
+        "B01"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-BOEING-03",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-BOEING-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "BO02",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-KLA-1",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-KLA",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-KLA-01",
+      "program_id": "P2-KLA-01",
+      "evidence_ids": [
+        "SUP2-KLA-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-KLA-2",
+      "from_id": "BU-A1J",
+      "to_id": "ACC-KLA",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-KLA-02",
+      "program_id": "P2-KLA-01",
+      "evidence_ids": [
+        "SUP2-KLA-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-KLA-3",
+      "from_id": "BU-A1J",
+      "to_id": "ACC-KLA",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-KLA-03",
+      "program_id": "P2-KLA-01",
+      "evidence_ids": [
+        "SUP2-KLA-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-KLA-01",
+      "from_id": "REAL-KLA-01",
+      "to_id": "ACC-KLA",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "K03"
+      ],
+      "role_scope": "Executive supply-chain oversight, not commodity buyer",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-KLA-01",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-KLA-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "K01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-KLA-02",
+      "from_id": "BTX-FAC-BU-A1J",
+      "to_id": "C2-KLA-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "K01",
+        "B02",
+        "B06"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-KLA-03",
+      "from_id": "BTX-FAC-BU-A1J",
+      "to_id": "C2-KLA-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "K01",
+        "B02",
+        "B06"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-SPACEX-1",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-SPACEX",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-SPACEX-01",
+      "program_id": "P2-SPACEX-01",
+      "evidence_ids": [
+        "SUP2-SPACEX-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-SPACEX-2",
+      "from_id": "BU-HTS",
+      "to_id": "ACC-SPACEX",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-SPACEX-02",
+      "program_id": "P2-SPACEX-01",
+      "evidence_ids": [
+        "SUP2-SPACEX-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-SPACEX-3",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-SPACEX",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-SPACEX-03",
+      "program_id": "P2-SPACEX-01",
+      "evidence_ids": [
+        "SUP2-SPACEX-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-SPACEX-01",
+      "from_id": "REAL-SPACEX-01",
+      "to_id": "ACC-SPACEX",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "S02"
+      ],
+      "role_scope": "Historical supplier-entry contact",
+      "valid_at": "2024-06",
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-SPACEX-01",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-SPACEX-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "S01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-SPACEX-02",
+      "from_id": "BTX-FAC-BU-HTS",
+      "to_id": "C2-SPACEX-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "S01",
+        "B01"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-SPACEX-03",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-SPACEX-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "S01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-INTUITIVE-1",
+      "from_id": "BU-A1J",
+      "to_id": "ACC-INTUITIVE",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-INTUITIVE-01",
+      "program_id": "P2-INTUITIVE-01",
+      "evidence_ids": [
+        "SUP2-INTUITIVE-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-INTUITIVE-2",
+      "from_id": "BU-MAITLAND",
+      "to_id": "ACC-INTUITIVE",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-INTUITIVE-02",
+      "program_id": "P2-INTUITIVE-01",
+      "evidence_ids": [
+        "SUP2-INTUITIVE-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-INTUITIVE-3",
+      "from_id": "BU-A1J",
+      "to_id": "ACC-INTUITIVE",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-INTUITIVE-03",
+      "program_id": "P2-INTUITIVE-01",
+      "evidence_ids": [
+        "SUP2-INTUITIVE-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-INTUITIVE-01",
+      "from_id": "REAL-INTUITIVE-01",
+      "to_id": "ACC-INTUITIVE",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "I02"
+      ],
+      "role_scope": "Manufacturing and supply-chain leadership",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-INTUITIVE-02",
+      "from_id": "REAL-INTUITIVE-02",
+      "to_id": "ACC-INTUITIVE",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "I02"
+      ],
+      "role_scope": "Platform and product operations",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-INTUITIVE-03",
+      "from_id": "REAL-INTUITIVE-03",
+      "to_id": "ACC-INTUITIVE",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "I02"
+      ],
+      "role_scope": "Quality leadership, not assigned buyer",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-INTUITIVE-01",
+      "from_id": "BTX-FAC-BU-A1J",
+      "to_id": "C2-INTUITIVE-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "I01",
+        "B02",
+        "B06"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-INTUITIVE-02",
+      "from_id": "BTX-FAC-BU-MAITLAND",
+      "to_id": "C2-INTUITIVE-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "I01",
+        "B03"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-INTUITIVE-03",
+      "from_id": "BTX-FAC-BU-A1J",
+      "to_id": "C2-INTUITIVE-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "I01",
+        "B02",
+        "B06"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-LOCKHEED-1",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-LOCKHEED",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-LOCKHEED-01",
+      "program_id": "P2-LOCKHEED-01",
+      "evidence_ids": [
+        "SUP2-LOCKHEED-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-LOCKHEED-2",
+      "from_id": "BU-ERA",
+      "to_id": "ACC-LOCKHEED",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-LOCKHEED-02",
+      "program_id": "P2-LOCKHEED-01",
+      "evidence_ids": [
+        "SUP2-LOCKHEED-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-LOCKHEED-3",
+      "from_id": "BU-HTS",
+      "to_id": "ACC-LOCKHEED",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-LOCKHEED-03",
+      "program_id": "P2-LOCKHEED-01",
+      "evidence_ids": [
+        "SUP2-LOCKHEED-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-LOCKHEED-01",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-LOCKHEED-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "L01",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-LOCKHEED-02",
+      "from_id": "BTX-FAC-BU-ERA",
+      "to_id": "C2-LOCKHEED-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "L01",
+        "B01",
+        "B02",
+        "B10"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-LOCKHEED-03",
+      "from_id": "BTX-FAC-BU-HTS",
+      "to_id": "C2-LOCKHEED-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "L01",
+        "B01"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-WOODWARD-1",
+      "from_id": "BU-APM",
+      "to_id": "ACC-WOODWARD",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-WOODWARD-01",
+      "program_id": "P2-WOODWARD-01",
+      "evidence_ids": [
+        "SUP2-WOODWARD-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-WOODWARD-2",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-WOODWARD",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-WOODWARD-02",
+      "program_id": "P2-WOODWARD-01",
+      "evidence_ids": [
+        "SUP2-WOODWARD-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-WOODWARD-3",
+      "from_id": "BU-APM",
+      "to_id": "ACC-WOODWARD",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-WOODWARD-03",
+      "program_id": "P2-WOODWARD-01",
+      "evidence_ids": [
+        "SUP2-WOODWARD-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-WOODWARD-01",
+      "from_id": "REAL-WOODWARD-01",
+      "to_id": "ACC-WOODWARD",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "W03"
+      ],
+      "role_scope": "Technical leadership; title corrected from former presidency",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-WOODWARD-02",
+      "from_id": "REAL-WOODWARD-02",
+      "to_id": "ACC-WOODWARD",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "W04"
+      ],
+      "role_scope": "Fuel Systems operations in 2025",
+      "valid_at": "2025-09-24",
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-WOODWARD-03",
+      "from_id": "REAL-WOODWARD-03",
+      "to_id": "ACC-WOODWARD",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "W04"
+      ],
+      "role_scope": "Investor-tour context; exact current remit unresolved",
+      "valid_at": "2025-09-24",
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-WOODWARD-01",
+      "from_id": "BTX-FAC-BU-APM",
+      "to_id": "C2-WOODWARD-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "W02",
+        "B02",
+        "B11"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-WOODWARD-02",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-WOODWARD-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "W02",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-WOODWARD-03",
+      "from_id": "BTX-FAC-BU-APM",
+      "to_id": "C2-WOODWARD-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "W02",
+        "B02",
+        "B11"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-NORTHROP-1",
+      "from_id": "BU-ERA",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-NORTHROP-01",
+      "program_id": "P2-NORTHROP-01",
+      "evidence_ids": [
+        "SUP2-NORTHROP-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-NORTHROP-2",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-NORTHROP-02",
+      "program_id": "P2-NORTHROP-01",
+      "evidence_ids": [
+        "SUP2-NORTHROP-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-NORTHROP-3",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-NORTHROP-03",
+      "program_id": "P2-NORTHROP-01",
+      "evidence_ids": [
+        "SUP2-NORTHROP-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-NORTHROP-01",
+      "from_id": "REAL-NORTHROP-01",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "N03"
+      ],
+      "role_scope": "Mission Systems",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-NORTHROP-02",
+      "from_id": "REAL-NORTHROP-02",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "N03"
+      ],
+      "role_scope": "Procurement routing",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-NORTHROP-03",
+      "from_id": "REAL-NORTHROP-03",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "N03"
+      ],
+      "role_scope": "Supplier quality routing",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-NORTHROP-04",
+      "from_id": "REAL-NORTHROP-04",
+      "to_id": "ACC-NORTHROP",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "N04"
+      ],
+      "role_scope": "Supplier-entry route; eligibility not established",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-NORTHROP-01",
+      "from_id": "BTX-FAC-BU-ERA",
+      "to_id": "C2-NORTHROP-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "N02",
+        "B01",
+        "B02",
+        "B10"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-NORTHROP-02",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-NORTHROP-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "N02",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-NORTHROP-03",
+      "from_id": "BTX-FAC-CHANDLER-WYOMING",
+      "to_id": "C2-NORTHROP-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "N02",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-HUXWRX-1",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-HUXWRX",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-HUXWRX-01",
+      "program_id": "P2-HUXWRX-01",
+      "evidence_ids": [
+        "SUP2-HUXWRX-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-HUXWRX-2",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-HUXWRX",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-HUXWRX-02",
+      "program_id": "P2-HUXWRX-01",
+      "evidence_ids": [
+        "SUP2-HUXWRX-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-HUXWRX-3",
+      "from_id": "BU-CHANDLER",
+      "to_id": "ACC-HUXWRX",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-HUXWRX-03",
+      "program_id": "P2-HUXWRX-01",
+      "evidence_ids": [
+        "SUP2-HUXWRX-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-HUXWRX-01",
+      "from_id": "REAL-HUXWRX-01",
+      "to_id": "ACC-HUXWRX",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "HU02"
+      ],
+      "role_scope": "Executive only",
+      "valid_at": "2025-11-11",
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-REAL-HUXWRX-02",
+      "from_id": "REAL-HUXWRX-02",
+      "to_id": "ACC-HUXWRX",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "HU03"
+      ],
+      "role_scope": "Sales role; not procurement",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-HUXWRX-01",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-HUXWRX-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "HU01",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-HUXWRX-02",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-HUXWRX-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "HU01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-HUXWRX-03",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "C2-HUXWRX-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "HU01",
+        "B02",
+        "B07",
+        "B08"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-EATON-1",
+      "from_id": "BU-APM",
+      "to_id": "ACC-EATON",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-EATON-01",
+      "program_id": "P2-EATON-01",
+      "evidence_ids": [
+        "SUP2-EATON-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-EATON-2",
+      "from_id": "BU-ERA",
+      "to_id": "ACC-EATON",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-EATON-02",
+      "program_id": "P2-EATON-01",
+      "evidence_ids": [
+        "SUP2-EATON-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-EATON-3",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-EATON",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-EATON-03",
+      "program_id": "P2-EATON-01",
+      "evidence_ids": [
+        "SUP2-EATON-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-EATON-01",
+      "from_id": "REAL-EATON-01",
+      "to_id": "ACC-EATON",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "E04"
+      ],
+      "role_scope": "Division executive; buyer unresolved",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-EATON-01",
+      "from_id": "BTX-FAC-BU-APM",
+      "to_id": "C2-EATON-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "E02",
+        "B02",
+        "B11"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-EATON-02",
+      "from_id": "BTX-FAC-BU-ERA",
+      "to_id": "C2-EATON-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "E02",
+        "B01",
+        "B02",
+        "B10"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-EATON-03",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-EATON-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "E02",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-SUP2-EMERSON-1",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-EMERSON",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-EMERSON-01",
+      "program_id": "P2-EMERSON-01",
+      "evidence_ids": [
+        "SUP2-EMERSON-1"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-EMERSON-2",
+      "from_id": "BU-A1J",
+      "to_id": "ACC-EMERSON",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-EMERSON-02",
+      "program_id": "P2-EMERSON-01",
+      "evidence_ids": [
+        "SUP2-EMERSON-2"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-SUP2-EMERSON-3",
+      "from_id": "BU-GENELMEC",
+      "to_id": "ACC-EMERSON",
+      "predicate": "SCENARIO_SUPPLIER_FOR_COMPONENT",
+      "component_id": "C2-EMERSON-03",
+      "program_id": "P2-EMERSON-01",
+      "evidence_ids": [
+        "SUP2-EMERSON-3"
+      ],
+      "truth_class": "POC_ASSUMPTION",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-REAL-EMERSON-01",
+      "from_id": "REAL-EMERSON-01",
+      "to_id": "ACC-EMERSON",
+      "predicate": "PUBLISHED_ROLE_AT",
+      "evidence_ids": [
+        "EM03"
+      ],
+      "role_scope": "Executive operations; instrumentation buyer unresolved",
+      "valid_at": null,
+      "observed_on": "2026-09-07",
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "warmth_evidence": false
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-EMERSON-01",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-EMERSON-01",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "EM01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-EMERSON-02",
+      "from_id": "BTX-FAC-BU-A1J",
+      "to_id": "C2-EMERSON-02",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "EM01",
+        "B02",
+        "B06"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-FIT-C2-EMERSON-03",
+      "from_id": "BTX-FAC-BU-GENELMEC",
+      "to_id": "C2-EMERSON-03",
+      "predicate": "PLAUSIBLE_CAPABILITY_FIT",
+      "evidence_ids": [
+        "EM01",
+        "B02",
+        "B04",
+        "B05"
+      ],
+      "truth_class": "ANALYST_INFERENCE",
+      "weight": null,
+      "qualification_gate": "No capacity or program approval inferred"
+    },
+    {
+      "edge_id": "EDGE-PUB-QUAL-ACC-HONEYWELL",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "ACC-HONEYWELL",
+      "predicate": "ADVERTISES_CUSTOMER_SPECIFIC_WELDING_QUALIFICATION",
+      "evidence_ids": [
+        "B08"
+      ],
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-PUB-QUAL-ACC-LOCKHEED",
+      "from_id": "BTX-FAC-CHANDLER-BLAINE",
+      "to_id": "ACC-LOCKHEED",
+      "predicate": "ADVERTISES_CUSTOMER_SPECIFIC_WELDING_QUALIFICATION",
+      "evidence_ids": [
+        "B08"
+      ],
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null
+    },
+    {
+      "edge_id": "EDGE-HON-BOEING-PROGRAM",
+      "from_id": "P2-HONEYWELL-01",
+      "to_id": "P2-BOEING-01",
+      "predicate": "PUBLIC_PRODUCT_PLATFORM_ASSOCIATION",
+      "evidence_ids": [
+        "H01"
+      ],
+      "truth_class": "SOURCED_PUBLIC_FACT",
+      "weight": null,
+      "does_not_establish": "A personal introduction, direct BTX order, or mutual procurement access"
+    }
+  ],
+  "ontology": {
+    "format_version": "2.0",
+    "organization_id": "ORG-BTX",
+    "business_units": [
+      {
+        "business_unit_id": "BU-ERA",
+        "name": "ERA Industries",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B01",
+          "B02",
+          "B10"
+        ]
+      },
+      {
+        "business_unit_id": "BU-GENELMEC",
+        "name": "Gen-El-Mec Associates",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B02",
+          "B04",
+          "B05"
+        ]
+      },
+      {
+        "business_unit_id": "BU-I3D",
+        "name": "i3D Manufacturing",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B01",
+          "B02"
+        ]
+      },
+      {
+        "business_unit_id": "BU-APM",
+        "name": "Addison Precision Manufacturing",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B02",
+          "B11"
+        ]
+      },
+      {
+        "business_unit_id": "BU-A1J",
+        "name": "A1J Technologies",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B02",
+          "B06"
+        ]
+      },
+      {
+        "business_unit_id": "BU-CHANDLER",
+        "name": "Chandler Industries",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B02",
+          "B07",
+          "B08"
+        ]
+      },
+      {
+        "business_unit_id": "BU-HTS",
+        "name": "High Tech Solutions",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B01"
+        ]
+      },
+      {
+        "business_unit_id": "BU-MAITLAND",
+        "name": "Maitland Engineering",
+        "parent_id": "ORG-BTX",
+        "source_ids": [
+          "B03"
+        ]
+      }
+    ],
+    "facilities": [
+      {
+        "facility_id": "BTX-FAC-BU-ERA",
+        "business_unit_id": "BU-ERA",
+        "location": "Elk Grove Village, IL",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "machining",
+          "aluminum vacuum brazing",
+          "assembly"
+        ],
+        "source_ids": [
+          "B01",
+          "B02",
+          "B10"
+        ],
+        "capability_scope": "BU_CLAIM_REQUIRES_FACILITY_CONFIRMATION",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-BU-GENELMEC",
+        "business_unit_id": "BU-GENELMEC",
+        "location": "Oxford, CT",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "CNC milling",
+          "turning",
+          "wire EDM",
+          "metrology"
+        ],
+        "source_ids": [
+          "B02",
+          "B04",
+          "B05"
+        ],
+        "capability_scope": "FACILITY",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-BU-I3D",
+        "business_unit_id": "BU-I3D",
+        "location": "Redmond, OR",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "metal additive manufacturing"
+        ],
+        "source_ids": [
+          "B01",
+          "B02"
+        ],
+        "capability_scope": "BU_CLAIM_REQUIRES_FACILITY_CONFIRMATION",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-BU-APM",
+        "business_unit_id": "BU-APM",
+        "location": "Rochester, NY",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "Swiss machining",
+          "mill-turn",
+          "grinding",
+          "EDM",
+          "assembly"
+        ],
+        "source_ids": [
+          "B02",
+          "B11"
+        ],
+        "capability_scope": "FACILITY",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-BU-A1J",
+        "business_unit_id": "BU-A1J",
+        "location": "San Jose, CA",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "machining",
+          "precision cleaning",
+          "laser processing",
+          "lapping"
+        ],
+        "source_ids": [
+          "B02",
+          "B06"
+        ],
+        "capability_scope": "FACILITY",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-CHANDLER-BLAINE",
+        "business_unit_id": "BU-CHANDLER",
+        "location": "Blaine, MN",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "multiaxis machining",
+          "sheet metal",
+          "welding",
+          "assembly"
+        ],
+        "source_ids": [
+          "B02",
+          "B07",
+          "B08"
+        ],
+        "capability_scope": "FACILITY",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-BU-HTS",
+        "business_unit_id": "BU-HTS",
+        "location": null,
+        "country": null,
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "machining",
+          "assembly"
+        ],
+        "source_ids": [
+          "B01"
+        ],
+        "capability_scope": "BU_CLAIM_REQUIRES_FACILITY_CONFIRMATION",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-BU-MAITLAND",
+        "business_unit_id": "BU-MAITLAND",
+        "location": "South Bend, IN",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "Swiss machining",
+          "grinding",
+          "milling",
+          "finishing"
+        ],
+        "source_ids": [
+          "B03"
+        ],
+        "capability_scope": "FACILITY",
+        "current_certificate_documents": []
+      },
+      {
+        "facility_id": "BTX-FAC-CHANDLER-WYOMING",
+        "business_unit_id": "BU-CHANDLER",
+        "location": "Wyoming, MN",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "capabilities": [
+          "miniature connector components",
+          "turning",
+          "milling"
+        ],
+        "source_ids": [
+          "B09"
+        ],
+        "capability_scope": "FACILITY",
+        "current_certificate_documents": []
+      }
+    ],
+    "documented_relationships": [
+      {
+        "relationship_id": "PUB-QUAL-ACC-HONEYWELL",
+        "from_id": "BTX-FAC-CHANDLER-BLAINE",
+        "to_id": "ACC-HONEYWELL",
+        "predicate": "ADVERTISES_CUSTOMER_SPECIFIC_WELDING_QUALIFICATION",
+        "source_ids": [
+          "B08"
+        ],
+        "truth_class": "SOURCED_PUBLIC_FACT",
+        "does_not_establish": [
+          "specific program supply",
+          "current purchase order",
+          "transferable approval for another facility"
+        ]
+      },
+      {
+        "relationship_id": "PUB-QUAL-ACC-LOCKHEED",
+        "from_id": "BTX-FAC-CHANDLER-BLAINE",
+        "to_id": "ACC-LOCKHEED",
+        "predicate": "ADVERTISES_CUSTOMER_SPECIFIC_WELDING_QUALIFICATION",
+        "source_ids": [
+          "B08"
+        ],
+        "truth_class": "SOURCED_PUBLIC_FACT",
+        "does_not_establish": [
+          "specific program supply",
+          "current purchase order",
+          "transferable approval for another facility"
+        ]
+      }
+    ],
+    "certification_policy": "Marketing listings are capability claims. Certificate scope, number, issuer, validity and customer approval must be independently populated; ITAR is not a quality certificate.",
+    "legacy_policy": "Preserve acquired-brand aliases; do not create active duplicate BUs from old brand seeds without hierarchy evidence."
+  }
+}

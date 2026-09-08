@@ -117,6 +117,8 @@ def publication_freshness(
     clock = now or datetime.now(UTC)
     if published_at is None:
         return "PUBLICATION_DATE_UNAVAILABLE"
+    if published_at > clock:
+        return "FUTURE_PUBLICATION_DATE"
     threshold = timedelta(hours=threshold_hours)
     return (
         "CURRENT"
@@ -140,9 +142,7 @@ def signal_brief(
         if item.canonical_account_id
     )
     collected = observation.observed_at if observation else event.provenance.observed_at
-    published = event.event_date or (
-        observation.source_published_at if observation else None
-    )
+    published = observation.source_published_at if observation else event.source_published_at
     eligible = (
         event.resolution_state is ResolutionState.RESOLVED
         and event.seller_relevance_state is SellerRelevanceState.RESOLVED_ELIGIBLE
@@ -152,9 +152,9 @@ def signal_brief(
     )
     event_timing = (
         "UNKNOWN"
-        if published is None
+        if event.event_date is None
         else "UPCOMING"
-        if published > clock
+        if event.event_date > clock
         else "OBSERVED"
     )
     seller_state = event.seller_relevance_state.value
@@ -212,7 +212,7 @@ def signal_brief(
         missing_fields=tuple(dict.fromkeys(missing)),
         seller_summary=deterministic_summary,
         event_timing=event_timing,
-        relevant_event_timestamp=published,
+        relevant_event_timestamp=event.event_date,
         watchlist_eligible=bool(target_reasons),
         priority_reasons=target_reasons,
         canonical_facility_id=event.canonical_facility_id,

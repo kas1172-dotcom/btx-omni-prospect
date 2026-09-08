@@ -44,3 +44,5 @@
 .api-notice, .notice, .error { border-radius: var(--radius-control); }
 .app-shell-loading { max-width: 1440px; margin: auto; padding: 0 16px 100px; }
 .mobile-primary-nav { display: none; }
+.demonstration-banner { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 10px 12px; margin-top: 12px; border: 1px solid var(--border-default); border-radius: var(--radius-control); color: var(--text-secondary); background: var(--surface-base); font-size: 12px; line-height: 1.4; }
+.demonstration-banner strong { color: var(--text-primary); }

@@ -36,8 +36,11 @@ class CommunicationDraft:
     evidence_ids: tuple[str, ...] = ()
     idempotency_key: str | None = None
     sent_at: datetime | None = None
+    version: int = 1
 
     def __post_init__(self) -> None:
+        if type(self.version) is not int or self.version < 1:
+            raise ValueError("Communication version must be a positive integer.")
         require_aware(self.created_at, "created_at")
         require_aware(self.updated_at, "updated_at")
         if self.sent_at:

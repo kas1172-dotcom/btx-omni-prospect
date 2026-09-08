@@ -27,7 +27,6 @@ from btx_omni.modules.relationships.presentation import (
 )
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
-    AccountAttractivenessInputs,
     seller_attractiveness_projection,
 )
 from btx_omni.monitor.briefs import (
@@ -35,6 +34,7 @@ from btx_omni.monitor.briefs import (
     process_signal_brief_synthesis,
     signal_briefs_for_monitor,
 )
+from btx_omni.monitor.documents import document_evidence
 
 
 def run_worker(
@@ -43,6 +43,8 @@ def run_worker(
     source_ids: tuple[str, ...] | None = None,
     limit: int | None = None,
 ) -> tuple[dict, int]:
+    if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
+        return {"status": "INVALID_LIMIT", "detail": "Choose 1–100 records per source."}, 2
     if (
         settings.monitor_mode.lower() != "live"
         or not settings.monitor_durable_state_enabled
@@ -81,6 +83,9 @@ def run_worker(
             source_id for source_id in requested if source_id not in configured
         )
         deadline = monotonic() + settings.monitor_worker_max_seconds
+        # Public macro observations use their own canonical owner, not fabricated
+        # Monitor customer events. Reuse this worker and its operational lock.
+        market_refresh = runtime.markets.worker_refresh(deadline_monotonic=deadline) if settings.market_refresh_enabled else {'status': 'DISABLED'}
         runs = []
         deadline_exhausted = False
         source_deadline_exceeded = False
@@ -119,6 +124,16 @@ def run_worker(
         synthesis = None
         technical: list[dict] = []
         explanations: list[dict] = []
+        optional_budget_stops: list[str] = []
+
+        def can_start_optional(stage: str) -> bool:
+            nonlocal deadline_exhausted
+            if deadline - monotonic() < settings.ai_timeout_seconds:
+                deadline_exhausted = True
+                if stage not in optional_budget_stops:
+                    optional_budget_stops.append(stage)
+                return False
+            return True
         if runs and not deadline_exhausted and repository:
             synthesis = process_signal_brief_synthesis(
                 signal_briefs_for_monitor(runtime.monitor),
@@ -139,6 +154,8 @@ def run_worker(
             for brief in signal_briefs_for_monitor(runtime.monitor)[
                 : settings.monitor_technical_decomposition_cap
             ]:
+                if not can_start_optional('TECHNICAL_DECOMPOSITION'):
+                    break
                 account = next(
                     (
                         item
@@ -161,7 +178,7 @@ def run_worker(
                     canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
-                    evidence=(
+                    evidence=document_evidence(repository.event_document(brief.id)) or (
                         PublicEvidenceRecord(
                             brief.evidence_ids[0] if brief.evidence_ids else brief.id,
                             brief.what_happened,
@@ -194,7 +211,7 @@ def run_worker(
                         attempt_count=outcome.attempt_count,
                         next_retry_at=outcome.next_retry_at,
                     )
-                if projection.decomposition:
+                if projection.decomposition and can_start_optional('TECHNICAL_EXPLANATION'):
                     technical_explanation = process_technical_opportunity_explanation(
                         projection=seller_projection(projection),
                         event_id=brief.id,
@@ -220,13 +237,13 @@ def run_worker(
             explanation_provider = get_ai_provider(AiConfig.from_settings(settings))
             cap = settings.monitor_technical_decomposition_cap
             for account in runtime.sample.accounts[:cap]:
+                if not can_start_optional('CUSTOMER_EXPLANATION'):
+                    break
                 scenario = runtime.sample.priority_scenarios.get(
                     account.id
                 ) or runtime.sample.rich_scenarios.get(account.id)
                 attractiveness = seller_attractiveness_projection(
-                    AccountAttractivenessInputs(
-                        runtime.sample.scoring_inputs.get(account.id, {})
-                    ),
+                    runtime.sample.attractiveness_inputs(account.id),
                     calculated_at=runtime.observed_at(),
                     excluded=bool(scenario and scenario.exclusion_reason),
                     exclusion_reason=scenario.exclusion_reason if scenario else None,
@@ -248,6 +265,8 @@ def run_worker(
                 )
             relationship_service = SellerRelationshipPresentationService()
             for account in runtime.sample.accounts[:cap]:
+                if not can_start_optional('RELATIONSHIP_EXPLANATION'):
+                    break
                 relationships = RelationshipIntelligenceService(
                     runtime.sample
                 ).account_relationships(account.id)
@@ -255,6 +274,8 @@ def run_worker(
                     "seller_projection"
                 ]["validated"][:1]
                 for path in paths:
+                    if not can_start_optional('RELATIONSHIP_EXPLANATION'):
+                        break
                     outcome = process_relationship_path_explanation(
                         path=path,
                         customer_id=account.id,
@@ -272,6 +293,8 @@ def run_worker(
             for opportunity in procurement_projection(runtime)["active"][
                 "opportunities"
             ][:cap]:
+                if not can_start_optional('FEDERAL_EXPLANATION'):
+                    break
                 outcome = process_federal_opportunity_explanation(
                     opportunity=opportunity,
                     provider=explanation_provider,
@@ -290,7 +313,7 @@ def run_worker(
         "status": "DEADLINE_EXHAUSTED"
         if deadline_exhausted
         else "FAILED"
-        if failed
+        if failed or market_refresh['status'] == 'FAILED'
         else "SUCCESS",
         "configured_sources": configured,
         "skipped_sources": skipped,
@@ -299,14 +322,16 @@ def run_worker(
         "brief_synthesis": asdict(synthesis) if synthesis else None,
         "technical_decomposition": technical,
         "governed_explanations": explanations,
+        "optional_budget_stops": optional_budget_stops,
+        "market_refresh": market_refresh,
         "bounded": {
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,
             "minimum_start_budget_seconds": settings.monitor_source_min_start_seconds,
-            "deadline_scope": "source collection is interruptible; transactional persistence completes before exit",
+            "deadline_scope": "Source collection is interruptible; optional AI stages require a full configured provider timeout before starting. In-flight provider timeout and transactional persistence may finish after the scheduling deadline.",
         },
     }
-    return report, 1 if failed or not runs or deadline_exhausted else 0
+    return report, 1 if failed or not runs or deadline_exhausted or market_refresh['status'] == 'FAILED' else 0
 
 
 def main(argv: list[str] | None = None) -> int:

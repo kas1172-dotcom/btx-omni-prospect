@@ -32,6 +32,12 @@ def test_production_requires_session_and_has_no_development_header_fallback(
 ) -> None:
     client = _production_app(monkeypatch)
     assert client.get("/api/actions").status_code == 401
+    for path in ("/api/accounts", "/api/accounts/boeing", "/api/map", "/api/today", "/api/intelligence",
+                 "/api/accounts/kla/workbook-fields", "/api/accounts/kla/workbook-fields/" + "a" * 64):
+        response = client.get(path)
+        assert response.status_code == 401
+        assert response.headers["cache-control"] == "private, no-store"
+    assert client.get("/api/health").status_code == 200
     assert (
         client.get(
             "/api/actions",
@@ -199,3 +205,14 @@ def test_release_diagnostics_are_safe_and_exclude_server_credentials(monkeypatch
     assert session["csrf_token"].casefold() not in serialized
     assert "api_key" not in serialized
     assert "operator_token" not in serialized
+
+
+def test_public_build_identity_is_same_runtime_but_never_exposes_private_readiness(monkeypatch):
+    client = _production_app(monkeypatch, release_sha='a' * 40, release_tree='b' * 40, release_worktree='clean')
+    public = client.get('/api/build')
+    assert public.status_code == 200 and public.json()['commit_sha'] == 'a' * 40
+    assert public.json()['repository'] == 'kas1172-dotcom/btx-omni-prospect'
+    assert 'database' not in public.text and 'hosted-seller-access' not in public.text
+    assert client.get('/api/settings').status_code == 401
+    _sign_in(client, 'hosted-seller-access')
+    assert client.get('/api/settings').json()['release_diagnostics']['build'] == public.json()

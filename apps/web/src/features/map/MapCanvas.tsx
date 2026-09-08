@@ -11,7 +11,9 @@ const markerZIndex = (marker: MapMarker, selected = false) => selected ? 4 : mar
 const accountIdFromMarkerId = (id: string) => id.startsWith('account:') ? id.split(':')[1] : undefined
 
 function makeMarkerButton(marker: MapMarker, selected: boolean, onSelect: () => void) {
-  const button = document.createElement('button'); button.type = 'button'; button.className = `map-marker map-marker-${marker.kind}${selected ? ' selected' : ''}`; button.style.minWidth = '44px'; button.style.minHeight = '44px'; button.setAttribute('aria-label', marker.accessibleLabel); button.setAttribute('aria-pressed', String(selected)); button.title = marker.label; button.addEventListener('click', event => { event.stopPropagation(); onSelect() }); return button
+  const button = document.createElement('button'); button.type = 'button'; button.className = `map-marker-hit${selected ? ' selected' : ''}`; button.setAttribute('aria-label', marker.accessibleLabel); button.setAttribute('aria-pressed', String(selected)); button.title = marker.label
+  const glyph = document.createElement('span'); glyph.className = `map-marker map-marker-${marker.kind}`; glyph.setAttribute('aria-hidden', 'true'); glyph.textContent = marker.kind === 'cluster' ? String(marker.memberIds?.length ?? '') : ''; button.append(glyph)
+  button.addEventListener('click', event => { event.stopPropagation(); onSelect() }); return button
 }
 function TestCanvas({ markers, selectedMarkerId, onSelect, onVisibleMarkers }: Props) {
   const markerSignature = markers.filter(marker => marker.kind === 'customer' || marker.kind === 'prospect').map(marker => marker.id).join('|')
@@ -25,12 +27,13 @@ export function MapCanvas(props: Props) {
   const { markers, selectedMarkerId, selectionFrame, onSelect, onVisibleMarkers } = props
   const testMode = import.meta.env.VITE_MAP_TEST_MODE === 'true'; const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'
   const testUnconfigured = testMode && new URLSearchParams(window.location.search).has('map-test-unconfigured')
-  const container = useRef<HTMLDivElement>(null); const mapRef = useRef<google.maps.Map | undefined>(undefined); const markerRefs = useRef<google.maps.marker.AdvancedMarkerElement[]>([]); const propsRef = useRef(props); const lastFramed = useRef<string | undefined>(undefined); const [zoom, setZoom] = useState(4); const [failure, setFailure] = useState<string | null>(null)
-  const visible = useMemo(() => markersForZoom(markers, zoom), [markers, zoom])
+  const container = useRef<HTMLDivElement>(null); const mapRef = useRef<google.maps.Map | undefined>(undefined); const markerRefs = useRef(new Map<string, { advanced: google.maps.marker.AdvancedMarkerElement; signature: string }>()); const propsRef = useRef(props); const lastFramed = useRef<string | undefined>(undefined); const [zoom, setZoom] = useState(4); const [mapReady, setMapReady] = useState(0); const [failure, setFailure] = useState<string | null>(null); const [clusterMembers, setClusterMembers] = useState<string[]>([])
+  const visible = useMemo(() => markersForZoom(markers, zoom, selectedMarkerId), [markers, zoom, selectedMarkerId])
   useEffect(() => { propsRef.current = props }, [props])
   useEffect(() => onVisibleMarkers?.(visible), [onVisibleMarkers, visible])
   useEffect(() => {
     if (testMode || !apiKey || !container.current) return
+    const registry = markerRefs.current
     let cancelled = false; let zoomListener: google.maps.MapsEventListener | undefined
     const load = async () => { try {
       if (!configuredKey) { setOptions({ key: apiKey, v: 'weekly' }); configuredKey = apiKey }
@@ -39,15 +42,40 @@ export function MapCanvas(props: Props) {
       if (cancelled || !container.current) return
       const map = new Map(container.current, { center: { lat: 38, lng: -98 }, zoom: 4, minZoom: 3, mapId, mapTypeControl: false, streetViewControl: false, fullscreenControl: false }); mapRef.current = map
       zoomListener = map.addListener('zoom_changed', () => setZoom(map.getZoom() ?? 4))
+      setMapReady(version => version + 1)
     } catch { if (!cancelled) setFailure('The Google Maps renderer could not load. Verify the browser key, API restrictions, billing, and quota configuration.') } }
     void load(); const observer = new ResizeObserver(() => { if (mapRef.current) google.maps.event.trigger(mapRef.current, 'resize') }); observer.observe(container.current)
-    return () => { cancelled = true; zoomListener?.remove(); observer.disconnect(); markerRefs.current.forEach(marker => { marker.map = null }); markerRefs.current = []; mapRef.current = undefined }
+    return () => { cancelled = true; zoomListener?.remove(); observer.disconnect(); registry.forEach(({ advanced }) => { advanced.map = null }); registry.clear(); mapRef.current = undefined; lastFramed.current = undefined }
   }, [apiKey, mapId, testMode])
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    Promise.resolve(importLibrary('marker')).then(({ AdvancedMarkerElement }) => { markerRefs.current.forEach(marker => { marker.map = null }); markerRefs.current = visible.map(marker => { const selected = marker.id === selectedMarkerId; const choose = () => { if (marker.kind === 'cluster' && marker.bounds) { map.fitBounds(marker.bounds, 80); if ((map.getZoom() ?? 0) < 6) map.setZoom(6) } else onSelect(marker) }; const advanced = new AdvancedMarkerElement({ map, position: { lat: marker.latitude, lng: marker.longitude }, title: marker.accessibleLabel, gmpClickable: true, zIndex: markerZIndex(marker, selected) }); advanced.append(makeMarkerButton(marker, selected, choose)); return advanced }) }).catch(() => setFailure('The Google Maps marker layer could not load.'))
-  }, [visible, selectedMarkerId, onSelect])
+    let cancelled = false
+    Promise.resolve(importLibrary('marker')).then(({ AdvancedMarkerElement }) => {
+      if (cancelled || mapRef.current !== map) return
+      const wanted = new Set(visible.map(marker => marker.id))
+      for (const [id, entry] of markerRefs.current) if (!wanted.has(id)) { entry.advanced.map = null; markerRefs.current.delete(id) }
+      for (const marker of visible) {
+        const selected = marker.id === selectedMarkerId
+        const signature = JSON.stringify([marker, selected])
+        const previous = markerRefs.current.get(marker.id)
+        if (previous?.signature === signature) continue
+        const choose = () => {
+          if (marker.kind === 'cluster' && marker.bounds) {
+            // An explicit member list also works for coincident sites, where zoom
+            // alone cannot separate markers. No artificial location offsets.
+            setClusterMembers(marker.memberIds ?? [])
+            map.fitBounds(marker.bounds, 80)
+          } else { setClusterMembers([]); propsRef.current.onSelect(marker) }
+        }
+        const advanced = previous?.advanced ?? new AdvancedMarkerElement({ map, gmpClickable: true })
+        advanced.position = { lat: marker.latitude, lng: marker.longitude }; advanced.title = marker.accessibleLabel; advanced.zIndex = markerZIndex(marker, selected)
+        advanced.replaceChildren(makeMarkerButton(marker, selected, choose))
+        markerRefs.current.set(marker.id, { advanced, signature })
+      }
+    }).catch(() => { if (!cancelled) setFailure('The Google Maps marker layer could not load.') })
+    return () => { cancelled = true }
+  }, [visible, selectedMarkerId, mapReady])
   useEffect(() => {
     const map = mapRef.current
     if (!map || !selectedMarkerId || lastFramed.current === selectedMarkerId) return
@@ -57,10 +85,11 @@ export function MapCanvas(props: Props) {
     const frame = selectionFrame?.length ? selectionFrame : [selected]
     if (frame.length > 1) { const bounds = new google.maps.LatLngBounds(); frame.forEach(marker => bounds.extend({ lat: marker.latitude, lng: marker.longitude })); map.fitBounds(bounds, { top: 70, left: 70, right: 360, bottom: 90 }) }
     else { map.panTo({ lat: selected.latitude, lng: selected.longitude }); if ((map.getZoom() ?? 4) < 8) map.setZoom(8) }
-  }, [markers, selectedMarkerId, selectionFrame])
+  }, [markers, selectedMarkerId, selectionFrame, mapReady])
   if (testUnconfigured) return <section className="map-unavailable" role="status"><h3>Map not configured</h3><p>Google Maps browser configuration is required to display verified geography.</p></section>
   if (testMode) return <TestCanvas {...props} />
   if (!apiKey) return <section className="map-unavailable" role="status"><h3>Map not configured</h3><p>Google Maps browser configuration is required to display verified geography.</p></section>
   if (failure) return <section className="map-unavailable" role="status"><h3>Map unavailable</h3><p>{failure}</p></section>
-  return <div ref={container} className="map-canvas" role="application" aria-label="Interactive Google Customer, facility, BTX facility, and intelligence map" />
+  const members = markers.filter(marker => clusterMembers.includes(marker.id))
+  return <><div ref={container} className="map-canvas" role="application" aria-label="Interactive Google Customer, facility, BTX facility, and intelligence map" />{members.length > 0 && <section className="map-cluster-members" aria-label="Sites in selected cluster"><header><strong>{members.length} sites</strong><button type="button" onClick={() => setClusterMembers([])} aria-label="Close cluster sites">Close</button></header><p>Choose a site, including sites sharing the same coordinates.</p><ul>{members.map(marker => <li key={marker.id}><button type="button" aria-pressed={marker.id === selectedMarkerId} onClick={() => { setClusterMembers([]); onSelect(marker) }}>{marker.label}<small>{marker.kind === 'customer' ? 'Customer' : 'Prospect'}</small></button></li>)}</ul></section>}</>
 }

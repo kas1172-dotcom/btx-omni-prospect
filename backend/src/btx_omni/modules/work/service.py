@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from datetime import date, datetime
 from hashlib import sha256
@@ -16,7 +17,6 @@ from btx_omni.domain.work import (
     Principal,
     PrincipalRole,
 )
-from btx_omni.integrations.hubspot.contracts import CrmActionPreview, CrmWritePort
 
 
 class ActionNotFoundError(KeyError):
@@ -32,6 +32,7 @@ class ActionForbiddenError(PermissionError):
 
 
 class ActionRepository(Protocol):
+    def transact_audit(self, action_id: str, operation): ...
     def get(self, action_id: str) -> Action | None: ...
     def by_suggestion(self, suggestion_id: str) -> Action | None: ...
     def list(self) -> tuple[Action, ...]: ...
@@ -40,7 +41,7 @@ class ActionRepository(Protocol):
     def dismiss_suggestion(
         self, suggestion_id: str, actor_id: str, occurred_at: datetime
     ) -> None: ...
-    def dismissed_suggestions(self) -> frozenset[str]: ...
+    def dismissed_suggestions(self, actor_id: str | None = None) -> frozenset[str]: ...
 
 
 class MemoryActionRepository:
@@ -50,9 +51,19 @@ class MemoryActionRepository:
         self.items: dict[str, Action] = {}
         self.events: list[ActionAuditEvent] = []
         self.dismissed: set[str] = set()
+        self.dismissed_actors: dict[str, str] = {}
 
     def get(self, action_id: str) -> Action | None:
         return self.items.get(action_id)
+
+    def transact_audit(self, action_id: str, operation):
+        action = self.get(action_id)
+        if action is None:
+            raise ActionNotFoundError(action_id)
+        event, result = operation(action, self.history(action_id))
+        if event is not None:
+            self.events.append(event)
+        return result
 
     def by_suggestion(self, suggestion_id: str) -> Action | None:
         return next(
@@ -78,9 +89,10 @@ class MemoryActionRepository:
         self, suggestion_id: str, actor_id: str, occurred_at: datetime
     ) -> None:
         self.dismissed.add(suggestion_id)
+        self.dismissed_actors[suggestion_id] = actor_id
 
-    def dismissed_suggestions(self) -> frozenset[str]:
-        return frozenset(self.dismissed)
+    def dismissed_suggestions(self, actor_id: str | None = None) -> frozenset[str]:
+        return frozenset(sid for sid in self.dismissed if actor_id is None or self.dismissed_actors.get(sid) == actor_id)
 
 
 class ActionPolicy:
@@ -143,15 +155,31 @@ class WorkService:
         if source_suggestion_id:
             existing = self.repository.by_suggestion(source_suggestion_id)
             if existing:
+                ActionPolicy.require_manage(principal, existing)
+                if existing.account_id != account_id:
+                    raise ActionConflictError("Suggestion belongs to a different account.")
                 return existing
         key = (
             idempotency_key
             or f"{principal.user_id}:{account_id}:{title}:{occurred_at.isoformat()}"
         )
         identifier = f"action-{sha256(key.encode()).hexdigest()[:20]}"
+        fingerprint = None
+        if idempotency_key:
+            fingerprint = self._creation_fingerprint(
+                account_id, title.strip(), description, owner_id or principal.user_id,
+                priority, due_date, evidence_ids, context_referents,
+                source_suggestion_id, approval_required,
+            )
+            # Preserve eligible legacy retries without sharing a caller's key namespace.
+            legacy = self.repository.get(identifier)
+            if legacy and legacy.created_by == principal.user_id and legacy.account_id == account_id:
+                return self._creation_replay(legacy, principal, fingerprint)
+            scoped_key = json.dumps(["action-create-v2", principal.user_id, account_id, key])
+            identifier = f"action-{sha256(scoped_key.encode()).hexdigest()[:20]}"
         existing = self.repository.get(identifier)
         if existing:
-            return existing
+            return self._creation_replay(existing, principal, fingerprint)
         action = Action(
             identifier,
             account_id,
@@ -172,16 +200,53 @@ class WorkService:
             version=1,
             context_referents=context_referents,
         )
-        return self.repository.save(
+        saved = self.repository.save(
             action,
             self._event(
                 action.id,
                 principal,
                 "CREATED",
                 occurred_at,
-                {"status": action.status.value},
+                {"status": action.status.value, **(
+                    {"creation_fingerprint": fingerprint} if fingerprint else {}
+                )},
             ),
         )
+        # SQL insert-on-conflict may return a concurrent creator's committed row.
+        if saved.account_id != account_id:
+            raise ActionConflictError("Suggestion belongs to a different account.")
+        return self._creation_replay(saved, principal, fingerprint)
+
+    @staticmethod
+    def _creation_fingerprint(
+        account_id, title, description, owner_id, priority, due_date,
+        evidence_ids, context_referents, source_suggestion_id, approval_required,
+    ) -> str:
+        payload = [account_id, title, description, owner_id, str(priority),
+                   due_date.isoformat() if due_date else None, sorted(evidence_ids),
+                   sorted(context_referents), source_suggestion_id, approval_required]
+        return sha256(json.dumps(payload, separators=(",", ":")).encode()).hexdigest()
+
+    def _creation_replay(
+        self, action: Action, principal: Principal, fingerprint: str | None,
+    ) -> Action:
+        ActionPolicy.require_manage(principal, action)
+        if fingerprint:
+            original = next((event.metadata.get("creation_fingerprint")
+                             for event in self.repository.history(action.id)
+                             if event.event == "CREATED"), None)
+            if original is None and action.version == 1:
+                original = self._creation_fingerprint(
+                    action.account_id, action.title, action.description, action.owner_id,
+                    action.priority, action.due_date, action.evidence_ids,
+                    action.context_referents, action.source_suggestion_id,
+                    action.approval_status is ApprovalStatus.PENDING,
+                )
+            if original != fingerprint:
+                raise ActionConflictError(
+                    "Retry does not match the original proposal; inspect existing work before retrying."
+                )
+        return action
 
     def get(self, action_id: str) -> Action:
         action = self.repository.get(action_id)
@@ -309,67 +374,6 @@ class WorkService:
             ), expected_version=action.version,
         )
 
-    def preview_crm_action(
-        self,
-        action_id: str,
-        crm: CrmWritePort,
-        *,
-        principal: Principal,
-        occurred_at: datetime,
-    ) -> CrmActionPreview:
-        action = self.get(action_id)
-        ActionPolicy.require_manage(principal, action)
-        result = crm.preview_action(
-            action.id,
-            action.account_id,
-            "CREATE_FOLLOW_UP",
-            {"title": action.title, "owner_id": action.owner_id or ""},
-        )
-        self.repository.save(
-            action,
-            self._event(
-                action.id,
-                principal,
-                "EXTERNAL_PREVIEWED",
-                occurred_at,
-                {"operation": result.operation},
-            ),
-        )
-        return result
-
-    def confirm_and_execute_crm_action(
-        self,
-        action_id: str,
-        crm: CrmWritePort,
-        *,
-        principal: Principal,
-        occurred_at: datetime,
-    ) -> CrmActionPreview:
-        action = self.get(action_id)
-        ActionPolicy.require_manager(principal)
-        if action.approval_status is not ApprovalStatus.APPROVED:
-            raise ActionConflictError(
-                "Approved external workflow is required before CRM execution."
-            )
-        preview = crm.preview_action(
-            action.id,
-            action.account_id,
-            "CREATE_FOLLOW_UP",
-            {"title": action.title, "owner_id": action.owner_id or ""},
-        )
-        result = crm.execute_action(replace(preview, confirmed=True))
-        self.repository.save(
-            action,
-            self._event(
-                action.id,
-                principal,
-                "EXTERNAL_EXECUTED",
-                occurred_at,
-                {"operation": preview.operation, "simulated": True},
-            ),
-        )
-        return result
-
     def audit(self, action_id: str) -> tuple[ActionAuditEvent, ...]:
         self.get(action_id)
         return self.repository.history(action_id)
@@ -381,8 +385,8 @@ class WorkService:
             suggestion_id, principal.user_id, occurred_at
         )
 
-    def dismissed_suggestions(self) -> frozenset[str]:
-        return self.repository.dismissed_suggestions()
+    def dismissed_suggestions(self, actor_id: str | None = None) -> frozenset[str]:
+        return self.repository.dismissed_suggestions(actor_id)
 
     @staticmethod
     def _event(

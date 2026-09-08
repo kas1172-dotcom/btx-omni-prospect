@@ -25,6 +25,7 @@ def test_missingness_is_not_scored_as_zero() -> None:
     assert result.status is ScoreStatus.INSUFFICIENT_DATA
     assert result.score is None
     assert result.coverage == Decimal(0)
+    assert len(result.missingness) == len(FACTORS)
 
 
 def test_coverage_uses_configured_subfactor_weights_not_top_level_presence() -> None:
@@ -51,3 +52,12 @@ def test_external_rank_is_separate_from_attractiveness_inputs() -> None:
     score = calculate_account_attractiveness(AccountAttractivenessInputs(), evidence_ids=(), calculated_at=NOW)
     assert rank.rank == 1
     assert score.score is None
+
+
+def test_evidence_is_attached_only_to_the_supported_factor():
+    inputs = AccountAttractivenessInputs({"btx_commercial_adjacency": "EXISTING_ONE_BU_ACTIVE"}, {"btx_commercial_adjacency": ("accepted-revenue-1",)})
+    projection = seller_attractiveness_projection(inputs, calculated_at=NOW)
+    assert projection.score is None
+    assert projection.evidence_ids == ("accepted-revenue-1",)
+    assert next(f for f in projection.factors if f.key == "btx_commercial_adjacency").evidence_ids == ("accepted-revenue-1",)
+    assert all(not f.evidence_ids for f in projection.factors if f.key != "btx_commercial_adjacency")

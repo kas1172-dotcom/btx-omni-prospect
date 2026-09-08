@@ -127,15 +127,15 @@ test('Technical Fit disclosure remains contained at 390px and 320px', async ({ p
   }
 })
 
-test('Relationship graph retains its governed path and evidence while disclosing its explanation', async ({ page }) => {
+test('Relationship reference retains its governed path and evidence beside the canonical graph', async ({ page }) => {
   await addRelationshipExplanationFixture(page)
   await page.goto('/')
   await openLockheed(page)
   const relationshipPanel = page.locator('.account-workspace-relationship')
-  await relationshipPanel.getByRole('tab', { name: 'Graph view' }).click()
-  await relationshipPanel.locator('.relationship-graph-node').first().click()
-  const detail = relationshipPanel.locator('.relationship-graph-detail')
-  await expect(detail).toContainText('Selected context')
+  const detail = relationshipPanel.locator('.seller-relationship-card').first()
+  await expect(detail).toContainText('Connection:')
+  await expect(relationshipPanel.getByRole('region', { name: 'Ranked canonical relationships', exact: true })).toBeVisible()
+  await expect(relationshipPanel.locator('.relationship-graph-canvas')).toHaveCount(0)
   await expect(detail.getByRole('button', { name: /Evidence/ })).toBeVisible()
   await detail.getByRole('button', { name: 'Why this relationship path may be useful' }).click()
   await expect(detail).toContainText('Controlled taxonomy match')
@@ -150,9 +150,7 @@ test('Relationship explanation remains contained at 390px and 320px', async ({ p
     await openLockheedMobile(page)
     const relationshipPanel = page.locator('.account-workspace-relationship')
     await relationshipPanel.getByRole('button', { name: /Relationship Intelligence/ }).click()
-    await relationshipPanel.getByRole('tab', { name: 'Graph view' }).click()
-    await relationshipPanel.locator('.relationship-graph-node').first().click()
-    const detail = relationshipPanel.locator('.relationship-graph-detail')
+    const detail = relationshipPanel.locator('.seller-relationship-card').first()
     await detail.getByRole('button', { name: 'Why this relationship path may be useful' }).click()
     await expect(detail).toContainText('The governed result is explained from its displayed deterministic inputs.')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

@@ -84,25 +84,25 @@ def test_cache_hash_changes_with_evidence_and_contract() -> None:
     assert TechnicalDecompositionService.cache_key(first) != TechnicalDecompositionService.cache_key(changed)
 
 
-def test_gemini_schema_rejects_extra_fields_and_preserves_basis() -> None:
+def test_gemini_schema_rejects_extra_fields_and_preserves_basis(ai_usage) -> None:
     payload = {"event_summary": "Award.", "product_candidates": [], "program_candidates": [], "technical_systems": [], "component_candidates": [{"name": "actuator housing", "basis": "MODEL_INFERRED", "reason": "plausible", "source_support": "not stated", "evidence_ids": ["ev-1"]}], "uncertainties": []}
-    provider = GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5), _Client(json.dumps(payload)))
+    provider = GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5, usage=ai_usage), _Client(json.dumps(payload)))
     result = provider.decompose_technical_opportunity(request())
     assert result.component_candidates[0].basis is TechnicalBasis.MODEL_INFERRED
     payload["btx_component_id"] = "cc-actuator"
-    bad = GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5), _Client(json.dumps(payload)))
+    bad = GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5, usage=ai_usage), _Client(json.dumps(payload)))
     with pytest.raises(ValueError, match="unsupported fields"):
         bad.decompose_technical_opportunity(request())
 
 
-def test_gemini_rejects_invented_evidence_and_requires_source_stated_support() -> None:
+def test_gemini_rejects_invented_evidence_and_requires_source_stated_support(ai_usage) -> None:
     payload = {"event_summary": "Award.", "product_candidates": [], "program_candidates": [], "technical_systems": [], "component_candidates": [{"name": "actuator housing", "basis": "SOURCE_STATED", "reason": "stated", "source_support": "Award names it.", "evidence_ids": ["invented"]}], "uncertainties": []}
-    provider = GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5), _Client(json.dumps(payload)))
+    provider = GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5, usage=ai_usage), _Client(json.dumps(payload)))
     with pytest.raises(ValueError, match="unsupported evidence"):
         provider.decompose_technical_opportunity(request())
     payload["component_candidates"][0]["evidence_ids"] = []
     with pytest.raises(ValueError, match="SOURCE_STATED"):
-        GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5), _Client(json.dumps(payload))).decompose_technical_opportunity(request())
+        GeminiProvider(AiConfig("gemini", "key", "fake", "developer", None, "global", 5, usage=ai_usage), _Client(json.dumps(payload))).decompose_technical_opportunity(request())
 
 
 def test_bounds_reject_oversized_or_unapproved_gemini_shape() -> None:

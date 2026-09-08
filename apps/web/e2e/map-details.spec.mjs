@@ -1,0 +1,71 @@
+import { test, expect } from '@playwright/test'
+
+test('persisted NAICS and BU facets filter the same canonical map and list scope', async ({ page }) => {
+  const response = await page.request.get('/api/map')
+  const data = await response.json()
+  const expected = data.accounts.filter(item => item.naics_assignments?.some(n => n.code === '334516') && item.commercial_business_unit_ids?.includes('gen-el-mec'))
+  expect(expected.length).toBeGreaterThan(0)
+  await page.goto('/#/map')
+  await page.getByRole('button', { name: 'Layers & filters', exact: true }).click()
+  await page.getByRole('group', { name: 'NAICS account classification', exact: true }).getByRole('button', { name: '334516', exact: true }).click()
+  await page.getByRole('group', { name: 'BTX BU commercial context', exact: true }).getByRole('button', { name: 'gen el mec', exact: true }).click()
+  await page.getByRole('button', { name: 'Apply to map', exact: true }).click()
+  const list = page.getByRole('region', { name: 'Map results', exact: true })
+  for (const record of expected) await expect(list.getByRole('button').filter({ hasText: `${record.name} · ${record.location_name}` })).toBeVisible()
+  await expect(list.getByRole('button').filter({ hasText: /^Boeing/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Remove NAICS 334516 filter', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Remove NAICS 334516 filter', exact: true }).click()
+  await page.getByRole('button', { name: 'Remove BU gen el mec filter', exact: true }).click()
+  await expect(list.getByRole('button').filter({ hasText: /^Boeing/ }).first()).toBeVisible()
+})
+
+test('fulfillment attention filters use persisted obligations and clear without stale account context', async ({ page }) => {
+  const data = await (await page.request.get('/api/map')).json()
+  expect(data.accounts.find(r => r.account_id === 'boeing').fulfillment_attention.states).toContain('MISSED_COMMITMENT')
+  expect(data.accounts.find(r => r.account_id === 'kla').fulfillment_attention.states).not.toContain('MISSED_COMMITMENT')
+  await page.goto('/#/map')
+  await page.getByRole('button', { name: 'Layers & filters', exact: true }).click()
+  await page.getByRole('button', { name: 'Missed delivery commitment', exact: true }).click()
+  await page.getByRole('button', { name: 'Apply to map', exact: true }).click()
+  const results = page.getByRole('region', { name: 'Map results', exact: true })
+  await expect(results.getByRole('button').filter({ hasText: /^Boeing/ }).first()).toBeVisible()
+  await expect(results.getByRole('button').filter({ hasText: /^KLA/ })).toHaveCount(0)
+  await results.getByRole('button').filter({ hasText: /^Boeing/ }).first().click()
+  const detail = page.getByRole('complementary', { name: 'Selected map location', exact: true })
+  await detail.getByText('Fulfillment attention · 2026-08-31', { exact: true }).click()
+  await expect(detail).toContainText('Account-level obligations')
+  await page.getByRole('button', { name: 'Remove Missed delivery commitment filter', exact: true }).click()
+  await expect(results.getByRole('button').filter({ hasText: /^KLA/ }).first()).toBeVisible()
+})
+
+test('selected site shares canonical briefing and exposes evidence without a second account', async ({ page }) => {
+  const response = await page.request.get('/api/map')
+  expect(response.ok()).toBeTruthy()
+  const data = await response.json()
+  const record = data.accounts.find(item => item.account_id === 'kla')
+  expect(record.commercial_briefing.summary).toBeTruthy()
+  await page.goto('/#/map')
+  await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
+  const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
+  await expect(panel.getByRole('paragraph').filter({ hasText: record.commercial_briefing.summary })).toBeVisible()
+  await panel.getByText('Site evidence and decision details', { exact: true }).click()
+  await expect(panel.getByText(record.facility_id, { exact: true })).toBeVisible()
+  await expect(panel.getByText(record.commercial_briefing.revision, { exact: true })).toBeVisible()
+})
+
+test('zero score and zero distance are readable values (projection edge-case fixture)', async ({ page }) => {
+  await page.route('**/api/map', async route => {
+    const response = await route.fetch()
+    const data = await response.json()
+    for (const item of data.accounts.filter(item => item.account_id === 'kla')) {
+      item.attractiveness_score = '0'
+      item.nearest_btx_facility = { id: 'fixture-coincident', name: 'Coincident test facility', distance_miles: '0', distance_method: 'HAVERSINE_STRAIGHT_LINE' }
+    }
+    await route.fulfill({ response, json: data })
+  })
+  await page.goto('/#/map')
+  await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
+  const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
+  await expect(panel).toContainText('Attractiveness: 0')
+  await expect(panel).toContainText('Coincident test facility · 0 miles straight-line')
+})

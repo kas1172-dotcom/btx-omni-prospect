@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import Engine, delete, insert, select, text
+from sqlalchemy import Engine, delete, insert, or_, select, text
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -122,6 +122,7 @@ def _event_from_payload(payload: str) -> IntelligenceEvent:
         ),
         geography=value.get("geography"),
         event_date=_timestamp(value.get("event_date")),
+        source_published_at=_timestamp(value.get("source_published_at")),
         amount=Decimal(value["amount"]) if value.get("amount") is not None else None,
         currency=value.get("currency"),
         claims=tuple(
@@ -293,6 +294,7 @@ class MonitorRepository:
                     events_matched=run.events_matched,
                     failures=_json(run.failures),
                     latency_ms=run.latency_ms,
+                    funnel=_json(run.funnel) if run.funnel is not None else None,
                 )
             )
             connection.execute(
@@ -371,8 +373,7 @@ class MonitorRepository:
                         source_id=observation.source_identity.source_system,
                         source_observation_id=observation.id,
                         event_type=event.event_type.value,
-                        publication_date=event.event_date
-                        or observation.source_published_at,
+                        publication_date=observation.source_published_at,
                         collected_at=observation.observed_at,
                         updated_at=run.completed_at or observation.observed_at,
                         resolution_state=event.resolution_state.value,
@@ -476,7 +477,8 @@ class MonitorRepository:
         with self.engine.connect() as connection:
             return {
                 "runs": tuple(
-                    dict(row)
+                    {**dict(row), "funnel": json.loads(row["funnel"]) if row["funnel"] else None,
+                     "failures": json.loads(row["failures"]), "cursor": json.loads(row["cursor"]) if row["cursor"] else None}
                     for row in connection.execute(
                         select(monitor_collection_runs)
                         .order_by(monitor_collection_runs.c.started_at.desc())
@@ -492,7 +494,11 @@ class MonitorRepository:
                 "events": tuple(
                     dict(row)
                     for row in connection.execute(
-                        select(monitor_events)
+                        select(monitor_events, (monitor_events.c.source_observation_id == monitor_source_versions.c.last_observation_id).label("is_current_source_version")).outerjoin(
+                            monitor_source_versions,
+                            (monitor_source_versions.c.source_id == monitor_events.c.source_id)
+                            & (monitor_source_versions.c.source_record_id == monitor_events.c.provenance_source_id),
+                        )
                         .order_by(monitor_events.c.updated_at.desc())
                         .limit(100)
                     ).mappings()
@@ -510,12 +516,52 @@ class MonitorRepository:
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
         with self.engine.connect() as connection:
-            payloads = connection.execute(
-                select(monitor_events.c.event_payload).order_by(
+            rows = connection.execute(
+                select(monitor_events.c.event_payload, monitor_observations.c.published_at).outerjoin(
+                    monitor_observations, monitor_events.c.source_observation_id == monitor_observations.c.id
+                ).outerjoin(
+                    monitor_source_versions,
+                    (monitor_source_versions.c.source_id == monitor_events.c.source_id)
+                    & (monitor_source_versions.c.source_record_id == monitor_events.c.provenance_source_id),
+                ).where(or_(monitor_source_versions.c.last_observation_id.is_(None), monitor_events.c.source_observation_id == monitor_source_versions.c.last_observation_id)).order_by(
                     monitor_events.c.updated_at.desc()
                 )
-            ).scalars()
-            return tuple(_event_from_payload(payload) for payload in payloads)
+            ).mappings()
+            events = []
+            for row in rows:
+                event = _event_from_payload(row["event_payload"])
+                if event.source_published_at is None and row["published_at"] is not None:
+                    event = replace(event, source_published_at=_database_timestamp(row["published_at"]))
+                events.append(event)
+            return tuple(events)
+
+    def source_observation_payload(self, source_id: str, source_record_id: str) -> str | None:
+        """Current exact source assertion, for conservative failed-refresh retention."""
+        with self.engine.connect() as connection:
+            return connection.execute(select(monitor_observations.c.structured_payload).join(
+                monitor_source_versions, monitor_source_versions.c.last_observation_id == monitor_observations.c.id
+            ).where(monitor_source_versions.c.source_id == source_id,
+                    monitor_source_versions.c.source_record_id == source_record_id)).scalar_one_or_none()
+
+    def event_document(self, event_id: str) -> dict | None:
+        """One exact event's persisted source; never a global evidence search."""
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                select(monitor_observations, monitor_events.c.event_payload).join(
+                    monitor_events, monitor_events.c.source_observation_id == monitor_observations.c.id
+                ).where(monitor_events.c.id == event_id)
+            ).mappings().one_or_none()
+        if row is None:
+            return None
+        payload = json.loads(row["structured_payload"] or "{}")
+        event = json.loads(row["event_payload"])
+        return {"event_id": event_id, "observation_id": row["id"], "source_id": row["source_id"],
+                "canonical_account_ids": sorted({item["canonical_account_id"] for item in event["subject_entities"] if item.get("canonical_account_id")}),
+                "source_record_id": row["source_record_id"], "content_hash": row["content_hash"],
+                "source_url": row["canonical_url"], "title": row["title"], "published_at": row["published_at"],
+                "retrieved_at": row["retrieved_at"], "collection_run_id": row["collection_run_id"],
+                "document": payload.get("_retrieved_document"),
+                "availability": "DOCUMENT_ATTEMPT_RECORDED" if "_retrieved_document" in payload else "NO_DOCUMENT_ATTEMPT_RECORDED"}
 
     def organization_candidate(self, identity_key: str) -> OrganizationCandidate | None:
         with self.engine.connect() as connection:

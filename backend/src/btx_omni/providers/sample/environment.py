@@ -1,7 +1,7 @@
 """Composition root for the fixture-backed SAMPLE provider family."""
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 from btx_omni.core.classification import Classification
 from btx_omni.domain.accounts import (
@@ -98,6 +98,15 @@ class SampleEnvironment:
     reference_facilities: tuple[AccountFacility, ...]
     rich_scenarios: dict[str, RichScenario]
     priority_scenarios: dict[str, PriorityCustomerScenario]
+    commercial_ledgers: dict[str, dict] = field(default_factory=dict)
+    commercial_revision: str | None = None
+    scoring_evidence: dict[str, dict[str, tuple[str, ...]]] = field(default_factory=dict)
+
+    def attractiveness_inputs(self, account_id: str):
+        from btx_omni.modules.scoring.account_attractiveness import (
+            AccountAttractivenessInputs,
+        )
+        return AccountAttractivenessInputs(self.scoring_inputs.get(account_id, {}), self.scoring_evidence.get(account_id, {}))
 
 
 def build_sample_environment() -> SampleEnvironment:

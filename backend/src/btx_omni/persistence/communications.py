@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from datetime import UTC
 
-from sqlalchemy import Engine, insert, select, update
+from sqlalchemy import Engine, insert, select, text, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from btx_omni.domain.communications import (
     CommunicationAuditEvent,
@@ -21,6 +23,10 @@ from btx_omni.persistence.models import (
 
 def _aware(value):
     return value.replace(tzinfo=UTC) if value and value.tzinfo is None else value
+
+
+class CommunicationVersionConflict(RuntimeError):
+    pass
 
 
 class SqlCommunicationRepository:
@@ -45,6 +51,7 @@ class SqlCommunicationRepository:
             updated_at=_aware(row.updated_at),
             sent_at=_aware(row.sent_at),
             idempotency_key=row.idempotency_key,
+            version=row.version,
         )
 
     def get(self, draft_id: str) -> CommunicationDraft | None:
@@ -73,7 +80,7 @@ class SqlCommunicationRepository:
         return self._draft(row) if row else None
 
     def save(
-        self, draft: CommunicationDraft, event: CommunicationAuditEvent
+        self, draft: CommunicationDraft, event: CommunicationAuditEvent, *, expected_version: int | None = None
     ) -> CommunicationDraft:
         values = {
             "account_id": draft.account_id,
@@ -90,23 +97,33 @@ class SqlCommunicationRepository:
             "updated_at": draft.updated_at,
             "sent_at": draft.sent_at,
             "idempotency_key": draft.idempotency_key or draft.id,
+            "version": draft.version,
         }
         with self.engine.begin() as connection:
-            exists = connection.execute(
-                select(communication_drafts.c.id).where(
-                    communication_drafts.c.id == draft.id
-                )
-            ).scalar_one_or_none()
-            if exists:
-                connection.execute(
+            if event.event == 'CREATED':
+                builder = postgresql_insert if connection.dialect.name == 'postgresql' else sqlite_insert if connection.dialect.name == 'sqlite' else insert
+                statement = builder(communication_drafts).values(id=draft.id, **values)
+                if connection.dialect.name in {'postgresql', 'sqlite'}:
+                    statement = statement.on_conflict_do_nothing()
+                result = connection.execute(statement)
+                if result.rowcount == 0:
+                    winner = connection.execute(select(communication_drafts).where(communication_drafts.c.idempotency_key == values['idempotency_key'])).first()
+                    if winner is None:
+                        raise ValueError('Conflicting draft identity; inspect saved work before retrying.')
+                    return self._draft(winner)
+                connection.execute(insert(communication_audit_events).values(communication_id=event.communication_id,
+                    actor_id=event.actor_id, event=event.event, occurred_at=event.occurred_at,
+                    metadata=json.dumps(event.metadata, sort_keys=True)))
+                return draft
+            if expected_version is None or draft.version != expected_version + 1:
+                raise CommunicationVersionConflict('A saved draft version is required before changing this communication.')
+            result = connection.execute(
                     update(communication_drafts)
-                    .where(communication_drafts.c.id == draft.id)
+                    .where(communication_drafts.c.id == draft.id, communication_drafts.c.version == expected_version)
                     .values(**values)
                 )
-            else:
-                connection.execute(
-                    insert(communication_drafts).values(id=draft.id, **values)
-                )
+            if result.rowcount != 1:
+                raise CommunicationVersionConflict('This communication changed. Refresh and compare the saved draft; your local draft has not been submitted.')
             connection.execute(
                 insert(communication_audit_events).values(
                     communication_id=event.communication_id,
@@ -117,6 +134,22 @@ class SqlCommunicationRepository:
                 )
             )
         return draft
+
+    def append_audit(self, draft: CommunicationDraft, event: CommunicationAuditEvent) -> None:
+        """A read/failed delivery receipt never writes a stale copy of the draft."""
+        with self.engine.begin() as connection:
+            if connection.dialect.name == 'sqlite':
+                connection.exec_driver_sql('BEGIN IMMEDIATE')
+            elif connection.dialect.name == 'postgresql':
+                connection.execute(text("SET LOCAL lock_timeout = '2s'"))
+                connection.execute(text("SET LOCAL statement_timeout = '3s'"))
+            version = connection.execute(select(communication_drafts.c.version).where(
+                communication_drafts.c.id == draft.id).with_for_update()).scalar_one_or_none()
+            if version != draft.version:
+                raise CommunicationVersionConflict('The saved communication changed during this preview. Refresh before proceeding.')
+            connection.execute(insert(communication_audit_events).values(communication_id=event.communication_id,
+                actor_id=event.actor_id, event=event.event, occurred_at=event.occurred_at,
+                metadata=json.dumps({**event.metadata, 'draft_version': draft.version}, sort_keys=True)))
 
     def history(self, draft_id: str) -> tuple[CommunicationAuditEvent, ...]:
         with self.engine.connect() as connection:

@@ -176,17 +176,17 @@ async def test_api_requires_manager_review_and_never_autosends() -> None:
         seller_approval = await client.post(
             f"/api/communications/{draft_id}/approval",
             headers=seller,
-            json={"decision": "APPROVED"},
+            json={"decision": "APPROVED", "expected_version": created.json()["version"]},
         )
         approved = await client.post(
             f"/api/communications/{draft_id}/approval",
             headers=manager,
-            json={"decision": "APPROVED"},
+            json={"decision": "APPROVED", "expected_version": created.json()["version"]},
         )
         blocked = await client.post(
             f"/api/communications/{draft_id}/send",
             headers=manager,
-            params={"confirmed": True, "idempotency_key": "api-send-one"},
+            params={"confirmed": True, "idempotency_key": "api-send-one", "expected_version": approved.json()["version"]},
         )
     assert created.status_code == 200 and created.json()["status"] == "DRAFT"
     assert seller_approval.status_code == 403

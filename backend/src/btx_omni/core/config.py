@@ -12,28 +12,34 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api"
     data_mode: str = "SAMPLE"
+    release_sha: str = ""
+    release_tree: str = ""
+    release_worktree: str = "unknown"
     frontend_origins: str = "http://localhost:5173"
     session_ttl_seconds: int = 1800
     session_cookie_name: str = "btx_poc_session"
     hosted_demo_access_bypass: bool = False
     monitor_mode: str = "disabled"
     monitor_durable_state_enabled: bool = False
+    commercial_durable_state_enabled: bool = False
+    market_refresh_enabled: bool = False
     monitor_operator_token: str | None = None
     monitor_stale_after_hours: int = 48
     monitor_worker_sources: str = (
         "sam_gov,usaspending,federal_register,sec_edgar,nasa,fda_openfda"
     )
-    monitor_source_record_limit: int = 25
+    monitor_source_record_limit: int = Field(default=25, ge=1, le=100)
+    monitor_document_fetch_cap: int = Field(default=2, ge=0, le=5)
     monitor_source_target_limit: int = 25
-    monitor_worker_max_seconds: float = 240
-    monitor_source_min_start_seconds: float = 2.0
+    monitor_worker_max_seconds: float = Field(default=240, gt=0, le=900)
+    monitor_source_min_start_seconds: float = Field(default=2.0, gt=0, le=60)
     # SAM NAICS filtering remains opt-in until BTX verifies the target codes.
     # An empty list deliberately means the bounded date query is unclassified.
     monitor_sam_naics: str = ""
     monitor_sam_naics_verification_state: str = "PENDING_VERIFICATION"
-    monitor_brief_synthesis_cap: int = 3
-    monitor_technical_decomposition_cap: int = 2
-    monitor_entity_candidate_resolution_cap: int = 3
+    monitor_brief_synthesis_cap: int = Field(default=3, ge=0, le=10)
+    monitor_technical_decomposition_cap: int = Field(default=2, ge=0, le=5)
+    monitor_entity_candidate_resolution_cap: int = Field(default=3, ge=0, le=10)
     monitor_brief_auth_retry_seconds: int = 3600
     monitor_brief_timeout_retry_seconds: int = 300
     monitor_brief_quota_retry_seconds: int = 21600
@@ -53,7 +59,11 @@ class Settings(BaseSettings):
     gemini_mode: str = "developer"
     google_cloud_project: str | None = None
     google_cloud_location: str = "global"
-    ai_timeout_seconds: float = 20.0
+    ai_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
+    ai_daily_environment_calls: int = Field(default=1000, ge=1, le=10000)
+    ai_daily_actor_calls: int = Field(default=400, ge=1, le=10000)
+    ai_concurrent_environment_calls: int = Field(default=2, ge=1, le=8)
+    ai_concurrent_actor_calls: int = Field(default=1, ge=1, le=8)
     sam_api_key: str | None = None
     # Commerce's official content API uses a data.gov API key. Keeping this
     # separate from SAM prevents accidental cross-provider credential use.

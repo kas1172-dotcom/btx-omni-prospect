@@ -15,8 +15,6 @@ from btx_omni.modules.intelligence.signals import normalize_signal
 from btx_omni.modules.matching.commercial import match_component_to_quote
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
-    AccountAttractivenessInputs,
-    calculate_account_attractiveness,
     seller_attractiveness_projection,
 )
 from btx_omni.providers.sample.environment import SampleEnvironment
@@ -53,6 +51,11 @@ class OmniResponse:
     language_provider: str = "deterministic"
     language_model: str | None = None
     provider_status: str = "NOT_CONFIGURED"
+    structured_relationship: dict[str, object] | None = None
+    structured_reads: dict[str, object] | None = None
+    structured_market: dict[str, object] | None = None
+    provider_usage: tuple[dict[str, object], ...] = ()
+    run_id: str | None = None
 
 
 class OmniOrchestrator:
@@ -167,6 +170,13 @@ class OmniOrchestrator:
                 context=product_context,
             )
         cross_intent = self._cross_account_intent(query)
+        # A comparison of records inside an explicitly selected account is not
+        # automatically a request to compare two companies. Model interpretation
+        # remains available; this is the conservative deterministic fallback.
+        if (cross_intent == 'COMPARE' and account_id in environment.commercial_ledgers
+                and len(self._comparison_accounts_named(query, environment)) < 2
+                and re.search(r'\b(quote|quotes|revisions?|delivery|shipments?|revenue|acceptance|history)\b', query)):
+            cross_intent = None
         comparison_ids = product_context.get("_conversation_comparison_ids")
         if (
             isinstance(comparison_ids, tuple)
@@ -346,9 +356,8 @@ class OmniOrchestrator:
         if (
             "score" in question.casefold() or "attractive" in question.casefold()
         ) and account.id in environment.scoring_inputs:
-            score = calculate_account_attractiveness(
-                AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                evidence_ids=tuple(citations),
+            score = seller_attractiveness_projection(
+                environment.attractiveness_inputs(account.id),
                 calculated_at=observed_at,
             )
             lines.append(
@@ -877,11 +886,17 @@ class OmniOrchestrator:
                 intelligence_events=intelligence_events,
                 work_items=work_items,
             )
+        if (intent is ReadIntent.GENERAL_OVERVIEW
+                and not self._is_global_cross_account_question(question)
+                and any(item.id == account_id for item in environment.accounts)):
+            # A model's broad intent label cannot discard explicit canonical
+            # request scope. Record questions still need the scoped read tools.
+            intent = ReadIntent.ACCOUNT_OVERVIEW
         if intent is ReadIntent.GENERAL_OVERVIEW:
             return self._unscoped_answer(
                 environment,
                 observed_at=observed_at,
-                question="give a general governed overview",
+                question="summarize the governed portfolio",
             )
 
         candidates: tuple[object, ...]
@@ -899,6 +914,13 @@ class OmniOrchestrator:
                     entity_text, ambiguous=True
                 )
             candidates = self._accounts_matching_exact_text(entity_text, environment)
+            if not candidates and account_id:
+                # A word-boundary short name can refer to the explicitly selected
+                # account, but is never a global identity alias or a new account.
+                selected = next((item for item in environment.accounts if item.id == account_id), None)
+                normalized = entity_text.casefold().strip()
+                if selected and len(normalized) >= 5 and selected.legal_name.casefold().startswith(normalized + ' '):
+                    candidates = (selected,)
             if len(candidates) != 1:
                 return self._interpreted_entity_clarification(
                     entity_text, ambiguous=len(candidates) > 1
@@ -1174,9 +1196,8 @@ class OmniOrchestrator:
         }
         if "score" in question:
             scores = {
-                account.id: calculate_account_attractiveness(
-                    AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                    evidence_ids=(),
+                account.id: seller_attractiveness_projection(
+                    environment.attractiveness_inputs(account.id),
                     calculated_at=observed_at,
                 ).score
                 if account.id in environment.scoring_inputs
@@ -1974,9 +1995,8 @@ class OmniOrchestrator:
             context_used["account_id"] = account.id
             score = None
             if account.id in environment.scoring_inputs:
-                score = calculate_account_attractiveness(
-                    AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                    evidence_ids=tuple(citations),
+                score = seller_attractiveness_projection(
+                    environment.attractiveness_inputs(account.id),
                     calculated_at=observed_at,
                 )
                 lines.append(
@@ -2359,7 +2379,7 @@ class OmniOrchestrator:
             if account.id not in environment.scoring_inputs:
                 continue
             scenario = environment.priority_scenarios.get(account.id) or environment.rich_scenarios.get(account.id)
-            result = seller_attractiveness_projection(AccountAttractivenessInputs(environment.scoring_inputs[account.id]), calculated_at=observed_at, excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
+            result = seller_attractiveness_projection(environment.attractiveness_inputs(account.id), calculated_at=observed_at, excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
             if result.score is not None:
                 scores.append((account, result))
         return scores
@@ -2770,9 +2790,8 @@ class OmniOrchestrator:
         for account in accounts:
             score_text = "unavailable"
             if account.id in environment.scoring_inputs:
-                score = calculate_account_attractiveness(
-                    AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                    evidence_ids=(),
+                score = seller_attractiveness_projection(
+                    environment.attractiveness_inputs(account.id),
                     calculated_at=observed_at,
                 )
                 score_text = (
@@ -2790,9 +2809,8 @@ class OmniOrchestrator:
             account.id in environment.scoring_inputs for account in accounts
         ):
             scores = {
-                account.id: calculate_account_attractiveness(
-                    AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                    evidence_ids=(),
+                account.id: seller_attractiveness_projection(
+                    environment.attractiveness_inputs(account.id),
                     calculated_at=observed_at,
                 ).score
                 for account in accounts
@@ -2843,11 +2861,8 @@ class OmniOrchestrator:
             names = [account.legal_name]
             if account.public_identity:
                 names.extend(alias.value for alias in account.public_identity.aliases)
-            positions = [
-                question.find(name.casefold())
-                for name in names
-                if question.find(name.casefold()) >= 0
-            ]
+            positions = [match.start() for name in names
+                         if (match := re.search(r'(?<!\w)' + re.escape(name.casefold()) + r'(?!\w)', question))]
             if positions:
                 resolved.append((min(positions), account))
         return tuple(
@@ -3100,9 +3115,8 @@ class OmniOrchestrator:
                 break
             score_text = "no canonical score input"
             if account.id in environment.scoring_inputs:
-                score = calculate_account_attractiveness(
-                    AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                    evidence_ids=(),
+                score = seller_attractiveness_projection(
+                    environment.attractiveness_inputs(account.id),
                     calculated_at=observed_at,
                 )
                 score_text = f"attractiveness {score.score if score.score is not None else 'insufficient data'} (coverage {score.coverage})"
@@ -3180,9 +3194,8 @@ class OmniOrchestrator:
         citations = [account.provenance.source_record_id] if account.provenance else []
         lines = [f"Account Detail summary for {account.legal_name}."]
         if account.id in environment.scoring_inputs:
-            score = calculate_account_attractiveness(
-                AccountAttractivenessInputs(environment.scoring_inputs[account.id]),
-                evidence_ids=(),
+            score = seller_attractiveness_projection(
+                environment.attractiveness_inputs(account.id),
                 calculated_at=observed_at,
             )
             lines.append(

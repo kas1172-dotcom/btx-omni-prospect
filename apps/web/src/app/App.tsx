@@ -1,22 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { OmniDrawer } from '../components/OmniDrawer'
 import { Disclosure } from '../components/UI'
-import { Actions } from '../features/actions/Actions'
-import { Communications } from '../features/communications/Communications'
-import { Accounts } from '../features/accounts/Accounts'
-import { Intelligence } from '../features/intelligence/Intelligence'
-import { Map } from '../features/map/Map'
-import { Monitor } from '../features/monitor/Monitor'
+import { deferredSurface } from '../components/deferredSurface'
+import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { Today } from '../features/today/Today'
-import { Settings } from '../features/settings/Settings'
+import { workspaceHash, workspaceLocation, type Surface } from './navigation'
 import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
 import '../design/mobile.css'
-type Surface = 'today' | 'accounts' | 'intelligence' | 'map' | 'actions' | 'communications' | 'settings' | 'monitor'
-type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_program_id' | 'active_filters' | 'visible_record_ids'>
+const Accounts = deferredSurface(() => import('../features/accounts/Accounts').then(module => module.Accounts), 'Customers & Prospects', 'Accounts')
+const Map = deferredSurface(() => import('../features/map/Map').then(module => module.Map), 'Map', 'Map')
+const Actions = deferredSurface(() => import('../features/actions/Actions').then(module => module.Actions), 'Actions', 'Actions')
+const Communications = deferredSurface(() => import('../features/communications/Communications').then(module => module.Communications), 'Communications', 'Communications')
+const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
+const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Monitor', 'Monitor')
+const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
+type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
 const nav: Array<[Surface, string]> = [
   ['today', 'Today'],
   ['accounts', 'Customers & Prospects'],
@@ -41,11 +43,15 @@ export default function App() {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'required'>(import.meta.env.DEV ? 'authenticated' : 'checking')
   const [commandCenter, setCommandCenter] = useState<CommandCenter>()
   const [todayState, setTodayState] = useState<'loading' | 'loaded' | 'unavailable'>('loading')
-  const [surface, setSurface] = useState<Surface>('today')
+  const [surface, setSurface] = useState<Surface>(() => workspaceLocation(window.location.hash).surface)
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [portfolioSnapshot, setPortfolioSnapshot] = useState<PortfolioSnapshot>()
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [signals, setSignals] = useState<Signal[]>([])
   const [records, setRecords] = useState<MapRecord[]>([])
+  const [pendingMapAccounts, setPendingMapAccounts] = useState<import('../types/api').PendingMapAccount[]>([])
+  const [mapViewSnapshot, setMapViewSnapshot] = useState<import('../features/map/mapModel').MapViewSnapshot>()
   const [publicLocations, setPublicLocations] = useState<PublicLocation[]>([])
   const [btxFacilities, setBtxFacilities] = useState<BtxMapFacility[]>([])
   const [mapSignals, setMapSignals] = useState<MapIntelligence[]>([])
@@ -60,7 +66,11 @@ export default function App() {
   const [actionWarning, setActionWarning] = useState('Actions use durable governed storage.')
   const [monitor, setMonitor] = useState<MonitorHealth>()
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [resourceState, setResourceState] = useState<Partial<Record<Surface, 'loading' | 'loaded' | 'error'>>>({})
+  const [resourceReady, setResourceReady] = useState<Partial<Record<Surface, boolean>>>({})
+  const [refreshVersion, setRefreshVersion] = useState(0)
+  const [accountOpening, setAccountOpening] = useState<string>()
+  const accountRequest = useRef<AbortController | undefined>(undefined)
   const [selectedEventId, setSelectedEventId] = useState<string>()
   const [selectedMapAccountId, setSelectedMapAccountId] = useState<string>()
   const [selectedMapFacilityId, setSelectedMapFacilityId] = useState<string>()
@@ -73,20 +83,29 @@ export default function App() {
   }, [])
   const clearSelectedAction = useCallback(() => setSelectedActionId(undefined), [])
   const clearViewContext = useCallback(() => setViewContext({}), [])
-  const select = async (id: string) => {
+  const selectMapFacility = useCallback((facilityId?: string, accountId?: string) => { setSelectedMapFacilityId(facilityId); setSelectedMapAccountId(accountId) }, [])
+  const select = useCallback(async (id: string, recordHistory = true) => {
+    accountRequest.current?.abort()
+    const controller = new AbortController(); accountRequest.current = controller
+    setAccountOpening(id)
     try {
       setError('')
+      const result = await api.account(id, controller.signal)
+      if (controller.signal.aborted) return
       clearSelectedEvent()
       clearMapSelection()
       clearSelectedAction()
       clearViewContext()
-      setDetail(await api.account(id))
+      setDetail(result)
       setSurface('accounts')
+      if (recordHistory && window.location.hash !== workspaceHash('accounts', id)) window.history.pushState({ btxOmniNavigation: true }, '', workspaceHash('accounts', id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Customer context unavailable.')
-    }
-  }
-  const navigate = (id: Surface) => {
+      if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Customer context unavailable.')
+    } finally { if (accountRequest.current === controller) setAccountOpening(undefined) }
+  }, [clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext])
+  const navigate = useCallback((id: Surface, recordHistory = true) => {
+    accountRequest.current?.abort(); setAccountOpening(undefined)
+    setWorkspaceMenuOpen(false)
     if (id !== surface || (id === 'accounts' && detail)) {
       clearSelectedEvent()
       clearMapSelection()
@@ -95,63 +114,59 @@ export default function App() {
       setDetail(undefined)
     }
     setSurface(id)
-  }
+    if (recordHistory && window.location.hash !== workspaceHash(id)) window.history.pushState({ btxOmniNavigation: true }, '', workspaceHash(id))
+  }, [surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext])
+  useEffect(() => {
+    if (authState !== 'authenticated') return
+    const restore = () => { const location = workspaceLocation(window.location.hash); if (location.accountId) void select(location.accountId, false); else navigate(location.surface, false) }
+    window.addEventListener('hashchange', restore)
+    return () => window.removeEventListener('hashchange', restore)
+  }, [authState, select, navigate])
+  useEffect(() => {
+    if (authState !== 'authenticated') return
+    const location = workspaceLocation(window.location.hash)
+    if (!location.accountId) return
+    const controller = new AbortController(); accountRequest.current = controller
+    void api.account(location.accountId, controller.signal).then(result => {
+      if (!controller.signal.aborted) { setDetail(result); setSurface('accounts') }
+    }).catch(err => {
+      if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Customer context unavailable.')
+    })
+    return () => controller.abort()
+  }, [authState])
   useEffect(() => { if (import.meta.env.DEV) return; void api.session().then(() => setAuthState('authenticated')).catch(() => setAuthState('required')) }, [])
   useEffect(() => {
     if (authState !== 'authenticated') return
-    void Promise.allSettled([api.accounts(), api.today(), api.intelligence(), api.map(), api.actions(), api.communications(), api.settings()])
-      .then(([accountsResult, todayResult, intelligenceResult, mapResult, actionResult, communicationResult, settingsResult]) => {
-        if (accountsResult.status === 'fulfilled') setAccounts(accountsResult.value.accounts)
-        else setError('Core workspace catalog is unavailable.')
-        if (todayResult.status === 'fulfilled') {
-          setAlerts(todayResult.value.commercial_alerts)
-          setCommandCenter(todayResult.value.command_center)
-          setTodayState('loaded')
-        } else setTodayState('unavailable')
-        if (intelligenceResult.status === 'fulfilled') setSignals(intelligenceResult.value.signals)
-        if (mapResult.status === 'fulfilled') {
-          setRecords(mapResult.value.accounts)
-          setPublicLocations(mapResult.value.facilities)
-          setBtxFacilities(mapResult.value.btx_facilities)
-          setMapSignals(mapResult.value.intelligence)
-          setLayers(mapResult.value.layers)
-        }
-        if (actionResult.status === 'fulfilled') {
-          setItems(actionResult.value.items)
-          setSuggestions(actionResult.value.suggestions)
-          setActionPrincipal(actionResult.value.principal)
-          setActionWarning(actionResult.value.warning)
-        }
-        if (communicationResult.status === 'fulfilled') setCommunications(communicationResult.value.items)
-        if (settingsResult.status === 'fulfilled') { setWorkspaceSettings(settingsResult.value); setSettingsState('loaded') }
-        else setSettingsState('error')
-      })
-      .finally(() => setLoading(false))
-    void api
-      .monitor()
-      .then(setMonitor)
-      .catch(() => setMonitor(undefined))
-  }, [authState])
+    const controller = new AbortController(); const { signal } = controller
+    // Publish each independent read as it arrives. A slow optional surface must
+    // not hold the entire workspace behind an all-settled loading screen.
+    const load = <T,>(key: Surface, promise: Promise<T>, publish: (value: T) => void, failed?: () => void) => {
+      void promise.then(value => { if (!signal.aborted) { publish(value); setResourceReady(old => ({ ...old, [key]: true })); setResourceState(old => ({ ...old, [key]: 'loaded' })) } }).catch(() => { if (!signal.aborted) { failed?.(); setResourceState(old => ({ ...old, [key]: 'error' })) } })
+    }
+    load('accounts', api.accounts(signal), value => setAccounts(value.accounts))
+    load('today', api.today(signal), value => { setAlerts(value.commercial_alerts); setCommandCenter(value.command_center); setTodayState('loaded') }, () => setTodayState('unavailable'))
+    load('intelligence', api.intelligence(signal), value => setSignals(value.signals))
+    load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers) })
+    load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
+    load('communications', api.communications(signal), value => setCommunications(value.items))
+    load('settings', api.settings(signal), value => { setWorkspaceSettings(value); setSettingsState('loaded') }, () => setSettingsState('error'))
+    load('monitor', api.monitor(signal), setMonitor)
+    return () => controller.abort()
+  }, [authState, refreshVersion])
+  useEffect(() => () => accountRequest.current?.abort(), [])
   if (authState === 'checking') return <main className="app-shell app-shell-loading"><div className="loading-stage"><span className="eyebrow">Secure workspace</span><h1>Checking hosted session</h1><p>Validating the server-held POC session without exposing role credentials.</p></div></main>
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
-  if (loading)
-    return (
-      <main className="app-shell app-shell-loading">
-        <div className="loading-stage">
-          <span className="eyebrow">Loading governed context</span>
-          <h1>Preparing Omni Prospect</h1>
-          <p>Resolving public evidence and simulated POC context.</p>
-        </div>
-      </main>
-    )
   const content =
     surface === 'accounts' ? (
-      <Accounts accounts={accounts} detail={detail} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
+      <Accounts accounts={accounts} detail={detail} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => { clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext(); setSurface('actions'); setError(`Create an internal Action for ${accounts.find(account => account.id === brief.canonical_account_ids[0])?.name ?? 'the linked Customer'} using the governed next step.`) }} onOmniContext={setViewContext} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => { navigate('actions'); setError(`Create an internal Action for ${accounts.find(account => account.id === brief.canonical_account_ids[0])?.name ?? 'the linked Customer'} using the governed next step.`) }} onOmniContext={setViewContext} />
     ) : surface === 'map' ? (
       <Map
         records={records}
+        pendingAccounts={pendingMapAccounts}
+        initialSnapshot={mapViewSnapshot}
+        onSnapshot={setMapViewSnapshot}
         publicLocations={publicLocations}
         btxFacilities={btxFacilities}
         layers={layers}
@@ -162,10 +177,7 @@ export default function App() {
           setSelectedMapAccountId(id)
           setSelectedMapFacilityId(undefined)
         }}
-        onMapFacilitySelect={(facilityId, accountId) => {
-          setSelectedMapFacilityId(facilityId)
-          setSelectedMapAccountId(accountId)
-        }}
+        onMapFacilitySelect={selectMapFacility}
         onMapEventSelect={setSelectedEventId}
         onOmniContext={setViewContext}
       />
@@ -174,7 +186,7 @@ export default function App() {
     ) : surface === 'communications' ? (
       <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
-      <Settings settings={workspaceSettings} state={settingsState} onSettings={setWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { setWorkspaceSettings(value); setSettingsState('loaded') }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => window.location.reload())} />
+      <Settings accounts={accounts} settings={workspaceSettings} state={settingsState} onSettings={setWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { setWorkspaceSettings(value); setSettingsState('loaded'); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => window.location.reload())} />
     ) : surface === 'monitor' ? (
       <Monitor
         health={monitor}
@@ -184,7 +196,7 @@ export default function App() {
           clearMapSelection()
           clearSelectedAction()
           clearViewContext()
-          setSurface('intelligence')
+          navigate('intelligence')
         }}
       />
     ) : (
@@ -203,7 +215,7 @@ export default function App() {
           clearMapSelection()
           clearSelectedAction()
           clearViewContext()
-          setSurface('actions')
+          navigate('actions')
           setError(`Ready to create action for ${accounts.find((account) => account.id === alert.account_id)?.name ?? 'selected Customer'}.`)
         }}
         onOmniContext={setViewContext}
@@ -232,6 +244,7 @@ export default function App() {
     selected_program_id: surface === 'today' ? viewContext.selected_program_id : undefined,
     selected_facility_id: surface === 'map' ? selectedMapFacilityId : undefined,
     selected_action_id: surface === 'actions' ? selectedActionId : undefined,
+    relationship_selection: omniSurface === 'ACCOUNT_DETAIL' ? viewContext.relationship_selection : undefined,
     active_filters: omniSurface === 'ACCOUNT_DETAIL' ? undefined : viewContext.active_filters,
     visible_record_ids: omniSurface === 'ACCOUNT_DETAIL' ? undefined : viewContext.visible_record_ids,
   }
@@ -264,7 +277,7 @@ export default function App() {
             <span className="eyebrow">BTX Omni Prospect</span>
             <strong>{surfaceLabels[surface]}</strong>
           </div>
-          <Disclosure className="mode" title="Workspace menu">
+          <Disclosure className="mode" title="Workspace menu" open={workspaceMenuOpen} onOpenChange={setWorkspaceMenuOpen}>
             <div className="mobile-secondary-links">
               <button onClick={() => navigate('communications')}>Communications</button>
               <button onClick={() => navigate('settings')}>Settings</button>
@@ -272,8 +285,11 @@ export default function App() {
             <p>Public evidence and SAMPLE commercial context remain explicitly separated.</p>
           </Disclosure>
         </header>
+        <aside className="demonstration-banner" aria-label="Demonstration environment"><strong>Demonstration workspace</strong><span>Simulated BTX commercial context</span><span>Public claims retain their source evidence and dates. No external message or CRM write is implied.</span></aside>
         {error && <div className="api-notice">{error}</div>}
-        {content}
+        {accountOpening && <div className="api-notice" role="status">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'account'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></div>}
+        {surface !== 'settings' && resourceState[surface] === 'error' && <div className="api-notice" role="alert">{surfaceLabels[surface]} could not refresh. Previously loaded content is retained, if available. <button type="button" onClick={() => setRefreshVersion(version => version + 1)}>Retry workspace reads</button></div>}
+        {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface" role="status">Loading {surfaceLabels[surface]}… Other workspace sections remain available.</section> : resourceReady[surface] ? content : null}
       </section>
       <nav className="mobile-primary-nav" aria-label="Mobile primary navigation">
         {mobileNav.map(([id, label]) => (

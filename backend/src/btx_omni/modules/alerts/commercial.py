@@ -30,12 +30,13 @@ class CommercialAlertEngine:
                 action: str,
                 severity: str = "MEDIUM",
                 extra: tuple[str, ...] = (),
+                subject_id: str | None = None,
                 item: CommercialContext = context,
                 item_evidence: tuple[str, ...] = evidence,
             ) -> None:
                 alerts.append(
                     CommercialAlert(
-                        f"alert-{kind.value.lower()}-{item.account_id}-{item.business_unit}",
+                        f"alert-{kind.value.lower()}-{item.account_id}-{item.business_unit}" + (f'-{subject_id}' if subject_id else ''),
                         item.account_id,
                         kind,
                         item.business_unit,
@@ -48,6 +49,7 @@ class CommercialAlertEngine:
                         action,
                         synthetic=item.provenance.synthetic,
                         provenance_state=item.provenance.evidence_state.value,
+                        subject_id=subject_id,
                     )
                 )
             if context.last_booking_date and (today - context.last_booking_date).days >= self.inactivity_days:
@@ -62,14 +64,15 @@ class CommercialAlertEngine:
             if context.intelligence_evidence_ids and context.ttm_bookings_minor is not None:
                 emit(CommercialAlertKind.INTELLIGENCE_COMMERCIAL_CONTEXT, "External intelligence needs commercial review", context.ttm_bookings_minor, "commercial context present", "Review intelligence against current commercial plan.", extra=context.intelligence_evidence_ids)
             for quote in quotes:
-                if quote.account_id != context.account_id or quote.status is not QuoteStatus.OPEN:
+                if (quote.account_id != context.account_id or quote.status is not QuoteStatus.OPEN
+                        or context.business_unit not in (quote.business_unit_ids or (quote.business_unit,))):
                     continue
                 age = (today - quote.quoted_at).days
                 quote_evidence = (quote.provenance.source_record_id,) + quote.quote_to_book_evidence_ids
                 if quote.value_minor is not None and quote.value_minor >= self.high_value_quote_minor and age >= self.stale_quote_days:
-                    emit(CommercialAlertKind.STALE_QUOTE, "Open high-value quote is stale", age, self.stale_quote_days, "Escalate quote disposition with the account owner.", "HIGH", quote_evidence)
+                    emit(CommercialAlertKind.STALE_QUOTE, "Open high-value quote is stale", age, self.stale_quote_days, "Escalate quote disposition with the account owner.", "HIGH", quote_evidence, subject_id=quote.id)
                 elif age >= self.follow_up_days:
-                    emit(CommercialAlertKind.QUOTE_FOLLOW_UP, "Open quote requires follow-up", age, self.follow_up_days, "Contact the quote recipient and record outcome.", extra=quote_evidence)
+                    emit(CommercialAlertKind.QUOTE_FOLLOW_UP, "Open quote requires follow-up", age, self.follow_up_days, "Contact the quote recipient and record outcome.", extra=quote_evidence, subject_id=quote.id)
         # An account represented by multiple business units requires coordination.
         by_account: dict[str, list[CommercialContext]] = {}
         for context in contexts:

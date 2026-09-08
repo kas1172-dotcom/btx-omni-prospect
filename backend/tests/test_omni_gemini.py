@@ -2,9 +2,11 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import create_engine
 
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import (
+    CanonicalToolSelectionRequest,
     ConversationTurn,
     GroundedSynthesisRequest,
     IntentInterpretation,
@@ -21,7 +23,28 @@ from btx_omni.modules.assistant.tools import (
     GovernedToolError,
     ToolCall,
 )
+from btx_omni.persistence.ai_usage import AiUsageRepository, ai_call_receipts
 from btx_omni.providers.sample.environment import build_sample_environment
+
+
+@pytest.mark.parametrize('selected, entity, expected', [
+    ('northrop-grumman', 'Northrop', 'northrop-grumman'),
+    (None, 'Northrop', ''),
+    ('boeing', 'Northrop', ''),
+    ('northrop-grumman', 'North', ''),
+])
+def test_short_name_is_scoped_continuation_not_global_identity_alias(selected, entity, expected):
+    from btx_omni.modules.assistant.orchestration import OmniOrchestrator
+
+    response = OmniOrchestrator().answer(
+        build_sample_environment(), account_id=selected,
+        question=f'Explain {entity} buyer context', observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={'_interpreted_intent': 'ACCOUNT_OVERVIEW', '_interpreted_entity_text': entity},
+        intelligence_events=(), work_items=(),
+    )
+    assert response.account_id == expected
+    if not expected:
+        assert response.context_used['interpretation_status'] == 'CLARIFICATION'
 
 
 class FakeModels:
@@ -105,6 +128,8 @@ class FakeInterpretingProvider:
 
 
 def config(**overrides) -> AiConfig:
+    engine = create_engine("sqlite://")
+    ai_call_receipts.create(engine)
     values = {
         "provider": "gemini",
         "api_key": "test-key",
@@ -113,9 +138,25 @@ def config(**overrides) -> AiConfig:
         "project": None,
         "location": "global",
         "timeout_seconds": 2,
+        "usage": AiUsageRepository(engine),
     }
     values.update(overrides)
     return AiConfig(**values)
+
+
+def test_canonical_selector_supplies_closed_tool_specific_schema():
+    from btx_omni.modules.assistant.commercial_tools import DEFINITIONS
+    client = FakeClient(intent_text='{"tool":"read_fulfillment","arguments":{}}')
+    provider = GeminiProvider(config(), client)
+    result = provider.choose_canonical_read(CanonicalToolSelectionRequest('Read delivery', 'kla', DEFINITIONS, (), 4))
+    assert result == {'tool': 'read_fulfillment', 'arguments': {}}
+    schema = client.models.calls[0]['config'].response_json_schema
+    assert len(schema['anyOf']) == len(DEFINITIONS) + 1
+    for branch, definition in zip(schema['anyOf'][1:], DEFINITIONS, strict=True):
+        assert branch['additionalProperties'] is False
+        assert branch['properties']['tool']['enum'] == [definition['name']]
+        assert branch['properties']['arguments']['required'] == definition['arguments']
+        assert branch['properties']['arguments']['additionalProperties'] is False
 
 
 def test_gemini_contract_is_grounded_and_traceable_without_live_call() -> None:
@@ -143,6 +184,29 @@ def test_developer_and_vertex_configuration_are_explicit() -> None:
     assert not GeminiProvider(config(api_key=None)).configured
     assert GeminiProvider(config(mode="vertex", api_key=None, project="btx-project")).configured
     assert not GeminiProvider(config(mode="vertex", api_key=None, project=None)).configured
+
+
+@pytest.mark.parametrize("finish", ["MAX_TOKENS", "SAFETY", "RECITATION"])
+def test_incomplete_provider_output_is_not_published_as_success(finish):
+    client = FakeClient()
+    client.models.generate_content = lambda **kwargs: SimpleNamespace(
+        text="A truncated but nonempty answer", candidates=[SimpleNamespace(finish_reason=finish)],
+        usage_metadata=SimpleNamespace(prompt_token_count=20, candidates_token_count=5, total_token_count=30, thoughts_token_count=5),
+    )
+    provider = GeminiProvider(config(), client)
+    with pytest.raises(LanguageProviderError) as caught:
+        provider.synthesize(GroundedSynthesisRequest("Question", "Canonical answer", (), ()))
+    assert caught.value.status == ProviderStatus.UNAVAILABLE
+    assert provider.usage_log[0]["finish_reason"] == finish
+    assert provider.usage_log[0]["total_tokens"] == 30
+    assert "A truncated" not in str(provider.usage_log)
+
+
+def test_gemini_thinking_configuration_is_model_family_specific():
+    from google.genai.types import ThinkingLevel
+
+    assert GeminiProvider(config(model="gemini-3.6-flash"))._read_thinking().thinking_level is ThinkingLevel.LOW
+    assert GeminiProvider(config(model="gemini-2.5-flash"))._read_thinking() is None
 
 
 def test_read_tool_registry_rejects_unknown_malformed_and_unbounded_calls() -> None:

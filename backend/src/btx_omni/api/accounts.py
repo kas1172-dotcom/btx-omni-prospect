@@ -5,6 +5,7 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.modules.accounts.customer_360 import customer_360_projection
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
+from btx_omni.modules.commercial.briefing import commercial_briefing
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     customer_attractiveness_subject_key,
     persisted_seller_explanation,
@@ -16,7 +17,6 @@ from btx_omni.modules.relationships.presentation import (
 )
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
-    AccountAttractivenessInputs,
     SellerAttractivenessProjection,
     seller_attractiveness_projection,
 )
@@ -70,7 +70,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             item.id
         )
         projection = seller_attractiveness_projection(
-            AccountAttractivenessInputs(sample.scoring_inputs.get(item.id, {})),
+            sample.attractiveness_inputs(item.id),
             calculated_at=runtime.observed_at(),
             excluded=bool(scenario and scenario.exclusion_reason),
             exclusion_reason=scenario.exclusion_reason if scenario else None,
@@ -97,7 +97,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
                 "btx_top_100": item.btx_top_100,
                 "btx_top_100_provenance": item.btx_top_100_provenance,
                 "is_rich_scenario": item.id in sample.rich_scenarios
-                or item.id in sample.priority_scenarios,
+                or item.id in sample.priority_scenarios or item.id in sample.commercial_ledgers,
                 "truth_state": "PUBLICLY_VERIFIED"
                 if item.id in sample.rich_scenarios
                 else (
@@ -154,9 +154,9 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     scenario = sample.priority_scenarios.get(account_id) or sample.rich_scenarios.get(
         account_id
     )
-    selections = sample.scoring_inputs.get(account_id, {})
+    brief = commercial_briefing(sample.commercial_ledgers[account_id], canonical_account_id=account_id, revision=sample.commercial_revision) if account_id in sample.commercial_ledgers else None
     projection = seller_attractiveness_projection(
-        AccountAttractivenessInputs(selections),
+        sample.attractiveness_inputs(account_id),
         calculated_at=observed,
         excluded=bool(scenario and scenario.exclusion_reason),
         exclusion_reason=scenario.exclusion_reason if scenario else None,
@@ -180,10 +180,11 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "public_relationship": account.public_relationship,
         "prospect_research_priority": account.prospect_research_priority,
         "prospect_rationale": account.prospect_rationale,
-        "reason_for_attention": scenario.reason_for_attention
+        "commercial_briefing": brief,
+        "reason_for_attention": brief["summary"] if brief else scenario.reason_for_attention
         if scenario
         else account.prospect_rationale,
-        "recommended_next_step": scenario.recommended_next_step
+        "recommended_next_step": brief["next_action"] if brief else scenario.recommended_next_step
         if scenario
         else "Research public evidence before recommending outreach.",
         "truth_categories": {
@@ -197,6 +198,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
             "btx": "SIMULATED_BTX_CONTEXT" if scenario or contexts else "UNAVAILABLE",
         },
         "commercial_source_states": commercial.source_states,
+        "commercial_ledger": commercial.ledger_summary,
         "public_contacts": account.public_contacts,
         "public_facilities": public_facilities,
         "prism_commercial_context": contexts,

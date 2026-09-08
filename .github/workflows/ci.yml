@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -56,3 +57,58 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+  browser:
+    name: Deterministic seller workflows (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: btx_omni_e2e
+          POSTGRES_USER: btx_omni
+          POSTGRES_PASSWORD: btx_omni_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U btx_omni -d btx_omni_e2e"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      BTX_DATABASE_URL: postgresql+psycopg://btx_omni:btx_omni_dev@localhost:5432/btx_omni_e2e
+      BTX_ENVIRONMENT: development
+      BTX_DATA_MODE: SAMPLE
+      BTX_E2E_API_PORT: "8120"
+      BTX_E2E_WEB_PORT: "5190"
+      BTX_E2E_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: uv sync --frozen --all-groups
+        working-directory: backend
+      - run: uv run alembic upgrade head
+        working-directory: backend
+      - run: uv run python tests/prepare_e2e.py
+        working-directory: backend
+      - run: npm ci
+        working-directory: apps/web
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+        working-directory: apps/web
+      - run: npm run test:e2e
+        working-directory: apps/web
+      - name: Preserve browser evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seller-workflows-${{ matrix.browser }}-${{ github.sha }}
+          path: apps/web/test-results
+          retention-days: 14

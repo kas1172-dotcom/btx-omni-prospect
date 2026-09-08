@@ -1,6 +1,7 @@
 import type { MonitorSignalBrief } from '../types/api'
 import { Button, Disclosure, EvidenceSource, State } from './UI'
 import { GovernedExplanationDisclosure } from './GovernedExplanationDisclosure'
+import { EvidencePassages } from './EvidencePassages'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
@@ -48,6 +49,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         {brief.recommended_action && <p><strong>Governed next step:</strong> {brief.recommended_action}</p>}
         {brief.missing_fields.length > 0 && <p><strong>Missing:</strong> {brief.missing_fields.join(', ')}</p>}
         <EvidenceSource title={brief.headline} source={brief.source_system} date={dateLabel(brief.publication_timestamp)} evidenceState={brief.resolution_state} validationState={brief.seller_promotion_state} url={brief.source_url} detail={`Evidence IDs: ${brief.evidence_ids.length ? brief.evidence_ids.join(', ') : 'Unavailable'}`} />
+        {brief.data_mode === 'LIVE_PUBLIC' && <EvidencePassages key={brief.id} eventId={brief.id} />}
       </div>
     </Disclosure>
     {onUseInOmni && <div className="card-actions"><Button aria-pressed={selected} variant={selected ? 'primary' : 'secondary'} onClick={() => onUseInOmni(brief)}>{selected ? 'Clear Omni event' : 'Use in Omni'}</Button></div>}

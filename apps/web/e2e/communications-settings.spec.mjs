@@ -80,14 +80,16 @@ test('Settings and secondary mobile navigation are role-aware, safe, and non-ove
 
 test('Settings failure stays on Settings and retries only its failed read', async ({ page }) => {
   let settingsRequests = 0
+  let allowSuccess = false
   await page.route('**/*', async route => {
     if (!new URL(route.request().url()).pathname.startsWith('/api/settings')) {
       await route.continue()
       return
     }
     settingsRequests += 1
-    // React StrictMode runs the initial load effect twice in the development server.
-    if (settingsRequests <= 2) {
+    // StrictMode may cancel the first transport before it reaches interception.
+    // Keep failure active until the user explicitly retries this resource.
+    if (!allowSuccess) {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"detail":"Unavailable"}' })
       return
     }
@@ -95,14 +97,16 @@ test('Settings failure stays on Settings and retries only its failed read', asyn
   })
   await page.setViewportSize({ width: 1440, height: 960 })
   await page.goto('/')
-  await expect.poll(() => settingsRequests).toBe(2)
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
   await expect(page.getByText('Settings could not be loaded')).toBeVisible()
+  const failedRequests = settingsRequests
+  expect(failedRequests).toBeGreaterThanOrEqual(1)
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(0)
   const retryResponse = page.waitForResponse(response => new URL(response.url()).pathname.startsWith('/api/settings') && response.status() === 200)
+  allowSuccess = true
   await page.getByRole('button', { name: 'Retry Settings' }).click()
   await retryResponse
   await expect(page.getByText('Role & Access', { exact: true }).last()).toBeVisible()
-  expect(settingsRequests).toBe(3)
+  expect(settingsRequests).toBe(failedRequests + 1)
 })

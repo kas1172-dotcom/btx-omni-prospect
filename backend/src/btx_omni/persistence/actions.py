@@ -25,6 +25,30 @@ class SqlActionRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
 
+    def transact_audit(self, action_id: str, operation):
+        """Serialize proposal receipts with Action edits; never overwrite work state."""
+        from btx_omni.modules.work.service import ActionNotFoundError
+
+        with self.engine.begin() as connection:
+            if connection.dialect.name == 'sqlite':
+                connection.exec_driver_sql('BEGIN IMMEDIATE')
+            else:
+                connection.exec_driver_sql("SET LOCAL lock_timeout = '5s'")
+            row = connection.execute(select(work_items).where(work_items.c.id == action_id).with_for_update()).first()
+            if row is None:
+                raise ActionNotFoundError(action_id)
+            rows = connection.execute(select(work_audit_events).where(work_audit_events.c.work_item_id == action_id)
+                                      .order_by(work_audit_events.c.id)).all()
+            history = tuple(ActionAuditEvent(r.id, r.work_item_id, r.actor_id, r.event,
+                r.occurred_at.replace(tzinfo=UTC) if r.occurred_at.tzinfo is None else r.occurred_at,
+                json.loads(r.metadata or '{}')) for r in rows)
+            event, result = operation(self._action(row), history)
+            if event is not None:
+                connection.execute(insert(work_audit_events).values(work_item_id=action_id, event=event.event,
+                    actor_id=event.actor_id, occurred_at=event.occurred_at, note=None,
+                    metadata=json.dumps(event.metadata, sort_keys=True)))
+            return result
+
     @staticmethod
     def _action(row) -> Action:
         def aware(value):
@@ -119,14 +143,18 @@ class SqlActionRepository:
                 else insert(work_items)
             )
             result = connection.execute(
-                statement.values(id=action.id, **values).on_conflict_do_nothing(
-                    index_elements=[work_items.c.id]
-                )
+                statement.values(id=action.id, **values).on_conflict_do_nothing()
                 if connection.dialect.name in {"postgresql", "sqlite"}
                 else statement.values(id=action.id, **values)
             )
             if result.rowcount == 0:
                 row = connection.execute(select(work_items).where(work_items.c.id == action.id)).first()
+                if row is None and action.source_suggestion_id:
+                    row = connection.execute(select(work_items).where(
+                        work_items.c.source_suggestion_id == action.source_suggestion_id
+                    )).first()
+                if row is None:
+                    raise ValueError("Conflicting work identity; reload before retrying.")
                 return self._action(row)
             connection.execute(
                 insert(work_audit_events).values(
@@ -181,10 +209,13 @@ class SqlActionRepository:
                     )
                 )
 
-    def dismissed_suggestions(self) -> frozenset[str]:
+    def dismissed_suggestions(self, actor_id: str | None = None) -> frozenset[str]:
+        statement = select(action_suggestion_decisions.c.suggestion_id)
+        if actor_id is not None:
+            statement = statement.where(action_suggestion_decisions.c.dismissed_by == actor_id)
         with self.engine.connect() as connection:
             return frozenset(
                 connection.execute(
-                    select(action_suggestion_decisions.c.suggestion_id)
+                    statement
                 ).scalars()
             )

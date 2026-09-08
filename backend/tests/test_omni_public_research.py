@@ -6,6 +6,7 @@ from btx_omni.ai.contracts import (
     LanguageProviderError,
     LanguageResult,
     ProviderStatus,
+    PublicEvidenceRecord,
     PublicWebFinding,
     PublicWebResearchRequest,
     PublicWebResearchResult,
@@ -97,6 +98,43 @@ def test_governed_only_question_does_not_invoke_public_research() -> None:
     assert "web:boeing-update" not in response.citations
 
 
+def test_existing_researched_person_is_not_a_new_public_research_request():
+    from btx_omni.modules.assistant.public_research import should_research_public_web
+
+    assert not should_research_public_web('We have role-target interactions and a researched executive. Is that a warm introduction?')
+    assert should_research_public_web('Research current published professional roles at Boeing.')
+    assert not should_research_public_web('Assume a relevant certificate expired yesterday. Would technical utility override qualification?')
+    assert not should_research_public_web('Does a NASA article establish an award from a shared industry keyword?')
+    assert not should_research_public_web('Report current revenue in euros using only the stored records.')
+    assert should_research_public_web('Assume we need newer evidence; search current public facility announcements.')
+
+
+def test_selected_persisted_public_passage_is_read_in_resolved_account_scope():
+    provider = ResearchProvider()
+    calls = []
+    requests = []
+    original = provider.synthesize
+
+    def synthesize(request):
+        requests.append(request)
+        return original(request)
+
+    provider.synthesize = synthesize
+
+    def read(event_id, account_id):
+        calls.append((event_id, account_id))
+        return (PublicEvidenceRecord('passage:verified:0', 'Boeing public update', 'A public supplier requirement was published.', 'https://www.boeing.com/update', '{"publication_date":"2026-09-07","extraction_complete":false}'),)
+
+    result = OmniService(provider).answer(build_sample_environment(), account_id='boeing', question='Explain the selected evidence with Boeing context.', observed_at=NOW,
+                                         context={'selected_account_id': 'boeing', 'selected_event_id': 'event-public'}, intelligence_events=(), work_items=(), public_evidence_reader=read)
+    assert calls == [('event-public', 'boeing')]
+    assert provider.calls == 0  # stored passage is not a fresh web-search claim
+    assert result.context_used['selected_public_passages'] == 1
+    assert requests[0].public_research[0].extract == 'A public supplier requirement was published.'
+    assert '2026-09-07' in requests[0].public_research[0].retrieval_provenance
+    assert 'passage:verified:0' in result.citations
+
+
 def test_current_public_research_is_cited_and_keeps_canonical_referent() -> None:
     provider = ResearchProvider()
     response = answer(provider, "What has happened with Boeing this week?")
@@ -110,6 +148,15 @@ def test_current_public_research_is_cited_and_keeps_canonical_referent() -> None
     assert response.citation_links[-1].url == "https://news.example.test/boeing"
     assert "LIVE_PUBLIC_RESEARCH" in response.provenance
     assert response.context_used["public_web_research"] == "CITED_PUBLIC_FINDINGS"
+
+
+def test_internal_question_and_governed_transactions_never_enter_public_search():
+    provider = ResearchProvider()
+    answer(provider, "Research the supplier for private RFQ SECRET-419, price $19317 and buyer Dana's recovery terms.")
+    request = provider.research_requests[0]
+    assert request.query == "Boeing: public supplier announcements"
+    assert request.governed_context == ()
+    assert all(value not in repr(request) for value in ("SECRET-419", "19317", "Dana", "recovery terms"))
 
 
 def test_follow_up_retains_governed_customer_and_research_failure_is_safe() -> None:
@@ -195,7 +242,7 @@ def test_public_findings_become_bounded_technical_evidence_then_controlled_match
     assert request.evidence[0].evidence_id == "web:award"
 
 
-def test_gemini_google_grounding_preserves_usable_citations_without_live_access() -> (
+def test_gemini_google_grounding_preserves_usable_citations_without_live_access(ai_usage) -> (
     None
 ):
     class Models:
@@ -221,7 +268,7 @@ def test_gemini_google_grounding_preserves_usable_citations_without_live_access(
             pass
 
     result = GeminiProvider(
-        AiConfig("gemini", "key", "fake", "developer", None, "global", 5), Client()
+        AiConfig("gemini", "key", "fake", "developer", None, "global", 5, usage=ai_usage), Client()
     ).research_public_web(PublicWebResearchRequest("What changed at Boeing?"))
     assert result.findings[0].url == "https://public.example.test/story"
     assert result.findings[0].publisher == "public.example.test"

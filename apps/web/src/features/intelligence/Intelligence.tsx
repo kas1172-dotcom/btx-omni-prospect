@@ -21,6 +21,7 @@ import {
 } from "../../components/UI";
 import { curatedSignalBrief } from "../../components/signalBriefModel";
 import { FederalProcurementView } from "./FederalProcurement";
+import { MarketIntelligence } from "./MarketIntelligence";
 import "./intelligence.css";
 
 type Filters = {
@@ -222,7 +223,16 @@ export function Intelligence({
     context: Pick<OmniContext, "active_filters" | "visible_record_ids">,
   ) => void;
 }) {
-  const [workspace, setWorkspace] = useState<"monitor" | "federal">("monitor");
+  const [workspace, setWorkspace] = useState<"monitor" | "federal" | "markets">(() => window.location.hash.startsWith('#/intelligence/markets') ? 'markets' : window.location.hash.startsWith('#/intelligence/federal') ? 'federal' : 'monitor');
+  useEffect(() => {
+    const changed = () => setWorkspace(window.location.hash.startsWith('#/intelligence/markets') ? 'markets' : window.location.hash.startsWith('#/intelligence/federal') ? 'federal' : 'monitor');
+    window.addEventListener('hashchange', changed);
+    return () => window.removeEventListener('hashchange', changed);
+  }, []);
+  const selectWorkspace = (next: "monitor" | "federal" | "markets") => {
+    setWorkspace(next);
+    window.location.hash = `/intelligence${next === 'monitor' ? '' : `/${next}`}`;
+  };
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(empty);
   const [sort, setSort] = useState<Sort>("PRIORITY");
@@ -330,11 +340,12 @@ export function Intelligence({
   const tracked = commandCenter?.watched_accounts ?? [];
   useEffect(() => () => onEventSelect(undefined), [onEventSelect]);
   useEffect(() => {
+    if (workspace === 'markets') return;
     onOmniContext({
       active_filters: Object.fromEntries(active),
       visible_record_ids: ordered.map((item) => item.id).slice(0, 50),
     });
-  }, [active, onOmniContext, ordered]);
+  }, [active, onOmniContext, ordered, workspace]);
   useEffect(() => () => onOmniContext({}), [onOmniContext]);
   const select = (brief: MonitorSignalBrief) => {
     const next = selected === brief.id ? undefined : brief.id;
@@ -368,15 +379,24 @@ export function Intelligence({
       state: settings?.integrations.paperless?.state ?? "NOT_CONFIGURED",
     },
   ];
+  if (workspace === 'markets') return <>
+    <nav className="intelligence-tabs" aria-label="Intelligence modes">
+      <Button onClick={() => selectWorkspace('monitor')}>Intelligence Monitor</Button>
+      <Button onClick={() => selectWorkspace('federal')}>Federal Procurement</Button>
+      <Button aria-current="page">Market Intelligence</Button>
+    </nav>
+    <MarketIntelligence accounts={accounts} onAccount={onAccount} onOmniContext={onOmniContext} />
+  </>;
   if (workspace === "federal")
     return (
       <>
         <div className="surface intelligence-surface">
           <nav className="intelligence-tabs" aria-label="Intelligence modes">
-            <Button onClick={() => setWorkspace("monitor")}>
+            <Button onClick={() => selectWorkspace("monitor")}>
               Intelligence Monitor
             </Button>
             <Button aria-current="page">Federal Procurement</Button>
+            <Button onClick={() => selectWorkspace('markets')}>Market Intelligence</Button>
           </nav>
         </div>
         <FederalProcurementView />
@@ -386,9 +406,10 @@ export function Intelligence({
     <div className="surface intelligence-surface">
       <nav className="intelligence-tabs" aria-label="Intelligence modes">
         <Button aria-current="page">Intelligence Monitor</Button>
-        <Button onClick={() => setWorkspace("federal")}>
+        <Button onClick={() => selectWorkspace("federal")}>
           Federal Procurement
         </Button>
+        <Button onClick={() => selectWorkspace('markets')}>Market Intelligence</Button>
       </nav>
       <header className="page-title intelligence-title">
         <span className="eyebrow">External Intelligence</span>

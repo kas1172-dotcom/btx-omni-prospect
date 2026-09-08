@@ -1,15 +1,32 @@
-from fastapi import APIRouter, Depends
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.session import principal
+from btx_omni.core.release import build_identity, database_compatibility
 from btx_omni.domain.work import Principal, PrincipalRole
-from btx_omni.persistence.database import create_database_engine
+from btx_omni.persistence.ai_usage import AiUsageRepository
 
 router = APIRouter(prefix="/settings", tags=["settings"])
+
+
+@router.get("/ai-usage")
+def ai_usage(response: Response, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)) -> dict:
+    response.headers["Cache-Control"] = "private, no-store"
+    try:
+        result = AiUsageRepository(runtime.work.repository.engine).summary(
+            environment_id="btx-omni-prospect", actor_id=current.user_id, now=datetime.now(UTC))
+    except SQLAlchemyError as error:
+        raise HTTPException(503, "AI usage records are temporarily unavailable. No unmetered calls are permitted.") from error
+    result['limits'] = {'workspace_daily_calls': runtime.settings.ai_daily_environment_calls,
+                        'your_daily_calls': runtime.settings.ai_daily_actor_calls,
+                        'workspace_concurrent_calls': runtime.settings.ai_concurrent_environment_calls,
+                        'your_concurrent_calls': runtime.settings.ai_concurrent_actor_calls}
+    return result
 
 
 class PreferenceUpdate(BaseModel):
@@ -24,17 +41,8 @@ def _integration(state: str, detail: str) -> dict[str, str]:
 @router.get("")
 def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)) -> dict:
     configured_gemini = bool(runtime.settings.gemini_api_key or (runtime.settings.gemini_mode == "vertex" and runtime.settings.google_cloud_project))
-    engine = create_database_engine(runtime.settings)
-    try:
-        with engine.connect() as connection:
-            migration_revision = connection.execute(
-                text("SELECT version_num FROM alembic_version")
-            ).scalar_one_or_none()
-    except SQLAlchemyError:
-        migration_revision = None
-    finally:
-        engine.dispose()
-    validated_at = runtime.observed_at()
+    database = database_compatibility(runtime.work.repository.engine)
+    identity = build_identity(runtime.settings)
     return {
         "principal": current,
         "preferences": runtime.communication_repository.preferences(current.user_id),
@@ -55,13 +63,12 @@ def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
         },
         "release_diagnostics": {
             "configuration_mode": runtime.settings.environment.upper(),
-            "validation_state": "VALID" if migration_revision else "DEGRADED",
-            "last_validated_at": validated_at,
+            "validation_state": "SCHEMA_COMPATIBLE_BUILD_DECLARED" if database['state'] == 'CURRENT' and identity['identity_state'] == 'DECLARED_CLEAN_BUILD' else "UNVERIFIED",
+            "validation_scope": "Schema and build declaration only; not browser, provider or release acceptance.",
+            "last_validated_at": database['checked_at'],
+            "build": identity,
             "api": {"state": "AVAILABLE"},
-            "database": {
-                "state": "CURRENT" if migration_revision else "UNAVAILABLE",
-                "migration_revision": migration_revision,
-            },
+            "database": database,
             "session": {
                 "state": (
                     "SAMPLE_DEMO_AUTO_SESSION"

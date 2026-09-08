@@ -19,7 +19,7 @@ from btx_omni.modules.intelligence.signals import (
     SignalKind,
     normalize_signal,
 )
-from btx_omni.modules.work.service import WorkService, WorkStatus
+from btx_omni.modules.work.service import ActionConflictError, WorkService, WorkStatus
 from btx_omni.providers.sample.environment import build_sample_environment
 
 NOW = datetime(2026, 8, 31, tzinfo=UTC)
@@ -82,13 +82,20 @@ def test_governed_action_lifecycle_audit_and_idempotency() -> None:
         occurred_at=NOW,
         priority="HIGH",
     )
+    # A retry cannot silently substitute a different proposal or priority.
+    with pytest.raises(ActionConflictError, match="original proposal"):
+        service.create(
+            account_id="acct-01-003", summary="ignored", evidence_ids=("ev-dormant",),
+            idempotency_key="dormant-1", actor_id="seller", occurred_at=NOW,
+        )
     replay = service.create(
         account_id="acct-01-003",
-        summary="ignored",
+        summary="Review dormant customer",
         evidence_ids=("ev-dormant",),
         idempotency_key="dormant-1",
         actor_id="seller",
         occurred_at=NOW,
+        priority="HIGH",
     )
     assert replay == first
     item = service.transition(
@@ -150,9 +157,13 @@ def test_action_context_referents_and_stale_version_are_governed() -> None:
 def test_crm_preview_requires_explicit_confirmation_and_unavailability_is_truthful() -> (
     None
 ):
+    from test_crm_proposals import adapter
+
+    from btx_omni.modules.work.crm_proposals import CrmProposalWorkflow
+
     service = WorkService()
     item = service.create(
-        account_id="acct-01-004",
+        account_id="boeing",
         summary="Follow up stale quote",
         evidence_ids=("ev-quote",),
         idempotency_key="quote-1",
@@ -160,26 +171,28 @@ def test_crm_preview_requires_explicit_confirmation_and_unavailability_is_truthf
         occurred_at=NOW,
         approval_required=True,
     )
-    available = SampleHubSpotAdapter({})
-    preview = service.preview_crm_action(
-        item.id, available, principal=SELLER, occurred_at=NOW
-    )
+    available = adapter()
+    preview = available.preview_action(item.id, item.account_id, 'CREATE_FOLLOW_UP', {'title': item.title})
     with pytest.raises(PermissionError):
         available.execute_action(preview)
     item = service.decide_approval(
         item.id, ApprovalStatus.APPROVED, principal=MANAGER, occurred_at=NOW
     )
-    assert service.confirm_and_execute_crm_action(
-        item.id, available, principal=MANAGER, occurred_at=NOW
-    ).executed
+    workflow = CrmProposalWorkflow(service, available, commercial_revision='test-revision')
+    proposal = workflow.preview(item.id, expected_version=item.version, principal=SELLER, now=NOW)
+    decision = workflow.decide(item.id, proposal['proposal_id'], decision='APPROVED', expected_decision_id=None, principal=MANAGER, now=NOW)
+    outcome = workflow.execute_sample(item.id, proposal['proposal_id'], expected_decision_id=decision['decision_id'], idempotency_key='preview-approved', principal=MANAGER, now=NOW)
+    assert outcome['status'] == 'SAMPLE_COMPLETED' and not outcome['external_write']
     unavailable = SampleHubSpotAdapter({}, CrmProviderState.UNAVAILABLE)
     assert (
         unavailable.account_context(item.account_id).detail
         == "HubSpot provider is unavailable."
     )
-    assert service.confirm_and_execute_crm_action(
-        item.id, unavailable, principal=MANAGER, occurred_at=NOW
-    ).unavailable_reason
+    unavailable_flow = CrmProposalWorkflow(service, unavailable, commercial_revision='test-revision')
+    blocked = unavailable_flow.preview(item.id, expected_version=item.version, principal=SELLER, now=NOW)
+    assert blocked['blockers'] and blocked['mapping']['company_id'] is None
+    with pytest.raises(ActionConflictError, match='mapping'):
+        unavailable_flow.decide(item.id, blocked['proposal_id'], decision='APPROVED', expected_decision_id=None, principal=MANAGER, now=NOW)
 
 
 def test_omni_explains_alerts_coordination_matching_and_truthful_missingness() -> None:

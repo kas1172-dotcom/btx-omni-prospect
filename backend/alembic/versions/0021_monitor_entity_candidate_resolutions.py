@@ -4,6 +4,7 @@ Revision ID: 0021_monitor_entity_candidate_resolutions
 Revises: 0020_governed_explanations
 """
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0021_monitor_entity_candidate_resolutions"
