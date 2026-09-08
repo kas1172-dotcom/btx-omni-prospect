@@ -119,6 +119,7 @@ test('Technical Fit disclosure remains contained at 390px and 320px', async ({ p
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }]) {
     await page.setViewportSize(viewport)
     await page.goto('/')
+    await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
     const brief = page.locator('.seller-signal-brief').filter({ hasText: 'Fixture public contract award' })
     await brief.getByRole('button', { name: 'Potential BTX Technical Fit' }).click()
     await brief.getByRole('button', { name: 'Why this technical fit may matter' }).click()

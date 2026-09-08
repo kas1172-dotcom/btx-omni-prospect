@@ -16,6 +16,7 @@ const actions = readFileSync(new URL('../src/features/actions/Actions.tsx', impo
 const suggestions = readFileSync(new URL('../src/features/actions/SuggestionList.tsx', import.meta.url), 'utf8')
 const accounts = readFileSync(new URL('../src/features/accounts/Accounts.tsx', import.meta.url), 'utf8')
 const intelligence = readFileSync(new URL('../src/features/intelligence/Intelligence.tsx', import.meta.url), 'utf8')
+const intelligenceBriefing = readFileSync(new URL('../src/features/intelligence/IntelligenceBriefing.tsx', import.meta.url), 'utf8')
 const today = readFileSync(new URL('../src/features/today/Today.tsx', import.meta.url), 'utf8')
 const monitor = readFileSync(new URL('../src/features/monitor/Monitor.tsx', import.meta.url), 'utf8')
 const signalBrief = readFileSync(new URL('../src/components/SignalBriefCard.tsx', import.meta.url), 'utf8')
@@ -257,6 +258,16 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(drawer, /AUTH_FAILED: ["']Gemini authentication unavailable/)
   assert.match(drawer, /TIMEOUT: ["']Gemini timed out/)
   assert.match(drawer, /QUOTA: ["']Gemini quota unavailable/)
+})
+
+test('Intelligence briefing uses canonical account context without substituting an unrelated account action', () => {
+  assert.match(intelligence, /Open briefing/)
+  assert.match(intelligence, /intelligence\/brief/)
+  assert.match(intelligenceBriefing, /api\.account\(accountId, controller\.signal\)/)
+  assert.match(intelligenceBriefing, /brief\.recommended_action \?\? brief\.what_to_watch/)
+  assert.doesNotMatch(intelligenceBriefing, /brief\.recommended_action \?\? detail\?\.recommended_next_step/)
+  assert.match(intelligenceBriefing, /do not establish that this public event applies/)
+  assert.match(intelligenceBriefing, /Account creation is unavailable until canonical identity resolution succeeds/)
 })
 
 test('Map selection sends canonical Customer and facility context without inventing BTX Customer identity', () => {

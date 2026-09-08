@@ -22,6 +22,7 @@ import {
 import { curatedSignalBrief } from "../../components/signalBriefModel";
 import { FederalProcurementView } from "./FederalProcurement";
 import { MarketIntelligence } from "./MarketIntelligence";
+import { IntelligenceBriefing } from "./IntelligenceBriefing";
 import "./intelligence.css";
 
 type Filters = {
@@ -103,6 +104,7 @@ function Card({
   onSelect,
   selected,
   onCreateAction,
+  onOpenBriefing,
 }: {
   brief: MonitorSignalBrief;
   rank?: number;
@@ -111,6 +113,7 @@ function Card({
   onSelect: (brief: MonitorSignalBrief) => void;
   selected: boolean;
   onCreateAction: (brief: MonitorSignalBrief) => void;
+  onOpenBriefing: (brief: MonitorSignalBrief) => void;
 }) {
   const accountId = brief.canonical_account_ids[0];
   return (
@@ -183,8 +186,11 @@ function Card({
         </div>
       </Disclosure>
       <div className="intelligence-card-actions">
+        <Button variant="primary" onClick={() => onOpenBriefing(brief)}>
+          Open briefing
+        </Button>
         <Button
-          variant={selected ? "primary" : "secondary"}
+          variant={selected ? "secondary" : "ghost"}
           aria-pressed={selected}
           onClick={() => onSelect(brief)}
         >
@@ -237,6 +243,18 @@ export function Intelligence({
   const [filters, setFilters] = useState<Filters>(empty);
   const [sort, setSort] = useState<Sort>("PRIORITY");
   const [selected, setSelected] = useState<string>();
+  const [briefingId, setBriefingId] = useState<string>(() => {
+    const match = window.location.hash.match(/^#\/intelligence\/brief\/([^/]+)$/);
+    return match ? decodeURIComponent(match[1]) : "";
+  });
+  useEffect(() => {
+    const changed = () => {
+      const match = window.location.hash.match(/^#\/intelligence\/brief\/([^/]+)$/);
+      setBriefingId(match ? decodeURIComponent(match[1]) : "");
+    };
+    window.addEventListener("hashchange", changed);
+    return () => window.removeEventListener("hashchange", changed);
+  }, []);
   const byId = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
     [accounts],
@@ -352,6 +370,14 @@ export function Intelligence({
     setSelected(next);
     onEventSelect(next);
   };
+  const openBriefing = (brief: MonitorSignalBrief) => {
+    setBriefingId(brief.id);
+    window.location.hash = `/intelligence/brief/${encodeURIComponent(brief.id)}`;
+  };
+  const closeBriefing = () => {
+    setBriefingId("");
+    window.location.hash = "/intelligence";
+  };
   const tiles = [
     {
       title: "Public intelligence",
@@ -402,6 +428,22 @@ export function Intelligence({
         <FederalProcurementView />
       </>
     );
+  const selectedBriefing = base.find((item) => item.id === briefingId);
+  if (briefingId && selectedBriefing) return (
+    <div className="surface intelligence-surface">
+      <IntelligenceBriefing
+        key={selectedBriefing.id}
+        brief={selectedBriefing}
+        onBack={closeBriefing}
+        onAccount={onAccount}
+        onCreateAction={onCreateAction}
+        onUseInOmni={(brief) => {
+          setSelected(brief.id);
+          onEventSelect(brief.id);
+        }}
+      />
+    </div>
+  );
   return (
     <div className="surface intelligence-surface">
       <nav className="intelligence-tabs" aria-label="Intelligence modes">
@@ -634,6 +676,7 @@ export function Intelligence({
                 onSelect={select}
                 selected={selected === brief.id}
                 onCreateAction={onCreateAction}
+                onOpenBriefing={openBriefing}
               />
             ))}
           </div>
@@ -663,6 +706,7 @@ export function Intelligence({
                 onSelect={select}
                 selected={selected === brief.id}
                 onCreateAction={onCreateAction}
+                onOpenBriefing={openBriefing}
               />
             ))}
           </div>

@@ -262,6 +262,157 @@
 .intelligence-source-health {
   margin-bottom: 8px;
 }
+.intelligence-briefing {
+  display: grid;
+  gap: 20px;
+}
+.intelligence-briefing-toolbar,
+.intelligence-briefing-toolbar > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.intelligence-briefing-hero {
+  border-top: 5px solid var(--text-primary);
+  padding: 28px 0 24px;
+  display: grid;
+  gap: 10px;
+  max-width: 1000px;
+}
+.intelligence-briefing-account {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 750;
+}
+.intelligence-briefing-hero h1 {
+  font-size: clamp(32px, 4.5vw, 64px);
+  max-width: 18ch;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+.intelligence-briefing-lede {
+  max-width: 75ch;
+  color: var(--text-secondary);
+  font-size: 17px;
+  line-height: 1.55;
+}
+.intelligence-briefing-source-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.intelligence-briefing-source-line a {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.intelligence-briefing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 28px;
+  align-items: start;
+}
+.intelligence-briefing-main,
+.intelligence-briefing-sidebar {
+  display: grid;
+  gap: 14px;
+}
+.intelligence-briefing-main > section,
+.intelligence-briefing-sidebar > section {
+  border: 1px solid var(--border-default);
+  background: var(--surface-raised);
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+.intelligence-briefing-main h2,
+.intelligence-briefing-sidebar h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.intelligence-briefing-main p,
+.intelligence-briefing-sidebar p,
+.intelligence-briefing-main li {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.intelligence-context-qualification {
+  max-width: 78ch;
+  font-size: 12px;
+}
+.intelligence-component-table {
+  display: grid;
+  border-top: 1px solid var(--border-strong);
+}
+.intelligence-component-table > div {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr minmax(100px, auto);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-default);
+  font-size: 12px;
+}
+.intelligence-component-head {
+  color: var(--text-tertiary);
+  font-size: 10px !important;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.intelligence-commercial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+.intelligence-commercial-grid article {
+  background: var(--surface-subdued);
+  padding: 12px;
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+}
+.intelligence-next-conversation {
+  border-left: 5px solid var(--text-primary) !important;
+}
+.intelligence-next-conversation ul {
+  padding-left: 18px;
+  margin: 8px 0 0;
+}
+.intelligence-briefing-sidebar {
+  position: sticky;
+  top: 16px;
+}
+.intelligence-briefing-sidebar > section {
+  padding: 16px;
+}
+.intelligence-briefing-sidebar .ui-button {
+  width: 100%;
+}
+.intelligence-score {
+  font-family: var(--font-display);
+  font-size: 26px;
+}
+.intelligence-briefing-actions .ui-button + .ui-button {
+  margin-top: 0;
+}
+.intelligence-briefing-loading {
+  min-height: 420px;
+  border: 1px solid var(--border-default);
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+.intelligence-briefing-loading .ui-skeleton {
+  display: block;
+  height: 48px;
+  background: var(--surface-subdued);
+  animation: pulse 1s ease-in-out infinite alternate;
+}
 .federal-kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -276,6 +427,13 @@
   }
   .intelligence-filter-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .intelligence-briefing-layout {
+    grid-template-columns: 1fr;
+  }
+  .intelligence-briefing-sidebar {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 680px) {
@@ -323,6 +481,37 @@
   .intelligence-card-actions .ui-button,
   .intelligence-card .ui-disclosure-trigger {
     min-height: 44px;
+  }
+  .intelligence-briefing-hero {
+    padding: 20px 0 12px;
+  }
+  .intelligence-briefing-hero h1 {
+    font-size: 34px;
+  }
+  .intelligence-briefing-layout {
+    gap: 12px;
+  }
+  .intelligence-briefing-main > section,
+  .intelligence-briefing-sidebar > section {
+    padding: 14px;
+  }
+  .intelligence-briefing-sidebar {
+    grid-template-columns: 1fr;
+  }
+  .intelligence-component-table > div {
+    grid-template-columns: 1fr auto;
+    gap: 5px 10px;
+  }
+  .intelligence-component-table > div > :nth-child(2),
+  .intelligence-component-table > div > :nth-child(3) {
+    grid-column: 1;
+  }
+  .intelligence-component-table > div > :nth-child(4) {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+  .intelligence-component-head {
+    display: none !important;
   }
 }
 @media (max-width: 350px) {

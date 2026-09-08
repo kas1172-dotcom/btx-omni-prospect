@@ -98,6 +98,49 @@ test('desktop Intelligence composes search and canonical filters with evidence a
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeVisible()
 })
 
+test('public briefing joins the selected signal to canonical account context without cross-contaminating actions', async ({ page }) => {
+  await page.goto('/')
+  await navigate(page, 'Intelligence')
+  const first = page.locator('.intelligence-card').first()
+  const headline = await first.getByRole('heading').innerText()
+  await first.getByRole('button', { name: 'Open briefing' }).click()
+
+  await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
+  await expect(page).toHaveURL(/#\/intelligence\/brief\//)
+  await expect(page.getByRole('heading', { name: 'Commercial relevance' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Components and applicable business units' })).toBeVisible()
+  await expect(page.getByText(/do not establish that this public event applies/)).toBeVisible()
+  const next = page.getByRole('heading', { name: 'What should the seller do next?' }).locator('..')
+  await expect(next).toContainText('Review the governed public evidence')
+  await expect(next).not.toContainText('remaining bracket quantity')
+  await expect(page.getByRole('complementary', { name: 'Briefing decisions and actions' })).toContainText('Signal confidence')
+
+  await page.reload()
+  await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
+  await page.getByRole('button', { name: '← Back to Intelligence' }).click()
+  await expect(page.getByRole('heading', { name: 'Intelligence', level: 1 })).toBeVisible()
+})
+
+test('public briefing exposes recoverable account-context failure and remains usable on mobile', async ({ page }) => {
+  let allowSuccess = false
+  await page.route('**/api/**', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (!allowSuccess && /^\/api\/accounts\/[^/]+\/?$/.test(path)) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Temporary context failure' }) })
+    } else await route.continue()
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
+  await page.locator('.intelligence-card').first().getByRole('button', { name: 'Open briefing' }).click()
+  await expect(page.getByText('Customer context could not be loaded')).toBeVisible()
+  allowSuccess = true
+  await page.getByRole('button', { name: 'Retry' }).click()
+  await expect(page.getByRole('heading', { name: 'Commercial relevance' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ask Omni about this signal' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+})
+
 test('mobile Today and Intelligence remain touch-usable at 390px and 320px without overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')

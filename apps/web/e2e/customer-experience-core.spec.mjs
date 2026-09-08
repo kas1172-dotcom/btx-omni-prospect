@@ -31,7 +31,8 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await row.press('Enter')
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   await expect(page.getByText('Why this Customer matters')).toBeVisible()
-  await expect(page.getByText('Simulated BTX commercial context')).toBeVisible()
+  await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
+  await expect(page.getByLabel('Demonstration environment')).toHaveCount(1)
   await expect(page.getByRole('heading', { name: 'Relationship Intelligence' })).toBeVisible()
 
   await page.getByRole('searchbox', { name: 'Switch Customer' }).fill('Symbotic')
@@ -65,7 +66,7 @@ test('390px Portfolio transforms to mobile rows and Customer 360 uses accessible
   await expect(commercial).toHaveAttribute('aria-expanded', 'false')
   await commercial.click()
   await expect(commercial).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.getByText('Simulated BTX commercial context')).toBeVisible()
+  await expect(page.getByText('SAMPLE · Commercial context available')).toBeVisible()
   await commercial.click()
   await expect(commercial).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByLabel('Open Omni assistant')).toBeVisible()

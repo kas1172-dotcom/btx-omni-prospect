@@ -3,6 +3,7 @@ import type { Account, Alert, CommandCenter, MonitorSignalBrief, OmniContext, Si
 import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { curatedSignalBrief } from '../../components/signalBriefModel'
 import { Button, Disclosure, Empty, Panel, State } from '../../components/UI'
+import { CommercialRecoveryBriefing } from './CommercialRecoveryBriefing'
 import './today.css'
 
 export interface TodayFilters { kind: 'ALL' | 'PUBLIC_SIGNAL' | 'COMMERCIAL_REVIEW'; accountId: string; businessUnit: string }
@@ -13,6 +14,18 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   const [watchOpen, setWatchOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string>()
   const [selectedProgramId, setSelectedProgramId] = useState<string>()
+  const [recoveryId, setRecoveryId] = useState(() => {
+    const match = window.location.hash.match(/^#\/today\/brief\/([^/]+)$/)
+    return match ? decodeURIComponent(match[1]) : ''
+  })
+  useEffect(() => {
+    const changed = () => {
+      const match = window.location.hash.match(/^#\/today\/brief\/([^/]+)$/)
+      setRecoveryId(match ? decodeURIComponent(match[1]) : '')
+    }
+    window.addEventListener('hashchange', changed)
+    return () => window.removeEventListener('hashchange', changed)
+  }, [])
   const accountById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts])
   const current = useMemo(() => commandCenter?.current_signal_briefs ?? [], [commandCenter])
   const radar = useMemo(() => commandCenter?.upcoming_radar ?? [], [commandCenter])
@@ -51,6 +64,8 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
     if (selectedProgramId && !nextVisiblePrograms.has(selectedProgramId)) setSelectedProgramId(undefined)
     setMarket(nextMarket)
   }
+  const recoveryItem = allPriority.find(item => item.id === recoveryId && item.kind === 'COMMERCIAL_REVIEW')
+  if (recoveryItem) return <div className="surface today-surface"><CommercialRecoveryBriefing key={recoveryItem.id} item={recoveryItem} alert={alertById.get(recoveryItem.id)} onBack={() => { setRecoveryId(''); window.location.hash = '/today' }} onAccount={onAccount} onAction={onAction} /></div>
   return <div className="surface today-surface">
     <header className="page-title today-title"><h1>Today</h1><p>Your next commercial decisions</p></header>
     {state === 'loading' && <p role="status">Refreshing your briefing…</p>}
@@ -79,7 +94,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
             <div className="today-item-heading"><button className="today-customer-link" disabled={!item.account_id} onClick={() => item.account_id && onAccount(item.account_id)}>{item.account_id ? name(item.account_id) : 'Prospect research'}</button><small>{item.kind === 'PUBLIC_SIGNAL' ? 'Public intelligence' : 'Internal intelligence'}</small>{item.observed_at && <time dateTime={item.observed_at}>{new Date(item.observed_at).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}</time>}</div>
             <div className="today-priority-meaning"><h3>{item.signal_brief?.headline ?? item.reason}</h3><p><strong>Why:</strong> {item.reason}</p><p><strong>Next:</strong> {item.recommended_action ?? 'Review evidence before choosing the next action.'}</p>
               <Disclosure title="Evidence and governed action">
-                {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedEventId === item.id} /> : <><p className="today-evidence-note">SAMPLE BTX commercial context · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions">{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="primary" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
+                {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedEventId === item.id} /> : <><p className="today-evidence-note">SAMPLE BTX commercial context · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button variant="primary" onClick={() => { setRecoveryId(item.id); window.location.hash = `/today/brief/${encodeURIComponent(item.id)}` }}>Open recovery briefing</Button>{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="ghost" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
               </Disclosure>
             </div>
             {item.severity && <State value={item.severity} />}
