@@ -33,3 +33,12 @@ test('lost memory-save response retries once without duplication; deletion block
   expect(data.items.filter(item => item.content === content)).toHaveLength(0)
   await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 390)
 })
+
+test('an unsaved private memory draft survives navigation for the same principal', async ({ page }, testInfo) => {
+  await page.goto('/#/settings')
+  const content = `Unsaved navigation draft ${testInfo.testId}`
+  await page.getByRole('region', { name: 'Private Omni preferences' }).getByLabel('Preference', { exact: true }).fill(content)
+  await page.getByRole('button', { name: 'Today', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Private Omni preferences' }).getByLabel('Preference', { exact: true })).toHaveValue(content)
+})

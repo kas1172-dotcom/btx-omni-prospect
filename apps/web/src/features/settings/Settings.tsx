@@ -23,7 +23,7 @@ export function Settings({ accounts, ...props }: Parameters<typeof SettingsConte
     window.addEventListener('hashchange', restoreSection)
     return () => window.removeEventListener('hashchange', restoreSection)
   }, [props.state])
-  return <><SettingsContent {...props} />{props.state === 'loaded' && props.settings && <><section className="settings-release"><ReleaseIdentity backend={props.settings.release_diagnostics?.build} /><AiUsage key={props.settings.principal.user_id} /></section><OmniMemory key={props.settings.principal.user_id} accounts={accounts} /></>}</>
+  return <><SettingsContent {...props} />{props.state === 'loaded' && props.settings && <><section className="settings-release"><ReleaseIdentity backend={props.settings.release_diagnostics?.build} /><AiUsage key={props.settings.principal.user_id} /></section><OmniMemory key={props.settings.principal.user_id} principalId={props.settings.principal.user_id} accounts={accounts} /></>}</>
 }
 function SettingsContent({ settings, state, onSettings, onRetry, onSignOut }: { settings?: WorkspaceSettings; state: 'loading' | 'loaded' | 'error'; onSettings: (settings: WorkspaceSettings) => void; onRetry: () => void; onSignOut: () => void }) {
   const [notice, setNotice] = useState('')

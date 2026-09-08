@@ -4,9 +4,19 @@ import type { Account } from '../../types/api'
 import type { OmniMemory as Memory, OmniMemoryInput } from '../../types/memory'
 import { Button, Panel } from '../../components/UI'
 
-export function OmniMemory({ accounts }: { accounts: Account[] }) {
+const emptyDraft: OmniMemoryInput = { account_id: null, kind: 'ANSWER_STYLE', content: '', ttl_days: 90 }
+const draftKey = (principalId: string) => `btx-private-memory-draft:${principalId}`
+const readDraft = (principalId: string): OmniMemoryInput => {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(draftKey(principalId)) ?? 'null') as Partial<OmniMemoryInput> | null
+    if (!value || typeof value.content !== 'string' || !['ANSWER_STYLE', 'WORK_PREFERENCE'].includes(value.kind ?? '') || ![14, 30, 90, 365].includes(value.ttl_days ?? 0)) return emptyDraft
+    return { account_id: typeof value.account_id === 'string' ? value.account_id : null, kind: value.kind as OmniMemoryInput['kind'], content: value.content.slice(0, 600), ttl_days: value.ttl_days! }
+  } catch { return emptyDraft }
+}
+
+export function OmniMemory({ accounts, principalId }: { accounts: Account[]; principalId: string }) {
   const [items, setItems] = useState<Memory[]>([])
-  const [draft, setDraft] = useState<OmniMemoryInput>({ account_id: null, kind: 'ANSWER_STYLE', content: '', ttl_days: 90 })
+  const [draft, setDraft] = useState<OmniMemoryInput>(() => readDraft(principalId))
   const [editing, setEditing] = useState<Memory>()
   const [deleting, setDeleting] = useState<string>()
   const [pending, setPending] = useState(false)
@@ -22,6 +32,10 @@ export function OmniMemory({ accounts }: { accounts: Account[] }) {
     void api.memories(controller.signal).then(value => { if (!controller.signal.aborted && readEpoch.current === epoch) { setItems(value.items); setLoaded(true) } }).catch(() => { if (!controller.signal.aborted && readEpoch.current === epoch) setNotice('Memory could not be loaded. Refresh before editing; displayed preferences may be outdated.') })
     return () => controller.abort()
   }, [refresh])
+  useEffect(() => {
+    if (draft.content || draft.account_id || draft.kind !== emptyDraft.kind || draft.ttl_days !== emptyDraft.ttl_days) sessionStorage.setItem(draftKey(principalId), JSON.stringify(draft))
+    else sessionStorage.removeItem(draftKey(principalId))
+  }, [draft, principalId])
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (inFlight.current || !draft.content.trim()) return
@@ -34,7 +48,7 @@ export function OmniMemory({ accounts }: { accounts: Account[] }) {
       const item = editing ? await api.editMemory(editing.id, { ...draft, expected_version: editing.version }) : await api.createMemory({ ...draft, idempotency_key: createRequest.current!.key })
       setItems(current => [item, ...current.filter(m => m.id !== item.id)])
       createRequest.current = null
-      setEditing(undefined); setDraft({ account_id: null, kind: 'ANSWER_STYLE', content: '', ttl_days: 90 })
+      setEditing(undefined); setDraft(emptyDraft)
       setNotice(item.create_replayed ? 'The original save was already recorded. Current saved preference shown; content and expiry were not reapplied.' : 'Private preference saved. It does not change facts, scores or permissions.')
     } catch (error) { setNotice(`${error instanceof Error ? error.message : 'Save was not confirmed.'} Refresh and inspect your saved preferences before submitting again.`) }
     finally { inFlight.current = false; setPending(false) }
@@ -64,7 +78,7 @@ export function OmniMemory({ accounts }: { accounts: Account[] }) {
       <label htmlFor="memory-content">Preference</label><textarea id="memory-content" maxLength={600} required disabled={pending} value={draft.content} onChange={event => setDraft(current => ({ ...current, content: event.target.value }))} />
       <label htmlFor="memory-expiry">Expires after</label><select id="memory-expiry" disabled={pending} value={draft.ttl_days} onChange={event => setDraft(current => ({ ...current, ttl_days: Number(event.target.value) }))}>{[14, 30, 90, 365].map(days => <option key={days} value={days}>{days} days</option>)}</select>
       <Button type="submit" disabled={pending || !loaded || !draft.content.trim()}>{pending ? 'Saving…' : editing ? 'Save edited preference' : 'Save private preference'}</Button>
-      {editing && <Button disabled={pending} onClick={() => { setEditing(undefined); setDraft({ account_id: null, kind: 'ANSWER_STYLE', content: '', ttl_days: 90 }) }}>Cancel edit</Button>}
+      {editing && <Button disabled={pending} onClick={() => { setEditing(undefined); setDraft(emptyDraft) }}>Cancel edit</Button>}
     </form>
   </Panel></section>
 }
