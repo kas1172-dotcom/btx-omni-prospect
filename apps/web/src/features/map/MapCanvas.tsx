@@ -40,7 +40,14 @@ export function MapCanvas(props: Props) {
       if (configuredKey !== apiKey) throw new Error('Conflicting Google Maps configuration')
       const { Map } = await importLibrary('maps')
       if (cancelled || !container.current) return
-      const map = new Map(container.current, { center: { lat: 38, lng: -98 }, zoom: 4, minZoom: 3, mapId, mapTypeControl: false, streetViewControl: false, fullscreenControl: false }); mapRef.current = map
+      const map = new Map(container.current, { center: { lat: 38, lng: -98 }, zoom: 4, minZoom: 3, mapId,
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+        // Weekly Maps now defaults to a camera menu. Keep direct keyboard/touch
+        // zoom controls independent of that provider default and our detail panel.
+        cameraControl: false, zoomControl: true,
+        zoomControlOptions: { position: google.maps.ControlPosition.LEFT_BOTTOM },
+        scaleControl: true, keyboardShortcuts: true,
+      }); mapRef.current = map
       zoomListener = map.addListener('zoom_changed', () => setZoom(map.getZoom() ?? 4))
       setMapReady(version => version + 1)
     } catch { if (!cancelled) setFailure('The Google Maps renderer could not load. Verify the browser key, API restrictions, billing, and quota configuration.') } }
@@ -83,7 +90,14 @@ export function MapCanvas(props: Props) {
     if (!selected) return
     lastFramed.current = selectedMarkerId
     const frame = selectionFrame?.length ? selectionFrame : [selected]
-    if (frame.length > 1) { const bounds = new google.maps.LatLngBounds(); frame.forEach(marker => bounds.extend({ lat: marker.latitude, lng: marker.longitude })); map.fitBounds(bounds, { top: 70, left: 70, right: 360, bottom: 90 }) }
+    if (frame.length > 1) {
+      const bounds = new google.maps.LatLngBounds()
+      frame.forEach(marker => bounds.extend({ lat: marker.latitude, lng: marker.longitude }))
+      const compact = (container.current?.clientWidth ?? 0) < 760
+      map.fitBounds(bounds, compact
+        ? { top: 90, left: 40, right: 40, bottom: Math.round((container.current?.clientHeight ?? 400) * 0.45) }
+        : { top: 70, left: 70, right: 360, bottom: 90 })
+    }
     else { map.panTo({ lat: selected.latitude, lng: selected.longitude }); if ((map.getZoom() ?? 4) < 8) map.setZoom(8) }
   }, [markers, selectedMarkerId, selectionFrame, mapReady])
   if (testUnconfigured) return <section className="map-unavailable" role="status"><h3>Map not configured</h3><p>Google Maps browser configuration is required to display verified geography.</p></section>

@@ -23,6 +23,17 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
     </div>
     <p>{brief.seller_summary}</p>
     {brief.summary_mode === 'GEMINI_ASSISTED' && <small>Language assisted; governed evidence unchanged.</small>}
+    {brief.signal_confidence && <Disclosure title={`Signal confidence · ${brief.signal_confidence.score == null ? 'More evidence needed' : `${brief.signal_confidence.score}/100`}`}>
+      <div className="seller-signal-details">
+        <p>Confidence describes this assertion, not its commercial value or risk severity.</p>
+        <p>{brief.signal_confidence.data_coverage.present} of {brief.signal_confidence.data_coverage.applicable} required fields are supported. POC calibration is provisional.</p>
+        <ul>{brief.signal_confidence.factors.map(factor => <li key={factor.key}>
+          <strong>{display(factor.key)}:</strong> {factor.points == null ? 'Unknown' : `${factor.points}/100`} · {factor.reason}
+          {factor.evidence_ids.length > 0 && <small> Evidence: {factor.evidence_ids.join(', ')}</small>}
+        </li>)}</ul>
+        <small>{brief.signal_confidence.decision_id} · {brief.signal_confidence.configuration_version} · {brief.signal_confidence.input_configuration_version}</small>
+      </div>
+    </Disclosure>}
     {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit">
       <div className="seller-signal-details technical-fit">
         {brief.technical_opportunity.event_summary && <p>{brief.technical_opportunity.event_summary}</p>}

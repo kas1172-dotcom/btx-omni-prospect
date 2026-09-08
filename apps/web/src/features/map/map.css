@@ -11,3 +11,13 @@
 .map-record-details dt { font-weight: 600; text-transform: capitalize; }
 .map-record-details dd { margin: .25rem 0 .75rem; }
 .map-record-details ul { padding-left: 1.1rem; }
+
+/* Keep the live provider canvas subdued without changing map IDs or key policy.
+   Marker type also has a shape/fill distinction; attribution remains visible. */
+.map-canvas { filter: grayscale(1); }
+.map-stage { height: clamp(360px, calc(100dvh - 290px), 700px); }
+@media(max-width:760px) {
+  .map-stage { height: clamp(340px, calc(100dvh - 290px), 620px); min-height:340px; }
+  .map-selection { width:auto; }
+  .map-selection-content { max-height: min(42dvh, 340px); }
+}

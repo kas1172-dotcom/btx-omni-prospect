@@ -6,6 +6,7 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from time import monotonic
 from typing import TYPE_CHECKING
 
@@ -20,6 +21,7 @@ from btx_omni.modules.intelligence.governed_explanation_adapters import (
     persisted_seller_explanation,
     technical_opportunity_subject_key,
 )
+from btx_omni.modules.scoring.public_inputs import public_signal_assessment
 from btx_omni.monitor.contracts import IntelligenceEvent, SourceObservation
 from btx_omni.monitor.ontology import ResolutionState, SellerRelevanceState
 from btx_omni.monitor.targeting import TargetReason
@@ -72,6 +74,7 @@ class SignalBrief:
     priority_reasons: tuple[TargetReason, ...] = ()
     canonical_facility_id: str | None = None
     technical_opportunity: dict | None = None
+    signal_confidence: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -216,6 +219,7 @@ def signal_brief(
         watchlist_eligible=bool(target_reasons),
         priority_reasons=target_reasons,
         canonical_facility_id=event.canonical_facility_id,
+        signal_confidence=public_signal_assessment(event, observation, now=clock, freshness_hours=freshness_hours),
     )
 
 
@@ -292,6 +296,8 @@ def governed_content_hash(brief: SignalBrief) -> str:
     def encode(value: object) -> object:
         if isinstance(value, datetime):
             return value.isoformat()
+        if isinstance(value, Decimal):
+            return str(value)
         raise TypeError(type(value).__name__)
 
     payload = json.dumps(
