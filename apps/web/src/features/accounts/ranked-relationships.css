@@ -16,7 +16,13 @@
 .ranked-relationships select { max-width: 100%; }
 .ranked-relationships details > button { display: block; margin: 8px 0; text-align: left; width: 100%; }
 .ranked-relationships details > button > small { display: block; margin-top: 6px; line-height: 1.4; }
-.ranked-network { background: #10141c; color: #e0e6ef; border-radius: 12px; padding: 12px; margin: 16px 0; }
+.ranked-network-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 320px); gap: 14px; align-items: stretch; margin: 16px 0; }
+.ranked-network { min-width: 0; background: #10141c; color: #e0e6ef; border-radius: 12px; padding: 12px; margin: 0; }
+.ranked-route-inspector { display: grid; align-content: start; gap: 12px; padding: 18px; color: #171717; background: #fff; border: 1px solid #c9cdd3; border-radius: 12px; box-shadow: 0 12px 28px #0b142014; }
+.ranked-route-inspector h3,.ranked-route-inspector p { margin: 0; }
+.ranked-route-inspector p { display: grid; gap: 4px; color: #4c5564; font-size: 13px; line-height: 1.5; }
+.ranked-route-inspector p strong { color: #171717; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.ranked-route-inspector .ranked-inspector-constraint { padding: 10px; background: #f7eee2; border-left: 3px solid #815b22; }
 .ranked-network-controls span { flex: 1; min-width: 180px; font-size: .8rem; }
 .ranked-relationships .ranked-network-controls button { color: #edf3fc; background: #202a38; border: 1px solid #74859e; }
 .ranked-relationships .ranked-network > button { color: #edf3fc; background: #202a38; border: 1px solid #74859e; margin-top: 8px; }
@@ -32,5 +38,5 @@
 .ranked-direction-legend { font-size: .8rem; line-height: 1.5; }
 .ranked-stage small { display: block; margin-top: 4px; color: #b4c1d1; }
 .ranked-graph-toggle { display: none; }
-@media (max-width: 760px) { .ranked-graph-toggle { display: block; } .ranked-network { display: none; } .ranked-network.is-open { display: block; } .ranked-route-steps { display: block; } .ranked-route-steps li { margin-bottom: 16px; max-width: none; } .ranked-route-cards { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .ranked-network-layout { display: flex; flex-direction: column; } .ranked-route-inspector { order: -1; } .ranked-graph-toggle { display: block; } .ranked-network { display: none; } .ranked-network.is-open { display: block; } .ranked-route-steps { display: block; } .ranked-route-steps li { margin-bottom: 16px; max-width: none; } .ranked-route-cards { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .ranked-relationships * { transition: none !important; scroll-behavior: auto !important; } }
