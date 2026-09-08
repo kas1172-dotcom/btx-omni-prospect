@@ -169,7 +169,7 @@ test('map and action interactions remain touch-accessible and confirmation-safe'
   assert.match(mapModel, /markersForZoom/)
   assert.match(mapModel, /haversineMiles/)
   assert.match(mapModel, /3958\.7613/)
-  assert.match(map, /<MapAccountDetails record=\{selectedRecord\}/)
+  assert.match(map, /<MapAccountDetails key=\{selectedRecord\.id\} record=\{selectedRecord\}/)
   assert.match(mapAccountDetails, /miles straight-line/)
   assert.match(map, /selectionFrame/)
   assert.match(mapModel, /Current collected intelligence/)

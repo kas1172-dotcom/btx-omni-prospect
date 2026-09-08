@@ -8,6 +8,7 @@ from btx_omni.api.communications import router as communications_router
 from btx_omni.api.federal_procurement import router as federal_procurement_router
 from btx_omni.api.health import router as health_router
 from btx_omni.api.intelligence import router as intelligence_router
+from btx_omni.api.itineraries import router as itineraries_router
 from btx_omni.api.map import router as map_router
 from btx_omni.api.markets import router as markets_router
 from btx_omni.api.monitor import router as monitor_router
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
         commercial_router,
         relationships_router,
         intelligence_router,
+        itineraries_router,
         federal_procurement_router,
         map_router,
         markets_router,

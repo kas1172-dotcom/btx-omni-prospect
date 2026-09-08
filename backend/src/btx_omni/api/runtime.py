@@ -34,6 +34,7 @@ from btx_omni.persistence.communications import SqlCommunicationRepository
 from btx_omni.persistence.database import create_database_engine
 from btx_omni.persistence.durable_accounts import DurablePublicAccountRepository
 from btx_omni.persistence.durable_programs import DurableCanonicalProgramRepository
+from btx_omni.persistence.itineraries import ItineraryRepository
 from btx_omni.persistence.market_series import MarketSeriesRepository
 from btx_omni.persistence.omni_memory import OmniMemoryRepository
 from btx_omni.persistence.omni_runs import OmniRunRepository
@@ -58,6 +59,7 @@ class PocRuntime:
     memory: OmniMemoryRepository = field(init=False)
     omni_runs: OmniRunRepository = field(init=False)
     work_feedback: SuggestionFeedbackRepository = field(init=False)
+    itineraries: ItineraryRepository = field(init=False)
     markets: MarketService = field(init=False)
     durable_accounts: DurablePublicAccountRepository | None = field(
         init=False, default=None
@@ -83,6 +85,7 @@ class PocRuntime:
         self.omni_runs = OmniRunRepository(application_engine)
         self.reference_fields = ReferenceFieldRepository(application_engine)
         self.work_feedback = SuggestionFeedbackRepository(application_engine)
+        self.itineraries = ItineraryRepository(application_engine)
         self.markets = MarketService(MarketSeriesRepository(application_engine), worker_enabled=self.settings.market_refresh_enabled,
                                      scheduler_configured=self.settings.monitor_schedule_configured)
         if self.settings.commercial_durable_state_enabled:
