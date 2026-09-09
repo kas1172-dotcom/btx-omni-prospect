@@ -158,6 +158,29 @@ def persisted_seller_explanation(
     record = repository.latest_governed_explanation(subject_key, explanation_type.value)
     if not record:
         return None
+    return _seller_projection(record)
+
+
+def persisted_seller_explanations(
+    repository: object | None,
+    *,
+    subject_keys: tuple[str, ...],
+    explanation_type: ExplanationType,
+) -> dict[str, dict[str, object]]:
+    """Read many persisted projections without an N-per-path database pattern."""
+    if repository is None or not subject_keys:
+        return {}
+    bulk = getattr(repository, "latest_governed_explanations", None)
+    if bulk is None:
+        return {}
+    return {
+        key: projection
+        for key, record in bulk(subject_keys, explanation_type.value).items()
+        if (projection := _seller_projection(record)) is not None
+    }
+
+
+def _seller_projection(record: Mapping[str, Any]) -> dict[str, object] | None:
     payload = json.loads(record["projection"])
     allowed = {
         "provider_status",

@@ -22,6 +22,7 @@ from btx_omni.modules.intelligence.governed_explanation_adapters import (
     federal_opportunity_request,
     federal_opportunity_subject_key,
     persisted_seller_explanation,
+    persisted_seller_explanations,
     process_customer_attractiveness_explanation,
     process_federal_opportunity_explanation,
     process_relationship_path_explanation,
@@ -140,6 +141,13 @@ def test_customer_explanation_persists_without_changing_deterministic_projection
     assert projection.score == original_score
     assert persisted and persisted["assisted"] is True
     assert "attempt_count" not in persisted and "next_retry_at" not in persisted
+    bulk = persisted_seller_explanations(
+        repository,
+        subject_keys=(customer_attractiveness_subject_key(account_id), "missing"),
+        explanation_type=ExplanationType.CUSTOMER_ATTRACTIVENESS,
+    )
+    assert list(bulk) == [customer_attractiveness_subject_key(account_id)]
+    assert bulk[customer_attractiveness_subject_key(account_id)] == persisted
 
 
 def test_customer_360_read_attaches_persisted_projection_without_provider_call() -> (
