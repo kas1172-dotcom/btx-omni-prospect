@@ -9,6 +9,7 @@ from btx_omni.modules.commercial.briefing import commercial_briefing
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     customer_attractiveness_subject_key,
     persisted_seller_explanation,
+    persisted_seller_explanations,
     relationship_path_subject_key,
 )
 from btx_omni.modules.matching.commercial import match_component_to_quote
@@ -22,6 +23,11 @@ from btx_omni.modules.scoring.account_attractiveness import (
 )
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
+
+# This compatibility endpoint feeds the bounded reference-card view, not the
+# R5 ranked-route search. Keep enough deterministic context for its twelve-card
+# seller projection without serializing the 5,000-candidate search safeguard.
+RELATIONSHIP_REFERENCE_PATH_LIMIT = 250
 
 
 def _seller_attractiveness(projection: SellerAttractivenessProjection) -> dict:
@@ -237,17 +243,24 @@ def account_relationships(
     try:
         result = RelationshipIntelligenceService(
             runtime.environment()
-        ).account_relationships(account_id, depth=depth)
+        ).account_relationships(
+            account_id, depth=depth, max_paths=RELATIONSHIP_REFERENCE_PATH_LIMIT
+        )
         presented = SellerRelationshipPresentationService().present(result)
-        for path in (
+        paths = (
             *presented["seller_direct_relationships"],
             *presented["seller_paths"],
-        ):
-            path["governed_explanation"] = persisted_seller_explanation(
-                runtime.monitor.repository,
-                subject_key=relationship_path_subject_key(account_id, path["path_id"]),
-                explanation_type=ExplanationType.RELATIONSHIP_PATH,
-            )
+        )
+        subject_keys = tuple(
+            relationship_path_subject_key(account_id, path["path_id"]) for path in paths
+        )
+        explanations = persisted_seller_explanations(
+            runtime.monitor.repository,
+            subject_keys=subject_keys,
+            explanation_type=ExplanationType.RELATIONSHIP_PATH,
+        )
+        for path, subject_key in zip(paths, subject_keys, strict=True):
+            path["governed_explanation"] = explanations.get(subject_key)
         return {**result, **presented}
     except KeyError as exc:
         raise HTTPException(404, "Canonical Customer not found.") from exc

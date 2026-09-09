@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from btx_omni.api.accounts import RELATIONSHIP_REFERENCE_PATH_LIMIT
 from btx_omni.app import create_app
 from btx_omni.domain.common import EvidenceState
 from btx_omni.modules.relationships.presentation import (
@@ -143,6 +144,7 @@ async def test_account_relationship_api_is_typed_and_bounded() -> None:
         missing = await client.get("/api/accounts/not-real/relationships")
     assert response.status_code == 200 and missing.status_code == 404
     payload = response.json()
+    assert len(payload["paths"]) <= RELATIONSHIP_REFERENCE_PATH_LIMIT
     assert payload["account"]["kind"] == "account" and payload["max_depth"] == 2
     assert any(path["presentation_state"] == "validated" for path in payload["paths"])
     multi_hop = next(path for path in payload["paths"] if len(path["hops"]) == 2)

@@ -996,6 +996,35 @@ class MonitorRepository:
         )
         return value
 
+    def latest_governed_explanations(
+        self, subject_keys: tuple[str, ...], explanation_type: str
+    ) -> dict[str, dict]:
+        """Fetch seller-safe explanation records in one bounded database read."""
+        keys = tuple(dict.fromkeys(subject_keys))
+        if not keys:
+            return {}
+        with self.engine.connect() as connection:
+            rows = (
+                connection.execute(
+                    select(governed_explanations).where(
+                        governed_explanations.c.subject_key.in_(keys),
+                        governed_explanations.c.explanation_type == explanation_type,
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        result = {}
+        for row in rows:
+            value = dict(row)
+            value["next_retry_at"] = (
+                _database_timestamp(value["next_retry_at"])
+                if value["next_retry_at"]
+                else None
+            )
+            result[value["subject_key"]] = value
+        return result
+
     def save_governed_explanation(
         self,
         *,
