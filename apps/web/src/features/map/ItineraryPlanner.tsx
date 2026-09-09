@@ -13,6 +13,12 @@ export interface ItineraryPlannerHandle {
 type Draft = Pick<Itinerary, "title" | "origin_label" | "origin_latitude" | "origin_longitude" | "stops"> & { version: number | null };
 const empty: Draft = { title: "Customer visit itinerary", origin_label: "", origin_latitude: null, origin_longitude: null, stops: [], version: null };
 const input = (value: string) => value.trim() || null;
+const routeFailureMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("PERMISSION_DENIED") || message.includes("Routes API")) return "Driving estimates are unavailable because the route service is not enabled. Your itinerary remains editable and can still be saved.";
+  if (message.includes("no drive estimate")) return message;
+  return "Google Maps could not provide drive estimates. Your itinerary remains editable and can still be saved.";
+};
 
 async function routeLeg(origin: google.maps.LatLngLiteral, stop: ItineraryStop) {
   const { Route } = await importLibrary("routes");
@@ -89,7 +95,7 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
       }
       setDraft((current) => ({ ...current, stops }));
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : "Google Maps could not provide drive estimates.");
+      setFailure(routeFailureMessage(error));
     } finally { setRouting(false); }
   };
   const save = async () => {

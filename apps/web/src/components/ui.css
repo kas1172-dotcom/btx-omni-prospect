@@ -242,12 +242,20 @@
 }
 .ui-notice {
   display: flex;
+  min-width: 0;
   gap: 8px;
   padding: 10px 12px;
   border-left: 3px solid var(--status-info);
   border-radius: var(--radius-control);
   background: #eef4f8;
   color: var(--text-secondary);
+}
+.ui-notice > strong {
+  flex: 0 0 auto;
+}
+.ui-notice > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .ui-notice-warning {
   border-color: var(--status-warning);
@@ -256,6 +264,11 @@
 .ui-notice-danger {
   border-color: var(--status-danger);
   background: #fff0ed;
+}
+@media (max-width: 760px) {
+  .ui-notice {
+    flex-direction: column;
+  }
 }
 .ui-disclosure {
   overflow: hidden;
