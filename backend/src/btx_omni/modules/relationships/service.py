@@ -181,7 +181,7 @@ class RelationshipIntelligenceService:
                 self._add(result, self._entity("business_unit", unit_id), "HAS_CAPABILITY", self._entity("capability", capability.id), capability.provenance.evidence_state if capability.provenance else EvidenceState.MISSING, capability.provenance, reverse_type="CAPABILITY_OF")
         return tuple(result)
 
-    def account_relationships(self, account_id: str, *, depth: int = 2, max_paths: int = 5000, max_expansions: int = 50_000, deadline_seconds: float = 0.25) -> dict[str, object]:
+    def account_relationships(self, account_id: str, *, depth: int = 2, max_paths: int = 5000, max_expansions: int = 50_000, deadline_seconds: float = 1.0) -> dict[str, object]:
         source = self.entities.get(("account", account_id))
         if source is None: raise KeyError(account_id)
         if not 1 <= depth <= 6 or not 1 <= max_paths <= 5000 or not 1 <= max_expansions <= 50_000 or not 0 < deadline_seconds <= 5:
