@@ -1,6 +1,7 @@
 """Deterministic source-to-event candidate normalization; AI is not used for JSON reformatting."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -23,8 +24,37 @@ from btx_omni.monitor.policy import classify_markets, recency_state, seller_rele
 
 def classify_title(title: str) -> EventType:
     value = title.casefold()
-    rules = (("modification", EventType.CONTRACT_MODIFICATION), ("solicitation", EventType.SOLICITATION), ("award", EventType.CONTRACT_AWARD), ("grant", EventType.GRANT_AWARD), ("funding", EventType.GOVERNMENT_FUNDING), ("approval", EventType.REGULATORY_APPROVAL), ("facility", EventType.NEW_FACILITY), ("capacity", EventType.CAPACITY_EXPANSION), ("partnership", EventType.PARTNERSHIP), ("acquisition", EventType.M_AND_A), ("earnings", EventType.EARNINGS_SIGNAL), ("backlog", EventType.BACKLOG_CHANGE), ("launch", EventType.PRODUCT_LAUNCH))
-    return next((event_type for needle, event_type in rules if needle in value), EventType.SUPPLY_CHAIN_CHANGE)
+    rules = (("contract reduction", EventType.CONTRACT_REDUCTION), ("contract cut", EventType.CONTRACT_REDUCTION),
+             ("program cancellation", EventType.PROGRAM_CANCELLATION), ("program canceled", EventType.PROGRAM_CANCELLATION),
+             ("facility closure", EventType.FACILITY_CLOSURE), ("plant closure", EventType.FACILITY_CLOSURE),
+             ("layoff", EventType.WORKFORCE_REDUCTION), ("workforce reduction", EventType.WORKFORCE_REDUCTION),
+             ("bankruptcy", EventType.FINANCIAL_DISTRESS), ("liquidity warning", EventType.FINANCIAL_DISTRESS),
+             ("export restriction", EventType.EXPORT_RESTRICTION), ("sanction", EventType.EXPORT_RESTRICTION),
+             ("production delay", EventType.PRODUCTION_DELAY), ("schedule delay", EventType.PRODUCTION_DELAY),
+             ("modification", EventType.CONTRACT_MODIFICATION), ("solicitation", EventType.SOLICITATION),
+             ("award", EventType.CONTRACT_AWARD), ("grant", EventType.GRANT_AWARD),
+             ("funding", EventType.GOVERNMENT_FUNDING), ("approval", EventType.REGULATORY_APPROVAL),
+             ("facility", EventType.NEW_FACILITY), ("capacity", EventType.CAPACITY_EXPANSION),
+             ("partnership", EventType.PARTNERSHIP), ("acquisition", EventType.M_AND_A),
+             ("earnings", EventType.EARNINGS_SIGNAL), ("backlog", EventType.BACKLOG_CHANGE),
+             ("launch", EventType.PRODUCT_LAUNCH))
+    return next((event_type for needle, event_type in rules if needle in value), EventType.UNCLASSIFIED_PUBLIC_UPDATE)
+
+
+def declared_event_date(observation: SourceObservation) -> datetime | None:
+    """Publication is not occurrence; only explicit source event-date fields qualify."""
+    payload = json.loads(observation.structured_payload or "{}")
+    keys = ("event_date", "award_date", "action_date")
+    if observation.source_identity.source_system == "fda_openfda":
+        keys = (*keys, "decision_date", "clearance_date")
+    for key in keys:
+        if payload.get(key):
+            try:
+                value = datetime.fromisoformat(str(payload[key]))
+                return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+            except ValueError:
+                return None
+    return None
 
 
 @dataclass(frozen=True)
@@ -68,7 +98,7 @@ def normalize_structured_observation(
         (),
         program,
         None,
-        observation.source_published_at,
+        declared_event_date(observation),
         None,
         None,
         (claim,),
@@ -83,5 +113,6 @@ def normalize_structured_observation(
         markets=markets,
         recency_state=freshness,
         canonical_facility_id=catalog.resolve_facility_id(source_text),
+        source_published_at=observation.source_published_at,
     )
     return EventCandidate(event, "deterministic_structured_mapping")

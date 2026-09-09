@@ -12,6 +12,11 @@
 .app-workspace { min-width: 0; padding: 0 var(--space-6) var(--space-10); background: var(--surface-workspace); }
 .topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); min-height: var(--shell-header-height); margin: 0 calc(var(--space-6) * -1); padding: 10px var(--space-6); background: rgb(255 255 255 / 94%); border-bottom: 1px solid var(--border-subtle); backdrop-filter: blur(14px); }
 .topbar-context { display: grid; gap: 1px; min-width: 0; }
+.topbar-controls { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.signed-in-user { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.signed-in-user > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--surface-selected); font-weight: 700; }
+.signed-in-user strong { max-width: 220px; overflow-wrap: anywhere; font-weight: 500; }
+.mobile-user-identity { display: none; }
 .topbar-context strong { overflow: hidden; color: var(--text-primary); font-family: Archivo, Inter, ui-sans-serif, system-ui, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
 .mode { max-width: min(520px, 52vw); color: var(--text-secondary); font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0; }
 .mode summary { cursor: pointer; font-weight: 600; }
@@ -44,3 +49,5 @@
 .api-notice, .notice, .error { border-radius: var(--radius-control); }
 .app-shell-loading { max-width: 1440px; margin: auto; padding: 0 16px 100px; }
 .mobile-primary-nav { display: none; }
+.demonstration-banner { padding: 8px 12px; margin: 0 calc(var(--space-6) * -1); text-align: center; color: var(--text-secondary); background: var(--surface-selected); font-size: 12px; line-height: 1.4; }
+.demonstration-banner strong { color: var(--text-primary); }

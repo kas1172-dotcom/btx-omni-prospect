@@ -1,6 +1,7 @@
 import type { MonitorSignalBrief } from '../types/api'
 import { Button, Disclosure, EvidenceSource, State } from './UI'
 import { GovernedExplanationDisclosure } from './GovernedExplanationDisclosure'
+import { EvidencePassages } from './EvidencePassages'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
@@ -22,6 +23,24 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
     </div>
     <p>{brief.seller_summary}</p>
     {brief.summary_mode === 'GEMINI_ASSISTED' && <small>Language assisted; governed evidence unchanged.</small>}
+    {brief.signal_confidence && <Disclosure title={`Signal confidence · ${brief.signal_confidence.score == null ? 'More evidence needed' : `${brief.signal_confidence.score}/100`}`}>
+      <div className="seller-signal-details">
+        <p>Confidence describes this assertion, not its commercial value or risk severity.</p>
+        <p>{brief.signal_confidence.data_coverage.present} of {brief.signal_confidence.data_coverage.applicable} required fields are supported. POC calibration is provisional.</p>
+        <ul>{brief.signal_confidence.factors.map(factor => <li key={factor.key}>
+          <strong>{display(factor.key)}:</strong> {factor.points == null ? 'Unknown' : `${factor.points}/100`} · {factor.reason}
+          {factor.evidence_ids.length > 0 && <small> Evidence: {factor.evidence_ids.join(', ')}</small>}
+        </li>)}</ul>
+        <small>{brief.signal_confidence.decision_id} · {brief.signal_confidence.configuration_version} · {brief.signal_confidence.input_configuration_version}</small>
+      </div>
+    </Disclosure>}
+    {brief.risk_severity && <Disclosure title={`Risk severity · ${brief.risk_severity.score == null ? 'More evidence needed' : `${brief.risk_severity.score}/100`}`}>
+      <div className="signal-score-detail">
+        <p><strong>{brief.risk_severity.disposition.replaceAll('_', ' ')}</strong> · severity remains separate from evidence confidence.</p>
+        <p>{brief.risk_severity.data_coverage.present} of {brief.risk_severity.data_coverage.applicable} applicable risk fields are supported.</p>
+        <ul>{brief.risk_severity.factors.map(factor => <li key={factor.key}><strong>{factor.key.replaceAll('_', ' ')}</strong>: {factor.reason}</li>)}</ul>
+      </div>
+    </Disclosure>}
     {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit">
       <div className="seller-signal-details technical-fit">
         {brief.technical_opportunity.event_summary && <p>{brief.technical_opportunity.event_summary}</p>}
@@ -48,6 +67,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         {brief.recommended_action && <p><strong>Governed next step:</strong> {brief.recommended_action}</p>}
         {brief.missing_fields.length > 0 && <p><strong>Missing:</strong> {brief.missing_fields.join(', ')}</p>}
         <EvidenceSource title={brief.headline} source={brief.source_system} date={dateLabel(brief.publication_timestamp)} evidenceState={brief.resolution_state} validationState={brief.seller_promotion_state} url={brief.source_url} detail={`Evidence IDs: ${brief.evidence_ids.length ? brief.evidence_ids.join(', ') : 'Unavailable'}`} />
+        {brief.data_mode === 'LIVE_PUBLIC' && <EvidencePassages key={brief.id} eventId={brief.id} />}
       </div>
     </Disclosure>
     {onUseInOmni && <div className="card-actions"><Button aria-pressed={selected} variant={selected ? 'primary' : 'secondary'} onClick={() => onUseInOmni(brief)}>{selected ? 'Clear Omni event' : 'Use in Omni'}</Button></div>}

@@ -27,14 +27,17 @@ from btx_omni.modules.relationships.presentation import (
 )
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.modules.scoring.account_attractiveness import (
-    AccountAttractivenessInputs,
     seller_attractiveness_projection,
 )
 from btx_omni.monitor.briefs import (
     BriefRetryPolicy,
+    apply_cached_synthesis,
+    governed_content_hash,
     process_signal_brief_synthesis,
     signal_briefs_for_monitor,
 )
+from btx_omni.monitor.documents import document_evidence
+from btx_omni.monitor.research import MonitorResearchCoordinator
 
 
 def run_worker(
@@ -43,6 +46,8 @@ def run_worker(
     source_ids: tuple[str, ...] | None = None,
     limit: int | None = None,
 ) -> tuple[dict, int]:
+    if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
+        return {"status": "INVALID_LIMIT", "detail": "Choose 1–100 records per source."}, 2
     if (
         settings.monitor_mode.lower() != "live"
         or not settings.monitor_durable_state_enabled
@@ -81,6 +86,9 @@ def run_worker(
             source_id for source_id in requested if source_id not in configured
         )
         deadline = monotonic() + settings.monitor_worker_max_seconds
+        # Public macro observations use their own canonical owner, not fabricated
+        # Monitor customer events. Reuse this worker and its operational lock.
+        market_refresh = runtime.markets.worker_refresh(deadline_monotonic=deadline) if settings.market_refresh_enabled else {'status': 'DISABLED'}
         runs = []
         deadline_exhausted = False
         source_deadline_exceeded = False
@@ -117,28 +125,38 @@ def run_worker(
         # work after a bounded collection deadline condition.
         deadline_exhausted = deadline_exhausted or source_deadline_exceeded
         synthesis = None
+        investigations = []
         technical: list[dict] = []
         explanations: list[dict] = []
+        optional_budget_stops: list[str] = []
+
+        def can_start_optional(stage: str) -> bool:
+            nonlocal deadline_exhausted
+            if deadline - monotonic() < settings.ai_timeout_seconds:
+                deadline_exhausted = True
+                if stage not in optional_budget_stops:
+                    optional_budget_stops.append(stage)
+                return False
+            return True
         if runs and not deadline_exhausted and repository:
-            synthesis = process_signal_brief_synthesis(
-                signal_briefs_for_monitor(runtime.monitor),
-                provider=get_ai_provider(AiConfig.from_settings(settings)),
-                repository=repository,
-                cap=settings.monitor_brief_synthesis_cap,
-                retry_policy=BriefRetryPolicy(
-                    auth_failed_seconds=settings.monitor_brief_auth_retry_seconds,
-                    timeout_seconds=settings.monitor_brief_timeout_retry_seconds,
-                    quota_seconds=settings.monitor_brief_quota_retry_seconds,
-                    unavailable_seconds=settings.monitor_brief_unavailable_retry_seconds,
-                ),
-                deadline_monotonic=deadline,
-                minimum_attempt_seconds=settings.ai_timeout_seconds,
-            )
+            research_provider = get_ai_provider(AiConfig.from_settings(settings, purpose='monitor_public_research'))
+            coordinator = MonitorResearchCoordinator(repository, research_provider)
+            # Investigate only this collection cycle, not arbitrary private or
+            # historical account rows. Public relevance still controls publication.
+            candidates = (repository.collection_documents(tuple(run.id for run in runs), limit=settings.monitor_research_cap)
+                          if getattr(research_provider, 'configured', False) and settings.monitor_research_cap else ())
+            for document in candidates:
+                if not can_start_optional('RESEARCH_COORDINATOR'):
+                    break
+                investigations.append(coordinator.investigate(document, source_revision=document['content_hash'],
+                    deadline_monotonic=min(deadline, monotonic() + 90)))
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
             provider = get_ai_provider(AiConfig.from_settings(settings))
             for brief in signal_briefs_for_monitor(runtime.monitor)[
                 : settings.monitor_technical_decomposition_cap
             ]:
+                if not can_start_optional('TECHNICAL_DECOMPOSITION'):
+                    break
                 account = next(
                     (
                         item
@@ -161,7 +179,7 @@ def run_worker(
                     canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
-                    evidence=(
+                    evidence=document_evidence(repository.event_document(brief.id, include_research=True), max_passages=6) or (
                         PublicEvidenceRecord(
                             brief.evidence_ids[0] if brief.evidence_ids else brief.id,
                             brief.what_happened,
@@ -194,7 +212,7 @@ def run_worker(
                         attempt_count=outcome.attempt_count,
                         next_retry_at=outcome.next_retry_at,
                     )
-                if projection.decomposition:
+                if projection.decomposition and can_start_optional('TECHNICAL_EXPLANATION'):
                     technical_explanation = process_technical_opportunity_explanation(
                         projection=seller_projection(projection),
                         event_id=brief.id,
@@ -216,17 +234,73 @@ def run_worker(
                         "matches": len(projection.matches),
                     }
                 )
+            # Brief synthesis runs after technical investigation so the governed
+            # content hash and seller prose include the current persisted research
+            # projection. A stale pre-investigation summary cannot remain current.
+            synthesis = process_signal_brief_synthesis(
+                signal_briefs_for_monitor(runtime.monitor),
+                provider=get_ai_provider(AiConfig.from_settings(settings)),
+                repository=repository,
+                cap=settings.monitor_brief_synthesis_cap,
+                retry_policy=BriefRetryPolicy(
+                    auth_failed_seconds=settings.monitor_brief_auth_retry_seconds,
+                    timeout_seconds=settings.monitor_brief_timeout_retry_seconds,
+                    quota_seconds=settings.monitor_brief_quota_retry_seconds,
+                    unavailable_seconds=settings.monitor_brief_unavailable_retry_seconds,
+                ),
+                deadline_monotonic=deadline,
+                minimum_attempt_seconds=settings.ai_timeout_seconds,
+            )
+            # Publication remains a deterministic server decision. Gemini may
+            # select public reads and improve prose, but cannot pass these gates.
+            final_briefs = []
+            briefs_by_id = {}
+            for deterministic in signal_briefs_for_monitor(runtime.monitor):
+                cached = repository.brief_synthesis(
+                    deterministic.id, governed_content_hash(deterministic)
+                )
+                rendered = apply_cached_synthesis(deterministic, cached)
+                briefs_by_id[rendered.id] = rendered
+            for investigation in investigations:
+                state = repository.research.get(investigation['run_id'])
+                event_id = investigation.get('event_id') or (state or {}).get('event_reference')
+                brief = briefs_by_id.get(event_id)
+                has_passages = any(
+                    document.get('document', {}).get('passages')
+                    for document in investigation.get('documents', ())
+                )
+                gates = {
+                    'research_completed': investigation.get('status') == 'RESEARCH_RECORDED' and has_passages,
+                    'canonical_identity_resolved': bool(brief and brief.resolution_state == 'RESOLVED' and brief.canonical_account_ids),
+                    'seller_relevance_eligible': bool(brief and brief.seller_promotion_state == 'RESOLVED_ELIGIBLE'),
+                    'publication_current': bool(brief and brief.freshness == 'CURRENT'),
+                    'technical_investigation_available': bool(brief and brief.technical_opportunity and brief.technical_opportunity.get('provider_status') == 'AVAILABLE'),
+                    'gemini_brief_available': bool(brief and brief.summary_mode == 'GEMINI_ASSISTED'),
+                }
+                published = all(gates.values())
+                outcome = {
+                    'published': published,
+                    'state': 'PUBLISHED_SELLER_BRIEF' if published else 'WITHHELD_BY_CANONICAL_GATES',
+                    'event_id': event_id,
+                    'brief_id': brief.id if brief else None,
+                    'gates': gates,
+                    'decided_at': runtime.observed_at().isoformat(),
+                }
+                if state and state.get('status') == 'COMPLETED':
+                    repository.research.record_publication(investigation['run_id'], outcome=outcome, now=runtime.observed_at())
+                investigation.update({'published': published, 'publication_state': outcome['state'], 'publication_gates': gates})
+                final_briefs.append(outcome)
             # Customer/Federal explanation calls share the bounded worker and durable cache.
             explanation_provider = get_ai_provider(AiConfig.from_settings(settings))
             cap = settings.monitor_technical_decomposition_cap
             for account in runtime.sample.accounts[:cap]:
+                if not can_start_optional('CUSTOMER_EXPLANATION'):
+                    break
                 scenario = runtime.sample.priority_scenarios.get(
                     account.id
                 ) or runtime.sample.rich_scenarios.get(account.id)
                 attractiveness = seller_attractiveness_projection(
-                    AccountAttractivenessInputs(
-                        runtime.sample.scoring_inputs.get(account.id, {})
-                    ),
+                    runtime.sample.attractiveness_inputs(account.id),
                     calculated_at=runtime.observed_at(),
                     excluded=bool(scenario and scenario.exclusion_reason),
                     exclusion_reason=scenario.exclusion_reason if scenario else None,
@@ -248,6 +322,8 @@ def run_worker(
                 )
             relationship_service = SellerRelationshipPresentationService()
             for account in runtime.sample.accounts[:cap]:
+                if not can_start_optional('RELATIONSHIP_EXPLANATION'):
+                    break
                 relationships = RelationshipIntelligenceService(
                     runtime.sample
                 ).account_relationships(account.id)
@@ -255,6 +331,8 @@ def run_worker(
                     "seller_projection"
                 ]["validated"][:1]
                 for path in paths:
+                    if not can_start_optional('RELATIONSHIP_EXPLANATION'):
+                        break
                     outcome = process_relationship_path_explanation(
                         path=path,
                         customer_id=account.id,
@@ -272,6 +350,8 @@ def run_worker(
             for opportunity in procurement_projection(runtime)["active"][
                 "opportunities"
             ][:cap]:
+                if not can_start_optional('FEDERAL_EXPLANATION'):
+                    break
                 outcome = process_federal_opportunity_explanation(
                     opportunity=opportunity,
                     provider=explanation_provider,
@@ -290,7 +370,7 @@ def run_worker(
         "status": "DEADLINE_EXHAUSTED"
         if deadline_exhausted
         else "FAILED"
-        if failed
+        if failed or market_refresh['status'] == 'FAILED'
         else "SUCCESS",
         "configured_sources": configured,
         "skipped_sources": skipped,
@@ -298,15 +378,19 @@ def run_worker(
         "runs": tuple(asdict(run) for run in runs),
         "brief_synthesis": asdict(synthesis) if synthesis else None,
         "technical_decomposition": technical,
+        "research_investigations": investigations,
+        "seller_publication": final_briefs if 'final_briefs' in locals() else [],
         "governed_explanations": explanations,
+        "optional_budget_stops": optional_budget_stops,
+        "market_refresh": market_refresh,
         "bounded": {
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,
             "minimum_start_budget_seconds": settings.monitor_source_min_start_seconds,
-            "deadline_scope": "source collection is interruptible; transactional persistence completes before exit",
+            "deadline_scope": "Source collection is interruptible; optional AI stages require a full configured provider timeout before starting. In-flight provider timeout and transactional persistence may finish after the scheduling deadline.",
         },
     }
-    return report, 1 if failed or not runs or deadline_exhausted else 0
+    return report, 1 if failed or not runs or deadline_exhausted or market_refresh['status'] == 'FAILED' else 0
 
 
 def main(argv: list[str] | None = None) -> int:

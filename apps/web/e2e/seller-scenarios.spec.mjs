@@ -51,7 +51,7 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
   await markerLayers.getByRole('button', { name: 'Public facilities', exact: true }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
   await expandTargetClusterIfPresent(page, 'Anduril Industries')
-  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries', exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries · Anduril Industries headquarters', exact: true })).toBeVisible()
   const anduril = page.getByRole('button', { name: 'Public facility marker: Anduril Industries headquarters' })
   await expect(anduril).toBeVisible()
   await anduril.click()
@@ -67,7 +67,7 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
   await page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'Clear filters' }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
   await expandTargetClusterIfPresent(page, 'Anduril Industries')
-  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries', exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries · Anduril Industries headquarters', exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Layers & filters' }).click()
   await page.getByRole('button', { name: 'All researched' }).click()

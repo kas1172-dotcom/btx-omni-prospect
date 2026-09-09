@@ -12,7 +12,7 @@ from btx_omni.core.config import get_settings
 BACKEND_ROOT = Path(__file__).parents[1]
 REVISION_0009 = "0009_btx_facility_location_metadata"
 REVISION_0008 = "0008_commercial_and_edges"
-HEAD_REVISION = "0021_monitor_entity_candidate_resolutions"
+HEAD_REVISION = "0035_account_planning"
 
 
 def _config(database_url: str) -> Config:
@@ -68,6 +68,20 @@ def test_revision_ids_fit_0009_postgresql_version_capacity_and_keep_topology() -
     revisions = tuple(item.revision for item in script.walk_revisions(base="base", head="heads"))
 
     assert script.get_heads() == [HEAD_REVISION]
+    assert script.get_revision(HEAD_REVISION).down_revision == "0034_seller_itineraries"
+    assert script.get_revision("0034_seller_itineraries").down_revision == "0033_monitor_research_journal"
+    assert script.get_revision("0033_monitor_research_journal").down_revision == "0032_omni_run_receipts"
+    assert script.get_revision("0032_omni_run_receipts").down_revision == "0031_communication_versions"
+    assert script.get_revision("0031_communication_versions").down_revision == "0030_ai_call_receipts"
+    assert script.get_revision("0030_ai_call_receipts").down_revision == "0029_feedback_source_revision"
+    assert script.get_revision("0029_feedback_source_revision").down_revision == "0028_private_reference_fields"
+    assert script.get_revision("0028_private_reference_fields").down_revision == "0027_memory_create_receipts"
+    assert script.get_revision("0027_memory_create_receipts").down_revision == "0026_market_series"
+    assert script.get_revision('0026_market_series').down_revision == '0025_work_feedback'
+    assert script.get_revision("0025_work_feedback").down_revision == "0024_monitor_funnel"
+    assert script.get_revision("0024_monitor_funnel").down_revision == "0023_omni_private_memory"
+    assert script.get_revision("0023_omni_private_memory").down_revision == "0022_commercial_lifecycle"
+    assert script.get_revision("0022_commercial_lifecycle").down_revision == "0021_monitor_entity_candidate_resolutions"
     assert script.get_revision(REVISION_0009).down_revision == REVISION_0008
     assert max(map(len, revisions)) <= module.ALEMBIC_VERSION_ID_CAPACITY
 

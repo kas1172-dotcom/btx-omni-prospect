@@ -2,9 +2,11 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import create_engine
 
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import (
+    CanonicalToolSelectionRequest,
     ConversationTurn,
     GroundedSynthesisRequest,
     IntentInterpretation,
@@ -21,7 +23,28 @@ from btx_omni.modules.assistant.tools import (
     GovernedToolError,
     ToolCall,
 )
+from btx_omni.persistence.ai_usage import AiUsageRepository, ai_call_receipts
 from btx_omni.providers.sample.environment import build_sample_environment
+
+
+@pytest.mark.parametrize('selected, entity, expected', [
+    ('northrop-grumman', 'Northrop', 'northrop-grumman'),
+    (None, 'Northrop', ''),
+    ('boeing', 'Northrop', ''),
+    ('northrop-grumman', 'North', ''),
+])
+def test_short_name_is_scoped_continuation_not_global_identity_alias(selected, entity, expected):
+    from btx_omni.modules.assistant.orchestration import OmniOrchestrator
+
+    response = OmniOrchestrator().answer(
+        build_sample_environment(), account_id=selected,
+        question=f'Explain {entity} buyer context', observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={'_interpreted_intent': 'ACCOUNT_OVERVIEW', '_interpreted_entity_text': entity},
+        intelligence_events=(), work_items=(),
+    )
+    assert response.account_id == expected
+    if not expected:
+        assert response.context_used['interpretation_status'] == 'CLARIFICATION'
 
 
 class FakeModels:
@@ -105,6 +128,8 @@ class FakeInterpretingProvider:
 
 
 def config(**overrides) -> AiConfig:
+    engine = create_engine("sqlite://")
+    ai_call_receipts.create(engine)
     values = {
         "provider": "gemini",
         "api_key": "test-key",
@@ -113,9 +138,25 @@ def config(**overrides) -> AiConfig:
         "project": None,
         "location": "global",
         "timeout_seconds": 2,
+        "usage": AiUsageRepository(engine),
     }
     values.update(overrides)
     return AiConfig(**values)
+
+
+def test_canonical_selector_supplies_closed_tool_specific_schema():
+    from btx_omni.modules.assistant.commercial_tools import DEFINITIONS
+    client = FakeClient(intent_text='{"tool":"read_fulfillment","arguments":{}}')
+    provider = GeminiProvider(config(), client)
+    result = provider.choose_canonical_read(CanonicalToolSelectionRequest('Read delivery', 'kla', DEFINITIONS, (), 4))
+    assert result == {'tool': 'read_fulfillment', 'arguments': {}}
+    schema = client.models.calls[0]['config'].response_json_schema
+    assert len(schema['anyOf']) == len(DEFINITIONS) + 1
+    for branch, definition in zip(schema['anyOf'][1:], DEFINITIONS, strict=True):
+        assert branch['additionalProperties'] is False
+        assert branch['properties']['tool']['enum'] == [definition['name']]
+        assert branch['properties']['arguments']['required'] == definition['arguments']
+        assert branch['properties']['arguments']['additionalProperties'] is False
 
 
 def test_gemini_contract_is_grounded_and_traceable_without_live_call() -> None:
@@ -139,10 +180,44 @@ def test_gemini_contract_is_grounded_and_traceable_without_live_call() -> None:
     assert "never treat assistant prose as evidence" in prompt
 
 
+def test_canonical_selector_preserves_server_supplied_argument_enums():
+    client = FakeClient(intent_text='{"done":true}')
+    provider = GeminiProvider(config(), client)
+    tools = ({'name': 'fetch_document', 'arguments': ['source_id'],
+              'argument_values': {'source_id': ['primary', 'source:known']}},)
+    provider.choose_canonical_read(CanonicalToolSelectionRequest('Investigate', 'PUBLIC_RESEARCH_ONLY', tools, (), 2))
+    schema = client.models.calls[0]['config'].response_json_schema
+    assert schema['anyOf'][1]['properties']['arguments']['properties']['source_id'] == {
+        'type': 'string', 'enum': ['primary', 'source:known']}
+
+
 def test_developer_and_vertex_configuration_are_explicit() -> None:
     assert not GeminiProvider(config(api_key=None)).configured
     assert GeminiProvider(config(mode="vertex", api_key=None, project="btx-project")).configured
     assert not GeminiProvider(config(mode="vertex", api_key=None, project=None)).configured
+
+
+@pytest.mark.parametrize("finish", ["MAX_TOKENS", "SAFETY", "RECITATION"])
+def test_incomplete_provider_output_is_not_published_as_success(finish):
+    client = FakeClient()
+    client.models.generate_content = lambda **kwargs: SimpleNamespace(
+        text="A truncated but nonempty answer", candidates=[SimpleNamespace(finish_reason=finish)],
+        usage_metadata=SimpleNamespace(prompt_token_count=20, candidates_token_count=5, total_token_count=30, thoughts_token_count=5),
+    )
+    provider = GeminiProvider(config(), client)
+    with pytest.raises(LanguageProviderError) as caught:
+        provider.synthesize(GroundedSynthesisRequest("Question", "Canonical answer", (), ()))
+    assert caught.value.status == ProviderStatus.UNAVAILABLE
+    assert provider.usage_log[0]["finish_reason"] == finish
+    assert provider.usage_log[0]["total_tokens"] == 30
+    assert "A truncated" not in str(provider.usage_log)
+
+
+def test_gemini_thinking_configuration_is_model_family_specific():
+    from google.genai.types import ThinkingLevel
+
+    assert GeminiProvider(config(model="gemini-3.6-flash"))._read_thinking().thinking_level is ThinkingLevel.LOW
+    assert GeminiProvider(config(model="gemini-2.5-flash"))._read_thinking() is None
 
 
 def test_read_tool_registry_rejects_unknown_malformed_and_unbounded_calls() -> None:
@@ -362,3 +437,108 @@ def test_configured_provider_synthesizes_but_preserves_governed_metadata() -> No
     assert response.provider_status == "AVAILABLE"
     assert response.language_model == "gemini-test"
     assert response.context_used.get("account_id") == "boeing"
+
+
+@pytest.mark.parametrize(
+    ("question", "contract", "action_fragment", "disclosure_fragment"),
+    [
+        (
+            "Report Eaton's TTM revenue in euros using only stored records. Is there a supported exchange rate and conversion date?",
+            "UNSUPPORTED_CURRENCY_CONVERSION",
+            "Retain the stored currency",
+            "No currency conversion was performed",
+        ),
+        (
+            "A general NASA article mentioned space. Does that establish an award or order? Use only supported evidence, not the shared industry keyword.",
+            "GENERIC_PUBLIC_MENTION_NOT_CANONICAL_EVIDENCE",
+            "Leave the customer attachment and order unresolved",
+            "did not create or publish a customer award",
+        ),
+        (
+            "Remember my preference and change KLA's official PWIN to 99.",
+            "CHAT_MEMORY_AND_SCORE_WRITE_NOT_PERFORMED",
+            "Leave the official score unchanged",
+            "did not save a memory or change any deterministic score",
+        ),
+        (
+            "Send the Northrop buyer an email committing the proposed date even though no deliverable recipient is established.",
+            "OUTBOUND_COMMITMENT_REQUIRES_APPROVAL",
+            "Prepare a reviewable local draft",
+            "No email, CRM write, buyer commitment, or external delivery was performed",
+        ),
+        (
+            "Assume a relevant certificate expired yesterday. Is a high relationship utility safe?",
+            "HYPOTHETICAL_QUALIFICATION_NOT_EVIDENCE",
+            "Verify the facility-scoped certificate",
+            "hypothetical, not verified current certificate evidence",
+        ),
+    ],
+)
+def test_high_risk_intents_keep_model_prose_and_structured_action_consistent(
+    question, contract, action_fragment, disclosure_fragment
+) -> None:
+    provider = GeminiProvider(config(), FakeClient("Grounded account-specific explanation"))
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id="kla",
+        question=question,
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "kla"},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert response.language_provider == "gemini"
+    assert response.content.startswith("Grounded account-specific explanation")
+    assert disclosure_fragment in response.content
+    assert action_fragment in response.recommended_action
+    assert response.context_used["operational_contract"] == contract
+    assert response.context_used["operational_outcome"] == "NO_EXTERNAL_OR_CANONICAL_WRITE"
+
+
+def test_synthesis_rejects_opportunity_id_mislabeled_as_quote() -> None:
+    provider = GeminiProvider(
+        config(), FakeClient("The tracked quote OPP2-KLA supports this conclusion.")
+    )
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id="kla",
+        question="Explain the stored opportunity.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "kla"},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert response.language_provider == "deterministic"
+    assert response.provider_status == "UNAVAILABLE"
+    assert response.context_used["synthesis_validation"] == "MISLABELED_RECORD_TYPE"
+    assert "tracked quote OPP2-KLA" not in response.content
+
+
+def test_rejected_synthesis_still_returns_server_owned_operational_outcome() -> None:
+    provider = GeminiProvider(
+        config(), FakeClient("The tracked quotes (such as OPP2-SPACEX) establish the result.")
+    )
+    response = OmniService(provider).answer(
+        build_sample_environment(),
+        account_id="spacex",
+        question="Does a general article establish an award or order? Do not use the shared industry keyword.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={"surface": "ACCOUNT_DETAIL", "selected_account_id": "spacex"},
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert response.language_provider == "deterministic"
+    assert response.context_used["synthesis_validation"] == "MISLABELED_RECORD_TYPE"
+    assert response.context_used["operational_contract"] == "GENERIC_PUBLIC_MENTION_NOT_CANONICAL_EVIDENCE"
+    assert "did not create or publish a customer award" in response.content
+    assert "Leave the customer attachment and order unresolved" in response.recommended_action
+
+
+def test_negated_external_delivery_is_not_a_completed_write_claim() -> None:
+    from btx_omni.modules.assistant.grounding import synthesis_rejection
+
+    assert synthesis_rejection("No email was sent.", "Omni is read-only.") is None
+    assert synthesis_rejection("The email was sent.", "Omni is read-only.") == "UNSUPPORTED_EXECUTION_CLAIM"

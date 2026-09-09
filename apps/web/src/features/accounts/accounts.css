@@ -195,7 +195,7 @@
 }
 .account-decision-zone {
   display: grid;
-  grid-template-columns: 145px 190px minmax(0, 1fr);
+  grid-template-columns: minmax(180px, .8fr) minmax(180px, 1fr) minmax(0, 3fr);
   gap: 12px;
   padding: 14px;
   background: var(--surface-workspace);
@@ -204,6 +204,12 @@
 }
 .account-decision-zone .ui-stat {
   box-shadow: none;
+  min-width: 0;
+}
+.account-decision-zone .ui-stat > strong {
+  font-size: clamp(1.25rem, 1.8vw, 1.75rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 .account-why {
   display: grid;
@@ -234,9 +240,11 @@
 }
 .customer-section > .panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 12px;
 }
+.customer-section > .panel > * { min-width: 0; overflow-wrap: anywhere; }
 .customer-section > .panel .panel-head {
   margin: 0;
 }
@@ -485,194 +493,14 @@
 .seller-relationship-evidence .ui-evidence {
   min-width: 0;
 }
-.relationship-graph-workbench {
-  display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(250px, 0.75fr);
-  gap: 12px;
-  align-items: stretch;
-}
-.relationship-graph-main,
-.relationship-graph-detail {
-  min-width: 0;
-  padding: 14px;
-  background: var(--surface-base);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-panel);
-}
-.relationship-graph-main {
-  display: grid;
-  gap: 12px;
-}
-.relationship-graph-intro {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-.relationship-graph-intro > div:first-child {
-  display: grid;
-  gap: 4px;
-}
-.relationship-graph-intro p {
-  max-width: 470px;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.relationship-graph-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: start;
-  justify-content: flex-end;
-  gap: 5px 9px;
-  max-width: 245px;
-  color: var(--text-tertiary);
-  font-size: 10px;
-}
-.relationship-graph-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-.relationship-legend-node {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  background: var(--surface-subdued);
-  border: 1.5px solid var(--text-primary);
-}
-.relationship-legend-node.account { border-radius: 50%; }
-.relationship-legend-node.person { border-radius: 50% 50% 4px 50%; }
-.relationship-legend-node.program { border-radius: 3px; }
-.relationship-legend-edge {
-  display: inline-block;
-  width: 17px;
-  border-top: 2px solid var(--text-primary);
-}
-.relationship-legend-edge.needs-validation { border-top-style: dashed; border-color: var(--text-tertiary); }
-.relationship-graph-canvas {
-  position: relative;
-  min-height: 430px;
-  overflow: hidden;
-  background: linear-gradient(to bottom, var(--surface-base), var(--surface-subdued));
-  border: 1px solid var(--border-default);
-  border-radius: calc(var(--radius-panel) - 2px);
-}
-.relationship-graph-canvas::before {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: linear-gradient(var(--border-default) 1px, transparent 1px), linear-gradient(90deg, var(--border-default) 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: 0.24;
-  content: '';
-}
-.relationship-graph-edges {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.relationship-graph-edge {
-  fill: none;
-  stroke: var(--text-tertiary);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-.relationship-graph-edge.validated { stroke: var(--text-primary); stroke-width: 2.5; }
-.relationship-graph-edge.needs-validation { stroke-dasharray: 7 5; }
-.relationship-graph-edge.selected { stroke-width: 4; }
-.relationship-graph-edge-hitarea {
-  position: absolute;
-  z-index: 1;
-  width: 52px;
-  height: 38px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-}
-.relationship-graph-edge-hitarea:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
-.relationship-graph-node {
-  position: absolute;
-  z-index: 2;
-  display: grid;
-  width: min(142px, 20vw);
-  min-height: 55px;
-  gap: 3px;
-  padding: 8px 10px;
-  color: var(--text-primary);
-  text-align: left;
-  background: var(--surface-base);
-  border: 1.5px solid var(--text-secondary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-}
-.relationship-graph-node > span {
-  overflow: hidden;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.relationship-graph-node small {
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.relationship-graph-node.account { border-radius: 999px; }
-.relationship-graph-node.person { border-radius: 20px 20px 5px 20px; }
-.relationship-graph-node.program { border-radius: 5px; }
-.relationship-graph-node.facility { border-radius: 0; }
-.relationship-graph-node.commercial { border-radius: 3px 12px 3px 12px; }
-.relationship-graph-node.needs-validation { border-style: dashed; background: color-mix(in srgb, var(--surface-base) 75%, var(--surface-subdued)); }
-.relationship-graph-node.selected {
-  border: 3px solid var(--text-primary);
-  box-shadow: 0 0 0 3px var(--surface-base), 0 0 0 5px var(--text-secondary);
-}
-.relationship-graph-node:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
-.relationship-graph-detail {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-}
-.relationship-graph-detail h3 {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-family: var(--font-display);
-  font-size: 18px;
-}
-.relationship-graph-detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.relationship-graph-detail > p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.relationship-graph-detail > p strong { color: var(--text-primary); }
-.relationship-graph-detail .ui-disclosure { margin-top: 2px; }
 @media (max-width: 980px) {
+  .account-decision-zone { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-why { grid-column: 1 / -1; }
   .account-primary-grid,
   .account-secondary-grid {
     grid-template-columns: 1fr;
   }
   .seller-relationship-list {
-    grid-template-columns: 1fr;
-  }
-  .relationship-graph-workbench {
     grid-template-columns: 1fr;
   }
 }
@@ -813,32 +641,6 @@
   .relationship-view-toggle button {
     min-height: 44px;
   }
-  .relationship-graph-intro {
-    display: grid;
-  }
-  .relationship-graph-legend {
-    justify-content: flex-start;
-    max-width: none;
-  }
-  .relationship-graph-main,
-  .relationship-graph-detail {
-    padding: 12px;
-  }
-  .relationship-graph-canvas {
-    min-height: 390px;
-  }
-  .relationship-graph-node {
-    width: min(122px, 33vw);
-    min-height: 51px;
-    padding: 7px 8px;
-  }
-  .relationship-graph-node > span {
-    font-size: 11px;
-  }
-  .relationship-graph-edge-hitarea {
-    width: 44px;
-    height: 44px;
-  }
   .relationship-intelligence-header {
     display: grid;
   }
@@ -904,13 +706,12 @@
   .account-workspace-states .ui-status {
     font-size: 9px;
   }
-  .relationship-graph-canvas {
-    min-height: 360px;
-  }
-  .relationship-graph-node {
-    width: min(106px, 34vw);
-  }
-  .relationship-graph-node small {
-    display: none;
-  }
 }
+.commercial-decisions { min-width: 0; overflow-wrap: anywhere; }
+.commercial-decisions section, .commercial-decision { border-top: 1px solid #ddd; padding: 16px 0; }
+.commercial-decision summary { cursor: pointer; min-height: 44px; font-weight: 600; text-transform: capitalize; }
+.commercial-decisions button { min-height: 44px; max-width: 100%; overflow-wrap: anywhere; margin: 4px; padding: 8px 12px; }
+.commercial-decision li { margin-block: 12px; }
+.decision-evidence-buttons { display: flex; flex-wrap: wrap; }
+.commercial-records{min-width:0}.commercial-records summary{min-height:44px;padding:12px 0;cursor:pointer;overflow-wrap:anywhere}.commercial-records select{width:100%;min-height:44px;margin:8px 0;white-space:normal}.commercial-records .commercial-evidence-detail{overflow-wrap:anywhere;min-width:0}.commercial-records .commercial-evidence-detail dl>div{grid-template-columns:minmax(0,1fr);gap:4px}.commercial-records .commercial-evidence-detail dt{font-weight:600}.commercial-records .commercial-evidence-detail ul{padding-left:18px}.commercial-records p{font-size:13px;line-height:1.5}.commercial-records button{min-height:44px}
+.customer-section .line > span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }

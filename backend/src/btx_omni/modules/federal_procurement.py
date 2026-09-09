@@ -367,7 +367,9 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
     verified = runtime.settings.monitor_sam_naics_verification_state == "VERIFIED"
     opp = []
     aw = []
-    for obs in runtime.monitor.observations.values():
+    from btx_omni.monitor.service import current_source_observations
+
+    for obs in current_source_observations(runtime.monitor):
         try:
             p = json.loads(obs.structured_payload or "{}")
         except json.JSONDecodeError:

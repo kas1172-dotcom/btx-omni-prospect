@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import './ui.css'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
@@ -32,7 +32,12 @@ export function StatTile({ label, value, detail, tone = 'neutral', className = '
 export function MetadataRow({ label, value }: { label: ReactNode; value: ReactNode }) { return <div className="ui-metadata-row"><span>{label}</span><strong>{value}</strong></div> }
 export function Notice({ tone = 'info', title, children }: { tone?: 'info' | 'warning' | 'danger'; title?: string; children: ReactNode }) { return <div className={`ui-notice ui-notice-${tone}`} role={tone === 'danger' ? 'alert' : 'status'}>{title && <strong>{title}</strong>}<span>{children}</span></div> }
 
-export function Disclosure({ title, children, defaultOpen = false, className = '' }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string }) { const [open, setOpen] = useState(defaultOpen); const id = useId(); return <section className={`ui-disclosure ${className}`.trim()}><button type="button" className="ui-disclosure-trigger" aria-expanded={open} aria-controls={id} onClick={() => setOpen(value => !value)}><span>{title}</span><span aria-hidden="true">{open ? '⌃' : '⌄'}</span></button>{open && <div className="ui-disclosure-body" id={id}>{children}</div>}</section> }
+export function Disclosure({ title, children, defaultOpen = false, className = '', open: controlledOpen, onOpenChange }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string; open?: boolean; onOpenChange?: (open: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen)
+  const open = controlledOpen ?? internalOpen
+  const id = useId()
+  return <section className={`ui-disclosure ${className}`.trim()}><button type="button" className="ui-disclosure-trigger" aria-expanded={open} aria-controls={id} onClick={() => { setInternalOpen(!open); onOpenChange?.(!open) }}><span>{title}</span><span aria-hidden="true">{open ? '⌃' : '⌄'}</span></button>{open && <div className="ui-disclosure-body" id={id}>{children}</div>}</section>
+}
 
 export function EvidenceSource({ title, source, date, evidenceState, validationState, url, detail }: { title?: string; source?: string; date?: string; evidenceState?: string; validationState?: string; url?: string; detail?: ReactNode }) { const usableUrl = Boolean(url && /^https?:\/\//.test(url) && !url.includes('.invalid')); const unavailable = !source && !date && !usableUrl; return <article className="ui-evidence"><StatusBadge value={evidenceState ?? (unavailable ? 'NEEDS_RESEARCH' : 'PUBLIC EVIDENCE')} kind="evidence" tone={unavailable ? 'warning' : undefined} />{title && <strong>{title}</strong>}<div className="ui-evidence-meta"><span>Source: {source ?? 'Unavailable · needs research'}</span><span>Date: {date ?? 'Unavailable'}</span>{validationState && <span>Validation: {validationState.replaceAll('_', ' ')}</span>}</div>{detail && <p>{detail}</p>}{usableUrl ? <a href={url} target="_blank" rel="noreferrer">Inspect source →</a> : <span className="ui-evidence-unavailable">Source link unavailable</span>}</article> }
 
@@ -41,16 +46,19 @@ export function SortableHeader({ children, direction = 'none', ...props }: Butto
 export function TableRow({ children, selected = false, interactive = false, className = '' }: { children: ReactNode; selected?: boolean; interactive?: boolean; className?: string }) { return <div className={`ui-table-row ${selected ? 'selected' : ''} ${interactive ? 'interactive' : ''} ${className}`.trim()} role="row" aria-selected={selected || undefined}>{children}</div> }
 export function MobileListRow({ title, metadata, tertiary, selected = false, onClick }: { title: ReactNode; metadata?: ReactNode; tertiary?: ReactNode; selected?: boolean; onClick?: () => void }) { const content = <><strong>{title}</strong>{metadata && <span>{metadata}</span>}{tertiary && <small>{tertiary}</small>}</>; return onClick ? <button type="button" className={`ui-mobile-row ${selected ? 'selected' : ''}`} aria-pressed={selected} onClick={onClick}>{content}</button> : <article className={`ui-mobile-row ${selected ? 'selected' : ''}`}>{content}</article> }
 
-export function Drawer({ open, onClose, titleId, children, className = '' }: { open: boolean; onClose: () => void; titleId: string; children: ReactNode; className?: string }) {
+export function Drawer({ open, onClose, titleId, children, className = '', initialFocus }: { open: boolean; onClose: () => void; titleId: string; children: ReactNode; className?: string; initialFocus?: RefObject<HTMLElement | null> }) {
   const dialog = useRef<HTMLElement>(null)
   const closeRef = useRef(onClose)
   useEffect(() => { closeRef.current = onClose }, [onClose])
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    const focusTimer = window.setTimeout(() => dialog.current?.querySelector<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus(), 0)
+    // Focus before paint, never from a late timer that can steal a user's first
+    // keystroke or race an input operation (notably in WebKit).
+    const target = initialFocus?.current ?? dialog.current?.querySelector<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')
+    if (target && dialog.current?.contains(target)) target.focus()
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
       if (event.key !== 'Tab' || !dialog.current) return
@@ -61,8 +69,8 @@ export function Drawer({ open, onClose, titleId, children, className = '' }: { o
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
     }
     document.addEventListener('keydown', onKey)
-    return () => { window.clearTimeout(focusTimer); document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previouslyFocused?.isConnected) previouslyFocused.focus() }
-  }, [open])
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previouslyFocused?.isConnected) previouslyFocused.focus() }
+  }, [open, initialFocus])
   if (!open) return null
   return <div className="drawer-backdrop ui-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><aside ref={dialog} className={`ui-drawer ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby={titleId}>{children}</aside></div>
 }

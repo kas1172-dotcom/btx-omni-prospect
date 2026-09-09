@@ -7,14 +7,15 @@ async function navigate(page, name) {
 test('desktop Today presents truthful priority, meaning, action, and evidence', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
-  const distribution = page.getByRole('region', { name: 'Commercial Review priority distribution' })
-  await expect(distribution).toContainText('High')
-  await expect(distribution).toContainText('Medium')
-  await expect(distribution).toContainText('Low')
+  const priorities = page.getByRole('region', { name: 'Top priorities' })
+  await expect(priorities.locator('[data-summary-id]')).toHaveCount(3)
+  await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
   const attention = page.getByRole('heading', { name: 'What changed / needs attention' }).locator('..').locator('..')
   await expect(attention).toContainText('Why:')
   await expect(attention).toContainText('Next:')
+  await attention.getByRole('button', { name: 'Evidence and governed action' }).first().click()
   await expect(attention).toContainText('SAMPLE BTX commercial context')
+  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   await expect(page.getByRole('heading', { name: 'Public intelligence', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'View Intelligence' }).click()
   await expect(page.getByRole('heading', { name: 'Intelligence', level: 1 })).toBeVisible()
@@ -36,14 +37,16 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
 
   const commercial = payload.command_center.priority_briefing.filter(item => item.kind === 'COMMERCIAL_REVIEW')
   const publicSignals = payload.command_center.priority_briefing.filter(item => item.kind === 'PUBLIC_SIGNAL')
-  await expect(page.locator('[data-priority-id]').filter({ hasText: 'SAMPLE BTX commercial context' })).toHaveCount(commercial.length)
+  expect(await page.locator('[data-summary-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-summary-id')))).toEqual(projectedPriority.slice(0, 3))
   for (const item of commercial) {
     const card = page.locator(`[data-priority-id="${item.id}"]`)
     await card.getByRole('button', { name: 'Evidence and governed action' }).click()
+    await expect(card).toContainText('SAMPLE BTX commercial context')
     await expect(card.getByRole('button', { name: 'Create action' })).toBeVisible()
   }
   for (const item of publicSignals) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)
 
+  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   const defense = payload.command_center.market_hubs.find(hub => hub.market === 'Defense')
   await page.getByRole('navigation', { name: 'Market hubs' }).getByRole('button', { name: /Defense/ }).click()
   await expect(page.getByRole('heading', { name: 'Defense coverage and gaps' })).toBeVisible()
@@ -93,6 +96,49 @@ test('desktop Intelligence composes search and canonical filters with evidence a
   await expect(signal.getByRole('button', { name: 'Clear Omni event' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByLabel('Open Omni assistant').click()
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeVisible()
+})
+
+test('public briefing joins the selected signal to canonical account context without cross-contaminating actions', async ({ page }) => {
+  await page.goto('/')
+  await navigate(page, 'Intelligence')
+  const first = page.locator('.intelligence-card').first()
+  const headline = await first.getByRole('heading').innerText()
+  await first.getByRole('button', { name: 'Open briefing' }).click()
+
+  await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
+  await expect(page).toHaveURL(/#\/intelligence\/brief\//)
+  await expect(page.getByRole('heading', { name: 'Commercial relevance' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Components and applicable business units' })).toBeVisible()
+  await expect(page.getByText(/do not establish that this public event applies/)).toBeVisible()
+  const next = page.getByRole('heading', { name: 'What should the seller do next?' }).locator('..')
+  await expect(next).toContainText('Review the governed public evidence')
+  await expect(next).not.toContainText('remaining bracket quantity')
+  await expect(page.getByRole('complementary', { name: 'Briefing decisions and actions' })).toContainText('Signal confidence')
+
+  await page.reload()
+  await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
+  await page.getByRole('button', { name: '← Back to Intelligence' }).click()
+  await expect(page.getByRole('heading', { name: 'Intelligence', level: 1 })).toBeVisible()
+})
+
+test('public briefing exposes recoverable account-context failure and remains usable on mobile', async ({ page }) => {
+  let allowSuccess = false
+  await page.route('**/api/**', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (!allowSuccess && /^\/api\/accounts\/[^/]+\/?$/.test(path)) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Temporary context failure' }) })
+    } else await route.continue()
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
+  await page.locator('.intelligence-card').first().getByRole('button', { name: 'Open briefing' }).click()
+  await expect(page.getByText('Customer context could not be loaded')).toBeVisible()
+  allowSuccess = true
+  await page.getByRole('button', { name: 'Retry' }).click()
+  await expect(page.getByRole('heading', { name: 'Commercial relevance' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ask Omni about this signal' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
 })
 
 test('mobile Today and Intelligence remain touch-usable at 390px and 320px without overflow', async ({ page }) => {

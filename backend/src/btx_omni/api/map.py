@@ -12,8 +12,9 @@ from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.alerts import CommercialAlertKind
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER, primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
+from btx_omni.modules.commercial.briefing import commercial_briefing
+from btx_omni.modules.commercial.map_context import map_commercial_context
 from btx_omni.modules.scoring.account_attractiveness import (
-    AccountAttractivenessInputs,
     seller_attractiveness_projection,
 )
 from btx_omni.monitor.briefs import (
@@ -150,14 +151,15 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
     selected_accounts = tuple(account for account in sample.accounts if not industry or industry in account.industries)
     selected_ids = {account.id for account in selected_accounts}
     commercial_accounts = {item.account_id for item in sample.commercial_contexts}
-    dormant_customer_accounts = {
-        item.account_id
-        for item in CommercialAlertEngine().evaluate(
+    commercial_alerts = CommercialAlertEngine().evaluate(
             sample.commercial_contexts,
             sample.quotes,
             observed_at=runtime.observed_at(),
             orders=sample.orders,
         )
+    dormant_customer_accounts = {
+        item.account_id
+        for item in commercial_alerts
         if item.type is CommercialAlertKind.CUSTOMER_INACTIVITY
     }
     active_client_accounts = commercial_accounts - dormant_customer_accounts
@@ -193,11 +195,29 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
         for account_id in selected_ids
     }
     account_points = []
+    pending_accounts = []
     for account in selected_accounts:
         candidates = tuple(sorted((facility for facility in facilities if facility.account_id == account.id), key=lambda item: item.id))
+        if not candidates:
+            pending_accounts.append({
+                "id": f"account:{account.id}:location-pending",
+                "account_id": account.id,
+                "name": account.legal_name,
+                "primary_markets": account.industries,
+                "account_segment": _account_segment(
+                    account_id=account.id,
+                    active_client_account_ids=active_client_accounts,
+                    dormant_customer_account_ids=dormant_customer_accounts,
+                    prospect_account_ids=prospect_accounts,
+                ),
+                "is_rich_scenario": account.id in sample.rich_scenarios or account.id in sample.priority_scenarios,
+                "btx_top_100": account.btx_top_100,
+                "location_truth_state": "LOCATION_PENDING",
+                "reason": "No source-supported canonical site with verified coordinates is available.",
+            })
+        scenario = sample.priority_scenarios.get(account.id) or sample.rich_scenarios.get(account.id)
+        score = seller_attractiveness_projection(sample.attractiveness_inputs(account.id), calculated_at=runtime.observed_at(), excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None) if candidates else None
         for location in candidates:
-            scenario = sample.priority_scenarios.get(account.id) or sample.rich_scenarios.get(account.id)
-            score = seller_attractiveness_projection(AccountAttractivenessInputs(sample.scoring_inputs.get(account.id, {})), calculated_at=runtime.observed_at(), excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
             nearest = min(
                 btx_facilities,
                 key=lambda item: haversine_miles(
@@ -217,12 +237,7 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
             )
             account_alerts = tuple(
                 item
-                for item in CommercialAlertEngine().evaluate(
-                    sample.commercial_contexts,
-                    sample.quotes,
-                    observed_at=runtime.observed_at(),
-                    orders=sample.orders,
-                )
+                for item in commercial_alerts
                 if item.account_id == account.id
             )
             account_points.append({"id": f"account:{account.id}:facility:{location.id}", "entity_type": "ACCOUNT", "account_id": account.id, "facility_id": location.id, "name": account.legal_name, "primary_markets": account.industries, "industry": primary_market_label(account.industries), "relationship": account.relationship, "account_segment": _account_segment(account_id=account.id, active_client_account_ids=active_client_accounts, dormant_customer_account_ids=dormant_customer_accounts, prospect_account_ids=prospect_accounts), "is_rich_scenario": account.id in sample.rich_scenarios or account.id in sample.priority_scenarios, "btx_top_100": account.btx_top_100, "btx_top_100_provenance": account.btx_top_100_provenance, "coordinates": _coordinates(location.latitude, location.longitude), "location_truth_state": location.verification_state, "location_name": location.name, "location_type": location.facility_type, "location_provenance": location.provenance, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in commercial_accounts else "UNAVAILABLE", "attractiveness_score": score.score, "attractiveness_coverage": score.coverage, "score_status": score.status, "score_missingness": score.missingness, "nearest_btx_facility": {"id": nearest.id, "name": nearest.name, "distance_miles": str(distance), "distance_method": "HAVERSINE_STRAIGHT_LINE"} if nearest and distance is not None else None, "proximity_input": str(distance) if distance is not None else None, "current_signal_briefs": current_briefs_by_account.get(account.id, ()), "upcoming_signal_briefs": upcoming_briefs_by_account.get(account.id, ()), "governed_next_step": account_alerts[0].recommended_action if account_alerts else None, "selection_missingness": tuple(item for item, missing in (("Customer Attractiveness inputs", score.score is None), ("current eligible Signal Brief", not current_briefs_by_account.get(account.id)), ("upcoming governed date", not upcoming_briefs_by_account.get(account.id)), ("SAMPLE commercial context", account.id not in commercial_accounts)) if missing), "deep_account": account.id in commercial_accounts})
@@ -250,5 +265,20 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
                 marker_mode=marker_mode,
             )
         )
+    # Map and Account360 consume the same current commercial-case owner. Generic
+    # portfolio alerts must not overwrite an account-specific proposed next step.
+    commercial_briefs = {
+        account_id: commercial_briefing(ledger, canonical_account_id=account_id, revision=sample.commercial_revision)
+        for account_id, ledger in sample.commercial_ledgers.items() if account_id in selected_ids
+    }
+    commercial_facets = {account_id: map_commercial_context(sample.commercial_ledgers.get(account_id),
+                                                           canonical_account_id=account_id, revision=sample.commercial_revision)
+                         for account_id in {point['account_id'] for point in [*account_points, *pending_accounts]}}
+    for point in [*account_points, *pending_accounts]:
+        point.update(commercial_facets[point['account_id']])
+        brief = commercial_briefs.get(point["account_id"])
+        if brief:
+            point["governed_next_step"] = brief["next_action"]
+            point["commercial_briefing"] = brief
     available_markets = {market for account in sample.accounts for market in account.industries}
-    return {"layers": [market for market in PRIMARY_MARKET_ORDER if market in available_markets], "accounts": account_points, "facilities": facility_points, "btx_facilities": btx_points, "intelligence": intelligence_points, "records": account_points, "public_locations": facility_points, "intelligence_signals": intelligence_points, "proximity_note": "Seller planning input only; never an attractiveness input."}
+    return {"layers": [market for market in PRIMARY_MARKET_ORDER if market in available_markets], "accounts": account_points, "pending_accounts": pending_accounts, "facilities": facility_points, "btx_facilities": btx_points, "intelligence": intelligence_points, "records": account_points, "public_locations": facility_points, "intelligence_signals": intelligence_points, "proximity_note": "Seller planning input only; never an attractiveness input."}

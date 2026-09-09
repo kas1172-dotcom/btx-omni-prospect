@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api/client";
 import {
   Button,
@@ -48,7 +48,9 @@ export function Communications({
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<CommunicationDraft>();
   const [notice, setNotice] = useState("");
-  const [history, setHistory] = useState<CommunicationHistoryEvent[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
+  const [loadedHistory, setLoadedHistory] = useState<{ id: string; version: number; events: CommunicationHistoryEvent[]; error: boolean }>();
   const accountById = useMemo(
     () => new Map(accounts.map((item) => [item.id, item])),
     [accounts],
@@ -74,17 +76,22 @@ export function Communications({
     [customer, items, query, state],
   );
   const selected = items.find((item) => item.id === selectedId) ?? visible[0];
+  const historyId = selected?.id;
+  const historyVersion = selected?.version;
+  const currentHistory = loadedHistory?.id === historyId && loadedHistory.version === historyVersion ? loadedHistory : undefined;
   useEffect(() => {
-    if (!selected) return;
+    if (!historyOpen || !historyId || historyVersion === undefined) return;
+    const controller = new AbortController();
     void api
-      .communicationHistory(selected.id)
-      .then((result) => setHistory(result.events))
-      .catch(() => setHistory([]));
-  }, [selected]);
+      .communicationHistory(historyId, controller.signal)
+      .then((result) => { if (!controller.signal.aborted) setLoadedHistory({ id: historyId, version: historyVersion, events: result.events, error: false }); })
+      .catch(() => { if (!controller.signal.aborted) setLoadedHistory({ id: historyId, version: historyVersion, events: [], error: true }); });
+    return () => controller.abort();
+  }, [historyOpen, historyId, historyVersion, historyRefresh]);
   const review = async (decision: "APPROVED" | "REJECTED") => {
     if (!selected) return;
     try {
-      onItem(await api.approveCommunication(selected.id, decision));
+      onItem(await api.approveCommunication(selected.id, decision, selected.version));
       setNotice(
         `Draft ${decision.toLowerCase()} by human review. No message was sent.`,
       );
@@ -97,6 +104,7 @@ export function Communications({
     try {
       const result = await api.previewCommunication(selected.id);
       setNotice(result.message);
+      setHistoryRefresh(value => value + 1);
     } catch (error) {
       setNotice(
         error instanceof Error ? error.message : "Preview unavailable.",
@@ -110,6 +118,7 @@ export function Communications({
         await api.sendCommunication(
           selected.id,
           `human-confirm-${selected.id}`,
+          selected.version,
         ),
       );
       setNotice("Delivery confirmed.");
@@ -268,6 +277,16 @@ export function Communications({
                   </div>
                 </dl>
                 <div className="card-actions">
+                  <Button onClick={async () => {
+                    const id = selected.id;
+                    try {
+                      const result = await api.communications();
+                      const saved = result.items.find(item => item.id === id);
+                      if (!saved) throw new Error('This communication is no longer available in your permitted work.');
+                      onItem(saved);
+                      setNotice('Saved communication refreshed. Review its content before taking another action.');
+                    } catch (error) { setNotice(error instanceof Error ? error.message : 'Refresh failed.'); }
+                  }}>Refresh saved communication</Button>
                   <Button
                     onClick={() => {
                       setEditing(selected);
@@ -326,9 +345,12 @@ export function Communications({
                     </Button>
                   </Panel>
                 )}
-                <Disclosure title="Audit history">
+                <Disclosure title="Audit history" open={historyOpen} onOpenChange={setHistoryOpen}>
+                  {!currentHistory && <p role="status">Loading this communication’s history…</p>}
+                  {currentHistory?.error && <p role="alert">History could not be loaded. No other communication’s history is shown.</p>}
+                  <Button onClick={() => setHistoryRefresh(value => value + 1)}>Refresh communication history</Button>
                   <ol className="communication-history">
-                    {history.map((event) => (
+                    {(currentHistory?.events ?? []).map((event) => (
                       <li key={event.id}>
                         <strong>{humanize(event.event)}</strong>
                         <span>
@@ -380,15 +402,19 @@ function CommunicationEditor({
   onClose: () => void;
   onSaved: (draft: CommunicationDraft) => void;
 }) {
-  const [accountId, setAccountId] = useState(
-    draft?.account_id ?? accounts[0]?.id ?? "",
-  );
+  const [accountSelection, setAccountId] = useState(draft?.account_id);
+  const [baseDraft, setBaseDraft] = useState(draft);
+  const [savedComparison, setSavedComparison] = useState<CommunicationDraft>();
+  const accountId = accountSelection ?? accounts[0]?.id ?? '';
   const [subject, setSubject] = useState(draft?.subject ?? "");
   const [body, setBody] = useState(draft?.body ?? "");
   const [recipients, setRecipients] = useState<string[]>(
     draft?.recipients ?? [],
   );
-  const [accountDetail, setAccountDetail] = useState<Account360>();
+  const [loadedAccount, setLoadedAccount] = useState<{ id: string; detail: Account360 }>();
+  const accountDetail = loadedAccount?.id === accountId ? loadedAccount.detail : undefined;
+  const saveInFlight = useRef(false);
+  const createRetry = useRef<{ signature: string; key: string } | undefined>(undefined);
   const [instruction, setInstruction] = useState(
     "Make this concise and evidence-led.",
   );
@@ -396,10 +422,12 @@ function CommunicationEditor({
   const [working, setWorking] = useState(false);
   useEffect(() => {
     if (!accountId) return;
+    const controller = new AbortController();
     void api
-      .account(accountId)
-      .then(setAccountDetail)
-      .catch(() => setAccountDetail(undefined));
+      .account(accountId, controller.signal)
+      .then(detail => { if (!controller.signal.aborted) setLoadedAccount({ id: accountId, detail }); })
+      .catch(() => { if (!controller.signal.aborted) setLoadedAccount(undefined); });
+    return () => controller.abort();
   }, [accountId]);
   const account = accounts.find((item) => item.id === accountId);
   const customer = account?.name ?? account?.legal_name ?? "Customer";
@@ -417,20 +445,28 @@ function CommunicationEditor({
   );
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (saveInFlight.current) return;
+    if (!accountId || !accounts.some(item => item.id === accountId)) {
+      setError('Choose an available Customer before saving. Your message is retained.');
+      return;
+    }
     if (!subject.trim() || !body.trim()) {
       setError("Subject and message are required.");
       return;
     }
+    const signature = JSON.stringify([accountId, subject, body, recipients]);
+    if (createRetry.current?.signature !== signature) createRetry.current = { signature, key: crypto.randomUUID() };
+    saveInFlight.current = true;
     setWorking(true);
     try {
       const result = draft
-        ? await api.editCommunication(draft.id, { subject, body, recipients })
+        ? await api.editCommunication(draft.id, { subject, body, recipients, expected_version: baseDraft!.version })
         : await api.createCommunication({
             account_id: accountId,
             subject,
             body,
             recipients,
-            idempotency_key: `draft-${accountId}-${crypto.randomUUID()}`,
+            idempotency_key: createRetry.current.key,
           });
       onSaved(result);
     } catch (caught) {
@@ -438,14 +474,17 @@ function CommunicationEditor({
         caught instanceof Error ? caught.message : "Draft could not be saved.",
       );
     } finally {
+      saveInFlight.current = false;
       setWorking(false);
     }
   };
   const assist = async () => {
+    if (saveInFlight.current) return;
+    saveInFlight.current = true;
     setWorking(true);
     try {
       const result = draft
-        ? await api.assistCommunication(draft.id, instruction)
+        ? await api.assistCommunication(draft.id, instruction, baseDraft!.version)
         : await api.assistNewCommunication({
             account_id: accountId,
             instruction,
@@ -462,6 +501,24 @@ function CommunicationEditor({
           : "Draft assistance unavailable.",
       );
     } finally {
+      saveInFlight.current = false;
+      setWorking(false);
+    }
+  };
+  const refreshSaved = async () => {
+    if (!draft || saveInFlight.current) return;
+    saveInFlight.current = true;
+    setWorking(true);
+    try {
+      const result = await api.communications();
+      const saved = result.items.find(item => item.id === draft.id);
+      if (!saved) throw new Error('This draft is no longer available in your permitted work. Your local text is retained.');
+      setSavedComparison(saved);
+      setError('Compare the saved version below. Your local text and recipients have not changed.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Saved version could not be refreshed.');
+    } finally {
+      saveInFlight.current = false;
       setWorking(false);
     }
   };
@@ -487,7 +544,7 @@ function CommunicationEditor({
         <SelectInput
           label="Customer"
           value={accountId}
-          disabled={Boolean(draft)}
+          disabled={Boolean(draft) || working}
           onChange={(event) => {
             setAccountId(event.target.value);
             setRecipients([]);
@@ -501,11 +558,13 @@ function CommunicationEditor({
         </SelectInput>
         <TextInput
           label="Subject"
+          disabled={working}
           value={subject}
           onChange={(event) => setSubject(event.target.value)}
         />
         <Textarea
           label="Message"
+          disabled={working}
           rows={8}
           value={body}
           onChange={(event) => setBody(event.target.value)}
@@ -513,6 +572,7 @@ function CommunicationEditor({
         {verifiedRecipients.length ? (
           <SelectInput
             label="Verified professional recipient"
+            disabled={working}
             value={recipients[0] ?? ""}
             onChange={(event) =>
               setRecipients(event.target.value ? [event.target.value] : [])
@@ -531,8 +591,19 @@ function CommunicationEditor({
           </Panel>
         )}
         <Panel title="Gemini draft assistance" variant="subdued">
+            {draft && <>
+              <p>Editing saved version {baseDraft?.version}. An edit requires fresh human review.</p>
+              <Button type="button" disabled={working} onClick={() => void refreshSaved()}>Refresh saved version for comparison</Button>
+              {savedComparison && <section aria-label="Saved communication comparison">
+                <p>Saved version {savedComparison.version} · {humanize(savedComparison.approval_status)} · {humanize(savedComparison.status)}</p>
+                <h3>{savedComparison.subject}</h3><p style={{ whiteSpace: 'pre-wrap' }}>{savedComparison.body}</p>
+                <p>Recipients: {savedComparison.recipients.join(', ') || 'None'}</p>
+                <Button type="button" disabled={working} onClick={() => { setBaseDraft(savedComparison); setSavedComparison(undefined); setError('Saved version reviewed. Your local edits remain unchanged; Save is still a separate action.'); }}>Use this reviewed version for my next save</Button>
+              </section>}
+            </>}
             <TextInput
               label="Drafting instruction"
+              disabled={working}
               value={instruction}
               onChange={(event) => setInstruction(event.target.value)}
             />
@@ -557,7 +628,7 @@ function CommunicationEditor({
           <Button type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={working}>
+          <Button type="submit" variant="primary" loading={working} disabled={working || !accountId}>
             {draft ? "Save changes" : "Save draft"}
           </Button>
         </footer>

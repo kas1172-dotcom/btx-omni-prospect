@@ -408,6 +408,43 @@ def _fda(payload: dict) -> FdaAdapter:
     return FdaAdapter(fake_get({"results": [payload]}))
 
 
+def test_separate_worker_commit_reaches_running_api_with_identical_confidence(tmp_path):
+    from btx_omni.monitor.briefs import signal_brief, signal_briefs_for_monitor
+
+    worker = _durable_runtime(tmp_path)
+    reader = PocRuntime(worker.settings)  # API exists before this scheduled write.
+    assert not [item for item in intelligence_signals(reader) if item.get('data_mode') == 'CONNECTED']
+    worker.monitor.registry['fda_openfda'] = _fda({'k_number': 'K-CROSS-PROCESS',
+        'device_name': 'Medtronic device approval', 'decision_date': '2026-09-08'})
+    run = worker.monitor.collect('fda_openfda', limit=1)
+    assert not run.failures
+    now = datetime(2026, 9, 8, 23, tzinfo=UTC)
+    expected = signal_brief(next(iter(worker.monitor.events.values())), next(iter(worker.monitor.observations.values())),
+                            freshness_hours=worker.monitor.freshness_threshold_hours('fda_openfda'), now=now)
+    visible = [item for item in intelligence_signals(reader) if item.get('data_mode') == 'CONNECTED']
+    assert len(visible) == 1
+    actual = signal_briefs_for_monitor(reader.monitor, now=now)[0]
+    assert actual.signal_confidence == expected.signal_confidence
+    assert actual.publication_timestamp == expected.publication_timestamp
+    assert actual.signal_confidence['factors'][0]['points'] is not None
+    worker.monitor.registry['fda_openfda'] = _fda({'k_number': 'K-CROSS-PROCESS',
+        'device_name': 'Medtronic charity award', 'decision_date': '2026-09-08'})
+    correction = worker.monitor.collect('fda_openfda', limit=1)
+    assert not correction.failures and correction.records_changed == 1
+    assert not [item for item in intelligence_signals(reader) if item.get('data_mode') == 'CONNECTED']
+    assert len(signal_briefs_for_monitor(reader.monitor, now=now)) == 1
+
+
+def test_governed_publisher_identity_does_not_copy_article_payload_into_entity_name():
+    profile = AccountWatchProfile('lockheed-martin', 'Lockheed Martin Corporation')
+    source = 'Public program update\n' + json.dumps({'passages': ['Evidence body.'] * 1000})
+    subject = MonitorCatalog((profile,)).resolve_subjects(source,
+        source_identifiers=(('governed_source_owner', 'lockheed-martin'),))[0]
+    assert subject.mention == 'Lockheed Martin Corporation'
+    assert subject.method == 'governed_source_ownership'
+    assert subject.canonical_account_id == 'lockheed-martin'
+
+
 def test_durable_monitor_events_rehydrate_after_runtime_restart_without_scoring_change(tmp_path) -> None:
     initial = _durable_runtime(tmp_path)
     initial.monitor.registry["fda_openfda"] = _fda(

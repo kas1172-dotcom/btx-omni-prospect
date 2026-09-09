@@ -303,9 +303,11 @@ class _BriefProvider:
 
     def __init__(self) -> None:
         self.calls = 0
+        self.request = None
 
     def synthesize(self, request):
         self.calls += 1
+        self.request = request
         return LanguageResult(
             "Seller-readable governed summary.", "gemini", "fake", request.evidence_ids
         )
@@ -380,6 +382,16 @@ def test_gemini_brief_synthesis_cannot_change_governed_metadata(tmp_path) -> Non
         == brief
     )
     assert synthesize_signal_brief(brief, _FailingProvider()) == brief
+
+    researched = replace(brief, technical_opportunity={
+        "event_summary": "A public source describes a new machining program.",
+        "matches": ({"candidate_name": "Actuator housing", "component_name": "Actuator housing", "status": "MATCHED"},),
+        "uncertainties": ("Facility scope remains unverified.",),
+    })
+    provider = _BriefProvider()
+    synthesize_signal_brief(researched, provider)
+    assert "Actuator housing → Actuator housing" in provider.request.governed_answer
+    assert "Facility scope remains unverified" in provider.request.governed_answer
 
 
 def test_brief_synthesis_never_invokes_provider_for_ineligible_truth_states(tmp_path) -> None:
@@ -481,6 +493,15 @@ def test_worker_runs_only_configured_sources_and_reports_partial_failure(
     assert {run["source_id"] for run in report["runs"]} == {"good", "bad"}
 
 
+def test_worker_rejects_unbounded_cli_limits_before_runtime_or_network(monkeypatch):
+    def prohibited(_):
+        raise AssertionError('Invalid limit must not construct a runtime')
+    monkeypatch.setattr('btx_omni.monitor.worker.PocRuntime', prohibited)
+    for limit in (-1, 0, 101, True):
+        report, code = run_worker(Settings(_env_file=None), limit=limit)
+        assert code == 2 and report['status'] == 'INVALID_LIMIT'
+
+
 def test_worker_fails_closed_when_another_worker_holds_the_lock(monkeypatch) -> None:
     class Lock:
         def __enter__(self):
@@ -507,6 +528,37 @@ def test_worker_fails_closed_when_another_worker_holds_the_lock(monkeypatch) -> 
     )
 
     assert code == 3 and report["status"] == "OVERLAP_SKIPPED"
+
+
+def test_worker_does_not_start_optional_model_calls_without_remaining_timeout_budget(monkeypatch):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    clock = [0.0]
+    sample = build_sample_environment()
+    monitor = SimpleNamespace(
+        repository=SimpleNamespace(operational_lock=lambda: nullcontext(True)),
+        registry={'source': SimpleNamespace(available=lambda _: (True, None))},
+        collect=lambda source_id, **_: CollectionRun('run', source_id, NOW, NOW, None),
+    )
+    runtime = SimpleNamespace(monitor=monitor, sample=sample)
+    monkeypatch.setattr('btx_omni.monitor.worker.PocRuntime', lambda _: runtime)
+    monkeypatch.setattr('btx_omni.monitor.worker.monotonic', lambda: clock[0])
+    monkeypatch.setattr('btx_omni.monitor.worker.get_ai_provider', lambda _: object())
+    monkeypatch.setattr('btx_omni.monitor.worker.signal_briefs_for_monitor', lambda _: [])
+    def consume_budget(*_, **__):
+        clock[0] = 235.0
+    monkeypatch.setattr('btx_omni.monitor.worker.process_signal_brief_synthesis', consume_budget)
+    monkeypatch.setattr('btx_omni.monitor.worker.procurement_projection', lambda _: {'active': {'opportunities': [{'opportunity_id': 'op'}]}})
+    def prohibited(*_, **__):
+        raise AssertionError('An optional model call started without its timeout budget')
+    for name in ('process_customer_attractiveness_explanation', 'process_relationship_path_explanation', 'process_federal_opportunity_explanation'):
+        monkeypatch.setattr(f'btx_omni.monitor.worker.{name}', prohibited)
+    report, code = run_worker(Settings(_env_file=None, monitor_mode='live', monitor_durable_state_enabled=True,
+                                      monitor_worker_sources='source', monitor_worker_max_seconds=240, ai_timeout_seconds=20))
+    assert code == 1 and report['status'] == 'DEADLINE_EXHAUSTED'
+    assert report['governed_explanations'] == []
+    assert set(report['optional_budget_stops']) == {'CUSTOMER_EXPLANATION', 'RELATIONSHIP_EXPLANATION', 'FEDERAL_EXPLANATION'}
 
 
 def test_worker_enforces_collection_deadline_preserves_completed_runs_and_releases_lock(monkeypatch) -> None:
@@ -563,7 +615,7 @@ def test_worker_enforces_collection_deadline_preserves_completed_runs_and_releas
             self.monitor = monitor
 
     monkeypatch.setattr("btx_omni.monitor.worker.PocRuntime", Runtime)
-    monkeypatch.delattr("btx_omni.monitor.service.signal.setitimer", raising=False)
+    monkeypatch.delattr("btx_omni.providers.research.deadline.signal.setitimer", raising=False)
     started = time.monotonic()
     report, code = run_worker(settings)
     elapsed = time.monotonic() - started

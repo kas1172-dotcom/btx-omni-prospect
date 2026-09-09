@@ -13,7 +13,7 @@ class Order:
     quote_id: str | None
     account_id: str
     business_unit_id: str
-    part_number: str
+    part_number: str | None
     component_class_id: str
     program_id: str
     ship_to_city: str | None
@@ -24,3 +24,4 @@ class Order:
     quantity: int
     amount_minor: int
     provenance: Provenance
+    parent_order_id: str | None = None

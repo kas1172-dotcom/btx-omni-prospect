@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from hashlib import sha256
+from time import monotonic
 
 from btx_omni.core.provenance import Provenance
 from btx_omni.domain.common import EvidenceState
@@ -27,6 +29,8 @@ class RelationshipHop:
     narrative: str | None = None
     derived: bool = False
     presentation_state: str = "unusable"
+    assertion_id: str = ""
+    inverse: bool = False
 
 
 def presentation_state(evidence: EvidenceState) -> str:
@@ -66,10 +70,15 @@ class RelationshipIntelligenceService:
         self.sample = sample
         self.entities = self._entities()
         self.adjacency: dict[RelationshipEntity, list[RelationshipHop]] = defaultdict(list)
+        seen_assertions = set()
         for hop in self._logical_hops():
+            membership = (hop.assertion_id, hop.inverse)
+            if membership in seen_assertions:
+                continue
+            seen_assertions.add(membership)
             self.adjacency[hop.from_entity].append(hop)
         for hops in self.adjacency.values():
-            hops.sort(key=lambda hop: (hop.relationship_type, hop.to_entity.kind, hop.to_entity.id, hop.narrative or ""))
+            hops.sort(key=lambda hop: (hop.relationship_type, hop.to_entity.kind, hop.to_entity.id, hop.assertion_id, hop.inverse))
 
     def _entities(self) -> dict[tuple[str, str], RelationshipEntity]:
         entities: dict[tuple[str, str], RelationshipEntity] = {}
@@ -89,11 +98,52 @@ class RelationshipIntelligenceService:
     def _entity(self, kind: str, id: str) -> RelationshipEntity:
         return self.entities[(kind, id)]
 
+    def ranked_routes(self, query, *, selected_path_id: str | None = None, node_budget: int = 24, edge_budget: int = 40,
+                      expanded_node_ids=(), context_page=0, expected_graph_revision=None, include_record_context=False) -> dict:
+        """Commercial query and renderer projection reuse this canonical owner."""
+        from btx_omni.modules.relationships.canonical_projection import (
+            project_route_graph,
+        )
+        graph, metadata = project_route_graph(self.sample, as_of=query.as_of, lookback_days=query.lookback_days)
+        metadata['record_projection']['unresolved_references'] = [item for item in metadata['record_projection']['unresolved_references']
+                                                               if item['account_id'] in query.authorized_account_ids]
+        if expected_graph_revision and graph.revision != expected_graph_revision:
+            raise ValueError('Graph evidence changed; refresh before expanding or selecting context.')
+        result = graph.search(query)
+        recommendations = [r for group in result["groups"].values() for r in group["routes"]]
+        routes = result["evaluated_routes"]
+        for route in recommendations:
+            if not any(item["path_id"] == route["path_id"] for item in routes):
+                routes.append(route)
+        result["additional_route_count"] = max(0, result["candidate_count"] - len(routes))
+        selected = next((r for r in routes if r["path_id"] == selected_path_id), None) if selected_path_id else next(iter(recommendations or routes), None)
+        if selected_path_id and selected is None:
+            raise ValueError("Selected path is not present in this query revision")
+        components = {c["component_id"]: {"id": c["component_id"], "label": c["name"], "account_id": aid, "facility_id": c.get("btx_facility_id"), "business_unit_id": c["business_unit_id"]} for aid, ledger in self.sample.commercial_ledgers.items() for c in ledger["components"]}
+        for route in [*routes, *recommendations, *result["research_candidates"]]:
+            route["steps"] = [{**asdict(graph.nodes[nid]), "id": nid} for nid in route["node_ids"]]
+            route['assertions'] = [{'id': eid, 'predicate': graph.edges[eid].predicate,
+                                    'inverse': inverse, 'truth_class': graph.edges[eid].truth_class}
+                                   for eid, inverse in zip(route['edge_ids'], route['inverse_steps'], strict=True)]
+            route["component_context"] = [components[cid] for cid in sorted({graph.edges[eid].component_id for eid in route["edge_ids"] if graph.edges[eid].component_id in components})]
+            route["constraints"] = [metadata["constraints"][cid] for cid in route["constraint_ids"]]
+            route["next_action"] = "Review recovery and feasibility constraints before making a commitment." if route["constraint_ids"] else "Review transferable experience and technical qualification; capability alone does not establish capacity." if query.mode != "contact_candidates" else "Verify the published role and identify the operational buyer; no introduction is established."
+        from btx_omni.modules.relationships.neighborhood import project_neighborhood
+        view = project_neighborhood(graph, query, routes, selected, expanded_node_ids=expanded_node_ids,
+                                    page=context_page, node_budget=node_budget, edge_budget=edge_budget,
+                                    include_record_context=include_record_context)
+        return {**result, "graph": view,
+                "temporal_limits": {aid: value for aid, value in metadata['temporal_limits'].items() if aid in query.authorized_account_ids},
+                "projection_counts": {k: v for k, v in metadata.items() if k not in {"constraints", "account_names", "temporal_limits"}},
+                "commercial_as_of": sorted({a["as_of"] for a in self.sample.commercial_ledgers.values()})}
+
     def _add(self, result: list[RelationshipHop], source: RelationshipEntity, relationship_type: str, target: RelationshipEntity, evidence_state: EvidenceState, provenance: Provenance | None, *, source_ids: tuple[str, ...] = (), narrative: str | None = None, derived: bool = True, reverse_type: str | None = None) -> None:
         label = _hop_presentation_state(evidence_state, source_ids, derived)
-        result.append(RelationshipHop(source, relationship_type, target, evidence_state, provenance, source_ids, narrative, derived, label))
+        identity = repr((source.kind, source.id, relationship_type, target.kind, target.id, provenance.source_system if provenance else None, provenance.source_record_id if provenance else None, tuple(sorted(source_ids))))
+        assertion_id = "rel:" + sha256(identity.encode()).hexdigest()[:32]
+        result.append(RelationshipHop(source, relationship_type, target, evidence_state, provenance, source_ids, narrative, derived, label, assertion_id, False))
         if reverse_type:
-            result.append(RelationshipHop(target, reverse_type, source, evidence_state, provenance, source_ids, narrative, derived, label))
+            result.append(RelationshipHop(target, reverse_type, source, evidence_state, provenance, source_ids, narrative, derived, label, assertion_id, True))
 
     def _logical_hops(self) -> tuple[RelationshipHop, ...]:
         result: list[RelationshipHop] = []
@@ -111,10 +161,11 @@ class RelationshipIntelligenceService:
         for quote in self.sample.quotes:
             account = self._entity("account", quote.account_id); quote_entity = self._entity("quote", quote.id)
             self._add(result, account, "QUOTED_WITH", quote_entity, quote.provenance.evidence_state, quote.provenance, reverse_type="QUOTE_FOR")
-            self._add(result, account, "QUOTED_WITH", self._entity("business_unit", quote.business_unit), quote.provenance.evidence_state, quote.provenance, narrative="SAMPLE Paperless-like quote.", reverse_type="HAS_QUOTE")
-            if quote.program_id: self._add(result, account, "PARTICIPATES_IN", self._entity("program", quote.program_id), quote.provenance.evidence_state, quote.provenance, reverse_type="HAS_PARTICIPANT")
+            for unit_id in quote.business_unit_ids or (quote.business_unit,):
+                self._add(result, account, "QUOTED_WITH", self._entity("business_unit", unit_id), quote.provenance.evidence_state, quote.provenance, narrative="Scoped quote context; not proof of accepted work.", reverse_type="HAS_QUOTE")
+            if quote.program_id: self._add(result, quote_entity, "QUOTED_PROGRAM_CONTEXT", self._entity("program", quote.program_id), EvidenceState.INFERRED, quote.provenance, reverse_type="HAS_QUOTE_CONTEXT")
             for component_id in quote.component_class_ids:
-                if quote.program_id: self._add(result, self._entity("program", quote.program_id), "REQUIRES_COMPONENT_CLASS", self._entity("component_class", component_id), quote.provenance.evidence_state, quote.provenance, reverse_type="REQUIRED_BY_PROGRAM")
+                self._add(result, quote_entity, "QUOTED_COMPONENT", self._entity("component_class", component_id), quote.provenance.evidence_state, quote.provenance, reverse_type="COMPONENT_QUOTED_ON")
         for order in self.sample.orders:
             account = self._entity("account", order.account_id); order_entity = self._entity("order", order.id)
             self._add(result, account, "ORDERED_WITH", order_entity, order.provenance.evidence_state, order.provenance, reverse_type="ORDER_FOR")
@@ -130,28 +181,40 @@ class RelationshipIntelligenceService:
                 self._add(result, self._entity("business_unit", unit_id), "HAS_CAPABILITY", self._entity("capability", capability.id), capability.provenance.evidence_state if capability.provenance else EvidenceState.MISSING, capability.provenance, reverse_type="CAPABILITY_OF")
         return tuple(result)
 
-    def account_relationships(self, account_id: str, *, depth: int = 2, max_paths: int = 500) -> dict[str, object]:
+    def account_relationships(self, account_id: str, *, depth: int = 2, max_paths: int = 5000, max_expansions: int = 50_000, deadline_seconds: float = 0.25) -> dict[str, object]:
         source = self.entities.get(("account", account_id))
         if source is None: raise KeyError(account_id)
-        paths, path_ids, queue, visited = [], set(), deque([(source, ())]), {source}
-        while queue and len(paths) < max_paths:
-            current, hops = queue.popleft()
+        if not 1 <= depth <= 6 or not 1 <= max_paths <= 5000 or not 1 <= max_expansions <= 50_000 or not 0 < deadline_seconds <= 5:
+            raise ValueError("Relationship search exceeds configured POC bounds")
+        paths, path_ids, queue = [], set(), deque([(source, (), frozenset((source,)))])
+        examined, stop_reason = 0, None
+        deadline = monotonic() + deadline_seconds
+        while queue and stop_reason is None:
+            current, hops, visited = queue.popleft()
             if len(hops) >= depth: continue
             for hop in self.adjacency.get(current, ()):
-                if len(paths) >= max_paths:
+                if monotonic() >= deadline:
+                    stop_reason = "DEADLINE"
                     break
-                already_seen = hop.to_entity in visited
-                # Preserve all direct evidence for an account, but only retain
-                # one shortest continuation to a previously visited node.
-                if hops and already_seen and hop.relationship_type != "CAPABILITY_MATCH":
+                if examined >= max_expansions:
+                    stop_reason = "EXPANSION_LIMIT"
+                    break
+                examined += 1
+                if hop.to_entity in visited:
                     continue
                 next_hops = (*hops, hop)
                 evidence = _combined_evidence(tuple(item.evidence_state for item in next_hops))
-                path_id = "|".join(f"{item.from_entity.kind}:{item.from_entity.id}:{item.relationship_type}:{item.to_entity.kind}:{item.to_entity.id}" for item in next_hops)
+                path_id = "|".join(f"{item.assertion_id}:{'inverse' if item.inverse else 'forward'}" for item in next_hops)
                 if path_id not in path_ids:
                     path_ids.add(path_id)
                     paths.append({"path_id": path_id, "source_entity": source, "target_entity": hop.to_entity, "hops": next_hops, "overall_evidence_state": evidence, "presentation_state": _path_presentation_state(next_hops, evidence), "narrative": next((item.narrative for item in reversed(next_hops) if item.narrative), None)})
-                if not already_seen:
-                    visited.add(hop.to_entity); queue.append((hop.to_entity, next_hops))
+                    if len(paths) >= max_paths:
+                        stop_reason = "CANDIDATE_LIMIT"
+                        break
+                queue.append((hop.to_entity, next_hops, visited | {hop.to_entity}))
         paths.sort(key=lambda item: (len(item["hops"]), item["target_entity"].kind, item["target_entity"].id, item["path_id"]))
-        return {"account": source, "max_depth": depth, "truncated": bool(queue), "direct_relationships": [item for item in paths if len(item["hops"]) == 1], "paths": paths}
+        return {"account": source, "max_depth": depth, "truncated": stop_reason is not None,
+                "search_complete": stop_reason is None, "searched_depth": depth,
+                "examined_count": examined, "stop_reason": stop_reason,
+                "scope": "CONTEXT_NEIGHBORHOOD_NOT_ACTIONABLE_ROUTE_RANKING",
+                "direct_relationships": [item for item in paths if len(item["hops"]) == 1], "paths": paths}

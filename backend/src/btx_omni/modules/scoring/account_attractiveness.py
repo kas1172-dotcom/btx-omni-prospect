@@ -7,7 +7,7 @@ never interpreted as a poor score.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -101,6 +101,7 @@ FACTORS = (
 @dataclass(frozen=True)
 class AccountAttractivenessInputs:
     selections: Mapping[str, str] = field(default_factory=dict)
+    evidence_by_factor: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -175,7 +176,9 @@ def calculate_account_attractiveness(inputs: AccountAttractivenessInputs, *, evi
             raw.append((factor, score, missing, total))
     available_weight = sum((factor.weight for factor, score, _, _ in raw if score is not None), Decimal())
     coverage = sum((factor.weight * factor_coverage for factor, _, _, factor_coverage in raw), Decimal())
-    missingness = tuple(f"{factor.label}: missing" if score is None else f"{factor.label} > {name}: missing" for factor, score, names, _ in raw for name in (() if score is None else names))
+    missingness = tuple(message for factor, score, names, _ in raw for message in (
+        (f"{factor.label}: missing",) if score is None else tuple(f"{factor.label} > {name}: missing" for name in names)
+    ))
     if not available_weight:
         return AccountAttractivenessResult(CONFIGURATION_VERSION, ScoreStatus.INSUFFICIENT_DATA, None, coverage, tuple(FactorResult(f.key, f.weight, None, None, True, names, input_coverage=factor_coverage) for f, _, names, factor_coverage in raw), missingness, evidence_ids, calculated_at)
     results = []
@@ -196,7 +199,9 @@ def seller_attractiveness_projection(inputs: AccountAttractivenessInputs, *, cal
     factor has genuine evidence attached, this projection deliberately exposes
     no factor-level evidence references.
     """
-    result = calculate_account_attractiveness(inputs, evidence_ids=(), calculated_at=calculated_at)
+    evidence_ids = tuple(sorted({eid for values in inputs.evidence_by_factor.values() for eid in values}))
+    result = calculate_account_attractiveness(inputs, evidence_ids=evidence_ids, calculated_at=calculated_at)
+    factors = tuple(replace(factor, evidence_ids=tuple(sorted({eid for key, values in inputs.evidence_by_factor.items() if key == factor.key or key.startswith(factor.key + ".") for eid in values}))) for factor in result.factors)
     eligible = not excluded and result.score is not None and result.coverage >= SELLER_PRESENTATION_MINIMUM_COVERAGE
     status = "UNAVAILABLE" if excluded or result.score is None else ("SIMULATED_BTX_CONTEXT" if eligible else "NEEDS_RESEARCH")
-    return SellerAttractivenessProjection(result.score if eligible else None, result.coverage, status, SCORE_UNIT, result.configuration_version, True, "SIMULATED_HYPOTHESIS", result.interpretation_note, result.factors, result.missingness, (), exclusion_reason)
+    return SellerAttractivenessProjection(result.score if eligible else None, result.coverage, status, SCORE_UNIT, result.configuration_version, True, "SIMULATED_HYPOTHESIS", result.interpretation_note, factors, result.missingness, evidence_ids, exclusion_reason)

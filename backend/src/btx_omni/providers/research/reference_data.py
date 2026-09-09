@@ -9,6 +9,7 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from hashlib import sha256
 from pathlib import Path
 
 from btx_omni.core.classification import Classification
@@ -28,6 +29,19 @@ from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.domain.markets import PRIMARY_MARKETS
 
 REFERENCE_FILE = Path(__file__).resolve().parents[5] / "docs" / "research" / "btx_sanitized_reference_data.json"
+PRIVATE_REFERENCE_FILE = REFERENCE_FILE.with_name('btx_original_workbook_references.json')
+PRIVATE_REFERENCE_SHA256 = 'd0e4a1ca28d5f6ec38edd457b81fe98177d5b9d5396ac582b6bf34e9901e55d7'
+
+
+def load_private_reference_fields() -> dict:
+    """Separate private appendix: never added to public identity or score inputs."""
+    raw = PRIVATE_REFERENCE_FILE.read_bytes()
+    if len(raw) > 5_000_000 or sha256(raw).hexdigest() != PRIVATE_REFERENCE_SHA256:
+        raise ValueError('Private reference data differs from the reviewed runtime input.')
+    result = json.loads(raw)
+    if result.get('schema_version') != 'BTX_WORKBOOK_REFERENCE_1' or result.get('classification') != 'PRIVATE_USER_PROVIDED_REFERENCE':
+        raise ValueError('Private reference schema/classification is not supported.')
+    return result
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from btx_omni.ai.config import AiConfig
@@ -20,6 +20,7 @@ from btx_omni.modules.communications.service import (
     CommunicationForbiddenError,
     CommunicationNotFoundError,
 )
+from btx_omni.persistence.communications import CommunicationVersionConflict
 
 router = APIRouter(prefix="/communications", tags=["communications"])
 
@@ -35,16 +36,22 @@ class DraftCreate(BaseModel):
 
 
 class DraftEdit(BaseModel):
+    model_config = {"extra": "forbid"}
+    expected_version: int = Field(ge=1)
     subject: str | None = Field(default=None, min_length=1, max_length=300)
     body: str | None = Field(default=None, min_length=1)
     recipients: tuple[str, ...] | None = None
 
 
 class ApprovalDecision(BaseModel):
+    model_config = {"extra": "forbid"}
+    expected_version: int = Field(ge=1)
     decision: ApprovalStatus
 
 
 class DraftAssist(BaseModel):
+    model_config = {"extra": "forbid"}
+    expected_version: int = Field(ge=1)
     instruction: str = Field(min_length=1, max_length=500)
 
 
@@ -100,7 +107,7 @@ def _error(error: Exception) -> HTTPException:
         return HTTPException(404, "Communication draft not found.")
     if isinstance(error, CommunicationForbiddenError):
         return HTTPException(403, str(error))
-    if isinstance(error, (CommunicationConflictError, DeliveryNotConfiguredError)):
+    if isinstance(error, (CommunicationConflictError, CommunicationVersionConflict, DeliveryNotConfiguredError)):
         return HTTPException(409, str(error))
     return HTTPException(400, str(error))
 
@@ -197,11 +204,13 @@ def assist_draft(
     account = next(
         item for item in runtime.environment().accounts if item.id == draft.account_id
     )
-    provider = get_ai_provider(AiConfig.from_settings(runtime.settings))
+    provider = get_ai_provider(AiConfig.from_settings(runtime.settings, actor_id=current.user_id, purpose="communication"))
     if not runtime.communications._can_manage(current, draft):
         raise HTTPException(
             403, "This draft is outside the current principal's permitted work."
         )
+    if draft.version != body.expected_version:
+        raise HTTPException(409, 'The saved draft changed. Refresh before requesting another proposal.')
     outcome = draft_governed_content(
         _drafting_request(
             account,
@@ -212,6 +221,9 @@ def assist_draft(
         ),
         provider,
     )
+    latest = runtime.communications.repository.get(draft_id)
+    if latest is None or latest.version != draft.version:
+        raise HTTPException(409, 'The saved draft changed while the proposal was prepared. No content was applied; refresh and compare.')
     return {"draft": draft, **_proposal_payload(outcome)}
 
 
@@ -227,7 +239,7 @@ def assist_new_draft(
     )
     if not account:
         raise HTTPException(404, "Canonical Customer not found.")
-    provider = get_ai_provider(AiConfig.from_settings(runtime.settings))
+    provider = get_ai_provider(AiConfig.from_settings(runtime.settings, actor_id=current.user_id, purpose="communication"))
     outcome = draft_governed_content(
         _drafting_request(
             account,
@@ -252,6 +264,7 @@ def approval(
         return runtime.communications.decide(
             draft_id,
             body.decision,
+            expected_version=body.expected_version,
             principal=current,
             occurred_at=runtime.observed_at(),
         )
@@ -279,6 +292,7 @@ def preview(
 @router.post("/{draft_id}/send")
 def send(
     draft_id: str,
+    expected_version: int = Query(ge=1),
     confirmed: bool = False,
     idempotency_key: str = "",
     runtime: PocRuntime = Depends(get_runtime),
@@ -289,6 +303,7 @@ def send(
     try:
         return runtime.communications.send(
             draft_id,
+            expected_version=expected_version,
             principal=current,
             occurred_at=runtime.observed_at(),
             confirmed=confirmed,

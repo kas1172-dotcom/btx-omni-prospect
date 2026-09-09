@@ -89,6 +89,25 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
     assert all(record["selection_missingness"] is not None for record in records)
 
 
+@pytest.mark.asyncio
+async def test_map_lists_accounts_without_verified_sites_without_fake_coordinates() -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=create_app()), base_url="http://test"
+    ) as client:
+        result = (await client.get("/api/map")).json()
+        accounts = (await client.get("/api/accounts")).json()
+    located = {record["account_id"] for record in result["accounts"]}
+    pending = result["pending_accounts"]
+    pending_ids = {record["account_id"] for record in pending}
+    assert not located & pending_ids
+    assert len(pending_ids) == len(pending)
+    assert all("coordinates" not in record for record in pending)
+    assert all(record["location_truth_state"] == "LOCATION_PENDING" for record in pending)
+    # Account API may wrap its records; compare canonical identity, not fixture counts.
+    listed = accounts if isinstance(accounts, list) else accounts["accounts"]
+    assert {record["id"] for record in listed} <= located | pending_ids
+
+
 def test_map_signal_marker_eligibility_is_governed() -> None:
     coordinates = {"latitude": "33", "longitude": "-112"}
     assert (

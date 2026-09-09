@@ -1,19 +1,25 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api } from '../../api/client'
-import type { Account, Account360, AccountRelationships, Action, ActionPriority, Alert, OmniContext, SellerRelationshipEvidence, SellerRelationshipPath, Signal } from '../../types/api'
+import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionPriority, Alert, OmniContext, SellerRelationshipEvidence, SellerRelationshipPath, Signal } from '../../types/api'
 import { Button, Disclosure, Empty, EvidenceSource, FilterChip, FilterTrigger, MetadataRow, MobileListRow, Notice, Panel, ResponsiveTable, SearchInput, SelectInput, SortableHeader, State, StatTile, StatusBadge, TextInput } from '../../components/UI'
 import { GovernedExplanationDisclosure } from '../../components/GovernedExplanationDisclosure'
 import './accounts.css'
+import { RankedRelationships } from './RankedRelationships'
+import { CommercialDecisions } from './CommercialDecisions'
+import { CommercialRecords } from './CommercialRecords'
+import { WorkbookFields } from './WorkbookFields'
 
 type Scope = 'RICH' | 'ALL'
 type Classification = 'ALL' | 'CUSTOMER' | 'PROSPECT' | 'UNAVAILABLE'
+type PartnershipScope = 'ALL' | 'EXCLUDE' | 'ONLY'
 type SortKey = 'name' | 'attractiveness' | 'priority' | 'industry'
 type SortDirection = 'ascending' | 'descending'
+export type PortfolioSnapshot = { query: string; scope: Scope; industry: string; entity: Classification; top100: boolean; partnershipScope?: PartnershipScope; shortlistOnly?: boolean; sortKey: SortKey; sortDirection: SortDirection; filtersOpen: boolean }
 const priorityRank: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 }
 const humanize = (value: string) => value.replaceAll('_', ' ')
 const accountName = (item: Account) => item.name ?? item.legal_name ?? item.id
 const primaryIndustry = (item: Account) => item.industries[0] ?? 'Industry unavailable'
-const classification = (item: Account): Exclude<Classification, 'ALL'> => item.relationship === 'CURRENT_CUSTOMER' || item.relationship === 'FORMER_CUSTOMER' ? 'CUSTOMER' : item.relationship === 'TARGET' ? 'PROSPECT' : 'UNAVAILABLE'
+const classification = (item: Account): Exclude<Classification, 'ALL'> => item.relationship === 'CURRENT_CUSTOMER' || item.relationship === 'FORMER_CUSTOMER' ? 'CUSTOMER' : item.relationship === 'TARGET' || item.relationship === 'PROSPECT' ? 'PROSPECT' : 'UNAVAILABLE'
 const classificationLabel = (item: Account) => classification(item) === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(classification(item).toLowerCase())
 const alertRenderKey = (alert: Alert) => `${alert.id}:${[...alert.evidence_ids].sort().join('|')}`
 const score = (item: Account) => item.attractiveness == null ? null : Number(item.attractiveness)
@@ -36,15 +42,23 @@ function compareAccounts(a: Account, b: Account, key: SortKey, direction: SortDi
   return direction === 'ascending' ? result : -result
 }
 
-function Portfolio({ accounts, onSelect, onOmniContext }: { accounts: Account[]; onSelect: (id: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
-  const [query, setQuery] = useState('')
-  const [scope, setScope] = useState<Scope>('RICH')
-  const [industry, setIndustry] = useState('ALL')
-  const [entity, setEntity] = useState<Classification>('ALL')
-  const [top100, setTop100] = useState(false)
-  const [sortKey, setSortKey] = useState<SortKey>('name')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('ascending')
-  const [filtersOpen, setFiltersOpen] = useState(false)
+function Portfolio({ accounts, initialSnapshot, onSnapshot, onSelect, onOmniContext }: { accounts: Account[]; initialSnapshot?: PortfolioSnapshot; onSnapshot?: (snapshot: PortfolioSnapshot) => void; onSelect: (id: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
+  const [query, setQuery] = useState(initialSnapshot?.query ?? '')
+  const [scope, setScope] = useState<Scope>(initialSnapshot?.scope ?? 'RICH')
+  const [industry, setIndustry] = useState(initialSnapshot?.industry ?? 'ALL')
+  const [entity, setEntity] = useState<Classification>(initialSnapshot?.entity ?? 'ALL')
+  const [top100, setTop100] = useState(initialSnapshot?.top100 ?? false)
+  const [partnershipScope, setPartnershipScope] = useState<PartnershipScope>(initialSnapshot?.partnershipScope ?? 'ALL')
+  const [shortlistOnly, setShortlistOnly] = useState(initialSnapshot?.shortlistOnly ?? false)
+  const [planning, setPlanning] = useState<AccountPlanning>()
+  const [planningError, setPlanningError] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>(initialSnapshot?.sortKey ?? 'name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initialSnapshot?.sortDirection ?? 'ascending')
+  const [filtersOpen, setFiltersOpen] = useState(initialSnapshot?.filtersOpen ?? false)
+  useEffect(() => { onSnapshot?.({ query, scope, industry, entity, top100, partnershipScope, shortlistOnly, sortKey, sortDirection, filtersOpen }) }, [query, scope, industry, entity, top100, partnershipScope, shortlistOnly, sortKey, sortDirection, filtersOpen, onSnapshot])
+  useEffect(() => { const controller = new AbortController(); void api.accountPlanning(controller.signal).then(result => { setPlanning(result); setPlanningError(false) }).catch(error => { if (error?.name !== 'AbortError') setPlanningError(true) }); return () => controller.abort() }, [])
+  const partnershipIds = useMemo(() => new Set(planning?.strategic_partnerships.map(item => item.account_id) ?? []), [planning])
+  const shortlistIds = useMemo(() => new Set(planning?.shortlist.map(item => item.account_id) ?? []), [planning])
   const industries = useMemo(() => [...new Set(accounts.flatMap(item => item.industries))].sort(), [accounts])
   const classifications = useMemo(() => new Set(accounts.map(classification)), [accounts])
   const shown = useMemo(() => accounts
@@ -52,14 +66,16 @@ function Portfolio({ accounts, onSelect, onOmniContext }: { accounts: Account[];
     .filter(item => industry === 'ALL' || item.industries.includes(industry))
     .filter(item => entity === 'ALL' || classification(item) === entity)
     .filter(item => !top100 || item.btx_top_100)
+    .filter(item => partnershipScope === 'ALL' || (partnershipScope === 'ONLY') === partnershipIds.has(item.id))
+    .filter(item => !shortlistOnly || shortlistIds.has(item.id))
     .filter(item => `${accountName(item)} ${item.industries.join(' ')} ${item.location?.city ?? ''} ${item.location?.state ?? ''} ${item.prospect_research_priority ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
     .map((item, index) => ({ item, index }))
     .sort((a, b) => compareAccounts(a.item, b.item, sortKey, sortDirection) || a.index - b.index)
-    .map(({ item }) => item), [accounts, entity, industry, query, scope, sortDirection, sortKey, top100])
-  const activeFilters = useMemo(() => ({ ...(scope === 'RICH' ? { account_scope: 'RICH' } : {}), ...(industry === 'ALL' ? {} : { market: industry }), ...(entity === 'ALL' ? {} : { classification: entity }), ...(top100 ? { btx_top_100: 'true' } : {}) }), [entity, industry, scope, top100])
+    .map(({ item }) => item), [accounts, entity, industry, partnershipIds, partnershipScope, query, scope, shortlistIds, shortlistOnly, sortDirection, sortKey, top100])
+  const activeFilters = useMemo(() => ({ ...(scope === 'RICH' ? { account_scope: 'RICH' } : {}), ...(industry === 'ALL' ? {} : { market: industry }), ...(entity === 'ALL' ? {} : { classification: entity }), ...(top100 ? { btx_top_100: 'true' } : {}), ...(partnershipScope === 'ALL' ? {} : { strategic_partnership: partnershipScope }), ...(shortlistOnly ? { saved_shortlist: 'true' } : {}) }), [entity, industry, partnershipScope, scope, shortlistOnly, top100])
   const visibleRecordIds = useMemo(() => shown.slice(0, 50).map(account => account.id), [shown])
-  const hasFilters = scope !== 'ALL' || industry !== 'ALL' || entity !== 'ALL' || top100
-  const clearFilters = () => { setScope('ALL'); setIndustry('ALL'); setEntity('ALL'); setTop100(false) }
+  const hasFilters = scope !== 'ALL' || industry !== 'ALL' || entity !== 'ALL' || top100 || partnershipScope !== 'ALL' || shortlistOnly
+  const clearFilters = () => { setScope('ALL'); setIndustry('ALL'); setEntity('ALL'); setTop100(false); setPartnershipScope('ALL'); setShortlistOnly(false) }
   const sortBy = (key: SortKey) => { if (sortKey === key) setSortDirection(value => value === 'ascending' ? 'descending' : 'ascending'); else { setSortKey(key); setSortDirection(key === 'name' || key === 'industry' ? 'ascending' : 'descending') } }
   const direction = (key: SortKey) => sortKey === key ? sortDirection : 'none'
   useEffect(() => { onOmniContext({ active_filters: Object.keys(activeFilters).length ? activeFilters : undefined, visible_record_ids: visibleRecordIds }) }, [activeFilters, onOmniContext, visibleRecordIds])
@@ -74,9 +90,12 @@ function Portfolio({ accounts, onSelect, onOmniContext }: { accounts: Account[];
         <FilterGroup label="Classification"><FilterChip selected={entity === 'ALL'} onClick={() => setEntity('ALL')}>All classifications</FilterChip>{classifications.has('CUSTOMER') && <FilterChip selected={entity === 'CUSTOMER'} onClick={() => setEntity('CUSTOMER')}>Customer</FilterChip>}{classifications.has('PROSPECT') && <FilterChip selected={entity === 'PROSPECT'} onClick={() => setEntity('PROSPECT')}>Prospect</FilterChip>}{classifications.has('UNAVAILABLE') && <FilterChip selected={entity === 'UNAVAILABLE'} onClick={() => setEntity('UNAVAILABLE')}>Classification unavailable</FilterChip>}</FilterGroup>
         <FilterGroup label="Industry"><FilterChip selected={industry === 'ALL'} onClick={() => setIndustry('ALL')}>All industries</FilterChip>{industries.map(value => <FilterChip selected={industry === value} key={value} onClick={() => setIndustry(value)}>{value}</FilterChip>)}</FilterGroup>
         <FilterGroup label="Reference classifications"><FilterChip selected={top100} onClick={() => { setTop100(value => !value); setScope('ALL') }}>BTX Top 100</FilterChip></FilterGroup>
+        <FilterGroup label="Strategic partnerships"><FilterChip selected={partnershipScope === 'ALL'} onClick={() => setPartnershipScope('ALL')}>All (Customers &amp; Prospects)</FilterChip><FilterChip selected={partnershipScope === 'EXCLUDE'} onClick={() => setPartnershipScope('EXCLUDE')}>Exclude partnerships</FilterChip><FilterChip selected={partnershipScope === 'ONLY'} onClick={() => setPartnershipScope('ONLY')}>Only partnerships</FilterChip></FilterGroup>
+        <FilterGroup label="Saved planning"><FilterChip selected={shortlistOnly} onClick={() => setShortlistOnly(value => !value)}>My growth &amp; research shortlist</FilterChip></FilterGroup>
       </div>
-      {hasFilters && <div className="portfolio-active-filters" aria-label="Active Portfolio filters"><span>Applied</span>{scope === 'RICH' && <FilterChip selected onClear={() => setScope('ALL')}>Curated scenarios</FilterChip>}{top100 && <FilterChip selected onClear={() => setTop100(false)}>BTX Top 100</FilterChip>}{entity !== 'ALL' && <FilterChip selected onClear={() => setEntity('ALL')}>{entity === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(entity.toLowerCase())}</FilterChip>}{industry !== 'ALL' && <FilterChip selected onClear={() => setIndustry('ALL')}>{industry}</FilterChip>}<Button variant="ghost" onClick={clearFilters}>Clear all filters</Button></div>}
-      <ResponsiveTable label="Customers and Prospects" header={<><SortableHeader direction={direction('name')} onClick={() => sortBy('name')}>Customer</SortableHeader><div role="columnheader">Classification</div><SortableHeader direction={direction('industry')} onClick={() => sortBy('industry')}>Industry</SortableHeader><SortableHeader direction={direction('attractiveness')} onClick={() => sortBy('attractiveness')}>Attractiveness</SortableHeader><SortableHeader direction={direction('priority')} onClick={() => sortBy('priority')}>Priority</SortableHeader><div role="columnheader">Evidence</div></>}>{shown.map(item => <button type="button" role="row" className="ui-table-row interactive account-row portfolio-table-row" key={item.id} onClick={() => onSelect(item.id)}><span role="cell" className="portfolio-name"><strong>{accountName(item)}</strong><small>{item.location?.city && (item.location?.state ?? item.location?.region) ? `${item.location.city}, ${item.location.state ?? item.location.region}` : 'Location unavailable'}</small></span><span role="cell"><StatusBadge value={classification(item)} kind="entity" label={classificationLabel(item)} />{item.btx_top_100 && <StatusBadge value="BTX Top 100" />}</span><span role="cell">{primaryIndustry(item)}</span><strong role="cell">{item.attractiveness ?? 'Unavailable'}</strong><span role="cell">{item.prospect_research_priority ? humanize(item.prospect_research_priority) : 'Unavailable'}</span><span role="cell"><State value={item.truth_state ?? 'UNAVAILABLE'} /></span></button>)}</ResponsiveTable>
+      {planningError && <Notice tone="warning">Saved planning filters are temporarily unavailable. Customer records remain visible unless a saved filter is selected.</Notice>}
+      {hasFilters && <div className="portfolio-active-filters" aria-label="Active Portfolio filters"><span>Applied</span>{scope === 'RICH' && <FilterChip selected onClear={() => setScope('ALL')}>Curated scenarios</FilterChip>}{top100 && <FilterChip selected onClear={() => setTop100(false)}>BTX Top 100</FilterChip>}{partnershipScope !== 'ALL' && <FilterChip selected onClear={() => setPartnershipScope('ALL')}>{partnershipScope === 'ONLY' ? 'Only partnerships' : 'Exclude partnerships'}</FilterChip>}{shortlistOnly && <FilterChip selected onClear={() => setShortlistOnly(false)}>My shortlist</FilterChip>}{entity !== 'ALL' && <FilterChip selected onClear={() => setEntity('ALL')}>{entity === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(entity.toLowerCase())}</FilterChip>}{industry !== 'ALL' && <FilterChip selected onClear={() => setIndustry('ALL')}>{industry}</FilterChip>}<Button variant="ghost" onClick={clearFilters}>Clear all filters</Button></div>}
+      <ResponsiveTable label="Customers and Prospects" header={<><SortableHeader direction={direction('name')} onClick={() => sortBy('name')}>Customer</SortableHeader><div role="columnheader">Classification</div><SortableHeader direction={direction('industry')} onClick={() => sortBy('industry')}>Industry</SortableHeader><SortableHeader direction={direction('attractiveness')} onClick={() => sortBy('attractiveness')}>Attractiveness</SortableHeader><SortableHeader direction={direction('priority')} onClick={() => sortBy('priority')}>Priority</SortableHeader><div role="columnheader">Evidence</div></>}>{shown.map(item => <button type="button" role="row" className="ui-table-row interactive account-row portfolio-table-row" key={item.id} onClick={() => onSelect(item.id)}><span role="cell" className="portfolio-name"><strong>{accountName(item)}</strong><small>{item.location?.city && (item.location?.state ?? item.location?.region) ? `${item.location.city}, ${item.location.state ?? item.location.region}` : 'Location unavailable'}</small></span><span role="cell"><StatusBadge value={classification(item)} kind="entity" label={classificationLabel(item)} />{item.btx_top_100 && <StatusBadge value="BTX Top 100" />}{partnershipIds.has(item.id) && <StatusBadge value="Strategic partnership" />}{shortlistIds.has(item.id) && <StatusBadge value="My shortlist" />}</span><span role="cell">{primaryIndustry(item)}</span><strong role="cell">{item.attractiveness ?? 'Unavailable'}</strong><span role="cell">{item.prospect_research_priority ? humanize(item.prospect_research_priority) : 'Unavailable'}</span><span role="cell"><State value={item.truth_state ?? 'UNAVAILABLE'} /></span></button>)}</ResponsiveTable>
       <div className="portfolio-mobile-list" aria-label="Customers and Prospects mobile list">{shown.map(item => <MobileListRow key={item.id} title={accountName(item)} metadata={<>{classificationLabel(item)} · {primaryIndustry(item)}{item.btx_top_100 ? ' · BTX Top 100' : ''}</>} tertiary={<>Attractiveness {item.attractiveness ?? 'unavailable'} · Priority {item.prospect_research_priority ? humanize(item.prospect_research_priority) : 'unavailable'} · {humanize(item.truth_state ?? 'UNAVAILABLE')}</>} onClick={() => onSelect(item.id)} />)}</div>
       {shown.length === 0 && <Empty>No Customers or Prospects match the current search and filters. Clear filters or try a different search.</Empty>}
     </Panel>
@@ -84,7 +103,7 @@ function Portfolio({ accounts, onSelect, onOmniContext }: { accounts: Account[];
 }
 
 function FilterGroup({ label, children }: { label: string; children: ReactNode }) { return <div className="portfolio-filter-field"><span>{label}</span><div className="chips">{children}</div></div> }
-export function Accounts(props: { accounts: Account[]; detail?: Account360; onSelect: (id: string) => void; onBack: () => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) { return props.detail ? <CustomerDetail accounts={props.accounts} detail={props.detail} onSelect={props.onSelect} onBack={props.onBack} /> : <Portfolio accounts={props.accounts} onSelect={props.onSelect} onOmniContext={props.onOmniContext} /> }
+export function Accounts(props: { accounts: Account[]; detail?: Account360; initialSnapshot?: PortfolioSnapshot; onSnapshot?: (snapshot: PortfolioSnapshot) => void; onSelect: (id: string) => void; onBack: () => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids' | 'relationship_selection'>) => void }) { return props.detail ? <CustomerDetail accounts={props.accounts} detail={props.detail} onSelect={props.onSelect} onBack={props.onBack} onOmniContext={props.onOmniContext} /> : <Portfolio accounts={props.accounts} initialSnapshot={props.initialSnapshot} onSnapshot={props.onSnapshot} onSelect={props.onSelect} onOmniContext={props.onOmniContext} /> }
 function Signals({ items }: { items: Signal[] }) { return items.length ? <div className="evidence-list">{items.map(item => <EvidenceSource key={item.id} title={item.title} source={item.source_tier ?? 'Public source'} date={item.observed_at} evidenceState={item.evidence_state} validationState={item.source_validation_state} url={item.source_url} detail={item.relevance_explanation} />)}</div> : <Empty>No curated public event is available.</Empty> }
 
 const relationshipDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : undefined
@@ -104,117 +123,26 @@ function SellerRelationshipCard({ path }: { path: SellerRelationshipPath }) {
     <Disclosure title={`Evidence · ${path.truth_label} · ${path.evidence.length} ${path.evidence.length === 1 ? 'source' : 'sources'}`}>
       {path.evidence.length ? <div className="seller-relationship-evidence">{path.evidence.map((item, index) => <RelationshipEvidence key={`${path.path_id}:${index}`} item={item} path={path} />)}</div> : <Empty>No supporting source is currently attached. This path must not be treated as validated.</Empty>}
     </Disclosure>
+    <GovernedExplanationDisclosure title="Why this relationship path may be useful" explanation={path.governed_explanation} />
   </article>
 }
 
-type RelationshipGraphNode = {
-  key: string
-  id: string
-  kind: string
-  name: string
-  level: number
-  states: SellerRelationshipPath['presentation_state'][]
-}
 
-type RelationshipGraphEdge = {
-  key: string
-  from: string
-  to: string
-  path: SellerRelationshipPath
-}
-
-const relationshipGraphEntityLabel = (kind: string) => ({
-  account: 'Canonical Customer / Prospect',
-  contact: 'Contact',
-  person: 'Person',
-  facility: 'Facility',
-  program: 'Program',
-  commercial_context: 'BTX commercial context',
-  quote: 'Commercial record',
-  order: 'Commercial record',
-}[kind.toLowerCase()] ?? 'Canonical entity')
-
-const relationshipGraphKindClass = (kind: string) => {
-  const normalized = kind.toLowerCase()
-  if (normalized === 'account') return 'account'
-  if (normalized === 'contact' || normalized === 'person') return 'person'
-  if (normalized === 'facility') return 'facility'
-  if (normalized === 'program') return 'program'
-  if (normalized === 'commercial_context' || normalized === 'quote' || normalized === 'order') return 'commercial'
-  return 'entity'
-}
-
-function RelationshipGraph({ paths }: { paths: SellerRelationshipPath[] }) {
-  const [selectedNodeKey, setSelectedNodeKey] = useState<string>()
-  const [selectedPathId, setSelectedPathId] = useState<string>()
-  const graph = useMemo(() => {
-    const nodes = new Map<string, RelationshipGraphNode>()
-    const edges: RelationshipGraphEdge[] = []
-    paths.forEach(path => path.steps.forEach((step, index) => {
-      const key = `${step.kind}:${step.id}`
-      const existing = nodes.get(key)
-      if (existing) {
-        existing.level = Math.min(existing.level, index)
-        existing.states.push(path.presentation_state)
-      } else nodes.set(key, { key, id: step.id, kind: step.kind, name: step.display_name, level: index, states: [path.presentation_state] })
-      if (index > 0) edges.push({ key: `${path.path_id}:${index}`, from: `${path.steps[index - 1].kind}:${path.steps[index - 1].id}`, to: key, path })
-    }))
-    const values = [...nodes.values()].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name) || a.key.localeCompare(b.key))
-    const byLevel = new Map<number, RelationshipGraphNode[]>()
-    values.forEach(node => byLevel.set(node.level, [...(byLevel.get(node.level) ?? []), node]))
-    const maxLevel = Math.max(0, ...values.map(node => node.level))
-    const positions = new Map<string, { x: number; y: number }>()
-    byLevel.forEach((nodesAtLevel, level) => nodesAtLevel.forEach((node, index) => positions.set(node.key, {
-      x: ((level + 0.5) / (maxLevel + 1)) * 100,
-      y: ((index + 1) / (nodesAtLevel.length + 1)) * 100,
-    })))
-    return { nodes: values, edges, positions }
-  }, [paths])
-  if (!paths.length) return <Empty>No eligible governed relationship path is available to visualize. Unusable paths are excluded from seller planning.</Empty>
-  const selectedPath = paths.find(path => path.path_id === selectedPathId) ?? paths[0]
-  const selectedNode = graph.nodes.find(node => node.key === selectedNodeKey) ?? graph.nodes.find(node => selectedPath.steps.some(step => `${step.kind}:${step.id}` === node.key)) ?? graph.nodes[0]
-  const selectPath = (path: SellerRelationshipPath, nodeKey?: string) => { setSelectedPathId(path.path_id); setSelectedNodeKey(nodeKey ?? `${path.steps[0].kind}:${path.steps[0].id}`) }
-  const isSelectedEdge = (edge: RelationshipGraphEdge) => edge.path.path_id === selectedPath.path_id
-  return <div className="relationship-graph-workbench">
-    <div className="relationship-graph-main">
-      <div className="relationship-graph-intro"><div><span className="eyebrow">Bounded graph view</span><p>Only governed, seller-eligible paths are shown. Select a connection or entity to inspect its evidence-backed context.</p></div><div className="relationship-graph-legend" aria-label="Relationship graph legend"><span><i className="relationship-legend-node account" aria-hidden="true" />Customer / Prospect</span><span><i className="relationship-legend-node person" aria-hidden="true" />Person</span><span><i className="relationship-legend-node program" aria-hidden="true" />Program</span><span><i className="relationship-legend-edge validated" aria-hidden="true" />Validated</span><span><i className="relationship-legend-edge needs-validation" aria-hidden="true" />Needs validation</span></div></div>
-      <div className="relationship-graph-canvas" role="group" aria-label="Governed relationship graph">
-        <svg className="relationship-graph-edges" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">{graph.edges.map(edge => {
-          const from = graph.positions.get(edge.from); const to = graph.positions.get(edge.to)
-          if (!from || !to) return null
-          return <line key={edge.key} className={`relationship-graph-edge ${edge.path.presentation_state === 'validated' ? 'validated' : 'needs-validation'} ${isSelectedEdge(edge) ? 'selected' : ''}`} x1={from.x * 10} y1={from.y * 5} x2={to.x * 10} y2={to.y * 5} />
-        })}</svg>
-        {graph.edges.map(edge => {
-          const from = graph.positions.get(edge.from); const to = graph.positions.get(edge.to)
-          if (!from || !to) return null
-          return <button key={`control:${edge.key}`} type="button" className="relationship-graph-edge-hitarea" aria-label={`Select ${edge.path.connection_label} connection`} style={{ left: `${(from.x + to.x) / 2}%`, top: `${(from.y + to.y) / 2}%` }} onClick={() => selectPath(edge.path)} />
-        })}
-        {graph.nodes.map(node => {
-          const position = graph.positions.get(node.key)!; const nodePath = paths.find(path => path.steps.some(step => `${step.kind}:${step.id}` === node.key)) ?? selectedPath
-          const state = node.states.every(value => value === 'validated') ? 'validated' : 'needs-validation'
-          return <button key={node.key} type="button" className={`relationship-graph-node ${relationshipGraphKindClass(node.kind)} ${state} ${selectedNode.key === node.key ? 'selected' : ''}`} style={{ left: `${position.x}%`, top: `${position.y}%` }} aria-pressed={selectedNode.key === node.key} onClick={() => selectPath(nodePath, node.key)}><span>{node.name}</span><small>{relationshipGraphEntityLabel(node.kind)}</small></button>
-        })}
-      </div>
-    </div>
-    <aside className="relationship-graph-detail" aria-live="polite"><span className="eyebrow">Selected context</span><h3>{selectedNode.name}</h3><div className="relationship-graph-detail-meta"><StatusBadge value={relationshipGraphEntityLabel(selectedNode.kind)} kind="relationship" /><State value={selectedPath.presentation_state === 'validated' ? 'VALIDATED' : 'NEEDS_VALIDATION'} /></div><MetadataRow label="Path" value={selectedPath.summary} /><MetadataRow label="Connection" value={selectedPath.connection_label} /><p><strong>Why it matters:</strong> {selectedPath.why_it_matters}</p><p><strong>Governed status:</strong> {selectedPath.seller_rationale}</p>{selectedPath.validation_requirements.length > 0 && <Notice tone="warning" title="Validate before use">{selectedPath.validation_requirements.join(' ')}</Notice>}<Disclosure title={`Evidence · ${selectedPath.evidence.length} ${selectedPath.evidence.length === 1 ? 'source' : 'sources'}`} defaultOpen>{selectedPath.evidence.length ? <div className="seller-relationship-evidence">{selectedPath.evidence.map((item, index) => <RelationshipEvidence key={`${selectedPath.path_id}:graph:${index}`} item={item} path={selectedPath} />)}</div> : <Empty>No supporting source is attached. This path is not presented as validated.</Empty>}</Disclosure><GovernedExplanationDisclosure title="Why this relationship path may be useful" explanation={selectedPath.governed_explanation} /></aside>
-  </div>
-}
-
-function RelationshipIntelligence({ accountId }: { accountId: string }) {
-  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(false); const [view, setView] = useState<'validated' | 'needs_validation' | 'graph'>('validated')
+function RelationshipIntelligence({ accountId, onOmniContext }: { accountId: string; onOmniContext: (context: Pick<OmniContext, 'relationship_selection'>) => void }) {
+  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(false); const [view, setView] = useState<'validated' | 'needs_validation'>('validated')
   useEffect(() => { let active = true; void api.relationships(accountId).then(result => { if (active) setRelationships(result) }).catch(() => { if (active) setError(true) }); return () => { active = false } }, [accountId])
   const projection = relationships?.seller_projection; const validated = projection?.validated ?? []; const needsValidation = projection?.needs_validation ?? []
-  const graphPaths = [...validated, ...needsValidation]
   const shown = view === 'validated' ? validated : needsValidation
   return <div className="relationship-content">
+    <RankedRelationships accountId={accountId} onOmniContext={onOmniContext} />
     <div className="relationship-intelligence-header"><div><span className="eyebrow">How this Customer is connected</span><p>Backend-governed paths explain the connection, evidence, business relevance, and a bounded next review.</p></div>{projection && <div className="relationship-counts"><span><strong>{projection.validated_count}</strong> validated</span><span><strong>{projection.needs_validation_count}</strong> to review</span></div>}</div>
     <Notice>Public professional contact research remains separate and does not establish a BTX relationship, introduction path, or relationship strength.</Notice>
-    <div className="relationship-view-toggle" role="tablist" aria-label="Relationship Intelligence view"><button role="tab" aria-selected={view === 'validated'} className={view === 'validated' ? 'selected' : ''} onClick={() => setView('validated')}>Validated connections</button><button role="tab" aria-selected={view === 'needs_validation'} className={view === 'needs_validation' ? 'selected' : ''} onClick={() => setView('needs_validation')}>Connections to review</button><button role="tab" aria-selected={view === 'graph'} className={view === 'graph' ? 'selected' : ''} onClick={() => setView('graph')}>Graph view</button></div>
+    <p className="muted">Reference connections below retain their original evidence and explanations. Explore ranked routes in the canonical network above; these reference cards are not a second route ranking.</p>
+    <div className="relationship-view-toggle" role="tablist" aria-label="Relationship reference view"><button role="tab" aria-selected={view === 'validated'} className={view === 'validated' ? 'selected' : ''} onClick={() => setView('validated')}>Validated connections</button><button role="tab" aria-selected={view === 'needs_validation'} className={view === 'needs_validation' ? 'selected' : ''} onClick={() => setView('needs_validation')}>Connections to review</button></div>
     {!relationships && !error && <p className="relationship-intelligence-loading">Loading canonical relationship records…</p>}
     {error && <Empty>Canonical relationship records could not be loaded for this Customer. No relationship conclusion is shown.</Empty>}
-    {relationships && view === 'graph' && <RelationshipGraph paths={graphPaths} />}
-    {relationships && view !== 'graph' && shown.length === 0 && <Empty>{view === 'validated' ? 'No eligible validated connection is currently available for this Customer.' : 'No connection requiring validation is currently available for this Customer.'} This does not establish a real-world absence.</Empty>}
-    {view !== 'graph' && shown.length > 0 && <div className="seller-relationship-list">{shown.map(path => <SellerRelationshipCard key={path.path_id} path={path} />)}</div>}
+    {relationships && shown.length === 0 && <Empty>{view === 'validated' ? 'No eligible validated connection is currently available for this Customer.' : 'No connection requiring validation is currently available for this Customer.'} This does not establish a real-world absence.</Empty>}
+    {shown.length > 0 && <div className="seller-relationship-list">{shown.map(path => <SellerRelationshipCard key={path.path_id} path={path} />)}</div>}
     {projection && (projection.omitted_count > 0 || projection.unusable_count > 0) && <p className="muted">{projection.omitted_count ? `${projection.omitted_count} additional eligible path(s) are omitted from this bounded view. ` : ''}{projection.unusable_count ? `${projection.unusable_count} unusable path(s) are excluded from seller planning.` : ''}</p>}
   </div>
 }
@@ -223,11 +151,82 @@ function useMobileCustomerLayout() { const [mobile, setMobile] = useState(() => 
 function CustomerSection({ title, summary, children, defaultOpen = false, className = '' }: { title: string; summary?: string; children: ReactNode; defaultOpen?: boolean; className?: string }) { const mobile = useMobileCustomerLayout(); return <div className={`customer-section ${className}`}>{mobile ? <Disclosure title={<span>{title}{summary && <small>{summary}</small>}</span>} defaultOpen={defaultOpen}>{children}</Disclosure> : <Panel title={title} action={summary ? <span className="panel-kicker">{summary}</span> : undefined}>{children}</Panel>}</div> }
 const money = (value: number | null | undefined, currency = 'USD') => value == null ? 'Unavailable' : new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value / 100)
 function SourceState({ label, state }: { label: string; state: { data_mode: string; source_state: string } }) { const message = state.source_state === 'AVAILABLE' ? `${label} context available` : state.source_state === 'NO_LINKED_DATA' ? `No ${label} record is linked to this canonical Customer.` : state.source_state === 'NOT_CONFIGURED' ? `${label} integration is not configured.` : `${label} context is currently unavailable.`; return <MetadataRow label={label} value={`${state.data_mode} · ${message}`} /> }
-function Commercial360({ detail }: { detail: Account360 }) { const view = detail.customer_360; const sourceStates = detail.commercial_source_states; return <CustomerSection title="Commercial context" summary={view.commercial.source_state.data_mode}><Notice title="Simulated BTX commercial context">Commercial amounts are only shown when the configured provider supplied a linked record. Unavailable or unlinked data is not zero.</Notice><SourceState label="Commercial" state={view.commercial.source_state ?? sourceStates.commercial} /><SourceState label="Quotes / RFQs" state={view.quotes.source_state ?? sourceStates.paperless} /><SourceState label="Orders" state={view.orders.source_state ?? sourceStates.orders} />{view.commercial.records.length ? <div className="card-list">{view.commercial.records.map(row => <div className="line" key={row.business_unit ?? row.id}><span><strong>{row.business_unit ?? 'Business unit unavailable'}</strong><small>TTM revenue {money(row.ttm_revenue_minor, row.currency)} · bookings {money(row.ttm_bookings_minor, row.currency)}</small></span><State value={row.provenance?.data_mode ?? 'UNAVAILABLE'} /></div>)}</div> : <Empty>{view.commercial.missing ?? 'Commercial context unavailable.'}</Empty>}{view.quotes.records.length ? <Disclosure title={`Recent quotes / RFQs · ${view.quotes.records.length}`}><div className="card-list">{view.quotes.records.map(row => <div className="line" key={row.id}><span><strong>{row.id}</strong><small>{row.quoted_at} · {money(row.value_minor, row.currency)} · {row.business_unit ?? 'BU unavailable'}</small></span><State value={row.status ?? 'UNAVAILABLE'} /></div>)}</div></Disclosure> : <p className="muted">{view.quotes.missing}</p>}{view.orders.records.length ? <Disclosure title={`Recent orders · ${view.orders.records.length}`}><div className="card-list">{view.orders.records.map(row => <div className="line" key={row.id}><span><strong>{row.id}</strong><small>{row.recent_order_date ?? 'Date unavailable'} · {money(row.amount_minor)} · {row.business_unit ?? 'BU unavailable'}</small></span><State value={row.status ?? 'UNAVAILABLE'} /></div>)}</div></Disclosure> : <p className="muted">{view.orders.missing}</p>}</CustomerSection> }
+function Commercial360({ detail }: { detail: Account360 }) { const view = detail.customer_360; const sourceStates = detail.commercial_source_states; return <CustomerSection title="Commercial context" summary={view.commercial.source_state.data_mode}><SourceState label="Commercial" state={view.commercial.source_state ?? sourceStates.commercial} /><SourceState label="Quotes / RFQs" state={view.quotes.source_state ?? sourceStates.paperless} /><SourceState label="Orders" state={view.orders.source_state ?? sourceStates.orders} />{view.commercial.records.length ? <div className="card-list">{view.commercial.records.map(row => <div className="line" key={row.business_unit ?? row.id}><span><strong>{row.business_unit ?? 'Business unit unavailable'}</strong><small>TTM revenue {money(row.ttm_revenue_minor, row.currency)} · bookings {money(row.ttm_bookings_minor, row.currency)}</small></span><State value={row.provenance?.data_mode ?? 'UNAVAILABLE'} /></div>)}</div> : <Empty>{view.commercial.missing ?? 'Commercial context unavailable.'}</Empty>}{view.quotes.records.length ? <Disclosure title={`Recent quotes / RFQs · ${view.quotes.records.length}`}><div className="card-list">{view.quotes.records.map(row => <div className="line" key={row.id}><span><strong>{row.id}</strong><small>{row.quoted_at} · {money(row.value_minor, row.currency)} · {row.business_unit ?? 'BU unavailable'}</small></span><State value={row.status ?? 'UNAVAILABLE'} /></div>)}</div></Disclosure> : <p className="muted">{view.quotes.missing}</p>}{view.orders.records.length ? <Disclosure title={`Recent orders · ${view.orders.records.length}`}><div className="card-list">{view.orders.records.map(row => <div className="line" key={row.id}><span><strong>{row.id}</strong><small>{row.recent_order_date ?? 'Date unavailable'} · {money(row.amount_minor)} · {row.business_unit ?? 'BU unavailable'}</small></span><State value={row.status ?? 'UNAVAILABLE'} /></div>)}</div></Disclosure> : <p className="muted">{view.orders.missing}</p>}</CustomerSection> }
 function OperationalRelevance({ detail }: { detail: Account360 }) { const view = detail.customer_360; return <CustomerSection title="Programs, components & capabilities" summary={`${view.programs.length} programs`}><p className="workspace-intro">Governed operational relevance explains where BTX may be able to serve this Customer or Prospect; it does not imply an active commercial relationship.</p>{view.programs.length ? <div className="card-list">{view.programs.map(row => <div className="line" key={row.id}><span><strong>{row.name}</strong><small>{row.system ?? 'System unavailable'} · {row.provenance?.data_mode ?? 'UNAVAILABLE'}</small></span><State value={row.evidence_state ?? 'UNAVAILABLE'} /></div>)}</div> : <Empty>{view.missingness.programs}</Empty>}<Disclosure title={`Components · ${view.components.length}`}><div className="evidence-list">{view.components.length ? view.components.map(row => <EvidenceSource key={row.id} title={row.name ?? row.id} source={(row.business_unit_ids ?? []).join(', ') || 'Business unit unavailable'} evidenceState={row.evidence_state} detail={`Program: ${row.program_id ?? 'Unavailable'}`} />) : <Empty>{view.missingness.capabilities}</Empty>}</div></Disclosure><Disclosure title={`Capabilities · ${view.capabilities.length}`}><div className="evidence-list">{view.capabilities.length ? view.capabilities.map(row => <EvidenceSource key={row.id} title={row.name ?? row.id} source={(row.business_unit_ids ?? []).join(', ') || 'Business unit unavailable'} evidenceState={row.provenance?.evidence_state} detail={row.description ?? 'Capability description unavailable'} />) : <Empty>{view.missingness.capabilities}</Empty>}</div></Disclosure></CustomerSection> }
 function CrmContacts({ detail }: { detail: Account360 }) { const crm = detail.customer_360.crm; return <CustomerSection title="Known contacts & CRM" summary={crm.source_state.data_mode}><SourceState label="CRM" state={crm.source_state} />{crm.contacts.length ? <div className="evidence-list">{crm.contacts.map(row => <EvidenceSource key={row.id} title={row.name ?? row.role_family ?? row.id} source={row.provenance?.source_system ?? 'CRM'} evidenceState={row.provenance?.evidence_state} detail={`${row.title ?? row.role_family ?? 'Role unavailable'} · ${row.provenance?.data_mode ?? 'UNAVAILABLE'}`} />)}</div> : <Empty>{crm.missing ?? 'No linked CRM contacts.'}</Empty>}<MetadataRow label="CRM owner" value={crm.owner_id ?? 'Unassigned'} /><MetadataRow label="CRM activity" value={crm.activity_count ? `${crm.activity_count} records; last activity ${crm.last_activity_at ?? 'unavailable'}` : 'No linked activity'} /></CustomerSection> }
-function CustomerActions({ accountId }: { accountId: string }) { const [items, setItems] = useState<Action[]>([]); const [title, setTitle] = useState(''); const [priority, setPriority] = useState<ActionPriority>('MEDIUM'); const [notice, setNotice] = useState(''); useEffect(() => { let active = true; void api.actions().then(result => { if (active) setItems(result.items.filter(item => item.account_id === accountId)) }).catch(() => { if (active) setNotice('Actions could not be loaded.') }); return () => { active = false } }, [accountId]); const create = async (event: React.FormEvent) => { event.preventDefault(); if (!title.trim()) return; try { const item = await api.createAction({ account_id: accountId, title, priority }); setItems(current => [item, ...current]); setTitle(''); setNotice('Internal Action created. No external system was changed.') } catch { setNotice('Action could not be created.') } }; return <CustomerSection title="Actions" summary={`${items.filter(item => ['OPEN', 'IN_PROGRESS'].includes(item.status)).length} active`}><div className="card-list">{items.length ? items.slice(0, 8).map(item => <div className="line" key={item.id}><span><strong>{item.title}</strong><small>{item.owner_id ?? 'Unassigned'} · {item.due_date ?? 'No due date'} · {item.approval_status}</small></span><State value={item.status} /></div>) : <Empty>No open Actions for this Customer or Prospect.</Empty>}</div><form className="customer-action-form" onSubmit={event => void create(event)}><TextInput label="Create internal Action" value={title} onChange={event => setTitle(event.target.value)} /><SelectInput aria-label="New Action priority" value={priority} onChange={event => setPriority(event.target.value as ActionPriority)}><option>HIGH</option><option>MEDIUM</option><option>LOW</option></SelectInput><Button type="submit" variant="primary">Create Action</Button></form>{notice && <p className="muted" role="status">{notice}</p>}</CustomerSection> }
-function CustomerDetail({ accounts, detail, onSelect, onBack }: { accounts: Account[]; detail: Account360; onSelect: (id: string) => void; onBack: () => void }) {
+function CustomerActions({ accountId, refreshVersion }: { accountId: string; refreshVersion: number }) {
+  const [items, setItems] = useState<Action[]>([])
+  const [title, setTitle] = useState('')
+  const [priority, setPriority] = useState<ActionPriority>('MEDIUM')
+  const [notice, setNotice] = useState('')
+  const [pending, setPending] = useState(false)
+  const [retry, setRetry] = useState(0)
+  const [draftKey, setDraftKey] = useState(() => crypto.randomUUID())
+  useEffect(() => {
+    const controller = new AbortController()
+    void api.actions(controller.signal).then(result => { if (!controller.signal.aborted) setItems(result.items.filter(item => item.account_id === accountId)) }).catch(() => { if (!controller.signal.aborted) setNotice('Actions could not be loaded. Previously displayed work may be outdated.') })
+    return () => controller.abort()
+  }, [accountId, refreshVersion, retry])
+  const create = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!title.trim() || pending) return
+    setPending(true)
+    try {
+      const item = await api.createAction({ account_id: accountId, title, priority, idempotency_key: draftKey })
+      setItems(current => [item, ...current.filter(existing => existing.id !== item.id)])
+      setTitle(''); setDraftKey(crypto.randomUUID()); setNotice('Internal Action created. No external system was changed.')
+    } catch { setNotice('Creation was not confirmed. Retry the same draft to avoid duplicates; inspect Work if you changed a previously submitted draft.') }
+    finally { setPending(false) }
+  }
+  return <CustomerSection title="Actions" summary={`${items.filter(item => ['OPEN', 'IN_PROGRESS'].includes(item.status)).length} active`}>
+    <div className="card-list">{items.length ? items.map(item => <div className="line" key={item.id}><span><strong>{item.title}</strong><small>{item.owner_id ?? 'Unassigned'} · {item.due_date ?? 'No due date'} · {item.approval_status}</small></span><State value={item.status} /></div>) : <Empty>No Actions for this Customer or Prospect.</Empty>}</div>
+    <button type="button" onClick={() => setRetry(n => n + 1)}>Refresh Actions</button>
+    <form className="customer-action-form" onSubmit={event => void create(event)}><TextInput label="Create internal Action" disabled={pending} value={title} onChange={event => setTitle(event.target.value)} /><SelectInput aria-label="New Action priority" disabled={pending} value={priority} onChange={event => setPriority(event.target.value as ActionPriority)}><option>HIGH</option><option>MEDIUM</option><option>LOW</option></SelectInput><Button type="submit" variant="primary" disabled={pending || !title.trim()}>{pending ? 'Creating…' : 'Create Action'}</Button></form>
+    {notice && <p className="muted" role="status">{notice}</p>}
+  </CustomerSection>
+}
+function AccountPlanningPanel({ accountId }: { accountId: string }) {
+  const [planning, setPlanning] = useState<AccountPlanning>()
+  const [error, setError] = useState('')
+  const [pending, setPending] = useState(false)
+  const [kind, setKind] = useState<'GROWTH' | 'RESEARCH'>('RESEARCH')
+  const [objective, setObjective] = useState('')
+  const [targetDate, setTargetDate] = useState('')
+  const [partnershipReason, setPartnershipReason] = useState('')
+  const [retry, setRetry] = useState(0)
+  const draftTouched = useRef(false)
+  const saved = planning?.shortlist_records.find(item => item.account_id === accountId)
+  const current = planning?.shortlist.find(item => item.account_id === accountId)
+  const designation = planning?.strategic_partnerships.find(item => item.account_id === accountId)
+  const designationRecord = planning?.partnership_records.find(item => item.account_id === accountId)
+  const planningGap = planning?.planning_gaps.find(item => item.account_id === accountId)
+  useEffect(() => { const controller = new AbortController(); void api.accountPlanning(controller.signal).then(result => { if (controller.signal.aborted) return; setPlanning(result); setError(''); if (!draftTouched.current) { const item = result.shortlist_records.find(entry => entry.account_id === accountId); setKind(item?.kind ?? 'RESEARCH'); setObjective(item?.objective ?? ''); setTargetDate(item?.target_date ?? '') } }).catch(reason => { if (reason?.name !== 'AbortError') setError('Account planning could not be loaded. Retry without losing the current Customer context.') }); return () => controller.abort() }, [accountId, retry])
+  const save = async (active: boolean) => {
+    if (pending || (!current && !active) || objective.trim().length < 10) return
+    setPending(true); setError('')
+    try { await api.saveShortlist({ account_id: accountId, kind, objective: objective.trim(), target_date: targetDate || null, active, expected_version: saved?.version ?? null, idempotency_key: crypto.randomUUID() }); setRetry(value => value + 1) }
+    catch { setError('The shortlist change was not confirmed. Reload the saved planning state before retrying.') }
+    finally { setPending(false) }
+  }
+  const designate = async (designated: boolean) => {
+    if (pending || partnershipReason.trim().length < 10) return
+    setPending(true); setError('')
+    try { await api.designatePartnership(accountId, { designated, reason: partnershipReason.trim(), expected_version: designationRecord?.version ?? null, idempotency_key: crypto.randomUUID() }); setPartnershipReason(''); setRetry(value => value + 1) }
+    catch { setError('The designation was not confirmed. Manager permission and the current version are required.') }
+    finally { setPending(false) }
+  }
+  return <CustomerSection title="Growth & research planning" summary={current ? `${humanize(current.kind)} shortlist` : designation ? 'Strategic partnership' : 'Not yet saved'}>
+    {!planning && !error && <p>Loading saved planning…</p>}
+    {designation && <Notice title="Strategic partnership designation">{designation.reason} Updated {relationshipDate(designation.updated_at)} by {designation.updated_by}.</Notice>}
+    <div className="customer-action-form"><SelectInput aria-label="Shortlist purpose" value={kind} disabled={pending} onChange={event => { draftTouched.current = true; setKind(event.target.value as 'GROWTH' | 'RESEARCH') }}><option value="GROWTH">Growth pursuit</option><option value="RESEARCH">Research required</option></SelectInput><TextInput label="Planning objective" value={objective} disabled={pending} onChange={event => { draftTouched.current = true; setObjective(event.target.value) }} /><TextInput label="Target date" type="date" value={targetDate} disabled={pending} onChange={event => { draftTouched.current = true; setTargetDate(event.target.value) }} /><Button variant="primary" disabled={pending || objective.trim().length < 10} onClick={() => void save(true)}>{pending ? 'Saving…' : current ? 'Update shortlist' : 'Add to shortlist'}</Button>{current && <Button disabled={pending} onClick={() => void save(false)}>Remove from shortlist</Button>}</div>
+    {planning?.can_manage_partnerships && <Disclosure title="Manager designation"><TextInput label="Audited designation reason" value={partnershipReason} disabled={pending} onChange={event => setPartnershipReason(event.target.value)} /><div className="card-actions"><Button disabled={pending || partnershipReason.trim().length < 10} onClick={() => void designate(!designation)}>{designation ? 'Remove strategic partnership' : 'Designate strategic partnership'}</Button></div></Disclosure>}
+    {planningGap && <Disclosure title="Sales planning gap"><p>{planningGap.interpretation}</p><p><strong>Recorded TTM bookings:</strong> {planningGap.actual_bookings_minor == null ? 'Unavailable' : new Intl.NumberFormat('en-US', { style: 'currency', currency: planningGap.currency }).format(planningGap.actual_bookings_minor / 100)}</p><p><strong>Governed target:</strong> {planningGap.target_bookings_minor == null ? 'Unavailable' : new Intl.NumberFormat('en-US', { style: 'currency', currency: planningGap.currency }).format(planningGap.target_bookings_minor / 100)} · <strong>Calculated shortfall:</strong> {planningGap.shortfall_minor == null ? 'Unavailable' : new Intl.NumberFormat('en-US', { style: 'currency', currency: planningGap.currency }).format(planningGap.shortfall_minor / 100)}</p><small>{planningGap.status.replaceAll('_', ' ').toLowerCase()} · BUs {planningGap.business_unit_ids.join(', ') || 'unavailable'} · {planningGap.evidence_ids.length} monthly evidence records</small></Disclosure>}
+    {current && <p className="muted">Saved for the signed-in user · target {current.target_date ?? 'not dated'} · version {current.version}. No forecast, acquisition, CRM write, or external communication is implied.</p>}
+    {error && <Notice tone="warning">{error} <Button onClick={() => setRetry(value => value + 1)}>Retry</Button></Notice>}
+  </CustomerSection>
+}
+function CustomerDetail({ accounts, detail, onSelect, onBack, onOmniContext }: { accounts: Account[]; detail: Account360; onSelect: (id: string) => void; onBack: () => void; onOmniContext: (context: Pick<OmniContext, 'relationship_selection'>) => void }) {
+  const [workRevision, setWorkRevision] = useState(0)
   const [switchQuery, setSwitchQuery] = useState(''); const attractiveness = detail.account_attractiveness; const name = accountName(detail.account); const availableFactors = attractiveness.factors.filter(factor => !factor.missing)
   const switchResults = switchQuery ? accounts.filter(item => `${accountName(item)} ${item.industries.join(' ')}`.toLowerCase().includes(switchQuery.toLowerCase())).slice(0, 6) : []
   const choose = (id: string) => { setSwitchQuery(''); onSelect(id) }
@@ -235,9 +234,13 @@ function CustomerDetail({ accounts, detail, onSelect, onBack }: { accounts: Acco
     <header className="account-workspace-header"><div className="account-workspace-heading"><span className="eyebrow">Customers &amp; Prospects / Customer 360</span><h1>{name}</h1><p>{detail.account.industries.join(' · ') || 'Industry unavailable'}</p></div><div className="account-workspace-states"><StatusBadge value={classification(detail.account)} kind="entity" label={classificationLabel(detail.account)} />{detail.account.btx_top_100 && <StatusBadge value="BTX Top 100" />}<State value={detail.truth_categories.public} /><State value={detail.truth_categories.btx} /></div></header>
     <section className="account-decision-zone" aria-label="Customer decision summary"><StatTile label="Attractiveness" value={attractiveness.score ?? 'Unavailable'} detail={humanize(attractiveness.status)} /><StatTile label="Research priority" value={detail.prospect_research_priority ? humanize(detail.prospect_research_priority) : 'Unavailable'} detail="Canonical research priority" /><div className="account-why"><span className="eyebrow">Why this Customer matters</span><p>{detail.reason_for_attention ?? 'No current reason for attention is available.'}</p><strong>Next review</strong><p>{detail.recommended_next_step ?? 'No governed next step is currently available.'}</p></div></section>
     <div className="account-primary-grid"><CustomerSection className="attention-section" title="What needs attention" summary={`${detail.alerts.length} governed alerts`} defaultOpen>{detail.alerts.length ? <div className="card-list">{detail.alerts.map(alert => <div className="workspace-attention" key={alertRenderKey(alert)}><State value={alert.severity} /><strong>{humanize(alert.type)}</strong><p>{alert.trigger_reason}</p><small>{alert.recommended_action}</small></div>)}</div> : <Empty>No governed alert is currently open for this Customer.</Empty>}</CustomerSection><Commercial360 detail={detail} /></div>
-    <div className="account-secondary-grid"><GovernedExplanationDisclosure title="Why this Customer stands out" explanation={detail.governed_explanation} /><OperationalRelevance detail={detail} /><CrmContacts detail={detail} /><CustomerSection title="Recent intelligence" summary="Canonical public evidence"><Signals items={detail.customer_360.intelligence} /></CustomerSection><CustomerSection title="Public professional contact research" summary={`${detail.public_contacts.length} records`}>{detail.public_contacts.length ? <div className="evidence-list">{detail.public_contacts.map(contact => <EvidenceSource key={`${contact.contact_type}-${contact.name ?? contact.role_family}`} title={contact.name ?? contact.role_family} source="Public professional research" evidenceState={contact.verification_state} url={contact.source_url} detail={contact.title_or_function ?? contact.role_family} />)}</div> : <Empty>{`No verified public contact is available. Role-family target: ${detail.account.contact_role_families?.join(', ') ?? 'procurement / engineering'}.`}</Empty>}</CustomerSection><CustomerSection title="Canonical facilities" summary={`${detail.customer_360.facilities.length} linked`}>{detail.customer_360.facilities.length ? <div className="evidence-list">{detail.customer_360.facilities.map(facility => <EvidenceSource key={facility.id} title={facility.name ?? facility.id} source={`${facility.city ?? 'City unavailable'}, ${facility.region ?? 'Region unavailable'}`} evidenceState={facility.verification_state} url={facility.source_url} detail={facility.facility_type} />)}</div> : <Empty>{detail.customer_360.missingness.facilities}</Empty>}</CustomerSection><CustomerSection title="Attractiveness rationale & missingness" summary={humanize(attractiveness.status)}><Notice title="Customer Attractiveness · simulated hypothesis">A 0–100 structural index, not a probability. Scenario inputs are simulated BTX hypotheses; no generic Customer identity evidence is treated as score evidence.</Notice><MetadataRow label="Input coverage" value={`${Number(attractiveness.coverage) * 100}%`} /><MetadataRow label="Configuration" value={attractiveness.configuration_version} /><p className="truth-note">{attractiveness.interpretation_note}</p>{attractiveness.exclusion_reason ? <p className="truth-note">{attractiveness.exclusion_reason}</p> : <div className="factor-list">{attractiveness.factors.map(factor => <div className="factor-row" key={factor.name}><span><strong>{humanize(factor.name)} · {Number(factor.configured_weight) * 100}%</strong><small>{factor.missing ? 'Missing canonical input' : `Contribution ${factor.contribution ?? 'Unavailable'} · input coverage ${Number(factor.input_coverage) * 100}%`}</small>{factor.gaps.length > 0 && <small>{factor.gaps.join(', ')}</small>}</span><strong>{factor.score ?? '—'}</strong></div>)}</div>}{!attractiveness.exclusion_reason && availableFactors.length === 0 && <Empty>No canonical score factors are currently available.</Empty>}{attractiveness.missingness.length > 0 && <Notice tone="warning" title="Missing inputs">{attractiveness.missingness.join(', ')}</Notice>}</CustomerSection></div>
-    <CustomerSection className="account-workspace-relationship" title="Relationship Intelligence" summary="Canonical connections"><RelationshipIntelligence key={detail.account.id} accountId={detail.account.id} /></CustomerSection>
-    <CustomerActions key={detail.account.id} accountId={detail.account.id} />
+    <div className="account-secondary-grid"><GovernedExplanationDisclosure title="Why this Customer stands out" explanation={detail.governed_explanation} /><OperationalRelevance detail={detail} /><CrmContacts detail={detail} /><CustomerSection title="Recent intelligence" summary="Canonical public evidence"><Signals items={detail.customer_360.intelligence} /></CustomerSection><CustomerSection title="Public professional contact research" summary={`${detail.public_contacts.length} records`}>{detail.public_contacts.length ? <div className="evidence-list">{detail.public_contacts.map(contact => <EvidenceSource key={`${contact.contact_type}-${contact.name ?? contact.role_family}`} title={contact.name ?? contact.role_family} source="Public professional research" date={relationshipDate(contact.provenance?.last_verified_at)} evidenceState={contact.verification_state} url={contact.source_url} detail={<>{contact.title_or_function ?? contact.role_family}{contact.contact_type === 'PUBLIC_CONTACT_CANDIDATE' && <> · Public role candidate; no introduction or buyer access is established. Date is the source observation.</>}</>} />)}</div> : <Empty>{`No verified public contact is available. Role-family target: ${detail.account.contact_role_families?.join(', ') ?? 'procurement / engineering'}.`}</Empty>}</CustomerSection><CustomerSection title="Canonical facilities" summary={`${detail.customer_360.facilities.length} linked`}>{detail.customer_360.facilities.length ? <div className="evidence-list">{detail.customer_360.facilities.map(facility => <EvidenceSource key={facility.id} title={facility.name ?? facility.id} source={`${facility.city ?? 'City unavailable'}, ${facility.region ?? 'Region unavailable'}`} evidenceState={facility.verification_state} url={facility.source_url} detail={facility.facility_type} />)}</div> : <Empty>{detail.customer_360.missingness.facilities}</Empty>}</CustomerSection><CustomerSection title="Attractiveness rationale & missingness" summary={humanize(attractiveness.status)}><Notice title="Customer Attractiveness · simulated hypothesis">A 0–100 structural index, not a probability. Scenario inputs are simulated BTX hypotheses; no generic Customer identity evidence is treated as score evidence.</Notice><MetadataRow label="Input coverage" value={`${Number(attractiveness.coverage) * 100}%`} /><MetadataRow label="Configuration" value={attractiveness.configuration_version} /><p className="truth-note">{attractiveness.interpretation_note}</p>{attractiveness.exclusion_reason ? <p className="truth-note">{attractiveness.exclusion_reason}</p> : <div className="factor-list">{attractiveness.factors.map(factor => <div className="factor-row" key={factor.name}><span><strong>{humanize(factor.name)} · {Number(factor.configured_weight) * 100}%</strong><small>{factor.missing ? 'Missing canonical input' : `Contribution ${factor.contribution ?? 'Unavailable'} · input coverage ${Number(factor.input_coverage) * 100}%`}</small>{factor.gaps.length > 0 && <small>{factor.gaps.join(', ')}</small>}</span><strong>{factor.score ?? '—'}</strong></div>)}</div>}{!attractiveness.exclusion_reason && availableFactors.length === 0 && <Empty>No canonical score factors are currently available.</Empty>}{attractiveness.missingness.length > 0 && <Notice tone="warning" title="Missing inputs">{attractiveness.missingness.join(', ')}</Notice>}</CustomerSection></div>
+    <AccountPlanningPanel key={`planning:${detail.account.id}`} accountId={detail.account.id} />
+    <CustomerSection className="account-workspace-relationship" title="Relationship Intelligence" summary="Canonical connections"><RelationshipIntelligence key={detail.account.id} accountId={detail.account.id} onOmniContext={onOmniContext} /></CustomerSection>
+    <CustomerSection title="Commercial decisions & follow-ups" summary="Evidence, qualification and action"><CommercialDecisions key={detail.account.id} accountId={detail.account.id} onWorkChanged={() => setWorkRevision(n => n + 1)} /></CustomerSection>
+    <WorkbookFields key={`workbook:${detail.account.id}`} accountId={detail.account.id} />
+    {detail.commercial_briefing && <CustomerSection title="Canonical records" summary="Complete enriched field disclosure"><CommercialRecords key={detail.account.id} accountId={detail.account.id} /></CustomerSection>}
+    <CustomerActions key={detail.account.id} accountId={detail.account.id} refreshVersion={workRevision} />
     <CustomerSection title="Evidence & provenance" summary={humanize(detail.provenance.evidence_state)}><EvidenceSource title="Canonical Customer record" source={detail.provenance.source_record_id} evidenceState={detail.provenance.evidence_state} detail={detail.missingness.length ? `Missingness: ${detail.missingness.join(', ')}` : 'No additional projection missingness reported.'} /></CustomerSection>
   </section></div>
 }

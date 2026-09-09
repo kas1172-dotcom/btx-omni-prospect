@@ -76,6 +76,16 @@ class GroundedSynthesisRequest:
     missingness: tuple[str, ...]
     recent_turns: tuple[ConversationTurn, ...] = ()
     public_research: tuple[PublicWebFinding, ...] = ()
+    private_preferences: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CanonicalToolSelectionRequest:
+    question: str
+    account_id: str
+    tools: tuple[dict, ...]
+    completed_reads: tuple[dict, ...]
+    remaining_calls: int
 
 
 @dataclass(frozen=True)

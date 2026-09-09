@@ -1,0 +1,9 @@
+.workbook-fields { min-width: 0; overflow-wrap: anywhere; margin-block: 16px; }
+.workbook-fields summary { min-height: 44px; padding-block: 10px; cursor: pointer; }
+.workbook-fields dl { margin: 0; }
+.workbook-fields dl > div { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid #ddd; }
+.workbook-fields dd { margin: 0; min-width: 0; }
+.workbook-fields code { white-space: normal; overflow-wrap: anywhere; }
+.workbook-fields nav { display: flex; flex-wrap: wrap; gap: 12px; }
+.workbook-fields button { min-height: 44px; }
+@media (max-width: 600px) { .workbook-fields dl > div { grid-template-columns: minmax(0, 1fr); gap: 6px; } }

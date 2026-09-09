@@ -143,6 +143,7 @@ test('Omni replaces prompt starters with a readable current exchange', async ({ 
   await waitForApp(page)
   await openOmni(page)
   await expect(page.getByLabel('Prompt starters')).toBeVisible()
+  await expect(page.locator('#omni-message')).toBeFocused()
   const result = await ask(page, 'Which accounts have open quotes?')
   await expect(page.getByLabel('Prompt starters')).toBeHidden()
   await expect(page.locator('.conversation .message.user').last()).toContainText('Which accounts have open quotes?')

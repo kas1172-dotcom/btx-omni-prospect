@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import Engine, delete, insert, select, text
+from sqlalchemy import Engine, delete, insert, or_, select, text
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -23,9 +23,12 @@ from btx_omni.monitor.contracts import (
     OrganizationCandidate,
     ProgramCandidate,
     ProgramResolution,
+    RawEvidenceReference,
     RejectedObservation,
     SourceHealth,
+    SourceIdentity,
     SourceObservation,
+    SourceVersion,
 )
 from btx_omni.monitor.ontology import (
     CandidateReviewState,
@@ -33,6 +36,7 @@ from btx_omni.monitor.ontology import (
     ResolutionState,
     SellerRelevanceState,
 )
+from btx_omni.monitor.research_state import MonitorResearchJournal
 from btx_omni.persistence.models import (
     governed_explanations,
     monitor_brief_syntheses,
@@ -122,6 +126,7 @@ def _event_from_payload(payload: str) -> IntelligenceEvent:
         ),
         geography=value.get("geography"),
         event_date=_timestamp(value.get("event_date")),
+        source_published_at=_timestamp(value.get("source_published_at")),
         amount=Decimal(value["amount"]) if value.get("amount") is not None else None,
         currency=value.get("currency"),
         claims=tuple(
@@ -242,6 +247,7 @@ def _program_candidate_from_row(
 class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+        self.research = MonitorResearchJournal(engine)
 
     @contextmanager
     def operational_lock(self):
@@ -293,6 +299,7 @@ class MonitorRepository:
                     events_matched=run.events_matched,
                     failures=_json(run.failures),
                     latency_ms=run.latency_ms,
+                    funnel=_json(run.funnel) if run.funnel is not None else None,
                 )
             )
             connection.execute(
@@ -371,8 +378,7 @@ class MonitorRepository:
                         source_id=observation.source_identity.source_system,
                         source_observation_id=observation.id,
                         event_type=event.event_type.value,
-                        publication_date=event.event_date
-                        or observation.source_published_at,
+                        publication_date=observation.source_published_at,
                         collected_at=observation.observed_at,
                         updated_at=run.completed_at or observation.observed_at,
                         resolution_state=event.resolution_state.value,
@@ -476,7 +482,8 @@ class MonitorRepository:
         with self.engine.connect() as connection:
             return {
                 "runs": tuple(
-                    dict(row)
+                    {**dict(row), "funnel": json.loads(row["funnel"]) if row["funnel"] else None,
+                     "failures": json.loads(row["failures"]), "cursor": json.loads(row["cursor"]) if row["cursor"] else None}
                     for row in connection.execute(
                         select(monitor_collection_runs)
                         .order_by(monitor_collection_runs.c.started_at.desc())
@@ -492,7 +499,11 @@ class MonitorRepository:
                 "events": tuple(
                     dict(row)
                     for row in connection.execute(
-                        select(monitor_events)
+                        select(monitor_events, (monitor_events.c.source_observation_id == monitor_source_versions.c.last_observation_id).label("is_current_source_version")).outerjoin(
+                            monitor_source_versions,
+                            (monitor_source_versions.c.source_id == monitor_events.c.source_id)
+                            & (monitor_source_versions.c.source_record_id == monitor_events.c.provenance_source_id),
+                        )
                         .order_by(monitor_events.c.updated_at.desc())
                         .limit(100)
                     ).mappings()
@@ -509,13 +520,104 @@ class MonitorRepository:
 
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
+        return tuple(event for event, _observation in self.event_contexts())
+
+    def event_contexts(self) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
+        """One committed current-source snapshot for every public read consumer.
+
+        Reconstitute only stored source fields, without rerunning identity or
+        claiming missing original native identifiers/headers were retained.
+        """
         with self.engine.connect() as connection:
-            payloads = connection.execute(
-                select(monitor_events.c.event_payload).order_by(
+            rows = connection.execute(
+                select(monitor_events.c.event_payload, monitor_observations,
+                    monitor_source_versions.c.first_seen_at.label('version_first_seen'),
+                    monitor_source_versions.c.last_seen_at.label('version_last_seen'),
+                    monitor_source_versions.c.changed_at.label('version_changed_at'),
+                ).select_from(monitor_events).outerjoin(
+                    monitor_observations, monitor_events.c.source_observation_id == monitor_observations.c.id
+                ).outerjoin(
+                    monitor_source_versions,
+                    (monitor_source_versions.c.source_id == monitor_events.c.source_id)
+                    & (monitor_source_versions.c.source_record_id == monitor_events.c.provenance_source_id),
+                ).where(or_(monitor_source_versions.c.last_observation_id.is_(None), monitor_events.c.source_observation_id == monitor_source_versions.c.last_observation_id)).order_by(
                     monitor_events.c.updated_at.desc()
                 )
-            ).scalars()
-            return tuple(_event_from_payload(payload) for payload in payloads)
+            ).mappings()
+            contexts = []
+            for row in rows:
+                event = _event_from_payload(row["event_payload"])
+                if event.source_published_at is None and row["published_at"] is not None:
+                    event = replace(event, source_published_at=_database_timestamp(row["published_at"]))
+                primary = tuple(item.evidence_id for item in event.evidence if item.role == 'PRIMARY')
+                observation = None
+                if row['id'] is not None and len(primary) == 1 and row['version_first_seen'] is not None:
+                    identity = SourceIdentity(row['source_id'], row['source_record_id'])
+                    version = SourceVersion(row['source_record_id'], row['source_version'], row['content_hash'],
+                        _database_timestamp(row['version_first_seen']), _database_timestamp(row['version_last_seen']),
+                        _database_timestamp(row['version_changed_at']) if row['version_changed_at'] else None)
+                    retrieved = _database_timestamp(row['retrieved_at'])
+                    observation = SourceObservation(row['id'], identity, version, retrieved, row['title'] or '',
+                        RawEvidenceReference(primary[0], identity, version, row['canonical_url'], retrieved),
+                        _database_timestamp(row['published_at']) if row['published_at'] else None,
+                        row['payload_reference'], row['source_tier'], row['collection_run_id'], row['structured_payload'])
+                contexts.append((event, observation))
+            return tuple(contexts)
+
+    def source_observation_payload(self, source_id: str, source_record_id: str) -> str | None:
+        """Current exact source assertion, for conservative failed-refresh retention."""
+        with self.engine.connect() as connection:
+            return connection.execute(select(monitor_observations.c.structured_payload).join(
+                monitor_source_versions, monitor_source_versions.c.last_observation_id == monitor_observations.c.id
+            ).where(monitor_source_versions.c.source_id == source_id,
+                    monitor_source_versions.c.source_record_id == source_record_id)).scalar_one_or_none()
+
+    def event_document(self, event_id: str, *, include_research: bool = False) -> dict | None:
+        """One exact event's persisted source; never a global evidence search."""
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                select(monitor_observations, monitor_events.c.event_payload).join(
+                    monitor_events, monitor_events.c.source_observation_id == monitor_observations.c.id
+                ).where(monitor_events.c.id == event_id)
+            ).mappings().one_or_none()
+        if row is None:
+            return None
+        document = self._document_projection(row, event_id)
+        if include_research:
+            state = self.research.latest_for_source(event_id, document['content_hash'])
+            document['research'] = None if state is None else {
+                'run_id': state['id'], 'source_revision': state['source_revision'], 'status': state['status'],
+                'updated_at': state['updated_at'], 'attempt_count': state['attempt_count'],
+                'result': state['result'], 'steps': [{key: step[key] for key in
+                    ('number', 'tool', 'status', 'started_at', 'completed_at')} for step in state['steps']],
+            }
+        return document
+
+    def collection_documents(self, run_ids: tuple[str, ...], *, limit: int) -> tuple[dict, ...]:
+        """Bounded current-cycle public research input, without scanning history."""
+        if type(limit) is not int or not 0 <= limit <= 3 or len(run_ids) > 100:
+            raise ValueError('Invalid collection research bounds.')
+        if not run_ids or not limit:
+            return ()
+        with self.engine.connect() as connection:
+            rows = connection.execute(select(monitor_observations, monitor_events.c.event_payload,
+                monitor_events.c.id.label('event_id')).join(monitor_events,
+                    monitor_events.c.source_observation_id == monitor_observations.c.id)
+                .where(monitor_observations.c.collection_run_id.in_(run_ids))
+                .order_by(monitor_events.c.id).limit(limit)).mappings().all()
+        return tuple(self._document_projection(row, row['event_id']) for row in rows)
+
+    @staticmethod
+    def _document_projection(row, event_id: str) -> dict:
+        payload = json.loads(row["structured_payload"] or "{}")
+        event = json.loads(row["event_payload"])
+        return {"event_id": event_id, "observation_id": row["id"], "source_id": row["source_id"],
+                "canonical_account_ids": sorted({item["canonical_account_id"] for item in event["subject_entities"] if item.get("canonical_account_id")}),
+                "source_record_id": row["source_record_id"], "content_hash": row["content_hash"],
+                "source_url": row["canonical_url"], "title": row["title"], "published_at": row["published_at"],
+                "retrieved_at": row["retrieved_at"], "collection_run_id": row["collection_run_id"],
+                "document": payload.get("_retrieved_document"),
+                "availability": "DOCUMENT_ATTEMPT_RECORDED" if "_retrieved_document" in payload else "NO_DOCUMENT_ATTEMPT_RECORDED"}
 
     def organization_candidate(self, identity_key: str) -> OrganizationCandidate | None:
         with self.engine.connect() as connection:

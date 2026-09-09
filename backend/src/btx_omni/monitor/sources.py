@@ -13,7 +13,6 @@ from time import sleep
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import quote, urlencode
-from urllib.request import Request, urlopen
 
 from btx_omni.monitor.contracts import (
     RawEvidenceReference,
@@ -22,6 +21,7 @@ from btx_omni.monitor.contracts import (
     SourceVersion,
 )
 from btx_omni.monitor.ontology import EventType
+from btx_omni.providers.research.http import public_request
 
 
 class SourceTier(StrEnum):
@@ -101,15 +101,13 @@ HttpPost = Callable[[str, bytes, dict[str, str]], tuple[int, bytes, dict[str, st
 
 
 def default_get(url: str, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
-    request = Request(url, headers=headers)
-    with urlopen(request, timeout=20) as response:  # nosec B310: source bases are registry-owned
-        return response.status, response.read(), dict(response.headers.items())
+    response = public_request(url, headers=headers)
+    return response.status, response.body, {**response.headers, "x-btx-resolved-url": response.final_url}
 
 
 def default_post(url: str, body: bytes, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
-    request = Request(url, data=body, headers=headers, method="POST")
-    with urlopen(request, timeout=20) as response:  # nosec B310: source base is registry-owned
-        return response.status, response.read(), dict(response.headers.items())
+    response = public_request(url, headers=headers, body=body)
+    return response.status, response.body, response.headers
 
 
 class LiveSourceAdapter:

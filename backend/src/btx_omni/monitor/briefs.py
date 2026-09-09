@@ -6,6 +6,7 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from time import monotonic
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,10 @@ from btx_omni.ai.contracts import (
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     persisted_seller_explanation,
     technical_opportunity_subject_key,
+)
+from btx_omni.modules.scoring.public_inputs import (
+    public_risk_assessment,
+    public_signal_assessment,
 )
 from btx_omni.monitor.contracts import IntelligenceEvent, SourceObservation
 from btx_omni.monitor.ontology import ResolutionState, SellerRelevanceState
@@ -72,6 +77,9 @@ class SignalBrief:
     priority_reasons: tuple[TargetReason, ...] = ()
     canonical_facility_id: str | None = None
     technical_opportunity: dict | None = None
+    signal_confidence: dict | None = None
+    risk_severity: dict | None = None
+    event_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -117,6 +125,8 @@ def publication_freshness(
     clock = now or datetime.now(UTC)
     if published_at is None:
         return "PUBLICATION_DATE_UNAVAILABLE"
+    if published_at > clock:
+        return "FUTURE_PUBLICATION_DATE"
     threshold = timedelta(hours=threshold_hours)
     return (
         "CURRENT"
@@ -140,9 +150,7 @@ def signal_brief(
         if item.canonical_account_id
     )
     collected = observation.observed_at if observation else event.provenance.observed_at
-    published = event.event_date or (
-        observation.source_published_at if observation else None
-    )
+    published = observation.source_published_at if observation else event.source_published_at
     eligible = (
         event.resolution_state is ResolutionState.RESOLVED
         and event.seller_relevance_state is SellerRelevanceState.RESOLVED_ELIGIBLE
@@ -152,9 +160,9 @@ def signal_brief(
     )
     event_timing = (
         "UNKNOWN"
-        if published is None
+        if event.event_date is None
         else "UPCOMING"
-        if published > clock
+        if event.event_date > clock
         else "OBSERVED"
     )
     seller_state = event.seller_relevance_state.value
@@ -212,10 +220,13 @@ def signal_brief(
         missing_fields=tuple(dict.fromkeys(missing)),
         seller_summary=deterministic_summary,
         event_timing=event_timing,
-        relevant_event_timestamp=published,
+        relevant_event_timestamp=event.event_date,
         watchlist_eligible=bool(target_reasons),
         priority_reasons=target_reasons,
         canonical_facility_id=event.canonical_facility_id,
+        signal_confidence=public_signal_assessment(event, observation, now=clock, freshness_hours=freshness_hours),
+        risk_severity=public_risk_assessment(event, observation, now=clock),
+        event_type=event.event_type.value,
     )
 
 
@@ -237,11 +248,23 @@ def synthesize_signal_brief_with_status(
         return BriefSynthesisOutcome(brief, ProviderStatus.UNAVAILABLE)
     if not provider.configured:
         return BriefSynthesisOutcome(brief, ProviderStatus.NOT_CONFIGURED)
+    technical = brief.technical_opportunity or {}
+    matched = tuple(
+        f"{item.get('candidate_name')} → {item.get('component_name') or item.get('status')}"
+        for item in technical.get("matches", ())[:6]
+    )
+    investigated = (
+        f"\nInvestigated public context: {technical.get('event_summary') or 'No additional event summary.'}"
+        f"\nControlled component review: {'; '.join(matched) if matched else 'No controlled BTX component match.'}"
+        f"\nResearch uncertainties: {'; '.join(technical.get('uncertainties', ())[:6]) or 'None recorded.'}"
+        if technical
+        else "\nInvestigated public context: no current persisted technical investigation is available."
+    )
     governed = (
         f"Headline: {brief.headline}\nWhat happened: {brief.what_happened}\n"
         f"Why it may matter: {brief.why_it_may_matter}\nWhat to watch: {brief.what_to_watch}\n"
         f"Recommended action: {brief.recommended_action or 'Unavailable'}\n"
-        f"Freshness: {brief.freshness}\nData mode: {brief.data_mode}"
+        f"Freshness: {brief.freshness}\nData mode: {brief.data_mode}{investigated}"
     )
     try:
         result = provider.synthesize(
@@ -292,6 +315,8 @@ def governed_content_hash(brief: SignalBrief) -> str:
     def encode(value: object) -> object:
         if isinstance(value, datetime):
             return value.isoformat()
+        if isinstance(value, Decimal):
+            return str(value)
         raise TypeError(type(value).__name__)
 
     payload = json.dumps(
@@ -322,17 +347,10 @@ def signal_briefs_for_monitor(
     monitor: MonitorService, *, now: datetime | None = None
 ) -> tuple[SignalBrief, ...]:
     """Project governed briefs without invoking any language provider."""
+    from btx_omni.monitor.service import current_event_contexts
+
     projected: list[SignalBrief] = []
-    for event in monitor.events.values():
-        evidence_ids = {item.evidence_id for item in event.evidence}
-        observation = next(
-            (
-                item
-                for item in monitor.observations.values()
-                if item.raw_evidence.id in evidence_ids
-            ),
-            None,
-        )
+    for event, observation in current_event_contexts(monitor):
         source_id = event.provenance.source_system
         subject_ids = {
             item.canonical_account_id

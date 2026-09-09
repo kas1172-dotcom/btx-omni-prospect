@@ -6,7 +6,7 @@ from btx_omni.core.config import get_settings
 
 
 def main() -> None:
-    provider = get_ai_provider(AiConfig.from_settings(get_settings()))
+    provider = get_ai_provider(AiConfig.from_settings(get_settings(), actor_id="system:operator", purpose="connectivity"))
     if not provider.configured:
         raise SystemExit("Gemini is not configured; see backend/.env.example.")
     result = provider.synthesize(

@@ -1,8 +1,6 @@
 """Explicit live collection orchestration. Disabled mode performs no network I/O."""
 from __future__ import annotations
 
-import signal
-import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
@@ -26,7 +24,12 @@ from btx_omni.monitor.contracts import (
     SourceObservation,
     SourceOperationalStatus,
 )
+from btx_omni.monitor.documents import (
+    enrich_feed_documents,
+    retain_document_after_failed_refresh,
+)
 from btx_omni.monitor.entity_candidates import EntityCandidateResolver
+from btx_omni.monitor.funnel import collection_funnel
 from btx_omni.monitor.health import SOURCE_HEALTH_WARNING
 from btx_omni.monitor.normalization import normalize_structured_observation
 from btx_omni.monitor.ontology import EventType, SourceHealthState
@@ -35,14 +38,28 @@ from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.monitor.sources import REGISTRY, LiveSourceAdapter
 from btx_omni.monitor.targeting import WatchTarget
 from btx_omni.monitor.usaspending import normalize_usaspending_observation
+from btx_omni.providers.research.deadline import (
+    PublicReadDeadlineExceeded as CollectionDeadlineExceeded,
+)
+from btx_omni.providers.research.deadline import bounded_public_read
 
 
-class CollectionDeadlineExceeded(TimeoutError):
-    pass
+def current_event_contexts(monitor):
+    """Read one immutable canonical snapshot; never cache a worker's public writes."""
+    if getattr(monitor, 'repository', None):
+        return monitor.repository.event_contexts()
+    observations = {item.raw_evidence.id: item for item in getattr(monitor, 'observations', {}).values()}
+    return tuple((event, next((observations[item.evidence_id] for item in event.evidence
+                              if item.evidence_id in observations), None))
+                 for event in tuple(monitor.events.values()))
 
 
-def _deadline_alarm(_signum: int, _frame: object) -> None:
-    raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
+def current_source_observations(monitor):
+    """Canonical current observations for existing source-specific projections."""
+    if not getattr(monitor, 'repository', None):
+        return tuple(monitor.observations.values())
+    return tuple({observation.id: observation for _event, observation in current_event_contexts(monitor)
+                  if observation is not None}.values())
 
 
 @dataclass
@@ -80,60 +97,17 @@ class MonitorService:
         that thread, so a late result cannot mutate Monitor state.
         """
         def invoke() -> list[SourceObservation]:
-            return adapter.collect(
+            observations = adapter.collect(
                 run_id=run_id,
                 settings=settings,
                 limit=limit,
                 collected_at=collected_at,
             )
+            if any(kind in adapter.definition.content_structure for kind in ("RSS", "FEED")):
+                observations = enrich_feed_documents(observations, fetch=adapter.get, cap=settings.monitor_document_fetch_cap)
+            return observations
 
-        remaining = (
-            deadline_monotonic - monotonic()
-            if deadline_monotonic is not None
-            else None
-        )
-        if remaining is not None and remaining <= 0:
-            raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
-        alarm_supported = (
-            remaining is not None
-            and threading.current_thread() is threading.main_thread()
-            and hasattr(signal, "setitimer")
-        )
-        if alarm_supported:
-            previous_handler = signal.getsignal(signal.SIGALRM)
-            signal.signal(signal.SIGALRM, _deadline_alarm)
-            signal.setitimer(signal.ITIMER_REAL, remaining)
-            try:
-                observations = invoke()
-                if monotonic() >= deadline_monotonic:
-                    raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
-                return observations
-            finally:
-                signal.setitimer(signal.ITIMER_REAL, 0)
-                signal.signal(signal.SIGALRM, previous_handler)
-        if remaining is None:
-            return invoke()
-
-        completed = threading.Event()
-        result: list[SourceObservation] | None = None
-        failure: Exception | None = None
-
-        def collect_in_background() -> None:
-            nonlocal result, failure
-            try:
-                result = invoke()
-            except Exception as exc:  # noqa: BLE001 - adapter boundary reraises on caller thread
-                failure = exc
-            finally:
-                completed.set()
-
-        thread = threading.Thread(target=collect_in_background, daemon=True)
-        thread.start()
-        if not completed.wait(remaining) or monotonic() >= deadline_monotonic:
-            raise CollectionDeadlineExceeded("DEADLINE_EXCEEDED")
-        if failure is not None:
-            raise failure
-        return result or []
+        return bounded_public_read(invoke, deadline_monotonic)
 
     def collect(self, source_id: str, limit: int = 10, *, deadline_monotonic: float | None = None) -> CollectionRun:
         if self.settings.monitor_mode.lower() != "live":
@@ -155,6 +129,15 @@ class MonitorService:
                 collected_at=started,
                 deadline_monotonic=deadline_monotonic,
             )
+            retained_observations = []
+            for observation in observations:
+                key = (observation.source_identity.source_system, observation.source_identity.source_record_id)
+                previous = self.source_versions.get(key)
+                previous_payload = previous.structured_payload if previous else (
+                    self.repository.source_observation_payload(*key) if self.repository else None
+                )
+                retained_observations.append(retain_document_after_failed_refresh(observation, previous_payload))
+            observations = retained_observations
             created = changed = new = rejected_count = 0
             persisted_events: list[IntelligenceEvent] = []
             organization_candidates = []
@@ -248,6 +231,11 @@ class MonitorService:
             detail = self._safe_failure(exc)
             run = CollectionRun(run_id, source_id, started, self.clock(), None, failures=(detail,), latency_ms=round((monotonic() - started_monotonic) * 1000))
             self.health[source_id] = SourceHealth(source_id, SourceHealthState.FAILED, started, previous_success, SOURCE_HEALTH_WARNING, detail)
+        run = replace(run, funnel=collection_funnel(
+            observations if 'observations' in locals() else (),
+            persisted_events if 'persisted_events' in locals() else (),
+            complete=not run.failures, failures=run.failures,
+        ))
         self.runs.append(run)
         if self.repository:
             self.repository.persist_snapshot(run=run, health=self.health[source_id], observations=tuple(observations) if 'observations' in locals() else (), events=tuple(persisted_events) if 'persisted_events' in locals() else (), clusters=tuple(self.clusters.values()), rejected=tuple(self.rejected), organization_candidates=tuple(organization_candidates) if 'organization_candidates' in locals() else (), program_candidates=tuple(program_candidates) if 'program_candidates' in locals() else ())

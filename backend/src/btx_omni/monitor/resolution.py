@@ -60,7 +60,7 @@ def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, s
         profile for profile in profiles
         if any(
             pair in profile.source_native_identifiers
-            or (pair[0].casefold() in {"uei", "cage", "sec_cik", "cik"} and pair[1].lstrip("0").casefold() in {str(value or "").lstrip("0").casefold() for value in (profile.uei, profile.cage, profile.sec_cik)})
+            or _typed_identifier_match(profile, pair)
             for pair in source_identifiers
         )
     ])
@@ -120,3 +120,13 @@ def resolve_entity(mention: str, profiles: tuple[AccountWatchProfile, ...], *, s
     if len(normalized_matches) > 1:
         return EntityResolution(mention, None, ResolutionState.AMBIGUOUS, "governed_name_normalization_collision", "safe normalization maps to multiple governed accounts", tuple(profile.canonical_account_id for profile in normalized_matches))
     return EntityResolution(mention, None, ResolutionState.UNRESOLVED, "no_governed_match", "no governed identifier, name, source ownership, or unambiguous normalized name")
+
+
+def _typed_identifier_match(profile: AccountWatchProfile, pair: tuple[str, str]) -> bool:
+    kind, supplied = pair[0].casefold(), pair[1].strip()
+    expected = {"uei": profile.uei, "cage": profile.cage, "sec_cik": profile.sec_cik, "cik": profile.sec_cik}.get(kind)
+    if not supplied or not expected:
+        return False
+    if kind in {"sec_cik", "cik"}:
+        return supplied.isdigit() and str(expected).isdigit() and int(supplied) == int(expected)
+    return supplied.casefold() == str(expected).strip().casefold()

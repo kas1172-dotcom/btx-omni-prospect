@@ -60,6 +60,8 @@ def recency_state(event_date: datetime | None, *, now: datetime | None = None) -
         return "UNKNOWN"
     clock = now or datetime.now(UTC)
     age = clock - event_date
+    if age < timedelta(0):
+        return "FUTURE"
     if age <= timedelta(days=RECENT_WINDOW_DAYS):
         return "RECENT"
     if age <= timedelta(days=HISTORICAL_WINDOW_DAYS):

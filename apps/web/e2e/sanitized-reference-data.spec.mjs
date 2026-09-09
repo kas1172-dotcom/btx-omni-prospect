@@ -17,7 +17,12 @@ test('sanitized reference Customers, provenance, and BTX Top 100 flow through ca
   await honeywell.click()
   await expect(page.getByRole('heading', { name: 'Honeywell', level: 1 })).toBeVisible()
   await expect(page.getByText('SANITIZED REFERENCE SOURCE', { exact: true })).toBeVisible()
-  await expect(page.getByText('No Quotes / RFQs record is linked to this canonical Customer.')).toBeVisible()
+  const detail = await (await page.request.get('/api/accounts/honeywell')).json()
+  if (detail.commercial_ledger) {
+    expect(detail.customer_360.quotes.records.length).toBeGreaterThan(0)
+    await page.getByRole('button', { name: /^Recent quotes \/ RFQs/ }).click()
+    await expect(page.getByText(detail.customer_360.quotes.records[0].id, { exact: true })).toBeVisible()
+  } else await expect(page.getByText('No Quotes / RFQs record is linked to this canonical Customer.')).toBeVisible()
 
   await navigate(page, 'Map')
   await page.getByRole('button', { name: 'Layers & filters' }).click()
