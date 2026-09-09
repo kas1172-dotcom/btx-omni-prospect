@@ -6,10 +6,12 @@ const app = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8')
 const mobileStyles = readFileSync(new URL('../src/design/mobile.css', import.meta.url), 'utf8')
 const omniStyles = readFileSync(new URL('../src/components/omni-drawer.css', import.meta.url), 'utf8')
 const ui = readFileSync(new URL('../src/components/UI.tsx', import.meta.url), 'utf8')
+const uiStyles = readFileSync(new URL('../src/components/ui.css', import.meta.url), 'utf8')
 const client = readFileSync(new URL('../src/api/client.ts', import.meta.url), 'utf8')
 const map = readFileSync(new URL('../src/features/map/Map.tsx', import.meta.url), 'utf8')
 const mapAccountDetails = readFileSync(new URL('../src/features/map/MapAccountDetails.tsx', import.meta.url), 'utf8')
 const mapCanvas = readFileSync(new URL('../src/features/map/MapCanvas.tsx', import.meta.url), 'utf8')
+const itineraryPlanner = readFileSync(new URL('../src/features/map/ItineraryPlanner.tsx', import.meta.url), 'utf8')
 const mapModel = readFileSync(new URL('../src/features/map/mapModel.ts', import.meta.url), 'utf8')
 const apiTypes = readFileSync(new URL('../src/types/api.ts', import.meta.url), 'utf8')
 const actions = readFileSync(new URL('../src/features/actions/Actions.tsx', import.meta.url), 'utf8')
@@ -66,6 +68,14 @@ test('mobile-first layout prevents horizontal overflow and exposes responsive Om
   assert.match(omniStyles, /\.quick-omni\s*\{/)
   assert.match(omniStyles, /\.full-omni\s*\{/)
   assert.match(omniStyles, /safe-area-inset-bottom/)
+})
+
+test('asynchronous warning notices announce failures and wrap provider diagnostics', () => {
+  assert.match(ui, /tone === 'info' \? 'status' : 'alert'/)
+  assert.match(uiStyles, /\.ui-notice > span[\s\S]*overflow-wrap:\s*anywhere/)
+  assert.match(uiStyles, /@media \(max-width: 760px\)[\s\S]*\.ui-notice[\s\S]*flex-direction:\s*column/)
+  assert.match(itineraryPlanner, /Driving estimates are unavailable because the route service is not enabled/)
+  assert.match(itineraryPlanner, /setFailure\(routeFailureMessage\(error\)\)/)
 })
 
 test('live Monitor observations use the canonical intelligence and map surfaces', () => {
