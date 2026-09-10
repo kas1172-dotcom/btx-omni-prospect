@@ -20,7 +20,7 @@ for (const width of [390, 1440]) {
       return route.continue()
     })
     const message = page.locator('.message.assistant').last()
-    await message.getByRole('button', { name: 'Private answer run · inspect outcome', exact: true }).click()
+    await message.getByRole('button', { name: 'Answer receipt', exact: true }).click()
     await expect(message.getByRole('alert')).toContainText('The displayed answer is unchanged')
     await expect(message).toContainText(answer.content.slice(0, 60))
     const initialAttempts = attempts
