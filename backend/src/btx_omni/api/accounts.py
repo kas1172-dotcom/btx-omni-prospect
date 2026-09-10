@@ -21,6 +21,10 @@ from btx_omni.modules.scoring.account_attractiveness import (
     SellerAttractivenessProjection,
     seller_attractiveness_projection,
 )
+from btx_omni.modules.scoring.prospect_fit import (
+    prospect_fit_payload,
+    prospect_fit_projection,
+)
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -114,6 +118,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
                 "location": facilities.get(item.id),
                 "attractiveness": projection.score,
                 "account_attractiveness": _seller_attractiveness(projection),
+                "prospect_fit": prospect_fit_payload(prospect_fit_projection(item, applicable=item.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"})),
                 "business_unit": contexts[item.id].business_unit
                 if item.id in contexts
                 else None,
@@ -213,6 +218,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "orders": commercial.orders,
         "crm": crm,
         "account_attractiveness": _seller_attractiveness(projection),
+        "prospect_fit": prospect_fit_payload(prospect_fit_projection(account, applicable=account.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"})),
         "governed_explanation": persisted_seller_explanation(
             runtime.monitor.repository,
             subject_key=customer_attractiveness_subject_key(account_id),

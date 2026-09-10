@@ -123,6 +123,7 @@ class OmniService:
                                context_used={**deterministic.context_used, "relationship_selection": "STALE_OR_UNAVAILABLE"})
             deterministic = replace(deterministic, content=structured["content"],
                                     citations=tuple(structured["route"]["evidence_ids"]),
+                                    citation_links=tuple(OmniCitation(item["label"], item["url"]) for item in structured.get("source_links", ())),
                                     recommended_action=structured["route"]["next_action"], structured_relationship=structured,
                                     context_used={**deterministic.context_used, "relationship_path_id": selection["path_id"], "graph_revision": structured["graph_revision"]})
         stored_findings = ()

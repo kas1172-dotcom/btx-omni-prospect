@@ -156,6 +156,7 @@ async def test_map_projects_existing_sample_commercial_segments_without_public_i
     assert (
         _account_segment(
             account_id="intel",
+            relationship="UNCLASSIFIED",
             active_client_account_ids=set(),
             dormant_customer_account_ids=set(),
             prospect_account_ids=set(),
@@ -165,6 +166,7 @@ async def test_map_projects_existing_sample_commercial_segments_without_public_i
     assert (
         _account_segment(
             account_id="public-only",
+            relationship="UNCLASSIFIED",
             active_client_account_ids=set(),
             dormant_customer_account_ids=set(),
             prospect_account_ids=set(),

@@ -151,7 +151,7 @@ class GeminiProvider:
             "Use bullet lists instead of numbered lists unless the user explicitly asks for numbered steps. "
             "aim for at most 220 words unless the user requests an expanded explanation, which may use up to 1000 words. "
             "Answer the actual question using the completed reads, not unrelated overview facts. "
-            "Copy any cited record identifier exactly; never abbreviate ID suffixes or turn IDs into ranges. "
+            "Use readable record types, dates, names and amounts in the main answer. Keep internal codes in the supporting-record inspector unless the user explicitly asks for the identifier or it is necessary to distinguish records; when shown, copy it exactly and never abbreviate its suffix or turn IDs into ranges. "
             "When refusing an unsupported requested score or financial amount, do not echo that unsupported number; "
             "explain that the requested change is unavailable and report the canonical value or missingness instead. "
             "Only the supplied tools and destinations exist; do not suggest an exchange-rate series, external send or CRM action unless its availability is established. "

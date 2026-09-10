@@ -19,4 +19,4 @@ ARG BTX_RELEASE_WORKTREE="unknown"
 ENV BTX_RELEASE_SHA=$BTX_RELEASE_SHA BTX_RELEASE_TREE=$BTX_RELEASE_TREE BTX_RELEASE_WORKTREE=$BTX_RELEASE_WORKTREE
 
 EXPOSE 8080
-CMD ["uv", "run", "uvicorn", "btx_omni.app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uv", "run", "--no-sync", "uvicorn", "btx_omni.app:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -45,7 +45,7 @@ export const api = {
   markets: (kind: MarketTransformation, average: boolean, signal?: AbortSignal) => actionRequest<MarketOverview>(`/markets?kind=${kind}&moving_average=${average}`, { signal }),
   marketSeries: (id: string, kind: MarketTransformation, average: boolean, signal?: AbortSignal) => actionRequest<MarketDetail>(`/markets/${encodeURIComponent(id)}?kind=${kind}&moving_average=${average}`, { signal }),
   intelligenceEvidence: (eventId: string, signal?: AbortSignal) => request<PublicSourceEvidence>(`/intelligence/${encodeURIComponent(eventId)}/evidence`, { signal }),
-  federalProcurement: (params = '') => request<FederalProcurement>(`/federal-procurement${params}`),
+  federalProcurement: (params = '', signal?: AbortSignal) => request<FederalProcurement>(`/federal-procurement${params}`, { signal }),
   map: (industry?: string, signal?: AbortSignal) => request<{ layers: string[]; accounts: MapRecord[]; pending_accounts?: PendingMapAccount[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : ''), { signal }),
   currentItinerary: (signal?: AbortSignal) => actionRequest<{ itinerary: Itinerary | null }>('/itineraries/current', { signal }),
   saveItinerary: (body: { title: string; origin_label: string; origin_latitude: string | null; origin_longitude: string | null; stops: ItineraryStop[]; expected_version: number | null; idempotency_key: string }) => actionRequest<Itinerary>('/itineraries/current', { method: 'POST', body: JSON.stringify(body) }),

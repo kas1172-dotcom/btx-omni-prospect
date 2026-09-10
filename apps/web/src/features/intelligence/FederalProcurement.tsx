@@ -7,13 +7,22 @@ import { GovernedExplanationDisclosure } from '../../components/GovernedExplanat
 const money = (value: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value))
 
 export function FederalProcurementView() {
-  const [tab, setTab] = useState<'active' | 'awarded'>('active'); const [data, setData] = useState<FederalProcurement>(); const [filter, setFilter] = useState(''); const [fiscalYear, setFiscalYear] = useState(''); const [selected, setSelected] = useState<FederalOpportunity>()
-  useEffect(() => { const p = new URLSearchParams(); if (filter) p.set('notice_type', filter); if (fiscalYear) p.set('fiscal_year', fiscalYear); void api.federalProcurement(p.size ? `?${p}` : '').then(setData).catch(() => setData(undefined)) }, [filter, fiscalYear])
-  if (!data) return <div className="surface"><h1>Federal Procurement</h1><Empty>Federal procurement data is unavailable. No zero-value metrics are shown.</Empty></div>
+  const [tab, setTab] = useState<'active' | 'awarded'>('active'); const [data, setData] = useState<FederalProcurement>(); const [filter, setFilter] = useState(''); const [fiscalYear, setFiscalYear] = useState(''); const [selected, setSelected] = useState<FederalOpportunity>(); const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading'); const [retry, setRetry] = useState(0)
+  useEffect(() => {
+    const controller = new AbortController(); const p = new URLSearchParams(); if (filter) p.set('notice_type', filter); if (fiscalYear) p.set('fiscal_year', fiscalYear)
+    void api.federalProcurement(p.size ? `?${p}` : '', controller.signal).then(value => { if (!controller.signal.aborted) { setData(value); setState('loaded') } }).catch(error => { if (error?.name !== 'AbortError') setState('error') })
+    return () => controller.abort()
+  }, [filter, fiscalYear, retry])
+  const retryRecords = () => { setState('loading'); setRetry(value => value + 1) }
+  const changeFilter = (value: string) => { setState('loading'); setFilter(value) }
+  const changeFiscalYear = (value: string) => { setState('loading'); setFiscalYear(value) }
+  if (!data) return <div className="surface federal-procurement"><header className="page-title intelligence-title"><span className="eyebrow">Intelligence workspace</span><h1>Federal Procurement</h1><p>SAM.gov forward pipeline with USAspending historical context.</p></header>{state === 'loading' ? <p role="status">Loading saved federal procurement records…</p> : <Empty>Federal procurement data could not be loaded. No zero-value metrics are shown. <Button onClick={retryRecords}>Retry federal records</Button></Empty>}</div>
   return <div className="surface intelligence-surface federal-procurement">
     <header className="page-title intelligence-title"><span className="eyebrow">Intelligence workspace</span><h1>Federal Procurement</h1><p>SAM.gov forward pipeline with USAspending historical context.</p></header>
     <div className="federal-tabs" role="tablist" aria-label="Federal Procurement views"><Button role="tab" aria-selected={tab === 'active'} onClick={() => setTab('active')}>Active Opportunities</Button><Button role="tab" aria-selected={tab === 'awarded'} onClick={() => setTab('awarded')}>Awarded Dollars</Button></div>
-    {tab === 'active' ? <Active data={data} filter={filter} setFilter={setFilter} onSelect={setSelected} /> : <Awarded data={data} fiscalYear={fiscalYear} setFiscalYear={setFiscalYear} />}
+    {state === 'loading' && <p role="status">Refreshing federal procurement records… Existing records retain their prior source dates.</p>}
+    {state === 'error' && <Notice tone="warning">Federal procurement could not refresh. Previously loaded records remain visible with their saved source dates. <Button onClick={retryRecords}>Retry federal records</Button></Notice>}
+    {tab === 'active' ? <Active data={data} filter={filter} setFilter={changeFilter} onSelect={setSelected} /> : <Awarded data={data} fiscalYear={fiscalYear} setFiscalYear={changeFiscalYear} />}
     <Drawer open={Boolean(selected)} onClose={() => setSelected(undefined)} titleId="federal-detail"><div className="drawer-head"><h2 id="federal-detail">{selected?.title}</h2><Button onClick={() => setSelected(undefined)}>Close</Button></div>{selected && <div className="detail-stack"><StatusBadge value={`Relevance ${selected.relevance.score}/100`} /><p>{selected.relevance.calibration_label}</p><div className="meta-grid"><span>Agency<strong>{selected.agency ?? 'Unavailable'}</strong></span><span>Deadline<strong>{selected.response_deadline ?? 'Unavailable'}</strong></span><span>Notice type<strong>{selected.notice_category ?? 'Unavailable'}</strong></span><span>NAICS<strong>{selected.naics ?? 'Unavailable'}</strong></span><span>Set-aside<strong>{selected.set_aside ?? 'Unavailable'}</strong></span></div><GovernedExplanationDisclosure title="Why this opportunity is relevant" explanation={selected.governed_explanation} /><Panel title="Why it matters to BTX">{selected.relevance.factors.map(f => <div className="line" key={f.name}><span>{f.name}: {f.state}</span><strong>{f.points}/{f.weight}</strong></div>)}</Panel><Panel title="Official evidence"><a href={selected.official_source_url} target="_blank" rel="noreferrer">Open official SAM.gov evidence →</a></Panel></div>}</Drawer>
   </div>
 }

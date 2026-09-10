@@ -43,7 +43,7 @@ for (const width of [390, 320]) test(`expanded reference filters remain usable a
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('button', { name: 'BTX Top 100', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('HUXWRX')
-  await expect(page.locator('.portfolio-mobile-list .ui-mobile-row').filter({ hasText: 'HUXWRX' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'HUXWRX', exact: true })).toBeVisible()
   await navigate(page, 'Map')
   await page.getByRole('button', { name: 'Layers & filters' }).click()
   await expect(page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'BTX Top 100', exact: true })).toBeVisible()

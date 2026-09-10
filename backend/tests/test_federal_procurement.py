@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -8,6 +9,12 @@ from btx_omni.modules.federal_procurement import (
     normalize_notice_type,
     procurement_projection,
     relevance,
+)
+from btx_omni.monitor.contracts import (
+    RawEvidenceReference,
+    SourceIdentity,
+    SourceObservation,
+    SourceVersion,
 )
 
 
@@ -151,3 +158,64 @@ def test_delta_and_lag_are_explicitly_unavailable() -> None:
     projection = procurement_projection(_runtime())
     assert all(row["delta"] is None for row in projection["active"]["pipeline"])
     assert projection["awarded"]["lag"]["state"] == "INSUFFICIENT_HISTORY"
+
+
+def test_connected_awards_stay_inside_verified_naics_scope() -> None:
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+
+    def observation(identifier: str, naics: str) -> SourceObservation:
+        identity = SourceIdentity("usaspending", identifier)
+        version = SourceVersion(identifier, "1", identifier, now, now)
+        evidence = RawEvidenceReference(
+            f"e-{identifier}",
+            identity,
+            version,
+            f"https://api.usaspending.gov/{identifier}",
+            now,
+            identifier,
+            "application/json",
+        )
+        return SourceObservation(
+            identifier,
+            identity,
+            version,
+            now,
+            identifier,
+            evidence,
+            now,
+            evidence.locator,
+            "TIER_1_AUTHORITATIVE_STRUCTURED",
+            "run",
+            json.dumps(
+                {
+                    "Action Date": now.isoformat(),
+                    "Transaction Amount": "100",
+                    "NAICS": naics,
+                    "Recipient Name": "Boeing",
+                }
+            ),
+        )
+
+    runtime = SimpleNamespace(
+        observed_at=lambda: now,
+        monitor=SimpleNamespace(
+            observations={
+                item.id: item
+                for item in (
+                    observation("in", "336413"),
+                    observation("out", "541990"),
+                )
+            }
+        ),
+        settings=SimpleNamespace(
+            monitor_sam_naics_verification_state="VERIFIED",
+            monitor_sam_naics="336413",
+            sam_api_key="configured",
+            federal_procurement_fixture_mode=False,
+        ),
+    )
+    projection = procurement_projection(runtime)
+    assert [
+        item["canonical_source_id"] for item in projection["awarded"]["awards"]
+    ] == ["in"]
+    assert projection["usaspending"]["scope"] == "VERIFIED_NAICS_SCOPE"

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -132,6 +133,36 @@ def test_degraded_projection_does_not_claim_live_collection() -> None:
     assert result["curated_reference_signal_ids"] == ("curated-1",)
     assert "No current eligible live Signal Briefs are available." in result["missingness"]
     assert result["source_health_warnings"][0]["state"] == "NEVER_ATTEMPTED"
+
+
+def test_recent_saved_eligible_signal_remains_a_truthfully_labeled_priority() -> None:
+    saved = brief(
+        "saved-recent",
+        event_at=NOW - timedelta(days=20),
+        freshness="STALE",
+    )
+    saved = replace(saved, seller_promotion_state="WITHHELD_STALE")
+
+    result = projection(saved)
+
+    assert result["current_signal_briefs"] == ()
+    assert [item["id"] for item in result["saved_recent_signal_briefs"]] == [
+        "saved-recent"
+    ]
+    assert result["priority_briefing"][0]["lifecycle_state"] == "SAVED_RECENT"
+    assert "revalidate" in result["priority_briefing"][0]["recommended_action"]
+
+
+def test_saved_signal_older_than_bounded_window_is_not_promoted() -> None:
+    old = replace(
+        brief("old", event_at=NOW - timedelta(days=61), freshness="STALE"),
+        seller_promotion_state="WITHHELD_STALE",
+    )
+
+    result = projection(old)
+
+    assert result["saved_recent_signal_briefs"] == ()
+    assert result["priority_briefing"] == ()
 
 
 def test_filter_consumers_receive_priorities_beyond_old_eight_item_cutoff():

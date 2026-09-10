@@ -7,6 +7,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from btx_omni.api.map import (
+    _account_segment,
     _map_brief_marker_mode,
     _map_intelligence_point,
     haversine_miles,
@@ -87,6 +88,15 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
         for brief in record["current_signal_briefs"]
     )
     assert all(record["selection_missingness"] is not None for record in records)
+    public_market = [
+        record
+        for record in records
+        if record["relationship"] == "PUBLIC_MARKET"
+        and record["account_id"] != "applied-materials"
+    ]
+    assert public_market
+    assert all(record["account_segment"] == "PROSPECT" for record in public_market)
+    assert all(record["prospect_fit"]["applicable"] for record in public_market)
 
 
 @pytest.mark.asyncio
@@ -131,6 +141,16 @@ def test_map_signal_marker_eligibility_is_governed() -> None:
         )
     assert _map_brief_marker_mode(_brief(), account_id=None, coordinates=coordinates) is None
     assert _map_brief_marker_mode(_brief(), account_id="boeing", coordinates=None) is None
+
+
+def test_canonical_public_market_classification_is_not_overridden_by_sample_context() -> None:
+    assert _account_segment(
+        account_id="textron",
+        relationship="PUBLIC_MARKET",
+        active_client_account_ids={"textron"},
+        dormant_customer_account_ids=set(),
+        prospect_account_ids=set(),
+    ) == "PROSPECT"
 
 
 def test_upcoming_map_signal_requires_supported_timestamp() -> None:

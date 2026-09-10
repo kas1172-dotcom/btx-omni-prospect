@@ -1,14 +1,16 @@
 """Explicit isolated D2 scenario uses the normal importer and canonical service."""
 from copy import deepcopy
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 from sqlalchemy import create_engine
 from test_commercial_persistence import importer_package
 
+from btx_omni.ai.contracts import LanguageResult
 from btx_omni.modules.assistant.relationship_context import (
     selected_relationship_context,
 )
+from btx_omni.modules.assistant.service import OmniService
 from btx_omni.modules.commercial.projection import project_commercial_records
 from btx_omni.modules.relationships import canonical_projection
 from btx_omni.modules.relationships.routes import RouteQuery
@@ -16,6 +18,18 @@ from btx_omni.modules.relationships.service import RelationshipIntelligenceServi
 from btx_omni.persistence import models
 from btx_omni.persistence.commercial_import import CommercialImportRepository
 from btx_omni.providers.sample.environment import build_sample_environment
+
+
+class EchoGovernedProvider:
+    name = "gemini"
+    configured = True
+
+    def __init__(self):
+        self.requests = []
+
+    def synthesize(self, request):
+        self.requests.append(request)
+        return LanguageResult(request.governed_answer, self.name, "test-model", request.evidence_ids)
 
 
 def test_d2_longer_supported_route_beats_short_inference_after_real_import(tmp_path, monkeypatch):
@@ -72,6 +86,23 @@ def test_d2_longer_supported_route_beats_short_inference_after_real_import(tmp_p
     assert "USD 4.00" in explanation["content"]
     assert "USD 4.00" in explanation["expanded_content"] and "2026-08-12" in explanation["expanded_content"]
     assert any(record['record'].get('revenue_minor') == 400 for record in explanation['evidence_records'])
+    provider = EchoGovernedProvider()
+    simpler = OmniService(provider).answer(
+        sample,
+        account_id="honeywell",
+        question="Explain this route more simply.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={
+            "relationship_selection": selection,
+            "prior_turns": "assistant: This route connects Honeywell to the selected BTX facility.",
+        },
+        intelligence_events=(),
+        work_items=(),
+    )
+    assert simpler.structured_relationship["route"]["path_id"] == longer["path_id"]
+    assert simpler.account_id == "honeywell"
+    assert "Selected connection:" in provider.requests[0].governed_answer
+    assert "Honeywell" in provider.requests[0].governed_answer
     with pytest.raises(ValueError, match="stale"):
         selected_relationship_context(sample, {**selection, "graph_revision": "old"}, account_id="honeywell")
     with pytest.raises(ValueError, match="scope"):
