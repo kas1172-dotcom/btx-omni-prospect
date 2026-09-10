@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test('retained reference fields and paginated lifecycle records use canonical API identity', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
-  await page.getByRole('row', { name: /^KLA/ }).first().click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
   await page.getByText('Full commercial records & retained input fields', { exact: true }).click()
   const disclosure = page.locator('.commercial-records')
   await expect(disclosure.getByText('naics assignments', { exact: true })).toBeVisible()
@@ -32,7 +32,7 @@ test('retained reference fields and paginated lifecycle records use canonical AP
 test('customer risk view keeps public severity separate and preserves missingness', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
-  await page.getByRole('row', { name: /^Boeing/ }).first().click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Boeing', exact: true }).click()
   await page.getByText('Commercial decisions & follow-ups', { exact: true }).click()
   const decision = page.locator('.commercial-decision').filter({ hasText: /^overall customer risk/ })
   await expect(decision.locator('summary')).toContainText('insufficient evidence')

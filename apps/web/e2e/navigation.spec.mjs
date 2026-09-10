@@ -5,7 +5,7 @@ test('portfolio search and sort survive a customer and another surface', async (
   const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects', exact: true })
   await search.fill('Lockheed')
   await page.getByRole('button', { name: /Attractiveness/ }).click()
-  await page.getByRole('row').filter({ hasText: 'Lockheed Martin' }).click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Lockheed Martin', exact: true }).click()
   await page.getByRole('button', { name: '← Customers & Prospects', exact: true }).click()
   await expect(search).toHaveValue('Lockheed')
   await expect(page.getByRole('columnheader', { name: /Attractiveness/ })).toHaveAttribute('aria-sort', 'descending')
