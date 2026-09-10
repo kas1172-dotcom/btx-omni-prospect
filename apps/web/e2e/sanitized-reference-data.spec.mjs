@@ -12,7 +12,7 @@ test('sanitized reference Customers, provenance, and BTX Top 100 flow through ca
   await page.getByLabel('Customer scope').selectOption('ALL')
   await page.getByRole('button', { name: 'BTX Top 100', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Honeywell')
-  const honeywell = page.locator('.portfolio-table-row').filter({ hasText: 'Honeywell' })
+  const honeywell = page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row').filter({ hasText: 'Honeywell' })
   await expect(honeywell).toContainText('BTX Top 100')
   await honeywell.click()
   await expect(page.getByRole('heading', { name: 'Honeywell', level: 1 })).toBeVisible()

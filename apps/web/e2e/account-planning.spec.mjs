@@ -4,7 +4,7 @@ async function openAccount(page, name) {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill(name)
-  await page.locator('.account-row').filter({ hasText: name }).first().click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name, exact: true }).click()
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
 }
 
@@ -25,7 +25,7 @@ test('seller saves a dated private research shortlist and filters the same portf
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('button', { name: 'My growth & research shortlist' }).click()
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
-  await expect(page.locator('.account-row')).toContainText('KLA Corporation')
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' })).toContainText('KLA Corporation')
 
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Map' }).click()
   await page.getByRole('button', { name: 'Layers & filters' }).click()
@@ -38,7 +38,7 @@ test('seller saves a dated private research shortlist and filters the same portf
 
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')
-  await page.locator('.account-row').filter({ hasText: 'KLA Corporation' }).click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
   await page.getByRole('button', { name: 'Remove from shortlist' }).click()
   await expect(page.getByRole('button', { name: 'Add to shortlist' })).toBeVisible()
 })
@@ -54,14 +54,14 @@ test('manager creates an audited partnership designation and portfolio include/e
   await page.getByRole('button', { name: '← Customers & Prospects' }).click()
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('button', { name: 'Only partnerships' }).click()
-  await expect(page.locator('.account-row')).toHaveCount(1)
-  await expect(page.locator('.account-row')).toContainText('HUXWRX')
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' })).toContainText('HUXWRX')
   await page.getByRole('button', { name: /Remove Only partnerships filter/ }).click()
   await page.getByRole('button', { name: 'Exclude partnerships' }).click()
-  await expect(page.locator('.account-row').filter({ hasText: 'HUXWRX' })).toHaveCount(0)
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'HUXWRX', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: /Remove Exclude partnerships filter/ }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('HUXWRX')
-  await page.locator('.account-row').filter({ hasText: 'HUXWRX' }).click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'HUXWRX', exact: true }).click()
   await page.getByRole('button', { name: 'Manager designation' }).click()
   await page.getByLabel('Audited designation reason').fill('Manager review closed the temporary test classification.')
   await page.getByRole('button', { name: 'Remove strategic partnership' }).click()
@@ -80,7 +80,7 @@ test('a late planning read cannot overwrite a seller draft', async ({ page }) =>
     await planningReleased
     await route.fulfill({ response })
   })
-  await page.locator('.account-row').filter({ hasText: 'KLA Corporation' }).first().click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
   const objective = 'Preserve this seller-authored qualification review.'
   await page.getByLabel('Planning objective').fill(objective)
   releasePlanning()
