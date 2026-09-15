@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type RefObject, useEffect, useRef, useState } from 'react'
+import { type KeyboardEvent, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { Button, Disclosure, Drawer, EvidenceSource, IconButton } from './UI'
 import type { OmniContext, OmniConversationReferent, OmniResponse } from '../types/api'
@@ -12,6 +12,18 @@ type FullMode = 'conversation' | 'evidence' | 'customer'
 
 const starters = ['What should I review today?', 'Explain why this Customer matters', 'Compare selected Customers', 'Show the supporting evidence']
 const surfaceLabels: Record<string, string> = { TODAY: 'Today', ACCOUNTS: 'Customers & Prospects', ACCOUNT_DETAIL: 'Customer 360', INTELLIGENCE: 'Intelligence', MAP: 'Map', ACTIONS: 'Actions', MONITOR: 'Monitor' }
+const selectedRelationshipQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:relationship\s+)?(?:route|path|connection|relationship)\b/i.test(question)
+
+async function waitForSelectedRelationshipContext(contextRef: { current: OmniContext }, question: string) {
+  let current = contextRef.current
+  if (current.surface !== 'ACCOUNT_DETAIL' || current.relationship_selection || !selectedRelationshipQuestion(question)) return current
+  const deadline = Date.now() + 5_000
+  while (!current.relationship_selection && Date.now() < deadline) {
+    await new Promise(resolve => window.setTimeout(resolve, 100))
+    current = contextRef.current
+  }
+  return current
+}
 
 export function OmniDrawer({ accountId, accountName, context }: { accountId?: string; accountName?: string; context: OmniContext }) {
   const [view, setView] = useState<'closed' | 'quick' | 'full'>('closed')
@@ -26,8 +38,11 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const opener = useRef<HTMLButtonElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
   const conversation = useRef<HTMLDivElement>(null)
+  const contextRef = useRef(context)
   const activeAccount = accountId && clearedAccountId !== accountId ? { id: accountId, name: accountName ?? 'Selected Customer' } : !accountId && clearedAccountId !== 'SESSION' ? sessionAccount : undefined
   const latestResponse = [...messages].reverse().find(message => message.response)?.response
+
+  useLayoutEffect(() => { contextRef.current = context }, [context])
 
   useEffect(() => {
     const transcript = conversation.current
@@ -42,7 +57,14 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     const history = messages.slice(-6).map(message => `${message.role}: ${message.text}`).join('\n').slice(-1600)
     setMessages(old => [...old, { role: 'user', text }]); setQuestion(''); setLoading(true); setError('')
     try {
-      const response = await api.omni(activeAccount?.id, text, { ...context, relationship_selection: activeAccount ? context.relationship_selection : undefined, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
+      const currentContext = await waitForSelectedRelationshipContext(contextRef, text)
+      if (selectedRelationshipQuestion(text) && currentContext.surface === 'ACCOUNT_DETAIL' && !currentContext.relationship_selection) {
+        setMessages(old => old.slice(0, -1))
+        setQuestion(text)
+        setError('The selected relationship is still refreshing. Wait for the connection update, then send again.')
+        return
+      }
+      const response = await api.omni(activeAccount?.id, text, { ...currentContext, relationship_selection: activeAccount ? currentContext.relationship_selection : undefined, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
       if (response.account_id && response.account_name) setSessionAccount({ id: response.account_id, name: response.account_name })
       setConversationReferent(response.conversation_referent ?? undefined)
       setMessages(old => [...old, { role: 'assistant', text: response.content, response }])

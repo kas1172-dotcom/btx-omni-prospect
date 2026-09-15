@@ -83,3 +83,31 @@ for (const viewport of viewports) {
     })
   }
 }
+
+test('Omni waits for an in-flight selected relationship before answering', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/accounts/kla')
+  const section = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
+  await expect(section).toHaveAttribute('aria-busy', 'false')
+  const componentResponse = page.waitForResponse(response => response.url().endsWith('/api/relationships/query') && response.request().postDataJSON()?.source_component_id === 'C2-KLA-01')
+  await section.getByRole('combobox', { name: 'Component scope', exact: true }).selectOption('C2-KLA-01')
+  await componentResponse
+  const accountResponse = page.waitForResponse(response => response.url().endsWith('/api/relationships/query') && response.request().postDataJSON()?.target_account_id === 'spacex')
+  await section.getByRole('combobox', { name: 'Compare account', exact: true }).selectOption('spacex')
+  await accountResponse
+  await expect(section.getByRole('combobox', { name: 'Compared component', exact: true }).locator('option[value="C2-SPACEX-01"]')).toHaveCount(1)
+  await page.route('**/api/relationships/query', async route => {
+    if (route.request().postDataJSON()?.target_component_id === 'C2-SPACEX-01') await new Promise(resolve => setTimeout(resolve, 750))
+    await route.continue()
+  })
+  await section.getByRole('combobox', { name: 'Compared component', exact: true }).selectOption('C2-SPACEX-01')
+  await page.getByRole('button', { name: 'Open Omni assistant' }).click()
+  await page.locator('#omni-message').fill('Explain the selected relationship route between KLA and SpaceX.')
+  const omniRequest = page.waitForRequest(request => request.url().endsWith('/api/omni') && request.method() === 'POST')
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
+  const request = await omniRequest
+  expect(request.postDataJSON().context.relationship_selection).toMatchObject({
+    source_account_id: 'kla',
+    target_component_id: 'C2-SPACEX-01',
+  })
+})
