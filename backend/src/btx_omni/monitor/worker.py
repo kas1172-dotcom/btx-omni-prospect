@@ -180,13 +180,17 @@ def run_worker(
             for document in candidates:
                 if not can_start_optional("RESEARCH_COORDINATOR"):
                     break
-                investigations.append(
-                    coordinator.investigate(
-                        document,
-                        source_revision=document["content_hash"],
-                        deadline_monotonic=min(deadline, monotonic() + 90),
-                    )
+                investigation = coordinator.investigate(
+                    document,
+                    source_revision=document["content_hash"],
+                    deadline_monotonic=min(deadline, monotonic() + 90),
                 )
+                # A bounded coordinator may stop before it acquires a durable
+                # research run (for example when its deadline is exhausted).
+                # Preserve the public event identity, but do not invent a run ID
+                # or attempt to read/write a journal entry that does not exist.
+                investigation.setdefault("event_id", document["event_id"])
+                investigations.append(investigation)
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
             provider = get_ai_provider(AiConfig.from_settings(settings))
             technical_briefs = tuple(
@@ -328,7 +332,12 @@ def run_worker(
                     )
                 briefs_by_id.setdefault(rendered.id, []).append(rendered)
             for investigation in investigations:
-                state = repository.research.get(investigation["run_id"])
+                research_run_id = investigation.get("run_id")
+                state = (
+                    repository.research.get(research_run_id)
+                    if research_run_id
+                    else None
+                )
                 event_id = investigation.get("event_id") or (state or {}).get(
                     "event_reference"
                 )
@@ -408,9 +417,13 @@ def run_worker(
                     ],
                     "decided_at": runtime.observed_at().isoformat(),
                 }
-                if state and state.get("status") == "COMPLETED":
+                if (
+                    research_run_id
+                    and state
+                    and state.get("status") == "COMPLETED"
+                ):
                     repository.research.record_publication(
-                        investigation["run_id"],
+                        research_run_id,
                         outcome=outcome,
                         now=runtime.observed_at(),
                     )
