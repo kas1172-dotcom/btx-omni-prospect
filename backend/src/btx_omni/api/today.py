@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends
 
 from btx_omni.api.accounts import get_runtime
@@ -34,6 +36,7 @@ def today(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         monitor_snapshot=monitor_snapshot,
         curated_signals=intelligence,
         generated_at=observed_at,
+        public_as_of=datetime.now(UTC),
     )
     return {
         "data_mode": "SAMPLE",

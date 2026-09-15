@@ -25,6 +25,7 @@ def build_command_center(
     monitor_snapshot: dict,
     curated_signals: list[dict],
     generated_at,
+    public_as_of=None,
 ) -> dict[str, Any]:
     """Compose seller sections without deriving new facts or priority policy.
 
@@ -33,6 +34,9 @@ def build_command_center(
     descending and stable brief ID. Radar is ordered by its source-supported future
     timestamp and stable ID. Market hubs follow the canonical taxonomy order.
     """
+    # Commercial SAMPLE records use the explicit demo clock. Public intelligence
+    # retains real publication dates and is evaluated against the real read time.
+    public_clock = public_as_of or generated_at
     account_by_id = {item.id: item for item in accounts}
     program_by_id = {item.id: item for item in programs}
     briefs: tuple[SignalBrief, ...] = tuple(monitor_snapshot.get("signal_briefs", ()))
@@ -55,9 +59,9 @@ def build_command_center(
         and brief.freshness == "STALE"
         and brief.event_timing == "OBSERVED"
         and brief.publication_timestamp is not None
-        and generated_at - timedelta(days=SAVED_INTELLIGENCE_WINDOW_DAYS)
+        and public_clock - timedelta(days=SAVED_INTELLIGENCE_WINDOW_DAYS)
         <= brief.publication_timestamp
-        <= generated_at
+        <= public_clock
     )
     upcoming = tuple(
         sorted(

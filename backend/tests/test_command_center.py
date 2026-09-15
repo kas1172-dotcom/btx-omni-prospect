@@ -163,6 +163,45 @@ def test_recent_saved_eligible_signal_remains_a_truthfully_labeled_priority() ->
     )
 
 
+def test_real_public_clock_does_not_use_the_earlier_demo_commercial_clock() -> None:
+    saved = replace(
+        brief(
+            "published-after-demo-clock",
+            event_at=NOW + timedelta(days=3),
+            freshness="STALE",
+        ),
+        seller_promotion_state="WITHHELD_STALE",
+    )
+    base = projection()
+    result = build_command_center(
+        accounts=(
+            SimpleNamespace(
+                id="acct-1",
+                legal_name="Example Customer",
+                relationship=SimpleNamespace(value="TARGET"),
+            ),
+        ),
+        programs=(),
+        alerts=(),
+        monitor_snapshot={
+            "signal_briefs": (saved,),
+            "watch_targets": {},
+            "sources": (),
+            "source_markets": {},
+            "scheduler_state": "COLLECTION_OBSERVED_CURRENT",
+            "worker_runtime_state": "WORKER_READY_FOR_INVOCATION",
+        },
+        curated_signals=[],
+        generated_at=NOW,
+        public_as_of=NOW + timedelta(days=4),
+    )
+
+    assert base["priority_briefing"] == ()
+    assert [item["event_id"] for item in result["priority_briefing"]] == [
+        "published-after-demo-clock"
+    ]
+
+
 def test_saved_signal_older_than_bounded_window_is_not_promoted() -> None:
     old = replace(
         brief("old", event_at=NOW - timedelta(days=61), freshness="STALE"),
