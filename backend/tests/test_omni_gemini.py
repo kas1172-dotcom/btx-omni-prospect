@@ -17,6 +17,7 @@ from btx_omni.ai.contracts import (
     ReadIntent,
 )
 from btx_omni.ai.gemini import GeminiProvider
+from btx_omni.modules.assistant.orchestration import OmniOrchestrator
 from btx_omni.modules.assistant.service import OmniService
 from btx_omni.modules.assistant.tools import (
     GovernedReadTools,
@@ -276,6 +277,58 @@ def test_selected_relationship_does_not_override_global_portfolio_question(
     assert "researched account(s) with open quotes" in response.content
     assert response.structured_relationship is None
     assert response.conversation_referent is None
+
+
+def test_selected_relationship_anchors_account_before_private_memory(monkeypatch) -> None:
+    """A model-selected named target cannot replace the governed route origin."""
+    sample = build_sample_environment()
+    selection = {
+        "source_account_id": "kla",
+        "path_id": "path:kla-to-spacex",
+    }
+    target_response = OmniOrchestrator().answer(
+        sample,
+        account_id="spacex",
+        question="Why does SpaceX matter?",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={},
+        intelligence_events=(),
+        work_items=(),
+    )
+    monkeypatch.setattr(
+        "btx_omni.modules.assistant.service.OmniOrchestrator.answer",
+        lambda *_args, **_kwargs: target_response,
+    )
+    monkeypatch.setattr(
+        "btx_omni.modules.assistant.service.selected_relationship_context",
+        lambda *_args, **_kwargs: {
+            "content": "KLA to SpaceX through governed component and BU evidence.",
+            "route": {
+                "evidence_ids": ["evidence:kla", "evidence:spacex"],
+                "next_action": "Request a technical transfer review.",
+                "constraints": [],
+            },
+            "source_links": (),
+            "graph_revision": "graph:current",
+        },
+    )
+    memory_accounts: list[str | None] = []
+
+    response = OmniService(None).answer(
+        sample,
+        account_id=None,
+        question="Explain this selected relationship route.",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={"relationship_selection": selection},
+        intelligence_events=(),
+        work_items=(),
+        memory_reader=lambda account_id: memory_accounts.append(account_id) or [],
+    )
+
+    assert response.account_id == "kla"
+    assert response.account_name == "KLA Corporation"
+    assert response.structured_relationship is not None
+    assert memory_accounts == ["kla"]
 
 
 @pytest.mark.parametrize(
