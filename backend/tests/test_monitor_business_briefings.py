@@ -59,6 +59,23 @@ class Repository:
         }
 
 
+class StructuredRepository:
+    def event_document(self, event_id, *, include_research=False):
+        return {
+            "event_id": event_id,
+            "observation_id": "observation-structured",
+            "source_id": "fda_openfda",
+            "source_record_id": "K262235",
+            "source_url": "https://api.fda.gov/device/510k.json",
+            "title": "ApexCut Blade with Automated EM Tracking; ApexCut related size",
+            "published_at": "2026-08-29T00:00:00+00:00",
+            "retrieved_at": NOW.isoformat(),
+            "content_hash": "c" * 64,
+            "document": None,
+            "research": None,
+        }
+
+
 def brief(account_id: str, *, event_type="REGULATORY_APPROVAL", program_id=None):
     return SignalBrief(
         id=f"event-{account_id}",
@@ -113,6 +130,37 @@ def test_medtronic_public_approval_remains_informational_without_scoped_btx_link
     assert "does not establish" in rendered.why_it_may_matter
     assert "No seller action is established" in rendered.seller_summary
     assert "governed public update" not in rendered.seller_summary.casefold()
+
+
+def test_structured_regulatory_record_is_cited_without_requiring_article_passages():
+    candidate = replace(
+        brief("medtronic"),
+        what_happened="ApexCut \x99 Blade with Automated EM Tracking; ApexCut related size",
+        evidence_ids=("evidence-fda-record",),
+    )
+    package = assemble_evidence_package(
+        candidate,
+        environment=build_sample_environment(),
+        repository=StructuredRepository(),
+        now=NOW,
+    )
+    rendered = apply_evidence_package(candidate, package)
+    assert rendered.analysis_status == "READY"
+    assert rendered.commercial_relevance_state == "INFORMATIONAL"
+    assert rendered.priority_eligible is False
+    assert rendered.recommended_action is None
+    assert "ApexCut ™ Blade" in rendered.headline
+    assert "\x99" not in rendered.what_happened
+    assert rendered.references == (
+        {
+            "evidence_id": "evidence-fda-record",
+            "title": "ApexCut Blade with Automated EM Tracking; ApexCut related size",
+            "url": "https://api.fda.gov/device/510k.json",
+            "publication_date": "2026-08-29T00:00:00+00:00",
+        },
+    )
+    assert package["public_evidence"][0]["record_kind"] == "STRUCTURED_SOURCE_RECORD"
+    assert not any("full-text" in item for item in rendered.material_uncertainties)
 
 
 def test_exact_existing_customer_program_context_is_specific_and_revision_sensitive(
@@ -173,7 +221,9 @@ def test_missing_passages_fail_closed_instead_of_showing_completed_intelligence(
     rendered = apply_evidence_package(brief("medtronic"), package)
     assert rendered.analysis_status == "INCOMPLETE"
     assert rendered.priority_eligible is False
-    assert any("passage" in item for item in rendered.material_uncertainties)
+    assert any(
+        "public source record" in item for item in rendered.material_uncertainties
+    )
 
 
 def test_structured_language_can_improve_prose_but_not_governed_relevance():

@@ -60,6 +60,27 @@ def requires_technical_investigation(event_type: str | None) -> bool:
     return bool(event_type in TECHNICAL_TYPES)
 
 
+def _business_text(value: str | None) -> str:
+    # Some authoritative legacy feeds expose the Windows-1252 trademark byte
+    # as the Unicode C1 control U+0099. Normalize that display artifact while
+    # retaining the original source record and revision for audit.
+    return " ".join((value or "").replace("\x99", "™").split())
+
+
+def _specific_headline(brief: SignalBrief) -> str:
+    """Keep the recorded development visible without turning long source rows into UI copy."""
+    changed = _business_text(brief.what_happened)
+    if not changed:
+        return brief.headline
+    first, separator, remainder = changed.partition(";")
+    if separator and first:
+        suffix = " and related records" if remainder.strip() else ""
+        candidate = f"{brief.headline}: {first.strip()}{suffix}"
+    else:
+        candidate = changed
+    return candidate if len(candidate) <= 180 else candidate[:177].rstrip() + "…"
+
+
 def _record_id(record: dict) -> str:
     return str(
         next(
@@ -205,6 +226,28 @@ def assemble_evidence_package(
                 "retrieved_at": metadata.get("retrieved_at"),
                 "extraction_complete": metadata.get("extraction_complete"),
                 "extract": item.extract,
+                "truth_class": "PUBLIC_SOURCE",
+            }
+        )
+    # Authoritative structured feeds (for example FDA and SAM) can be the
+    # primary source record without an article/full-text document. Preserve
+    # that distinction, citation, and extraction limitation instead of
+    # incorrectly treating the event as having no public evidence.
+    if not public and source and source.get("source_url") and source.get("title"):
+        public.append(
+            {
+                "evidence_id": (
+                    brief.evidence_ids[0]
+                    if brief.evidence_ids
+                    else source.get("observation_id")
+                ),
+                "title": _business_text(source["title"]),
+                "source_url": source["source_url"],
+                "publication_date": source.get("published_at"),
+                "retrieved_at": source.get("retrieved_at"),
+                "extraction_complete": False,
+                "extract": source["title"],
+                "record_kind": "STRUCTURED_SOURCE_RECORD",
                 "truth_class": "PUBLIC_SOURCE",
             }
         )
@@ -360,19 +403,19 @@ def assemble_evidence_package(
         uncertainties.append("No canonical program is resolved for this event.")
     if requires_technical_investigation(brief.event_type) and not fits:
         uncertainties.append("No reviewed component or capability fit is available.")
-    if not public:
-        uncertainties.append("No attributable retrieved public passage is available.")
-    headline = (
-        brief.what_happened
-        if brief.what_happened and len(brief.what_happened) <= 180
-        else brief.headline
-    )
+    if not passages and public and requires_technical_investigation(brief.event_type):
+        uncertainties.append(
+            "The cited structured source record has no retained full-text passage; technical conclusions require further evidence."
+        )
+    elif not public:
+        uncertainties.append("No attributable public source record is available.")
+    headline = _specific_headline(brief)
     package = {
         "contract_version": "BTX_MONITOR_BUSINESS_BRIEF_1",
         "event_id": brief.id,
         "event_type": brief.event_type,
         "headline": headline,
-        "what_changed": brief.what_happened,
+        "what_changed": _business_text(brief.what_happened),
         "account": {
             "id": account.id,
             "name": account_name,
@@ -429,9 +472,7 @@ def apply_evidence_package(brief: SignalBrief, package: dict) -> SignalBrief:
     if next_step:
         seller_summary = f"{seller_summary} Next: {next_step}"
     elif package.get("commercial_relevance_state") == "INFORMATIONAL":
-        seller_summary = (
-            f"{seller_summary} No seller action is established from the current evidence."
-        )
+        seller_summary = f"{seller_summary} No seller action is established from the current evidence."
     else:
         seller_summary = (
             f"{seller_summary} Complete the missing evidence before commercial use."
