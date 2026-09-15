@@ -24,4 +24,11 @@ def intelligence_evidence(event_id: str, response: Response, actor: Principal = 
     document = repository.event_document(event_id, include_research=True)
     if document is None:
         raise HTTPException(404, "No persisted public source for the selected event.")
+    assessments = []
+    for account_id in document.get("canonical_account_ids", ()) or (None,):
+        history = repository.intelligence_assessment_history(event_id, account_id=account_id)
+        if history:
+            assessments.append({"account_id": account_id, "current": history[0],
+                                "history": history, "version_count": len(history)})
+    document["intelligence_assessments"] = assessments
     return document

@@ -432,6 +432,29 @@ class LanguageResult:
     evidence_ids: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class BusinessBriefingRequest:
+    """Governed event package whose decisions remain server-owned."""
+
+    event_id: str
+    evidence_package: dict
+    evidence: tuple[PublicEvidenceRecord, ...]
+    allowed_evidence_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class BusinessBriefingResult:
+    headline: str
+    what_changed: str
+    why_it_matters: str
+    recommended_action: str | None
+    action_rationale: str
+    material_uncertainties: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    provider: str
+    model: str
+
+
 class LanguageProvider(Protocol):
     name: str
 
@@ -443,6 +466,10 @@ class LanguageProvider(Protocol):
     ) -> IntentInterpretation: ...
 
     def synthesize(self, request: GroundedSynthesisRequest) -> LanguageResult: ...
+
+    def synthesize_business_brief(
+        self, request: BusinessBriefingRequest
+    ) -> BusinessBriefingResult: ...
 
     def draft_governed_content(
         self, request: GovernedDraftingRequest

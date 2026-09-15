@@ -199,6 +199,16 @@ def create(
     sample = runtime.environment()
     if body.account_id not in {item.id for item in sample.accounts}:
         raise HTTPException(404, "Canonical Customer not found.")
+    assessment_ids = [value for kind, value in body.context_referents if kind == "intelligence_assessment"]
+    if assessment_ids:
+        if len(assessment_ids) != 1 or not runtime.monitor.repository:
+            raise HTTPException(409, "Choose one current Intelligence assessment for this proposal.")
+        assessment = runtime.monitor.repository.intelligence_assessment_by_id(assessment_ids[0])
+        if not assessment or assessment["account_id"] != body.account_id or not assessment["is_current"]:
+            raise HTTPException(409, "The Intelligence assessment changed; refresh before creating the proposal.")
+        supported = set(assessment["projection"].get("evidence_ids", ())) | {assessment["id"]}
+        if not set(body.evidence_ids) <= supported:
+            raise HTTPException(422, "Action evidence must come from the selected current Intelligence assessment.")
     try:
         return runtime.work.create(
             **body.model_dump(), principal=current, occurred_at=runtime.observed_at()

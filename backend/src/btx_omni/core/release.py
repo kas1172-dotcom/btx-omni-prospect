@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 REPOSITORY = 'kas1172-dotcom/btx-omni-prospect'
-REQUIRED_SCHEMA_REVISION = '0035_account_planning'
+REQUIRED_SCHEMA_REVISION = '0036_monitor_business_briefings'
 
 
 def build_identity(settings) -> dict:

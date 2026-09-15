@@ -17,6 +17,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import (
+    BusinessBriefingRequest,
+    BusinessBriefingResult,
     CanonicalToolSelectionRequest,
     EntityCandidateProposal,
     EntityCandidateResolutionRequest,
@@ -180,6 +182,56 @@ class GeminiProvider:
         )
         return LanguageResult(
             content, self.name, self.config.model, request.evidence_ids
+        )
+
+    def synthesize_business_brief(
+        self, request: BusinessBriefingRequest
+    ) -> BusinessBriefingResult:
+        """Translate one governed event package without changing its decisions."""
+        schema = {
+            "type": "object",
+            "properties": {
+                "headline": {"type": "string"},
+                "what_changed": {"type": "string"},
+                "why_it_matters": {"type": "string"},
+                "recommended_action": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "action_rationale": {"type": "string"},
+                "material_uncertainties": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+                "evidence_ids": {"type": "array", "items": {"type": "string", "enum": list(request.allowed_evidence_ids)}, "maxItems": 16},
+            },
+            "required": ["headline", "what_changed", "why_it_matters", "recommended_action", "action_rationale", "material_uncertainties", "evidence_ids"],
+            "additionalProperties": False,
+        }
+        prompt = (
+            "Write one concise account-specific seller briefing from the governed package and public passages. "
+            "Return JSON matching the schema. Explain the actual development, why it matters to the named Customer or Prospect and BTX, and a proportionate next action. "
+            "Do not calculate or alter scores, identity, relevance state, relationships, contacts, transactions, or evidence. "
+            "Do not turn informational or weakly related events into priorities. Distinguish public fact, internal commercial context, and inferred fit. "
+            "Cite only supplied evidence IDs. Do not repeat environment disclaimers or expose internal IDs in prose.\n\n"
+            f"GOVERNED PACKAGE:\n{json.dumps(request.evidence_package, default=str)}\n\n"
+            "PUBLIC PASSAGES:\n" + "\n".join(
+                f"[{item.evidence_id}] {item.title} | {item.source_url}\n{item.extract}"
+                for item in request.evidence
+            )
+        )
+        payload = json.loads(self._generate_text(prompt, types.GenerateContentConfig(
+            temperature=0.1, max_output_tokens=1800, response_mime_type="application/json",
+            response_json_schema=schema, thinking_config=self._read_thinking())))
+        if not isinstance(payload, dict) or set(payload) != set(schema["properties"]):
+            raise ValueError("Gemini business briefing output is invalid.")
+        evidence_ids = tuple(payload["evidence_ids"])
+        if any(item not in request.allowed_evidence_ids for item in evidence_ids):
+            raise ValueError("Gemini cited evidence outside the governed package.")
+        strings = (payload["headline"], payload["what_changed"], payload["why_it_matters"], payload["action_rationale"])
+        if any(not isinstance(item, str) or not item.strip() or len(item) > 1200 for item in strings):
+            raise ValueError("Gemini business briefing prose exceeds bounds.")
+        return BusinessBriefingResult(
+            headline=payload["headline"].strip(), what_changed=payload["what_changed"].strip(),
+            why_it_matters=payload["why_it_matters"].strip(),
+            recommended_action=payload["recommended_action"].strip() if isinstance(payload["recommended_action"], str) and payload["recommended_action"].strip() else None,
+            action_rationale=payload["action_rationale"].strip(),
+            material_uncertainties=tuple(str(item).strip() for item in payload["material_uncertainties"] if str(item).strip()),
+            evidence_ids=evidence_ids, provider=self.name, model=self.config.model,
         )
 
     def choose_canonical_read(self, request: CanonicalToolSelectionRequest) -> dict:

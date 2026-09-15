@@ -1,71 +1,690 @@
 """Clean POC SQLAlchemy schema; domain objects remain framework-free."""
+
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     Numeric,
     String,
     Table,
     Text,
+    UniqueConstraint,
 )
 
 metadata = MetaData()
-accounts = Table("accounts", metadata, Column("id", String(64), primary_key=True), Column("name", String(300), nullable=False), Column("relationship", String(32), nullable=False), Column("domain", String(300)))
-facilities = Table("facilities", metadata, Column("id", String(64), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("city", String(120), nullable=False), Column("region", String(64), nullable=False), Column("latitude", String(32), nullable=False), Column("longitude", String(32), nullable=False))
-external_ranks = Table("external_industry_ranks", metadata, Column("account_id", ForeignKey("accounts.id"), primary_key=True), Column("industry", String(100), primary_key=True), Column("rank", Integer, nullable=False), Column("source", String(300), nullable=False))
-identity_mappings = Table("identity_mappings", metadata, Column("source_key", String(300), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False))
-score_configurations = Table("score_configurations", metadata, Column("id", String(64), primary_key=True), Column("version", String(80), nullable=False), Column("hypothesis", Boolean, nullable=False), Column("interpretation_note", Text, nullable=False), Column("created_at", DateTime(timezone=True), nullable=False))
-score_assessments = Table("score_assessments", metadata, Column("id", String(64), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("configuration_id", ForeignKey("score_configurations.id"), nullable=False), Column("status", String(32), nullable=False), Column("score", Numeric(5, 2)), Column("coverage", Numeric(5, 4), nullable=False), Column("evidence_ids", Text, nullable=False), Column("missing_fields", Text, nullable=False), Column("calculated_at", DateTime(timezone=True), nullable=False))
-commercial_alerts = Table("commercial_alerts", metadata, Column("id", String(160), primary_key=True), Column("type", String(64), nullable=False), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("business_unit", String(100)), Column("severity", String(16), nullable=False), Column("trigger_reason", Text, nullable=False), Column("actual_value", Text, nullable=False), Column("threshold", Text, nullable=False), Column("evidence_ids", Text, nullable=False), Column("observed_at", DateTime(timezone=True), nullable=False), Column("recommended_action", Text, nullable=False), Column("owner_id", String(128)), Column("status", String(32), nullable=False), Column("synthetic", Boolean, nullable=False), Column("provenance_state", String(32), nullable=False))
-intelligence_signals = Table("intelligence_signals", metadata, Column("id", String(64), primary_key=True), Column("type", String(64), nullable=False), Column("account_id", ForeignKey("accounts.id")), Column("program_name", String(300)), Column("source_url", Text, nullable=False), Column("evidence_state", String(32), nullable=False), Column("evidence_ids", Text, nullable=False), Column("occurred_at", DateTime(timezone=True), nullable=False))
-commercial_matches = Table("commercial_matches", metadata, Column("component_id", String(64), primary_key=True), Column("quote_id", String(64), primary_key=True), Column("account_id", ForeignKey("accounts.id")), Column("method", String(32), nullable=False), Column("review_state", String(32), nullable=False), Column("evidence_state", String(32), nullable=False), Column("evidence_ids", Text, nullable=False), Column("business_unit", String(100)))
-work_items = Table("work_items", metadata, Column("id", String(64), primary_key=True), Column("account_id", String(64), nullable=False), Column("opportunity_id", String(64)), Column("status", String(32), nullable=False), Column("summary", Text, nullable=False), Column("description", Text), Column("evidence_ids", Text, nullable=False), Column("context_referents", Text, nullable=False, server_default="[]"), Column("owner_id", String(128)), Column("priority", String(16), nullable=False), Column("due_date", String(16)), Column("notes", Text), Column("idempotency_key", String(128), nullable=False, unique=True), Column("approval_status", String(32), nullable=False), Column("source_suggestion_id", String(160), unique=True), Column("created_by", String(128), nullable=False), Column("created_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False), Column("completed_at", DateTime(timezone=True)), Column("canceled_at", DateTime(timezone=True)), Column("version", Integer, nullable=False, server_default="1"))
-work_audit_events = Table("work_audit_events", metadata, Column("id", Integer, primary_key=True), Column("work_item_id", ForeignKey("work_items.id"), nullable=False), Column("event", String(32), nullable=False), Column("actor_id", String(128), nullable=False), Column("occurred_at", DateTime(timezone=True), nullable=False), Column("note", Text), Column("metadata", Text, nullable=False))
-seller_itineraries = Table("seller_itineraries", metadata, Column("id", String(64), primary_key=True), Column("user_id", String(128), nullable=False, unique=True), Column("title", String(200), nullable=False), Column("payload", Text, nullable=False), Column("payload_hash", String(64), nullable=False), Column("idempotency_key", String(64), nullable=False), Column("version", Integer, nullable=False), Column("created_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False))
-account_partnership_designations = Table("account_partnership_designations", metadata, Column("account_id", String(100), primary_key=True), Column("designated", Boolean, nullable=False), Column("reason", Text, nullable=False), Column("version", Integer, nullable=False), Column("updated_by", String(128), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False), Column("idempotency_key", String(64), nullable=False), Column("payload_hash", String(64), nullable=False))
-account_partnership_audit = Table("account_partnership_audit", metadata, Column("id", String(64), primary_key=True), Column("account_id", String(100), nullable=False), Column("designated", Boolean, nullable=False), Column("reason", Text, nullable=False), Column("version", Integer, nullable=False), Column("actor_id", String(128), nullable=False), Column("occurred_at", DateTime(timezone=True), nullable=False), Column("idempotency_key", String(64), nullable=False, unique=True), Column("payload_hash", String(64), nullable=False))
-seller_shortlist_items = Table("seller_shortlist_items", metadata, Column("id", String(64), primary_key=True), Column("user_id", String(128), nullable=False), Column("account_id", String(100), nullable=False), Column("kind", String(32), nullable=False), Column("objective", Text, nullable=False), Column("target_date", String(10)), Column("active", Boolean, nullable=False), Column("version", Integer, nullable=False), Column("idempotency_key", String(64), nullable=False), Column("payload_hash", String(64), nullable=False), Column("created_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False))
-action_suggestion_decisions = Table("action_suggestion_decisions", metadata, Column("suggestion_id", String(160), primary_key=True), Column("dismissed_by", String(128), nullable=False), Column("dismissed_at", DateTime(timezone=True), nullable=False))
-communication_drafts = Table("communication_drafts", metadata, Column("id", String(64), primary_key=True), Column("account_id", String(64), nullable=False), Column("channel", String(32), nullable=False), Column("subject", String(300), nullable=False), Column("body", Text, nullable=False), Column("recipients", Text, nullable=False), Column("trigger", String(120)), Column("evidence_ids", Text, nullable=False), Column("approval_status", String(32), nullable=False), Column("status", String(32), nullable=False), Column("created_by", String(128), nullable=False), Column("created_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False), Column("sent_at", DateTime(timezone=True)), Column("idempotency_key", String(128), nullable=False, unique=True))
-communication_drafts.append_column(Column("version", Integer, nullable=False, server_default="1"))
-communication_audit_events = Table("communication_audit_events", metadata, Column("id", Integer, primary_key=True), Column("communication_id", ForeignKey("communication_drafts.id"), nullable=False), Column("actor_id", String(128), nullable=False), Column("event", String(48), nullable=False), Column("occurred_at", DateTime(timezone=True), nullable=False), Column("metadata", Text, nullable=False))
-user_preferences = Table("user_preferences", metadata, Column("user_id", String(128), primary_key=True), Column("compact_density", Boolean, nullable=False), Column("omni_evidence_expanded", Boolean, nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False))
-assistant_turns = Table("assistant_turns", metadata, Column("id", String(64), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("content", Text, nullable=False), Column("citation_ids", Text, nullable=False), Column("created_at", DateTime(timezone=True), nullable=False))
-monitor_observations = Table("monitor_observations", metadata, Column("id", String(160), primary_key=True), Column("source_id", String(100), nullable=False), Column("source_record_id", String(300), nullable=False), Column("source_version", String(300)), Column("content_hash", String(64), nullable=False), Column("canonical_url", Text, nullable=False), Column("published_at", DateTime(timezone=True)), Column("retrieved_at", DateTime(timezone=True), nullable=False), Column("source_tier", String(64), nullable=False), Column("collection_run_id", String(64), nullable=False), Column("payload_reference", Text), Column("title", Text), Column("structured_payload", Text), Column("created_at", DateTime(timezone=True), nullable=False))
-monitor_collection_runs = Table("monitor_collection_runs", metadata, Column("id", String(64), primary_key=True), Column("source_id", String(100), nullable=False), Column("started_at", DateTime(timezone=True), nullable=False), Column("completed_at", DateTime(timezone=True)), Column("cursor", Text), Column("records_seen", Integer, nullable=False), Column("records_new", Integer, nullable=False), Column("records_changed", Integer, nullable=False), Column("records_rejected", Integer, nullable=False), Column("events_created", Integer, nullable=False), Column("events_matched", Integer, nullable=False), Column("failures", Text, nullable=False), Column("latency_ms", Integer), Column("funnel", Text))
-monitor_source_health = Table("monitor_source_health", metadata, Column("source_id", String(100), primary_key=True), Column("state", String(32), nullable=False), Column("last_attempt_at", DateTime(timezone=True), nullable=False), Column("last_success_at", DateTime(timezone=True)), Column("warning_code", String(64)), Column("detail", Text), Column("updated_at", DateTime(timezone=True), nullable=False))
-monitor_event_clusters = Table("monitor_event_clusters", metadata, Column("id", String(64), primary_key=True), Column("event_id", String(160), nullable=False), Column("observation_ids", Text, nullable=False), Column("evidence_ids", Text, nullable=False), Column("related_event_ids", Text, nullable=False), Column("ambiguity_reason", Text))
-monitor_source_versions = Table("monitor_source_versions", metadata, Column("source_id", String(100), primary_key=True), Column("source_record_id", String(300), primary_key=True), Column("version_id", String(300)), Column("content_hash", String(64), nullable=False), Column("first_seen_at", DateTime(timezone=True), nullable=False), Column("last_seen_at", DateTime(timezone=True), nullable=False), Column("changed_at", DateTime(timezone=True)), Column("last_observation_id", String(160), nullable=False))
-monitor_events = Table("monitor_events", metadata, Column("id", String(160), primary_key=True), Column("source_id", String(100), nullable=False), Column("source_observation_id", String(160), nullable=False), Column("event_type", String(80), nullable=False), Column("publication_date", DateTime(timezone=True)), Column("collected_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False), Column("resolution_state", String(32), nullable=False), Column("seller_relevance_state", String(48), nullable=False, server_default="UNRESOLVED"), Column("data_mode", String(32), nullable=False), Column("provenance_source_id", String(300), nullable=False), Column("provenance_url", Text), Column("evidence_ids", Text, nullable=False), Column("event_payload", Text, nullable=False))
-monitor_brief_syntheses = Table("monitor_brief_syntheses", metadata, Column("brief_id", String(160), primary_key=True), Column("governed_content_hash", String(64), nullable=False), Column("summary", Text), Column("provider", String(64)), Column("model", String(120)), Column("status", String(32), nullable=False), Column("attempt_count", Integer, nullable=False), Column("next_retry_at", DateTime(timezone=True)), Column("synthesized_at", DateTime(timezone=True), nullable=False))
-monitor_technical_decompositions = Table("monitor_technical_decompositions", metadata, Column("event_id", String(160), primary_key=True), Column("governed_content_hash", String(64), nullable=False), Column("projection", Text), Column("provider", String(64)), Column("model", String(120)), Column("status", String(32), nullable=False), Column("attempt_count", Integer, nullable=False), Column("next_retry_at", DateTime(timezone=True)), Column("processed_at", DateTime(timezone=True), nullable=False))
-governed_explanations = Table("governed_explanations", metadata, Column("subject_key", String(200), primary_key=True), Column("explanation_type", String(64), primary_key=True), Column("governed_content_hash", String(64), nullable=False), Column("projection", Text, nullable=False), Column("provider", String(64)), Column("model", String(120)), Column("status", String(32), nullable=False), Column("attempt_count", Integer, nullable=False), Column("next_retry_at", DateTime(timezone=True)), Column("processed_at", DateTime(timezone=True), nullable=False))
-monitor_entity_candidate_resolutions = Table("monitor_entity_candidate_resolutions", metadata, Column("cache_key", String(64), primary_key=True), Column("projection", Text, nullable=False), Column("provider", String(64)), Column("model", String(120)), Column("status", String(32), nullable=False), Column("processed_at", DateTime(timezone=True), nullable=False))
-monitor_rejected_observations = Table("monitor_rejected_observations", metadata, Column("id", String(200), primary_key=True), Column("collection_run_id", String(64), nullable=False), Column("source_id", String(100), nullable=False), Column("observation_id", String(160), nullable=False), Column("state", String(64), nullable=False), Column("reason", Text, nullable=False), Column("evidence_id", String(160), nullable=False), Column("rejected_at", DateTime(timezone=True), nullable=False))
-monitor_organization_candidates = Table("monitor_organization_candidates", metadata, Column("id", String(80), primary_key=True), Column("identity_key", String(500), nullable=False, unique=True), Column("source_name", String(300), nullable=False), Column("normalized_name", String(300), nullable=False), Column("source_identifiers", Text, nullable=False), Column("verified_domain", String(300)), Column("canonical_industry", String(100)), Column("provenance", Text, nullable=False), Column("event_ids", Text, nullable=False), Column("observation_ids", Text, nullable=False), Column("resolution_state", String(32), nullable=False), Column("review_state", String(32), nullable=False), Column("resolution_reason", Text, nullable=False), Column("candidate_account_ids", Text, nullable=False), Column("created_at", DateTime(timezone=True), nullable=False), Column("observed_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False))
-monitor_candidate_promotion_audits = Table("monitor_candidate_promotion_audits", metadata, Column("candidate_id", String(80), primary_key=True), Column("canonical_account_id", String(80), nullable=False, unique=True), Column("promoted_at", DateTime(timezone=True), nullable=False), Column("promotion_provenance", Text, nullable=False))
-monitor_program_candidate_promotion_audits = Table("monitor_program_candidate_promotion_audits", metadata, Column("candidate_id", String(80), primary_key=True), Column("canonical_program_id", String(80), nullable=False, unique=True), Column("promoted_at", DateTime(timezone=True), nullable=False), Column("promotion_provenance", Text, nullable=False))
-monitor_program_candidates = Table("monitor_program_candidates", metadata, Column("id", String(80), primary_key=True), Column("identity_key", String(500), nullable=False, unique=True), Column("source_name", String(300), nullable=False), Column("organization_candidate_id", String(80)), Column("canonical_account_id", String(100)), Column("event_type", String(80), nullable=False), Column("provenance", Text, nullable=False), Column("event_ids", Text, nullable=False), Column("resolution_state", String(32), nullable=False), Column("review_state", String(32), nullable=False), Column("created_at", DateTime(timezone=True), nullable=False), Column("observed_at", DateTime(timezone=True), nullable=False), Column("updated_at", DateTime(timezone=True), nullable=False))
-durable_public_accounts = Table("durable_public_accounts", metadata, Column("id", String(80), primary_key=True), Column("identity_key", String(500), nullable=False, unique=True), Column("legal_name", String(300), nullable=False), Column("domain", String(300)), Column("industries", Text, nullable=False), Column("account_payload", Text, nullable=False), Column("source_identifiers", Text, nullable=False), Column("originating_candidate_id", String(80), unique=True), Column("created_at", DateTime(timezone=True), nullable=False), Column("promoted_at", DateTime(timezone=True)), Column("promotion_provenance", Text))
-durable_canonical_programs = Table("durable_canonical_programs", metadata, Column("id", String(80), primary_key=True), Column("identity_key", String(500), nullable=False, unique=True), Column("account_id", String(80)), Column("name", String(300), nullable=False), Column("system", String(300)), Column("program_payload", Text, nullable=False), Column("originating_candidate_id", String(80), unique=True), Column("created_at", DateTime(timezone=True), nullable=False), Column("promoted_at", DateTime(timezone=True)), Column("promotion_provenance", Text))
+accounts = Table(
+    "accounts",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("name", String(300), nullable=False),
+    Column("relationship", String(32), nullable=False),
+    Column("domain", String(300)),
+)
+facilities = Table(
+    "facilities",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("city", String(120), nullable=False),
+    Column("region", String(64), nullable=False),
+    Column("latitude", String(32), nullable=False),
+    Column("longitude", String(32), nullable=False),
+)
+external_ranks = Table(
+    "external_industry_ranks",
+    metadata,
+    Column("account_id", ForeignKey("accounts.id"), primary_key=True),
+    Column("industry", String(100), primary_key=True),
+    Column("rank", Integer, nullable=False),
+    Column("source", String(300), nullable=False),
+)
+identity_mappings = Table(
+    "identity_mappings",
+    metadata,
+    Column("source_key", String(300), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+)
+score_configurations = Table(
+    "score_configurations",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("version", String(80), nullable=False),
+    Column("hypothesis", Boolean, nullable=False),
+    Column("interpretation_note", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+score_assessments = Table(
+    "score_assessments",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("configuration_id", ForeignKey("score_configurations.id"), nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("score", Numeric(5, 2)),
+    Column("coverage", Numeric(5, 4), nullable=False),
+    Column("evidence_ids", Text, nullable=False),
+    Column("missing_fields", Text, nullable=False),
+    Column("calculated_at", DateTime(timezone=True), nullable=False),
+)
+commercial_alerts = Table(
+    "commercial_alerts",
+    metadata,
+    Column("id", String(160), primary_key=True),
+    Column("type", String(64), nullable=False),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("business_unit", String(100)),
+    Column("severity", String(16), nullable=False),
+    Column("trigger_reason", Text, nullable=False),
+    Column("actual_value", Text, nullable=False),
+    Column("threshold", Text, nullable=False),
+    Column("evidence_ids", Text, nullable=False),
+    Column("observed_at", DateTime(timezone=True), nullable=False),
+    Column("recommended_action", Text, nullable=False),
+    Column("owner_id", String(128)),
+    Column("status", String(32), nullable=False),
+    Column("synthetic", Boolean, nullable=False),
+    Column("provenance_state", String(32), nullable=False),
+)
+intelligence_signals = Table(
+    "intelligence_signals",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("type", String(64), nullable=False),
+    Column("account_id", ForeignKey("accounts.id")),
+    Column("program_name", String(300)),
+    Column("source_url", Text, nullable=False),
+    Column("evidence_state", String(32), nullable=False),
+    Column("evidence_ids", Text, nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+)
+commercial_matches = Table(
+    "commercial_matches",
+    metadata,
+    Column("component_id", String(64), primary_key=True),
+    Column("quote_id", String(64), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id")),
+    Column("method", String(32), nullable=False),
+    Column("review_state", String(32), nullable=False),
+    Column("evidence_state", String(32), nullable=False),
+    Column("evidence_ids", Text, nullable=False),
+    Column("business_unit", String(100)),
+)
+work_items = Table(
+    "work_items",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("account_id", String(64), nullable=False),
+    Column("opportunity_id", String(64)),
+    Column("status", String(32), nullable=False),
+    Column("summary", Text, nullable=False),
+    Column("description", Text),
+    Column("evidence_ids", Text, nullable=False),
+    Column("context_referents", Text, nullable=False, server_default="[]"),
+    Column("owner_id", String(128)),
+    Column("priority", String(16), nullable=False),
+    Column("due_date", String(16)),
+    Column("notes", Text),
+    Column("idempotency_key", String(128), nullable=False, unique=True),
+    Column("approval_status", String(32), nullable=False),
+    Column("source_suggestion_id", String(160), unique=True),
+    Column("created_by", String(128), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("completed_at", DateTime(timezone=True)),
+    Column("canceled_at", DateTime(timezone=True)),
+    Column("version", Integer, nullable=False, server_default="1"),
+)
+work_audit_events = Table(
+    "work_audit_events",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("work_item_id", ForeignKey("work_items.id"), nullable=False),
+    Column("event", String(32), nullable=False),
+    Column("actor_id", String(128), nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+    Column("note", Text),
+    Column("metadata", Text, nullable=False),
+)
+seller_itineraries = Table(
+    "seller_itineraries",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("user_id", String(128), nullable=False, unique=True),
+    Column("title", String(200), nullable=False),
+    Column("payload", Text, nullable=False),
+    Column("payload_hash", String(64), nullable=False),
+    Column("idempotency_key", String(64), nullable=False),
+    Column("version", Integer, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+account_partnership_designations = Table(
+    "account_partnership_designations",
+    metadata,
+    Column("account_id", String(100), primary_key=True),
+    Column("designated", Boolean, nullable=False),
+    Column("reason", Text, nullable=False),
+    Column("version", Integer, nullable=False),
+    Column("updated_by", String(128), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("idempotency_key", String(64), nullable=False),
+    Column("payload_hash", String(64), nullable=False),
+)
+account_partnership_audit = Table(
+    "account_partnership_audit",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("account_id", String(100), nullable=False),
+    Column("designated", Boolean, nullable=False),
+    Column("reason", Text, nullable=False),
+    Column("version", Integer, nullable=False),
+    Column("actor_id", String(128), nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+    Column("idempotency_key", String(64), nullable=False, unique=True),
+    Column("payload_hash", String(64), nullable=False),
+)
+seller_shortlist_items = Table(
+    "seller_shortlist_items",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("user_id", String(128), nullable=False),
+    Column("account_id", String(100), nullable=False),
+    Column("kind", String(32), nullable=False),
+    Column("objective", Text, nullable=False),
+    Column("target_date", String(10)),
+    Column("active", Boolean, nullable=False),
+    Column("version", Integer, nullable=False),
+    Column("idempotency_key", String(64), nullable=False),
+    Column("payload_hash", String(64), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+action_suggestion_decisions = Table(
+    "action_suggestion_decisions",
+    metadata,
+    Column("suggestion_id", String(160), primary_key=True),
+    Column("dismissed_by", String(128), nullable=False),
+    Column("dismissed_at", DateTime(timezone=True), nullable=False),
+)
+communication_drafts = Table(
+    "communication_drafts",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("account_id", String(64), nullable=False),
+    Column("channel", String(32), nullable=False),
+    Column("subject", String(300), nullable=False),
+    Column("body", Text, nullable=False),
+    Column("recipients", Text, nullable=False),
+    Column("trigger", String(120)),
+    Column("evidence_ids", Text, nullable=False),
+    Column("approval_status", String(32), nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("created_by", String(128), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("sent_at", DateTime(timezone=True)),
+    Column("idempotency_key", String(128), nullable=False, unique=True),
+)
+communication_drafts.append_column(
+    Column("version", Integer, nullable=False, server_default="1")
+)
+communication_audit_events = Table(
+    "communication_audit_events",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("communication_id", ForeignKey("communication_drafts.id"), nullable=False),
+    Column("actor_id", String(128), nullable=False),
+    Column("event", String(48), nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+    Column("metadata", Text, nullable=False),
+)
+user_preferences = Table(
+    "user_preferences",
+    metadata,
+    Column("user_id", String(128), primary_key=True),
+    Column("compact_density", Boolean, nullable=False),
+    Column("omni_evidence_expanded", Boolean, nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+assistant_turns = Table(
+    "assistant_turns",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("content", Text, nullable=False),
+    Column("citation_ids", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+monitor_observations = Table(
+    "monitor_observations",
+    metadata,
+    Column("id", String(160), primary_key=True),
+    Column("source_id", String(100), nullable=False),
+    Column("source_record_id", String(300), nullable=False),
+    Column("source_version", String(300)),
+    Column("content_hash", String(64), nullable=False),
+    Column("canonical_url", Text, nullable=False),
+    Column("published_at", DateTime(timezone=True)),
+    Column("retrieved_at", DateTime(timezone=True), nullable=False),
+    Column("source_tier", String(64), nullable=False),
+    Column("collection_run_id", String(64), nullable=False),
+    Column("payload_reference", Text),
+    Column("title", Text),
+    Column("structured_payload", Text),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+monitor_collection_runs = Table(
+    "monitor_collection_runs",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("source_id", String(100), nullable=False),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("completed_at", DateTime(timezone=True)),
+    Column("cursor", Text),
+    Column("records_seen", Integer, nullable=False),
+    Column("records_new", Integer, nullable=False),
+    Column("records_changed", Integer, nullable=False),
+    Column("records_rejected", Integer, nullable=False),
+    Column("events_created", Integer, nullable=False),
+    Column("events_matched", Integer, nullable=False),
+    Column("failures", Text, nullable=False),
+    Column("latency_ms", Integer),
+    Column("funnel", Text),
+)
+monitor_source_health = Table(
+    "monitor_source_health",
+    metadata,
+    Column("source_id", String(100), primary_key=True),
+    Column("state", String(32), nullable=False),
+    Column("last_attempt_at", DateTime(timezone=True), nullable=False),
+    Column("last_success_at", DateTime(timezone=True)),
+    Column("warning_code", String(64)),
+    Column("detail", Text),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+monitor_event_clusters = Table(
+    "monitor_event_clusters",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("event_id", String(160), nullable=False),
+    Column("observation_ids", Text, nullable=False),
+    Column("evidence_ids", Text, nullable=False),
+    Column("related_event_ids", Text, nullable=False),
+    Column("ambiguity_reason", Text),
+)
+monitor_source_versions = Table(
+    "monitor_source_versions",
+    metadata,
+    Column("source_id", String(100), primary_key=True),
+    Column("source_record_id", String(300), primary_key=True),
+    Column("version_id", String(300)),
+    Column("content_hash", String(64), nullable=False),
+    Column("first_seen_at", DateTime(timezone=True), nullable=False),
+    Column("last_seen_at", DateTime(timezone=True), nullable=False),
+    Column("changed_at", DateTime(timezone=True)),
+    Column("last_observation_id", String(160), nullable=False),
+)
+monitor_events = Table(
+    "monitor_events",
+    metadata,
+    Column("id", String(160), primary_key=True),
+    Column("source_id", String(100), nullable=False),
+    Column("source_observation_id", String(160), nullable=False),
+    Column("event_type", String(80), nullable=False),
+    Column("publication_date", DateTime(timezone=True)),
+    Column("collected_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("resolution_state", String(32), nullable=False),
+    Column(
+        "seller_relevance_state",
+        String(48),
+        nullable=False,
+        server_default="UNRESOLVED",
+    ),
+    Column("data_mode", String(32), nullable=False),
+    Column("provenance_source_id", String(300), nullable=False),
+    Column("provenance_url", Text),
+    Column("evidence_ids", Text, nullable=False),
+    Column("event_payload", Text, nullable=False),
+)
+monitor_brief_syntheses = Table(
+    "monitor_brief_syntheses",
+    metadata,
+    Column("brief_id", String(160), primary_key=True),
+    Column("governed_content_hash", String(64), nullable=False),
+    Column("summary", Text),
+    Column("projection", Text),
+    Column("source_revision", String(64)),
+    Column("input_revision", String(64)),
+    Column("provider", String(64)),
+    Column("model", String(120)),
+    Column("status", String(32), nullable=False),
+    Column("attempt_count", Integer, nullable=False),
+    Column("next_retry_at", DateTime(timezone=True)),
+    Column("synthesized_at", DateTime(timezone=True), nullable=False),
+)
+monitor_intelligence_assessments = Table(
+    "monitor_intelligence_assessments",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("context_key", String(400), nullable=False),
+    Column("event_id", String(160), nullable=False),
+    Column("account_id", String(100)),
+    Column("business_unit_id", String(100)),
+    Column("input_revision", String(64), nullable=False),
+    Column("source_revision", String(64)),
+    Column("version", Integer, nullable=False),
+    Column("is_current", Boolean, nullable=False),
+    Column("projection", Text, nullable=False),
+    Column("generation_status", String(32), nullable=False),
+    Column("provider", String(64)),
+    Column("model", String(120)),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint(
+        "context_key", "version", name="uq_monitor_assessment_context_version"
+    ),
+    Index("ix_monitor_assessment_current", "context_key", "is_current"),
+)
+monitor_technical_decompositions = Table(
+    "monitor_technical_decompositions",
+    metadata,
+    Column("event_id", String(160), primary_key=True),
+    Column("governed_content_hash", String(64), nullable=False),
+    Column("projection", Text),
+    Column("provider", String(64)),
+    Column("model", String(120)),
+    Column("status", String(32), nullable=False),
+    Column("attempt_count", Integer, nullable=False),
+    Column("next_retry_at", DateTime(timezone=True)),
+    Column("processed_at", DateTime(timezone=True), nullable=False),
+)
+governed_explanations = Table(
+    "governed_explanations",
+    metadata,
+    Column("subject_key", String(200), primary_key=True),
+    Column("explanation_type", String(64), primary_key=True),
+    Column("governed_content_hash", String(64), nullable=False),
+    Column("projection", Text, nullable=False),
+    Column("provider", String(64)),
+    Column("model", String(120)),
+    Column("status", String(32), nullable=False),
+    Column("attempt_count", Integer, nullable=False),
+    Column("next_retry_at", DateTime(timezone=True)),
+    Column("processed_at", DateTime(timezone=True), nullable=False),
+)
+monitor_entity_candidate_resolutions = Table(
+    "monitor_entity_candidate_resolutions",
+    metadata,
+    Column("cache_key", String(64), primary_key=True),
+    Column("projection", Text, nullable=False),
+    Column("provider", String(64)),
+    Column("model", String(120)),
+    Column("status", String(32), nullable=False),
+    Column("processed_at", DateTime(timezone=True), nullable=False),
+)
+monitor_rejected_observations = Table(
+    "monitor_rejected_observations",
+    metadata,
+    Column("id", String(200), primary_key=True),
+    Column("collection_run_id", String(64), nullable=False),
+    Column("source_id", String(100), nullable=False),
+    Column("observation_id", String(160), nullable=False),
+    Column("state", String(64), nullable=False),
+    Column("reason", Text, nullable=False),
+    Column("evidence_id", String(160), nullable=False),
+    Column("rejected_at", DateTime(timezone=True), nullable=False),
+)
+monitor_organization_candidates = Table(
+    "monitor_organization_candidates",
+    metadata,
+    Column("id", String(80), primary_key=True),
+    Column("identity_key", String(500), nullable=False, unique=True),
+    Column("source_name", String(300), nullable=False),
+    Column("normalized_name", String(300), nullable=False),
+    Column("source_identifiers", Text, nullable=False),
+    Column("verified_domain", String(300)),
+    Column("canonical_industry", String(100)),
+    Column("provenance", Text, nullable=False),
+    Column("event_ids", Text, nullable=False),
+    Column("observation_ids", Text, nullable=False),
+    Column("resolution_state", String(32), nullable=False),
+    Column("review_state", String(32), nullable=False),
+    Column("resolution_reason", Text, nullable=False),
+    Column("candidate_account_ids", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("observed_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+monitor_candidate_promotion_audits = Table(
+    "monitor_candidate_promotion_audits",
+    metadata,
+    Column("candidate_id", String(80), primary_key=True),
+    Column("canonical_account_id", String(80), nullable=False, unique=True),
+    Column("promoted_at", DateTime(timezone=True), nullable=False),
+    Column("promotion_provenance", Text, nullable=False),
+)
+monitor_program_candidate_promotion_audits = Table(
+    "monitor_program_candidate_promotion_audits",
+    metadata,
+    Column("candidate_id", String(80), primary_key=True),
+    Column("canonical_program_id", String(80), nullable=False, unique=True),
+    Column("promoted_at", DateTime(timezone=True), nullable=False),
+    Column("promotion_provenance", Text, nullable=False),
+)
+monitor_program_candidates = Table(
+    "monitor_program_candidates",
+    metadata,
+    Column("id", String(80), primary_key=True),
+    Column("identity_key", String(500), nullable=False, unique=True),
+    Column("source_name", String(300), nullable=False),
+    Column("organization_candidate_id", String(80)),
+    Column("canonical_account_id", String(100)),
+    Column("event_type", String(80), nullable=False),
+    Column("provenance", Text, nullable=False),
+    Column("event_ids", Text, nullable=False),
+    Column("resolution_state", String(32), nullable=False),
+    Column("review_state", String(32), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("observed_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+durable_public_accounts = Table(
+    "durable_public_accounts",
+    metadata,
+    Column("id", String(80), primary_key=True),
+    Column("identity_key", String(500), nullable=False, unique=True),
+    Column("legal_name", String(300), nullable=False),
+    Column("domain", String(300)),
+    Column("industries", Text, nullable=False),
+    Column("account_payload", Text, nullable=False),
+    Column("source_identifiers", Text, nullable=False),
+    Column("originating_candidate_id", String(80), unique=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("promoted_at", DateTime(timezone=True)),
+    Column("promotion_provenance", Text),
+)
+durable_canonical_programs = Table(
+    "durable_canonical_programs",
+    metadata,
+    Column("id", String(80), primary_key=True),
+    Column("identity_key", String(500), nullable=False, unique=True),
+    Column("account_id", String(80)),
+    Column("name", String(300), nullable=False),
+    Column("system", String(300)),
+    Column("program_payload", Text, nullable=False),
+    Column("originating_candidate_id", String(80), unique=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("promoted_at", DateTime(timezone=True)),
+    Column("promotion_provenance", Text),
+)
 
 # Additive catalog and source-shaped commercial records.  JSON fields retain vendor
 # shape while the common truth-boundary columns keep every row governable.
-_truth_columns = lambda: (Column("source_system", String(120), nullable=False), Column("source_record_id", String(160), nullable=False), Column("evidence_state", String(32), nullable=False), Column("data_mode", String(32), nullable=False), Column("synthetic", Boolean, nullable=False))
-programs = Table("programs", metadata, Column("id", String(100), primary_key=True), Column("account_id", ForeignKey("accounts.id")), Column("name", String(300), nullable=False), Column("system", String(120)), *_truth_columns())
-component_classes = Table("component_classes", metadata, Column("id", String(100), primary_key=True), Column("program_id", ForeignKey("programs.id")), Column("name", String(300), nullable=False), Column("industry", String(100)), Column("business_unit_ids", Text, nullable=False), *_truth_columns())
-bu_capabilities = Table("bu_capabilities", metadata, Column("id", String(120), primary_key=True), Column("business_unit_id", String(100), nullable=False), Column("name", String(300), nullable=False), Column("payload", Text, nullable=False), *_truth_columns())
-btx_facilities = Table("btx_facilities", metadata, Column("id", String(100), primary_key=True), Column("business_unit_id", String(100)), Column("name", String(300), nullable=False), Column("city", String(120)), Column("region", String(120)), Column("country", String(8)), Column("latitude", String(32)), Column("longitude", String(32)), Column("source_url", Text), Column("source_type", String(80)), *_truth_columns())
-commercial_contexts = Table("commercial_contexts", metadata, Column("id", String(180), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("business_unit_id", String(100), nullable=False), Column("currency", String(12), nullable=False), Column("ttm_revenue_minor", Integer), Column("ttm_bookings_minor", Integer), Column("payload", Text, nullable=False), *_truth_columns())
-monthly_commercial_history = Table("monthly_commercial_history", metadata, Column("id", String(220), primary_key=True), Column("commercial_context_id", ForeignKey("commercial_contexts.id"), nullable=False), Column("month", String(10), nullable=False), Column("revenue_minor", Integer), Column("bookings_minor", Integer), *_truth_columns())
-paperless_accounts = Table("paperless_accounts", metadata, Column("id", String(120), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("name", String(300), nullable=False), *_truth_columns())
-commercial_quotes = Table("commercial_quotes", metadata, Column("id", String(120), primary_key=True), Column("paperless_account_id", ForeignKey("paperless_accounts.id")), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("business_unit_id", String(100), nullable=False), Column("program_id", ForeignKey("programs.id")), Column("status", String(32), nullable=False), Column("quoted_at", String(10), nullable=False), Column("value_minor", Integer), Column("currency", String(12), nullable=False), Column("payload", Text, nullable=False), *_truth_columns())
-orders = Table("orders", metadata, Column("id", String(120), primary_key=True), Column("quote_id", ForeignKey("commercial_quotes.id")), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("business_unit_id", String(100), nullable=False), Column("component_class_id", ForeignKey("component_classes.id"), nullable=False), Column("program_id", ForeignKey("programs.id"), nullable=False), Column("status", String(32), nullable=False), Column("promised_date", String(10)), Column("actual_ship_date", String(10)), Column("amount_minor", Integer, nullable=False), Column("payload", Text, nullable=False), *_truth_columns())
-account_relationship_edges = Table("account_relationship_edges", metadata, Column("id", String(120), primary_key=True), Column("from_account_id", ForeignKey("accounts.id"), nullable=False), Column("to_account_id", ForeignKey("accounts.id"), nullable=False), Column("program_id", ForeignKey("programs.id")), Column("edge_type", String(64), nullable=False), Column("payload", Text, nullable=False), *_truth_columns())
-crm_companies = Table("crm_companies", metadata, Column("id", String(120), primary_key=True), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("owner_id", String(120)), Column("payload", Text, nullable=False), *_truth_columns())
-crm_contacts = Table("crm_contacts", metadata, Column("id", String(120), primary_key=True), Column("company_id", ForeignKey("crm_companies.id"), nullable=False), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("role_family", String(120), nullable=False), Column("payload", Text, nullable=False), *_truth_columns())
-crm_deals = Table("crm_deals", metadata, Column("id", String(120), primary_key=True), Column("company_id", ForeignKey("crm_companies.id"), nullable=False), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("program_id", ForeignKey("programs.id")), Column("business_unit_id", String(100)), Column("payload", Text, nullable=False), *_truth_columns())
-crm_activities = Table("crm_activities", metadata, Column("id", String(120), primary_key=True), Column("company_id", ForeignKey("crm_companies.id"), nullable=False), Column("account_id", ForeignKey("accounts.id"), nullable=False), Column("occurred_at", DateTime(timezone=True), nullable=False), Column("payload", Text, nullable=False), *_truth_columns())
+_truth_columns = lambda: (
+    Column("source_system", String(120), nullable=False),
+    Column("source_record_id", String(160), nullable=False),
+    Column("evidence_state", String(32), nullable=False),
+    Column("data_mode", String(32), nullable=False),
+    Column("synthetic", Boolean, nullable=False),
+)
+programs = Table(
+    "programs",
+    metadata,
+    Column("id", String(100), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id")),
+    Column("name", String(300), nullable=False),
+    Column("system", String(120)),
+    *_truth_columns(),
+)
+component_classes = Table(
+    "component_classes",
+    metadata,
+    Column("id", String(100), primary_key=True),
+    Column("program_id", ForeignKey("programs.id")),
+    Column("name", String(300), nullable=False),
+    Column("industry", String(100)),
+    Column("business_unit_ids", Text, nullable=False),
+    *_truth_columns(),
+)
+bu_capabilities = Table(
+    "bu_capabilities",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("business_unit_id", String(100), nullable=False),
+    Column("name", String(300), nullable=False),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+btx_facilities = Table(
+    "btx_facilities",
+    metadata,
+    Column("id", String(100), primary_key=True),
+    Column("business_unit_id", String(100)),
+    Column("name", String(300), nullable=False),
+    Column("city", String(120)),
+    Column("region", String(120)),
+    Column("country", String(8)),
+    Column("latitude", String(32)),
+    Column("longitude", String(32)),
+    Column("source_url", Text),
+    Column("source_type", String(80)),
+    *_truth_columns(),
+)
+commercial_contexts = Table(
+    "commercial_contexts",
+    metadata,
+    Column("id", String(180), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("business_unit_id", String(100), nullable=False),
+    Column("currency", String(12), nullable=False),
+    Column("ttm_revenue_minor", Integer),
+    Column("ttm_bookings_minor", Integer),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+monthly_commercial_history = Table(
+    "monthly_commercial_history",
+    metadata,
+    Column("id", String(220), primary_key=True),
+    Column(
+        "commercial_context_id", ForeignKey("commercial_contexts.id"), nullable=False
+    ),
+    Column("month", String(10), nullable=False),
+    Column("revenue_minor", Integer),
+    Column("bookings_minor", Integer),
+    *_truth_columns(),
+)
+paperless_accounts = Table(
+    "paperless_accounts",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("name", String(300), nullable=False),
+    *_truth_columns(),
+)
+commercial_quotes = Table(
+    "commercial_quotes",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("paperless_account_id", ForeignKey("paperless_accounts.id")),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("business_unit_id", String(100), nullable=False),
+    Column("program_id", ForeignKey("programs.id")),
+    Column("status", String(32), nullable=False),
+    Column("quoted_at", String(10), nullable=False),
+    Column("value_minor", Integer),
+    Column("currency", String(12), nullable=False),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+orders = Table(
+    "orders",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("quote_id", ForeignKey("commercial_quotes.id")),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("business_unit_id", String(100), nullable=False),
+    Column("component_class_id", ForeignKey("component_classes.id"), nullable=False),
+    Column("program_id", ForeignKey("programs.id"), nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("promised_date", String(10)),
+    Column("actual_ship_date", String(10)),
+    Column("amount_minor", Integer, nullable=False),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+account_relationship_edges = Table(
+    "account_relationship_edges",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("from_account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("to_account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("program_id", ForeignKey("programs.id")),
+    Column("edge_type", String(64), nullable=False),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+crm_companies = Table(
+    "crm_companies",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("owner_id", String(120)),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+crm_contacts = Table(
+    "crm_contacts",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("company_id", ForeignKey("crm_companies.id"), nullable=False),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("role_family", String(120), nullable=False),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+crm_deals = Table(
+    "crm_deals",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("company_id", ForeignKey("crm_companies.id"), nullable=False),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("program_id", ForeignKey("programs.id")),
+    Column("business_unit_id", String(100)),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)
+crm_activities = Table(
+    "crm_activities",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("company_id", ForeignKey("crm_companies.id"), nullable=False),
+    Column("account_id", ForeignKey("accounts.id"), nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+    Column("payload", Text, nullable=False),
+    *_truth_columns(),
+)

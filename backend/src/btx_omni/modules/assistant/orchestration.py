@@ -2196,10 +2196,22 @@ class OmniOrchestrator:
         observed_at,
         context: Mapping[str, object],
     ) -> OmniResponse:
+        filters = context.get("active_filters")
+        selected_account_id = (
+            context.get("selected_account_id")
+            if isinstance(context.get("selected_account_id"), str)
+            else filters.get("account_id")
+            if isinstance(filters, Mapping) and isinstance(filters.get("account_id"), str)
+            else None
+        )
+        candidates = tuple(record for record in event_records if record.get("id") == event_id)
         event = next(
-            (record for record in event_records if record.get("id") == event_id), None
+            (record for record in candidates if record.get("account_id") == selected_account_id),
+            candidates[0] if candidates else None,
         )
         context_used: dict[str, object] = {"event_id": event_id}
+        if selected_account_id:
+            context_used["requested_account_id"] = selected_account_id
         if context.get("surface"):
             context_used["surface"] = str(context["surface"])
         if event is None:
@@ -2242,6 +2254,40 @@ class OmniOrchestrator:
         )
         citations = [str(value) for value in event.get("evidence_ids", ())]
         citation_links = [OmniCitation(title, source_url)] if source_url else []
+        business = event.get("business_briefing")
+        if isinstance(business, Mapping):
+            if account:
+                context_used["account_id"] = account.id
+            references = business.get("references", ())
+            citation_links = [
+                OmniCitation(str(item.get("title") or title), str(item["url"]))
+                for item in references
+                if isinstance(item, Mapping) and item.get("url")
+            ] or citation_links
+            package = business.get("evidence_package")
+            records = package.get("commercial_records", ()) if isinstance(package, Mapping) else ()
+            citations.extend(
+                str(item["record_id"]) for item in records
+                if isinstance(item, Mapping) and item.get("record_id")
+            )
+            uncertainties = tuple(str(item) for item in business.get("material_uncertainties", ()) if item)
+            action = business.get("recommended_action") if isinstance(business.get("recommended_action"), str) else None
+            explanation = " ".join(filter(None, (
+                str(business.get("headline") or title),
+                f"What changed: {business.get('what_happened')}." if business.get("what_happened") else None,
+                f"Why it matters: {business.get('why_it_may_matter')}." if business.get("why_it_may_matter") else None,
+                f"Next step: {action}." if action else "This is informational; no seller action is established.",
+                f"What remains uncertain: {'; '.join(uncertainties)}" if uncertainties else None,
+            )))
+            provenance = [AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.CANONICAL_FACT,
+                          AssistantProvenance.DETERMINISTIC_DERIVATION]
+            if uncertainties:
+                provenance.append(AssistantProvenance.MISSING_UNAVAILABLE)
+            return OmniResponse(
+                explanation, account.id if account else "", tuple(dict.fromkeys(citations)),
+                tuple(provenance), uncertainties, action, tuple(dict.fromkeys(citation_links)),
+                account.legal_name if account else None, context_used=context_used,
+            )
         missing: list[str] = []
         lines = [
             f"Source-backed Intelligence event: {title}. Type: {kind}. Observed/source date: {observed_text}."

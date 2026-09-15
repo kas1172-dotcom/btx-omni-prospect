@@ -94,7 +94,7 @@ def commercial_evidence(
                 account_id=account_id,
                 current_customer=current_customer,
                 internal_decision=decisions["internal_commercial_risk"],
-                signal_briefs=signal_briefs_for_monitor(runtime.monitor),
+                signal_briefs=signal_briefs_for_monitor(runtime.monitor, environment=sample),
             ),
         }
     if collection == "reference":

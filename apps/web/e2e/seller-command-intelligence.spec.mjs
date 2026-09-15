@@ -14,7 +14,7 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
   await expect(attention).toContainText('Why:')
   await expect(attention).toContainText('Next:')
   await attention.getByRole('button', { name: 'Evidence and governed action' }).first().click()
-  await expect(attention).toContainText('SAMPLE BTX commercial context')
+  await expect(attention).toContainText('BTX commercial record')
   await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   await expect(page.getByRole('heading', { name: 'Public intelligence', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'View Intelligence' }).click()
@@ -41,7 +41,7 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
   for (const item of commercial) {
     const card = page.locator(`[data-priority-id="${item.id}"]`)
     await card.getByRole('button', { name: 'Evidence and governed action' }).click()
-    await expect(card).toContainText('SAMPLE BTX commercial context')
+    await expect(card).toContainText('BTX commercial record')
     await expect(card.getByRole('button', { name: 'Create action' })).toBeVisible()
   }
   for (const item of publicSignals) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)

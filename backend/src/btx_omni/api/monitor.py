@@ -14,6 +14,7 @@ from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.markets import primary_market_label
 from btx_omni.monitor.briefs import (
     apply_cached_synthesis,
+    brief_cache_id,
     governed_content_hash,
     signal_briefs_for_monitor,
 )
@@ -235,10 +236,10 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         else ProviderStatus.NOT_CONFIGURED
     )
     briefs = []
-    for deterministic in signal_briefs_for_monitor(runtime.monitor):
+    for deterministic in signal_briefs_for_monitor(runtime.monitor, environment=runtime.environment()):
         cached = (
             runtime.monitor.repository.brief_synthesis(
-                deterministic.id, governed_content_hash(deterministic)
+                brief_cache_id(deterministic), governed_content_hash(deterministic)
             )
             if runtime.monitor.repository
             else None

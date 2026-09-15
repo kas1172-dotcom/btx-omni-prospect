@@ -1,4 +1,5 @@
 """Deterministic source-to-event candidate normalization; AI is not used for JSON reformatting."""
+
 from __future__ import annotations
 
 import json
@@ -24,21 +25,39 @@ from btx_omni.monitor.policy import classify_markets, recency_state, seller_rele
 
 def classify_title(title: str) -> EventType:
     value = title.casefold()
-    rules = (("contract reduction", EventType.CONTRACT_REDUCTION), ("contract cut", EventType.CONTRACT_REDUCTION),
-             ("program cancellation", EventType.PROGRAM_CANCELLATION), ("program canceled", EventType.PROGRAM_CANCELLATION),
-             ("facility closure", EventType.FACILITY_CLOSURE), ("plant closure", EventType.FACILITY_CLOSURE),
-             ("layoff", EventType.WORKFORCE_REDUCTION), ("workforce reduction", EventType.WORKFORCE_REDUCTION),
-             ("bankruptcy", EventType.FINANCIAL_DISTRESS), ("liquidity warning", EventType.FINANCIAL_DISTRESS),
-             ("export restriction", EventType.EXPORT_RESTRICTION), ("sanction", EventType.EXPORT_RESTRICTION),
-             ("production delay", EventType.PRODUCTION_DELAY), ("schedule delay", EventType.PRODUCTION_DELAY),
-             ("modification", EventType.CONTRACT_MODIFICATION), ("solicitation", EventType.SOLICITATION),
-             ("award", EventType.CONTRACT_AWARD), ("grant", EventType.GRANT_AWARD),
-             ("funding", EventType.GOVERNMENT_FUNDING), ("approval", EventType.REGULATORY_APPROVAL),
-             ("facility", EventType.NEW_FACILITY), ("capacity", EventType.CAPACITY_EXPANSION),
-             ("partnership", EventType.PARTNERSHIP), ("acquisition", EventType.M_AND_A),
-             ("earnings", EventType.EARNINGS_SIGNAL), ("backlog", EventType.BACKLOG_CHANGE),
-             ("launch", EventType.PRODUCT_LAUNCH))
-    return next((event_type for needle, event_type in rules if needle in value), EventType.UNCLASSIFIED_PUBLIC_UPDATE)
+    rules = (
+        ("contract reduction", EventType.CONTRACT_REDUCTION),
+        ("contract cut", EventType.CONTRACT_REDUCTION),
+        ("program cancellation", EventType.PROGRAM_CANCELLATION),
+        ("program canceled", EventType.PROGRAM_CANCELLATION),
+        ("facility closure", EventType.FACILITY_CLOSURE),
+        ("plant closure", EventType.FACILITY_CLOSURE),
+        ("layoff", EventType.WORKFORCE_REDUCTION),
+        ("workforce reduction", EventType.WORKFORCE_REDUCTION),
+        ("bankruptcy", EventType.FINANCIAL_DISTRESS),
+        ("liquidity warning", EventType.FINANCIAL_DISTRESS),
+        ("export restriction", EventType.EXPORT_RESTRICTION),
+        ("sanction", EventType.EXPORT_RESTRICTION),
+        ("production delay", EventType.PRODUCTION_DELAY),
+        ("schedule delay", EventType.PRODUCTION_DELAY),
+        ("modification", EventType.CONTRACT_MODIFICATION),
+        ("solicitation", EventType.SOLICITATION),
+        ("award", EventType.CONTRACT_AWARD),
+        ("grant", EventType.GRANT_AWARD),
+        ("funding", EventType.GOVERNMENT_FUNDING),
+        ("approval", EventType.REGULATORY_APPROVAL),
+        ("facility", EventType.NEW_FACILITY),
+        ("capacity", EventType.CAPACITY_EXPANSION),
+        ("partnership", EventType.PARTNERSHIP),
+        ("acquisition", EventType.M_AND_A),
+        ("earnings", EventType.EARNINGS_SIGNAL),
+        ("backlog", EventType.BACKLOG_CHANGE),
+        ("launch", EventType.PRODUCT_LAUNCH),
+    )
+    return next(
+        (event_type for needle, event_type in rules if needle in value),
+        EventType.UNCLASSIFIED_PUBLIC_UPDATE,
+    )
 
 
 def declared_event_date(observation: SourceObservation) -> datetime | None:
@@ -51,7 +70,11 @@ def declared_event_date(observation: SourceObservation) -> datetime | None:
         if payload.get(key):
             try:
                 value = datetime.fromisoformat(str(payload[key]))
-                return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+                return (
+                    value.replace(tzinfo=UTC)
+                    if value.tzinfo is None
+                    else value.astimezone(UTC)
+                )
             except ValueError:
                 return None
     return None
@@ -74,9 +97,46 @@ def normalize_structured_observation(
 ) -> EventCandidate:
     kind = event_type or classify_title(observation.title)
     catalog = catalog or MonitorCatalog()
-    source_text = "\n".join(part for part in (observation.title, observation.structured_payload or "") if part)
-    subjects = (EntityResolution(subject_mention, None, ResolutionState.UNRESOLVED, "structured_source", "source record subject is supplied by source-specific normalizer"),) if subject_mention else catalog.resolve_subjects(source_text, source_identifiers=observation.source_identity.source_native_ids, source_url=observation.raw_evidence.locator)
-    resolution = subjects[0].state if len(subjects) == 1 else ResolutionState.AMBIGUOUS
+    source_text = "\n".join(
+        part
+        for part in (observation.title, observation.structured_payload or "")
+        if part
+    )
+    subjects = (
+        (
+            EntityResolution(
+                subject_mention,
+                None,
+                ResolutionState.UNRESOLVED,
+                "structured_source",
+                "source record subject is supplied by source-specific normalizer",
+            ),
+        )
+        if subject_mention
+        else catalog.resolve_subjects(
+            source_text,
+            source_identifiers=observation.source_identity.source_native_ids,
+            source_url=observation.raw_evidence.locator,
+        )
+    )
+    # Multiple independently resolved companies are legitimate subjects of a
+    # joint event, not evidence that one mention has an ambiguous identity.
+    resolution = (
+        ResolutionState.RESOLVED
+        if subjects
+        and all(item.state is ResolutionState.RESOLVED for item in subjects)
+        and len(
+            {
+                item.canonical_account_id
+                for item in subjects
+                if item.canonical_account_id
+            }
+        )
+        == len(subjects)
+        else subjects[0].state
+        if len(subjects) == 1
+        else ResolutionState.AMBIGUOUS
+    )
     program = catalog.resolve_program(source_text)
     source_program = explicit_program_mention(observation)
     if source_program and program.canonical_program_id is None:
@@ -89,8 +149,24 @@ def normalize_structured_observation(
         )
     markets = classify_markets(source_text, source_markets=source_markets)
     freshness = recency_state(observation.source_published_at, now=now)
-    claim = NormalizedClaim("source_title", observation.title, (observation.raw_evidence.id,), "deterministic_structured_mapping", "preserved source field")
-    provenance = Provenance(observation.source_identity.source_system, observation.source_identity.source_record_id, observation.raw_evidence.locator, observation.observed_at, datetime.now(UTC), Classification.PUBLIC, EvidenceState.CONFIRMED, DataMode.CONNECTED, False)
+    claim = NormalizedClaim(
+        "source_title",
+        observation.title,
+        (observation.raw_evidence.id,),
+        "deterministic_structured_mapping",
+        "preserved source field",
+    )
+    provenance = Provenance(
+        observation.source_identity.source_system,
+        observation.source_identity.source_record_id,
+        observation.raw_evidence.locator,
+        observation.observed_at,
+        datetime.now(UTC),
+        Classification.PUBLIC,
+        EvidenceState.CONFIRMED,
+        DataMode.CONNECTED,
+        False,
+    )
     event = IntelligenceEvent(
         f"event-{observation.id.removeprefix('observation-')}",
         kind,
@@ -106,10 +182,17 @@ def normalize_structured_observation(
         provenance,
         observation.source_tier,
         "deterministic structured mapping",
-        subjects[0].confidence_basis,
+        "; ".join(dict.fromkeys(item.confidence_basis for item in subjects)),
         "one source",
         resolution,
-        seller_relevance_state=seller_relevance(markets=markets, event_type=kind, event_date=observation.source_published_at, resolution_state=resolution, source_text=source_text, now=now),
+        seller_relevance_state=seller_relevance(
+            markets=markets,
+            event_type=kind,
+            event_date=observation.source_published_at,
+            resolution_state=resolution,
+            source_text=source_text,
+            now=now,
+        ),
         markets=markets,
         recency_state=freshness,
         canonical_facility_id=catalog.resolve_facility_id(source_text),
