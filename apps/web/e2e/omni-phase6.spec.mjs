@@ -119,6 +119,52 @@ test('Quick Omni opens the Full Omni workspace without losing the conversation',
   await expect(page.locator('.quick-omni .message.user')).toContainText('What should I review today?')
 })
 
+test('an immediately launched selected assessment reaches Omni before submission', async ({ page }) => {
+  const assessment = {
+    id: 'assessment-context-event', context_id: 'assessment-context-event:lockheed-martin', assessment_id: 'a'.repeat(64), assessment_version: 2,
+    canonical_account_ids: ['lockheed-martin'], canonical_program_id: null, headline: 'Supported public development', seller_summary: 'A supported public development requires account review.',
+    what_happened: 'A source-backed public development was recorded.', why_it_may_matter: 'The event is relevant to the selected Customer context.', what_to_watch: 'Watch for material scope changes.',
+    recommended_action: 'Review the cited notice before changing any customer commitment.', action_rationale: 'The evidence supports review, not an automatic commitment.', material_uncertainties: [],
+    markets: ['Defense'], event_timing: 'RECENT', freshness: 'CURRENT', data_mode: 'LIVE_PUBLIC', analysis_status: 'READY', commercial_relevance_state: 'ESTABLISHED_ACCOUNT_REVIEW', summary_mode: 'DETERMINISTIC',
+    publication_timestamp: '2026-09-01T00:00:00Z', relevant_event_timestamp: '2026-09-01T00:00:00Z', source_system: 'Official source', source_url: 'https://example.com/source', resolution_state: 'RESOLVED', seller_promotion_state: 'ELIGIBLE',
+    evidence_ids: ['PUBLIC-EVIDENCE'], references: [], priority_reasons: [], missing_fields: [],
+    signal_confidence: { score: 84.71, factors: [{ key: 'source_quality', points: 90, reason: 'Official source.', evidence_ids: ['PUBLIC-EVIDENCE'] }], data_coverage: { present: 1, applicable: 1 }, decision_id: 'signal-confidence-test', configuration_version: 'SIGNAL_CONFIDENCE_1', input_configuration_version: 'ASSESSMENT_INPUT_1' },
+  }
+  await page.route('**/api/today', async route => {
+    const response = await route.fetch()
+    const payload = await response.json()
+    const item = { id: 'public-assessment-priority', kind: 'PUBLIC_SIGNAL', account_id: 'lockheed-martin', event_id: assessment.id, reason: assessment.why_it_may_matter, recommended_action: assessment.recommended_action, observed_at: assessment.publication_timestamp, evidence_ids: assessment.evidence_ids, business_unit_ids: [], signal_brief: assessment }
+    payload.command_center.priority_briefing = [item, ...payload.command_center.priority_briefing]
+    await route.fulfill({ response, json: payload })
+  })
+  await page.route('**/api/omni', async route => {
+    const request = route.request().postDataJSON()
+    if (!request.question.includes('selected assessment')) return route.continue()
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: 'Signal Confidence: 84.71/100. Next step: Review the cited notice before changing any customer commitment.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['PUBLIC-EVIDENCE'], citation_links: [{ label: 'Official source', url: 'https://example.com/source' }], provenance: ['STORED_INTELLIGENCE'], missingness: [], recommended_action: assessment.recommended_action, context_used: { assessment_id: assessment.assessment_id, assessment_version: assessment.assessment_version }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
+  })
+  await page.goto('/')
+  await waitForApp(page)
+  await page.getByRole('button', { name: 'Public intelligence', exact: true }).click()
+  const priority = page.locator('.today-attention-item').first()
+  await priority.getByRole('button', { name: 'Evidence and governed action' }).click()
+  const scoreLabel = await priority.getByRole('button', { name: /Signal confidence/ }).innerText()
+  const expectedScore = scoreLabel.match(/([0-9.]+)\/100/)?.[1]
+  const expectedAction = await priority.locator('.today-priority-meaning > p').filter({ hasText: 'Next:' }).innerText()
+  await priority.getByRole('button', { name: 'Use in Omni', exact: true }).click()
+  await openOmni(page)
+  const answer = await ask(page, 'Explain this selected assessment, including its Signal Confidence and governed action.')
+  expect(answer.request.context.selected_assessment).toMatchObject({
+    assessment_id: expect.any(String),
+    assessment_version: expect.any(Number),
+    event_id: answer.request.context.selected_event_id,
+    account_id: expect.any(String),
+  })
+  expect(answer.body.context_used.assessment_id).toBe(answer.request.context.selected_assessment.assessment_id)
+  expect(answer.body.context_used.assessment_version).toBe(answer.request.context.selected_assessment.assessment_version)
+  expect(answer.body.content).toContain(`Signal Confidence: ${expectedScore}/100`)
+  expect(answer.body.recommended_action).toBe(expectedAction.replace(/^Next:\s*/, ''))
+})
+
 test('mobile Quick and Full Omni use touch-safe sheet and mode navigation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
