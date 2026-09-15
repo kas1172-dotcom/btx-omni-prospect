@@ -39,7 +39,7 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
   } else await expect(page.getByText('No verified public contact is available.', { exact: false })).toBeVisible()
 
   await page.getByRole('searchbox', { name: 'Switch Customer' }).fill('HUXWRX')
-  await page.getByRole('option', { name: /HUXWRX/ }).click()
+  await page.getByRole('listbox', { name: 'Customer switcher results' }).getByRole('option', { name: /HUXWRX/ }).click()
   await expect(page.getByRole('heading', { name: 'HUXWRX', level: 1 })).toBeVisible()
   if (huxwrx.commercial_briefing) {
     expect(huxwrx.orders.length).toBeGreaterThan(0)

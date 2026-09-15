@@ -518,12 +518,24 @@ def persisted_brief_projection(brief: SignalBrief, *, include_language: bool) ->
 
 
 def signal_briefs_for_monitor(
-    monitor: MonitorService, *, now: datetime | None = None, environment=None
+    monitor: MonitorService,
+    *,
+    now: datetime | None = None,
+    environment=None,
+    projection_limit: int | None = None,
+    account_ids: frozenset[str] | None = None,
 ) -> tuple[SignalBrief, ...]:
-    """Project governed briefs without invoking any language provider."""
+    """Project governed briefs without invoking any language provider.
+
+    Seller read models may request a bounded, relevance-first window. The
+    operational worker deliberately leaves ``projection_limit`` unset so it
+    continues to assess every retained event. Account-scoped consumers filter
+    before the window is applied, preventing unrelated recent events from
+    displacing the selected account's assessment.
+    """
     from btx_omni.monitor.service import current_event_contexts
 
-    projected: list[SignalBrief] = []
+    candidates: list[SignalBrief] = []
     for event, observation in current_event_contexts(monitor):
         source_id = event.provenance.source_system
         subject_ids = {
@@ -544,19 +556,6 @@ def signal_briefs_for_monitor(
             now=now,
             target_reasons=reasons,
         )
-        technical = None
-        if monitor.repository:
-            # Seller reads consume the exact worker-owned durable projection. They never
-            # reconstruct a hash by guessing the configured provider model.
-            cached = monitor.repository.technical_decomposition_for_event(base.id)
-            if cached and cached.get("projection"):
-                technical = json.loads(cached["projection"])
-                technical["governed_explanation"] = persisted_seller_explanation(
-                    monitor.repository,
-                    subject_key=technical_opportunity_subject_key(base.id),
-                    explanation_type=ExplanationType.TECHNICAL_OPPORTUNITY_FIT,
-                )
-        base = replace(base, technical_opportunity=technical) if technical else base
         contextual = (
             tuple(
                 replace(base, canonical_account_ids=(account_id,))
@@ -565,37 +564,80 @@ def signal_briefs_for_monitor(
             if environment is not None and base.canonical_account_ids
             else (base,)
         )
-        for brief in contextual:
-            if environment is not None and monitor.repository:
-                from btx_omni.monitor.business_briefings import (
-                    apply_evidence_package,
-                    apply_persisted_assessment,
-                    assemble_evidence_package,
-                )
+        candidates.extend(
+            brief
+            for brief in contextual
+            if not account_ids
+            or bool(account_ids.intersection(brief.canonical_account_ids))
+        )
 
-                brief = apply_evidence_package(
+    candidates.sort(
+        key=lambda brief: (
+            {
+                "RESOLVED_ELIGIBLE": 0,
+                "RESOLVED_NEEDS_REVIEW": 1,
+                "AMBIGUOUS": 2,
+                "UNRESOLVED": 3,
+                "REJECTED": 4,
+            }.get(brief.seller_promotion_state, 5),
+            0 if brief.resolution_state == "RESOLVED" else 1,
+            -brief.publication_timestamp.timestamp()
+            if brief.publication_timestamp
+            else float("inf"),
+            brief.id,
+            brief.canonical_account_ids,
+        )
+    )
+    if projection_limit is not None:
+        if projection_limit < 1:
+            return ()
+        candidates = candidates[:projection_limit]
+
+    projected: list[SignalBrief] = []
+    for brief in candidates:
+        technical = None
+        if monitor.repository:
+            # Seller reads consume the exact worker-owned durable projection. They never
+            # reconstruct a hash by guessing the configured provider model.
+            cached = monitor.repository.technical_decomposition_for_event(brief.id)
+            if cached and cached.get("projection"):
+                technical = json.loads(cached["projection"])
+                technical["governed_explanation"] = persisted_seller_explanation(
+                    monitor.repository,
+                    subject_key=technical_opportunity_subject_key(brief.id),
+                    explanation_type=ExplanationType.TECHNICAL_OPPORTUNITY_FIT,
+                )
+        brief = replace(brief, technical_opportunity=technical) if technical else brief
+        if environment is not None and monitor.repository:
+            from btx_omni.monitor.business_briefings import (
+                apply_evidence_package,
+                apply_persisted_assessment,
+                assemble_evidence_package,
+            )
+
+            brief = apply_evidence_package(
+                brief,
+                assemble_evidence_package(
                     brief,
-                    assemble_evidence_package(
-                        brief,
-                        environment=environment,
-                        repository=monitor.repository,
-                        now=now,
-                    ),
-                )
-                account_id = (
-                    brief.canonical_account_ids[0]
-                    if len(brief.canonical_account_ids) == 1
-                    else None
-                )
-                brief = apply_persisted_assessment(
-                    brief,
-                    monitor.repository.intelligence_assessment(
-                        brief.id,
-                        account_id=account_id,
-                        input_revision=brief.input_revision,
-                    ),
-                )
-            projected.append(brief)
+                    environment=environment,
+                    repository=monitor.repository,
+                    now=now,
+                ),
+            )
+            account_id = (
+                brief.canonical_account_ids[0]
+                if len(brief.canonical_account_ids) == 1
+                else None
+            )
+            brief = apply_persisted_assessment(
+                brief,
+                monitor.repository.intelligence_assessment(
+                    brief.id,
+                    account_id=account_id,
+                    input_revision=brief.input_revision,
+                ),
+            )
+        projected.append(brief)
     return tuple(projected)
 
 

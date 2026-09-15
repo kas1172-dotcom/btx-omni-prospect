@@ -69,7 +69,9 @@ def haversine_miles(
 def _seller_briefs(runtime: PocRuntime) -> tuple:
     briefs = []
     for deterministic in signal_briefs_for_monitor(
-        runtime.monitor, environment=runtime.environment()
+        runtime.monitor,
+        environment=runtime.environment(),
+        projection_limit=50,
     ):
         cached = (
             runtime.monitor.repository.brief_synthesis(
