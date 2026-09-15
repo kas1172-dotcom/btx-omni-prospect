@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Reviewed public program architecture used as bounded evidence input to the generic Monitor technical-decomposition workflow. These records contain only high-level publicly released architecture; they are not controlled drawings, supplier assertions, awards, or proof of BTX participation.",
+  "programs": [
+    {
+      "id": "javelin-fgm-148",
+      "aliases": [
+        "Javelin",
+        "FGM-148",
+        "Javelin All Up Round",
+        "Javelin AUR"
+      ],
+      "system_name": "Javelin Weapon System",
+      "market": "Defense",
+      "sources": [
+        {
+          "id": "javelin-tata-announcement-2026-08-30",
+          "title": "Javelin Joint Venture and Tata Advanced Systems Signs Agreement for Missile Co-Production in India",
+          "url": "https://news.lockheedmartin.com/2026-08-30-Javelin-Joint-Venture-and-Tata-Advanced-Systems-Signs-Agreement-for-Missile-Co-Production-in-India",
+          "publisher": "Lockheed Martin",
+          "publication_date": "2026-08-30",
+          "extraction_method": "REVIEWED_PUBLIC_RELEASE_EXCERPT",
+          "extraction_complete": false,
+          "passage": "The Javelin Joint Venture and Tata Advanced Systems entered a memorandum of understanding to explore final assembly and integration of the Javelin All Up Round and component production in India. The release states that multiyear sub-assembly kits would be produced at Lockheed Martin's Troy, Alabama facility and guidance electronics units at Raytheon's Tucson, Arizona facility for shipment to India."
+        },
+        {
+          "id": "army-javelin-exhibit-2023-10-17",
+          "title": "Through Lockheed and Raytheon Collaboration, The West Point Museum Unveils Javelin Exhibit",
+          "url": "https://www.army.mil/article/270870/through_lockheed_and_raytheon_collaboration_the_west_point_museum_unveils_javelin_exhibit",
+          "publisher": "U.S. Army",
+          "publication_date": "2023-10-17",
+          "extraction_method": "REVIEWED_PUBLIC_ARTICLE_EXCERPT",
+          "extraction_complete": false,
+          "passage": "The U.S. Army article describes the public exhibit as including a Command Launch Unit, Launch Tube Assembly, and a full-sized replica of the Javelin missile."
+        },
+        {
+          "id": "army-tc-3-22-37-2013-08-13",
+          "title": "TC 3-22.37 Javelin—Close Combat Missile System, Medium",
+          "url": "https://rdl.train.army.mil/catalog-ws/view/100.ATSC/58016C43-60DA-41F3-8B76-72536FC5B799-1376939376712/tc_3-22x37.pdf",
+          "publisher": "U.S. Army",
+          "publication_date": "2013-08-13",
+          "extraction_method": "REVIEWED_PUBLIC_PDF_EXCERPT",
+          "extraction_complete": false,
+          "passage": "The public Army training circular identifies the Javelin missile sections as guidance, warhead, mid-body, propulsion, and control actuator. The same public system description identifies the Battery Coolant Unit as part of the round equipment. Only this high-level published architecture is retained."
+        },
+        {
+          "id": "rtx-javelin-product-page",
+          "title": "Javelin Weapon System",
+          "url": "https://www.rtx.com/raytheon/what-we-do/land/javelin-missile",
+          "publisher": "RTX Raytheon",
+          "publication_date": null,
+          "extraction_method": "REVIEWED_PUBLIC_PRODUCT_PAGE_EXCERPT",
+          "extraction_complete": false,
+          "passage": "RTX describes Javelin as an anti-tank guided munition made by the Javelin Joint Venture between Raytheon and Lockheed Martin and identifies the Command Launch Unit as the system sight and launcher context."
+        }
+      ],
+      "components": [
+        {
+          "name": "Command Launch Unit",
+          "parent_component": null,
+          "category": "LAUNCH_AND_TARGETING",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-javelin-exhibit-2023-10-17", "rtx-javelin-product-page"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["The reviewed sources establish the system element, not a BTX work package."],
+          "validation_questions": ["Is any Command Launch Unit hardware present in governed BTX account or opportunity records?"]
+        },
+        {
+          "name": "Round",
+          "parent_component": null,
+          "category": "ALL_UP_ROUND",
+          "evidence_layer": "ANNOUNCED_SCOPE",
+          "evidence_ids": ["javelin-tata-announcement-2026-08-30"],
+          "confidence_state": "DIRECTLY_ANNOUNCED",
+          "material_uncertainties": ["The announcement does not identify any BTX participation or purchased part."],
+          "validation_questions": ["Do governed Lockheed Martin or RTX records identify the Javelin All Up Round?"]
+        },
+        {
+          "name": "Missile",
+          "parent_component": "Round",
+          "category": "MISSILE_BODY",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-javelin-exhibit-2023-10-17", "army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["The public architecture does not establish a supplier, material, tolerance, qualification, or available capacity."],
+          "validation_questions": ["Which missile-section materials, tolerances, certifications, and supplier qualifications would apply?"]
+        },
+        {
+          "name": "Guidance section",
+          "parent_component": "Missile",
+          "category": "GUIDANCE_ELECTRONICS",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["No public source establishes a BTX housing, enclosure, or electronics work package."],
+          "validation_questions": ["Do governed RTX or Lockheed records reference Javelin guidance electronics, housings, Tucson, or a relevant buyer?"]
+        },
+        {
+          "name": "Mid-body section",
+          "parent_component": "Missile",
+          "category": "MISSILE_BODY",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["No public source establishes addressable BTX scope within this section."],
+          "validation_questions": ["What manufactured hardware, material, tolerance, and qualification scope exists in the mid-body section?"]
+        },
+        {
+          "name": "Warhead section",
+          "parent_component": "Missile",
+          "category": "WARHEAD_BODY",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["No public source establishes a BTX work package, and program-specific qualification is unknown."],
+          "validation_questions": ["Is there a governed, legally reviewable requirement for non-controlled manufactured hardware in this section?"]
+        },
+        {
+          "name": "Propulsion section",
+          "parent_component": "Missile",
+          "category": "PROPULSION",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["No public source establishes an addressable BTX propulsion work package."],
+          "validation_questions": ["Is any non-controlled propulsion housing or structural hardware requirement supported by governed sourcing evidence?"]
+        },
+        {
+          "name": "Control-actuator section",
+          "parent_component": "Missile",
+          "category": "CONTROL_ACTUATION",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["Architecture alone does not establish an actuator-part requirement, qualification, or BTX participation."],
+          "validation_questions": ["Do governed records identify Javelin control-actuation hardware, requirements, or relevant sourcing activity?"]
+        },
+        {
+          "name": "Launch Tube Assembly",
+          "parent_component": "Round",
+          "category": "LAUNCH_TUBE_HARDWARE",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-javelin-exhibit-2023-10-17"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["The source establishes the assembly, not its addressable manufacturing content or suppliers."],
+          "validation_questions": ["What launch-tube hardware, material, process, and qualification scope is publicly or internally supported?"]
+        },
+        {
+          "name": "Battery Coolant Unit",
+          "parent_component": "Round",
+          "category": "COOLING_AND_POWER",
+          "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE",
+          "evidence_ids": ["army-tc-3-22-37-2013-08-13"],
+          "confidence_state": "SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE",
+          "material_uncertainties": ["The source establishes the unit, not a BTX-relevant manufactured part or sourcing need."],
+          "validation_questions": ["Is any Battery Coolant Unit housing, manifold, or hardware requirement supported by governed sourcing evidence?"]
+        },
+        {
+          "name": "U.S. sub-assembly kits from Troy, Alabama",
+          "parent_component": "Round",
+          "category": "PRODUCTION_SCOPE",
+          "evidence_layer": "ANNOUNCED_SCOPE",
+          "evidence_ids": ["javelin-tata-announcement-2026-08-30"],
+          "confidence_state": "DIRECTLY_ANNOUNCED",
+          "material_uncertainties": ["The release does not enumerate the kit contents or identify BTX as a supplier."],
+          "validation_questions": ["Do governed Lockheed Martin records reference Javelin, Troy, sub-assembly kits, missile-component work, or relevant buyer activity?"]
+        },
+        {
+          "name": "Guidance electronics units from Tucson, Arizona",
+          "parent_component": "Guidance section",
+          "category": "GUIDANCE_ELECTRONICS",
+          "evidence_layer": "ANNOUNCED_SCOPE",
+          "evidence_ids": ["javelin-tata-announcement-2026-08-30"],
+          "confidence_state": "DIRECTLY_ANNOUNCED",
+          "material_uncertainties": ["The release does not establish a housing requirement, relevant buyer, or BTX participation."],
+          "validation_questions": ["Do governed RTX records reference Javelin, Tucson, guidance electronics units, housings, or relevant buyer activity?"]
+        },
+        {
+          "name": "India final assembly, integration, and component-production scope",
+          "parent_component": "Round",
+          "category": "PRODUCTION_SCOPE",
+          "evidence_layer": "ANNOUNCED_SCOPE",
+          "evidence_ids": ["javelin-tata-announcement-2026-08-30"],
+          "confidence_state": "DIRECTLY_ANNOUNCED",
+          "material_uncertainties": ["The memorandum describes an exploratory co-production scope; supplier awards, final workshare, and BTX relevance are not established."],
+          "validation_questions": ["Has a governed sourcing record established component workshare, qualification, or a BTX-addressable requirement?"]
+        }
+      ],
+      "validation_questions": [
+        "Do governed Lockheed Martin or RTX records reference Javelin, Troy, Tucson, missile-component work, or relevant buyer activity?",
+        "Which component families, materials, tolerances, certifications, volumes, and qualification requirements are actually addressable?",
+        "Is there an approved customer or sourcing contact for technical validation without implying an existing award or supply relationship?"
+      ]
+    }
+  ]
+}

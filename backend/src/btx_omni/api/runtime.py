@@ -81,6 +81,8 @@ class PocRuntime:
         self.technical_decomposition = TechnicalDecompositionService(
             components=self.sample.component_classes,
             business_units=self.sample.business_units,
+            capabilities=self.sample.capabilities,
+            facilities=self.sample.facilities,
         )
         application_engine = create_database_engine(self.settings)
         self.memory = OmniMemoryRepository(application_engine)
@@ -260,6 +262,8 @@ class PocRuntime:
         self.technical_decomposition = TechnicalDecompositionService(
             components=self.sample.component_classes,
             business_units=self.sample.business_units,
+            capabilities=self.sample.capabilities,
+            facilities=self.sample.facilities,
         )
         if hasattr(self, "monitor"):
             self.monitor.catalog = MonitorCatalog(

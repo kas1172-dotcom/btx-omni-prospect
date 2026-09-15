@@ -630,7 +630,14 @@ def signal_briefs_for_monitor(
         if repository:
             # Seller reads consume the exact worker-owned durable projection. They never
             # reconstruct a hash by guessing the configured provider model.
-            cached = repository.technical_decomposition_for_event(brief.id)
+            technical_account_id = (
+                brief.canonical_account_ids[0]
+                if len(brief.canonical_account_ids) == 1
+                else None
+            )
+            cached = repository.technical_decomposition_for_event(
+                brief.id, technical_account_id
+            )
             if cached and cached.get("projection"):
                 technical = json.loads(cached["projection"])
                 technical["governed_explanation"] = persisted_seller_explanation(

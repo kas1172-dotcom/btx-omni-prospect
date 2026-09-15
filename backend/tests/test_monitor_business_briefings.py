@@ -7,10 +7,18 @@ from types import SimpleNamespace
 from sqlalchemy import create_engine
 from test_commercial_persistence import importer_package
 
-from btx_omni.ai.contracts import BusinessBriefingResult, ProviderStatus
+from btx_omni.ai.contracts import (
+    BusinessBriefingResult,
+    ProviderStatus,
+    TechnicalDecompositionRequest,
+)
 from btx_omni.core.config import Settings
 from btx_omni.modules.assistant.orchestration import OmniOrchestrator
 from btx_omni.modules.commercial.projection import project_commercial_records
+from btx_omni.modules.intelligence.technical_fit import (
+    TechnicalDecompositionService,
+    seller_projection,
+)
 from btx_omni.monitor.briefs import (
     BriefSynthesisBatch,
     SignalBrief,
@@ -27,6 +35,7 @@ from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.worker import run_worker
 from btx_omni.persistence.commercial_import import CommercialImportRepository
 from btx_omni.persistence.models import metadata
+from btx_omni.providers.research.technical_programs import references_for_text
 from btx_omni.providers.sample.environment import build_sample_environment
 
 NOW = datetime(2026, 8, 31, 12, tzinfo=UTC)
@@ -210,6 +219,66 @@ def test_risk_briefing_uses_account_history_without_universal_technical_gate(tmp
     assert requires_technical_investigation("CONTRACT_AWARD") is True
 
 
+def test_javelin_architecture_yields_validation_not_commitment_change(tmp_path) -> None:
+    base = imported_environment(tmp_path)
+    reference = references_for_text("Javelin All Up Round Tata Troy Tucson")[0]
+    request = TechnicalDecompositionRequest(
+        "event-javelin",
+        "SUPPLY_CHAIN_CHANGE",
+        "Lockheed Martin",
+        None,
+        "Defense",
+        reference.sources,
+        account_id="lockheed-martin",
+        source_revision="a" * 64,
+        reviewed_components=reference.components,
+    )
+
+    class Provider:
+        configured = False
+        name = "gemini"
+        config = type("Config", (), {"model": "test"})()
+
+    technical = seller_projection(
+        TechnicalDecompositionService(
+            components=base.component_classes,
+            business_units=base.business_units,
+            capabilities=base.capabilities,
+            facilities=base.facilities,
+        )
+        .process(request, Provider())
+        .projection
+    )
+    context_ledger = deepcopy(base.commercial_ledgers["honeywell"])
+    context_ledger["account_id"] = "lockheed-martin"
+    environment = replace(
+        base,
+        commercial_ledgers={
+            **base.commercial_ledgers,
+            "lockheed-martin": context_ledger,
+        },
+    )
+    candidate = replace(
+        brief("lockheed-martin", event_type="SUPPLY_CHAIN_CHANGE"),
+        id="event-javelin",
+        headline="Javelin co-production announcement",
+        what_happened="The Javelin Joint Venture and Tata announced possible co-production scope.",
+        technical_opportunity=technical,
+    )
+    package = assemble_evidence_package(
+        candidate, environment=environment, repository=Repository(), now=NOW
+    )
+    assert package["commercial_relevance_state"] == "REVIEW_REQUIRED"
+    assert "Javelin" in package["recommended_action"]
+    assert "commitment" not in package["recommended_action"].casefold()
+    assert package["technical_decomposition"]["components"]
+    assert any(
+        item["source_url"].startswith("https://www.army.mil")
+        for item in package["public_evidence"]
+    )
+    assert not package["priority_eligible"]
+
+
 def test_missing_passages_fail_closed_instead_of_showing_completed_intelligence():
     empty = SimpleNamespace(event_document=lambda *args, **kwargs: None)
     package = assemble_evidence_package(
@@ -344,9 +413,7 @@ def test_assessment_history_reuses_unchanged_input_and_versions_material_change(
         and history[0]["is_current"] is True
         and history[1]["is_current"] is False
     )
-    assert [(item["id"], item["version"]) for item in current] == [
-        (changed["id"], 2)
-    ]
+    assert [(item["id"], item["version"]) for item in current] == [(changed["id"], 2)]
     engine.dispose()
 
 
@@ -561,7 +628,8 @@ def test_worker_preserves_event_when_research_stops_before_run_acquisition(
         "btx_omni.monitor.worker.MonitorResearchCoordinator", Coordinator
     )
     monkeypatch.setattr(
-        "btx_omni.monitor.worker.signal_briefs_for_monitor", lambda *_args, **_kwargs: ()
+        "btx_omni.monitor.worker.signal_briefs_for_monitor",
+        lambda *_args, **_kwargs: (),
     )
     monkeypatch.setattr(
         "btx_omni.monitor.worker.process_signal_brief_synthesis",

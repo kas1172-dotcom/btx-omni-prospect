@@ -173,9 +173,15 @@ class OmniOrchestrator:
         # A comparison of records inside an explicitly selected account is not
         # automatically a request to compare two companies. Model interpretation
         # remains available; this is the conservative deterministic fallback.
-        if (cross_intent == 'COMPARE' and account_id in environment.commercial_ledgers
-                and len(self._comparison_accounts_named(query, environment)) < 2
-                and re.search(r'\b(quote|quotes|revisions?|delivery|shipments?|revenue|acceptance|history)\b', query)):
+        if (
+            cross_intent == "COMPARE"
+            and account_id in environment.commercial_ledgers
+            and len(self._comparison_accounts_named(query, environment)) < 2
+            and re.search(
+                r"\b(quote|quotes|revisions?|delivery|shipments?|revenue|acceptance|history)\b",
+                query,
+            )
+        ):
             cross_intent = None
         comparison_ids = product_context.get("_conversation_comparison_ids")
         if (
@@ -316,7 +322,11 @@ class OmniOrchestrator:
         reference_only = account.public_research_state == "SANITIZED_REFERENCE"
         lines = [
             f"Deterministic governed answer for {account.legal_name}. "
-            + ("Identity and location come from a sanitized reference source." if reference_only else "Public identity, location, and cited events are publicly verified.")
+            + (
+                "Identity and location come from a sanitized reference source."
+                if reference_only
+                else "Public identity, location, and cited events are publicly verified."
+            )
             + " BTX commercial, CRM, ownership, deal, quote, scoring, and workflow context is simulated POC data when present."
         ]
         public_identity_state = (
@@ -327,9 +337,13 @@ class OmniOrchestrator:
         lines.append(
             f"Public identity: {public_identity_state}; BTX commercial context is simulated and not a connected source record."
         )
-        lines.append(f"Canonical industries: {primary_market_label(account.industries)}.")
+        lines.append(
+            f"Canonical industries: {primary_market_label(account.industries)}."
+        )
         if account.btx_top_100:
-            lines.append("BTX Top 100: yes, sourced from the sanitized POC Top 100 reference workbook; no rank is inferred.")
+            lines.append(
+                "BTX Top 100: yes, sourced from the sanitized POC Top 100 reference workbook; no rank is inferred."
+            )
         if account.public_relationship:
             lines.append(
                 f"Public relationship evidence: {account.public_relationship.state.value} ({account.public_relationship.confidence}); it is not BTX internal confirmation."
@@ -575,13 +589,27 @@ class OmniOrchestrator:
             return "ACTIONS"
         if words & {"quote", "quotes", "rfq", "rfqs"}:
             return "QUOTES"
-        if (
-            words & {"changed", "change", "recent", "recently", "new", "latest", "intelligence", "signal", "signals"}
-        ):
+        if words & {
+            "changed",
+            "change",
+            "recent",
+            "recently",
+            "new",
+            "latest",
+            "intelligence",
+            "signal",
+            "signals",
+        }:
             return "INTELLIGENCE"
-        if (
-            words & {"matter", "matters", "important", "importance", "significant", "significance", "relevant"}
-        ):
+        if words & {
+            "matter",
+            "matters",
+            "important",
+            "importance",
+            "significant",
+            "significance",
+            "relevant",
+        }:
             return "SIGNIFICANCE"
         if (
             ("next" in words and words & {"do", "step", "move", "action"})
@@ -596,7 +624,10 @@ class OmniOrchestrator:
     @staticmethod
     def _is_global_cross_account_question(question: str) -> bool:
         return bool(
-            re.search(r"\b(which|what)\s+(?:[a-z]+\s+){0,2}(accounts|customers|prospects)\b", question)
+            re.search(
+                r"\b(which|what)\s+(?:[a-z]+\s+){0,2}(accounts|customers|prospects)\b",
+                question,
+            )
         )
 
     @classmethod
@@ -784,8 +815,10 @@ class OmniOrchestrator:
                         for item in intelligence_events
                         if item.get("id") == event_id
                         and isinstance(item.get("business_briefing"), Mapping)
-                        and item["business_briefing"].get("assessment_id") == assessment_id
-                        and item["business_briefing"].get("assessment_version") == assessment_version
+                        and item["business_briefing"].get("assessment_id")
+                        == assessment_id
+                        and item["business_briefing"].get("assessment_version")
+                        == assessment_version
                     ),
                     None,
                 )
@@ -971,9 +1004,11 @@ class OmniOrchestrator:
                 intelligence_events=intelligence_events,
                 work_items=work_items,
             )
-        if (intent is ReadIntent.GENERAL_OVERVIEW
-                and not self._is_global_cross_account_question(question)
-                and any(item.id == account_id for item in environment.accounts)):
+        if (
+            intent is ReadIntent.GENERAL_OVERVIEW
+            and not self._is_global_cross_account_question(question)
+            and any(item.id == account_id for item in environment.accounts)
+        ):
             # A model's broad intent label cannot discard explicit canonical
             # request scope. Record questions still need the scoped read tools.
             intent = ReadIntent.ACCOUNT_OVERVIEW
@@ -1002,9 +1037,16 @@ class OmniOrchestrator:
             if not candidates and account_id:
                 # A word-boundary short name can refer to the explicitly selected
                 # account, but is never a global identity alias or a new account.
-                selected = next((item for item in environment.accounts if item.id == account_id), None)
+                selected = next(
+                    (item for item in environment.accounts if item.id == account_id),
+                    None,
+                )
                 normalized = entity_text.casefold().strip()
-                if selected and len(normalized) >= 5 and selected.legal_name.casefold().startswith(normalized + ' '):
+                if (
+                    selected
+                    and len(normalized) >= 5
+                    and selected.legal_name.casefold().startswith(normalized + " ")
+                ):
                     candidates = (selected,)
             if len(candidates) != 1:
                 return self._interpreted_entity_clarification(
@@ -1195,12 +1237,20 @@ class OmniOrchestrator:
             if account.prospect_rationale:
                 lines.append(f"Governed rationale: {account.prospect_rationale}")
             if alerts:
-                lines.append(f"Current SAMPLE commercial attention: {alerts[0].trigger_reason}")
+                lines.append(
+                    f"Current SAMPLE commercial attention: {alerts[0].trigger_reason}"
+                )
                 citations.extend(alerts[0].evidence_ids)
             if not account.prospect_rationale and not alerts:
-                lines.append("No narrower governed significance rationale is available for this Customer.")
-                missing.append("Customer significance needs research or governed commercial context.")
-            lines.append("Public/reference identity and SAMPLE BTX commercial context remain separate truth categories.")
+                lines.append(
+                    "No narrower governed significance rationale is available for this Customer."
+                )
+                missing.append(
+                    "Customer significance needs research or governed commercial context."
+                )
+            lines.append(
+                "Public/reference identity and SAMPLE BTX commercial context remain separate truth categories."
+            )
         elif intent == "NEXT_ACTION":
             alerts = tuple(
                 item
@@ -1219,10 +1269,16 @@ class OmniOrchestrator:
                 or "Review governed Customer evidence before choosing an outreach step."
             )
             lines.append(f"Suggested next move: {suggestion}")
-            citations.extend(value for item in alerts[:1] for value in item.evidence_ids)
-            lines.append("This is read-only guidance; create or update work only in the authorized Actions workflow.")
+            citations.extend(
+                value for item in alerts[:1] for value in item.evidence_ids
+            )
+            lines.append(
+                "This is read-only guidance; create or update work only in the authorized Actions workflow."
+            )
         else:
-            lines.append(f"Canonical industries: {primary_market_label(account.industries)}.")
+            lines.append(
+                f"Canonical industries: {primary_market_label(account.industries)}."
+            )
             lines.append(
                 "Ask about recent Intelligence, significance, quotes, or governed Actions for a narrower answer."
             )
@@ -2253,12 +2309,19 @@ class OmniOrchestrator:
             else context.get("selected_account_id")
             if isinstance(context.get("selected_account_id"), str)
             else filters.get("account_id")
-            if isinstance(filters, Mapping) and isinstance(filters.get("account_id"), str)
+            if isinstance(filters, Mapping)
+            and isinstance(filters.get("account_id"), str)
             else None
         )
-        candidates = tuple(record for record in event_records if record.get("id") == event_id)
+        candidates = tuple(
+            record for record in event_records if record.get("id") == event_id
+        )
         event = next(
-            (record for record in candidates if record.get("account_id") == selected_account_id),
+            (
+                record
+                for record in candidates
+                if record.get("account_id") == selected_account_id
+            ),
             candidates[0] if candidates else None,
         )
         context_used: dict[str, object] = {"event_id": event_id}
@@ -2311,15 +2374,19 @@ class OmniOrchestrator:
             if isinstance(selected_assessment, Mapping) and (
                 selected_assessment.get("event_id") != event_id
                 or selected_assessment.get("account_id") != account_id
-                or selected_assessment.get("assessment_id") != business.get("assessment_id")
-                or selected_assessment.get("assessment_version") != business.get("assessment_version")
+                or selected_assessment.get("assessment_id")
+                != business.get("assessment_id")
+                or selected_assessment.get("assessment_version")
+                != business.get("assessment_version")
             ):
                 return OmniResponse(
                     "The selected Intelligence assessment has changed or is no longer current. Refresh the assessment before asking Omni to explain it.",
                     account.id if account else "",
                     (),
                     (AssistantProvenance.MISSING_UNAVAILABLE,),
-                    ("Selected Intelligence assessment is stale or outside the requested account scope.",),
+                    (
+                        "Selected Intelligence assessment is stale or outside the requested account scope.",
+                    ),
                     None,
                     (),
                     account.legal_name if account else None,
@@ -2340,13 +2407,24 @@ class OmniOrchestrator:
                 if isinstance(item, Mapping) and item.get("url")
             ] or citation_links
             package = business.get("evidence_package")
-            records = package.get("commercial_records", ()) if isinstance(package, Mapping) else ()
+            records = (
+                package.get("commercial_records", ())
+                if isinstance(package, Mapping)
+                else ()
+            )
             citations.extend(
-                str(item["record_id"]) for item in records
+                str(item["record_id"])
+                for item in records
                 if isinstance(item, Mapping) and item.get("record_id")
             )
-            uncertainties = tuple(str(item) for item in business.get("material_uncertainties", ()) if item)
-            action = business.get("recommended_action") if isinstance(business.get("recommended_action"), str) else None
+            uncertainties = tuple(
+                str(item) for item in business.get("material_uncertainties", ()) if item
+            )
+            action = (
+                business.get("recommended_action")
+                if isinstance(business.get("recommended_action"), str)
+                else None
+            )
             confidence = business.get("signal_confidence")
             confidence_text = None
             if isinstance(confidence, Mapping):
@@ -2360,30 +2438,95 @@ class OmniOrchestrator:
                 )
                 if score is not None:
                     score_text = f"{float(score):.2f}".rstrip("0").rstrip(".")
-                    confidence_text = (
-                        f"Signal Confidence: {score_text}/100."
-                        + (f" Relevant factors: {factor_text}." if factor_text else "")
+                    confidence_text = f"Signal Confidence: {score_text}/100." + (
+                        f" Relevant factors: {factor_text}." if factor_text else ""
                     )
-                    if isinstance(assessment_id, str) and isinstance(assessment_version, int):
+                    if isinstance(assessment_id, str) and isinstance(
+                        assessment_version, int
+                    ):
                         context_used["signal_confidence_score"] = float(score)
                         if isinstance(confidence.get("configuration_version"), str):
-                            context_used["signal_confidence_version"] = confidence["configuration_version"]
-            explanation = " ".join(filter(None, (
-                str(business.get("headline") or title),
-                f"What changed: {business.get('what_happened')}." if business.get("what_happened") else None,
-                f"Why it matters: {business.get('why_it_may_matter')}." if business.get("why_it_may_matter") else None,
-                confidence_text,
-                f"Next step: {action}." if action else "This is informational; no seller action is established.",
-                f"What remains uncertain: {'; '.join(uncertainties)}" if uncertainties else None,
-            )))
-            provenance = [AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.CANONICAL_FACT,
-                          AssistantProvenance.DETERMINISTIC_DERIVATION]
+                            context_used["signal_confidence_version"] = confidence[
+                                "configuration_version"
+                            ]
+            package = business.get("evidence_package")
+            technical = (
+                package.get("technical_decomposition")
+                if isinstance(package, Mapping)
+                and isinstance(package.get("technical_decomposition"), Mapping)
+                else business.get("technical_opportunity")
+            )
+            technical_text = None
+            if isinstance(technical, Mapping):
+                component_lines = []
+                for component in technical.get("components", ()):
+                    if isinstance(component, Mapping):
+                        component_lines.append(
+                            f"{component.get('name')}"
+                            + (
+                                f" within {component.get('parent_component')}"
+                                if component.get("parent_component")
+                                else ""
+                            )
+                            + f" ({str(component.get('evidence_layer', 'INCOMPLETE')).replace('_', ' ').lower()})"
+                        )
+                fit_lines = [
+                    str(item.get("statement"))
+                    for item in technical.get("fit_hypotheses", ())
+                    if isinstance(item, Mapping) and item.get("statement")
+                ]
+                if component_lines:
+                    technical_text = (
+                        "Supported component hierarchy: "
+                        + "; ".join(component_lines)
+                        + ". "
+                        + (
+                            "Possible BTX fit requiring validation: "
+                            + "; ".join(fit_lines)
+                            + "."
+                            if fit_lines
+                            else "No BTX fit is established."
+                        )
+                    )
+            explanation = " ".join(
+                filter(
+                    None,
+                    (
+                        str(business.get("headline") or title),
+                        f"What changed: {business.get('what_happened')}."
+                        if business.get("what_happened")
+                        else None,
+                        f"Why it matters: {business.get('why_it_may_matter')}."
+                        if business.get("why_it_may_matter")
+                        else None,
+                        confidence_text,
+                        technical_text,
+                        f"Next step: {action}."
+                        if action
+                        else "This is informational; no seller action is established.",
+                        f"What remains uncertain: {'; '.join(uncertainties)}"
+                        if uncertainties
+                        else None,
+                    ),
+                )
+            )
+            provenance = [
+                AssistantProvenance.STORED_INTELLIGENCE,
+                AssistantProvenance.CANONICAL_FACT,
+                AssistantProvenance.DETERMINISTIC_DERIVATION,
+            ]
             if uncertainties:
                 provenance.append(AssistantProvenance.MISSING_UNAVAILABLE)
             return OmniResponse(
-                explanation, account.id if account else "", tuple(dict.fromkeys(citations)),
-                tuple(provenance), uncertainties, action, tuple(dict.fromkeys(citation_links)),
-                account.legal_name if account else None, context_used=context_used,
+                explanation,
+                account.id if account else "",
+                tuple(dict.fromkeys(citations)),
+                tuple(provenance),
+                uncertainties,
+                action,
+                tuple(dict.fromkeys(citation_links)),
+                account.legal_name if account else None,
+                context_used=context_used,
             )
         missing: list[str] = []
         lines = [
@@ -2558,8 +2701,15 @@ class OmniOrchestrator:
         for account in environment.accounts:
             if account.id not in environment.scoring_inputs:
                 continue
-            scenario = environment.priority_scenarios.get(account.id) or environment.rich_scenarios.get(account.id)
-            result = seller_attractiveness_projection(environment.attractiveness_inputs(account.id), calculated_at=observed_at, excluded=bool(scenario and scenario.exclusion_reason), exclusion_reason=scenario.exclusion_reason if scenario else None)
+            scenario = environment.priority_scenarios.get(
+                account.id
+            ) or environment.rich_scenarios.get(account.id)
+            result = seller_attractiveness_projection(
+                environment.attractiveness_inputs(account.id),
+                calculated_at=observed_at,
+                excluded=bool(scenario and scenario.exclusion_reason),
+                exclusion_reason=scenario.exclusion_reason if scenario else None,
+            )
             if result.score is not None:
                 scores.append((account, result))
         return scores
@@ -3041,8 +3191,15 @@ class OmniOrchestrator:
             names = [account.legal_name]
             if account.public_identity:
                 names.extend(alias.value for alias in account.public_identity.aliases)
-            positions = [match.start() for name in names
-                         if (match := re.search(r'(?<!\w)' + re.escape(name.casefold()) + r'(?!\w)', question))]
+            positions = [
+                match.start()
+                for name in names
+                if (
+                    match := re.search(
+                        r"(?<!\w)" + re.escape(name.casefold()) + r"(?!\w)", question
+                    )
+                )
+            ]
             if positions:
                 resolved.append((min(positions), account))
         return tuple(

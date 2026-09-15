@@ -9,7 +9,7 @@ from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import Engine, case, delete, insert, or_, select, text, update
+from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, update
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -1365,13 +1365,15 @@ class MonitorRepository:
             )
 
     def technical_decomposition(
-        self, event_id: str, governed_content_hash: str
+        self, event_id: str, governed_content_hash: str, account_id: str | None = None
     ) -> dict | None:
         with self.engine.connect() as connection:
             row = (
                 connection.execute(
                     select(monitor_technical_decompositions).where(
                         monitor_technical_decompositions.c.event_id == event_id,
+                        monitor_technical_decompositions.c.account_id == account_id,
+                        monitor_technical_decompositions.c.is_current.is_(True),
                         monitor_technical_decompositions.c.governed_content_hash
                         == governed_content_hash,
                     )
@@ -1430,14 +1432,26 @@ class MonitorRepository:
                 )
             )
 
-    def technical_decomposition_for_event(self, event_id: str) -> dict | None:
+    def technical_decomposition_for_event(
+        self, event_id: str, account_id: str | None = None
+    ) -> dict | None:
         """Read the worker-owned latest durable projection without reconstructing a provider model."""
         with self.engine.connect() as connection:
             row = (
                 connection.execute(
-                    select(monitor_technical_decompositions).where(
-                        monitor_technical_decompositions.c.event_id == event_id
+                    select(monitor_technical_decompositions)
+                    .where(
+                        monitor_technical_decompositions.c.event_id == event_id,
+                        monitor_technical_decompositions.c.is_current.is_(True),
+                        (monitor_technical_decompositions.c.account_id == account_id)
+                        if account_id is not None
+                        else true(),
                     )
+                    .order_by(
+                        monitor_technical_decompositions.c.account_id.is_(None),
+                        monitor_technical_decompositions.c.version.desc(),
+                    )
+                    .limit(1)
                 )
                 .mappings()
                 .one_or_none()
@@ -1465,18 +1479,59 @@ class MonitorRepository:
         processed_at: datetime,
         attempt_count: int,
         next_retry_at: datetime | None,
+        account_id: str | None = None,
+        source_revision: str | None = None,
     ) -> None:
+        context_key = f"{event_id}|{account_id or '*'}"
+        serialized = _json(projection) if projection else None
         with self.engine.begin() as connection:
-            connection.execute(
-                delete(monitor_technical_decompositions).where(
-                    monitor_technical_decompositions.c.event_id == event_id
+            current = (
+                connection.execute(
+                    select(monitor_technical_decompositions).where(
+                        monitor_technical_decompositions.c.context_key == context_key,
+                        monitor_technical_decompositions.c.is_current.is_(True),
+                    )
                 )
+                .mappings()
+                .one_or_none()
             )
+            if current and current["governed_content_hash"] == governed_content_hash:
+                connection.execute(
+                    update(monitor_technical_decompositions)
+                    .where(monitor_technical_decompositions.c.id == current["id"])
+                    .values(
+                        projection=serialized,
+                        provider=provider,
+                        model=model,
+                        status=status,
+                        attempt_count=attempt_count,
+                        next_retry_at=next_retry_at,
+                        processed_at=processed_at,
+                        source_revision=source_revision,
+                    )
+                )
+                return
+            version = int(current["version"]) + 1 if current else 1
+            if current:
+                connection.execute(
+                    update(monitor_technical_decompositions)
+                    .where(monitor_technical_decompositions.c.id == current["id"])
+                    .values(is_current=False)
+                )
+            decomposition_id = hashlib.sha256(
+                f"{context_key}|{version}|{governed_content_hash}".encode()
+            ).hexdigest()
             connection.execute(
                 insert(monitor_technical_decompositions).values(
+                    id=decomposition_id,
+                    context_key=context_key,
                     event_id=event_id,
+                    account_id=account_id,
+                    source_revision=source_revision,
                     governed_content_hash=governed_content_hash,
-                    projection=_json(projection) if projection else None,
+                    version=version,
+                    is_current=True,
+                    projection=serialized,
                     provider=provider,
                     model=model,
                     status=status,

@@ -2,6 +2,7 @@ import type { MonitorSignalBrief } from '../types/api'
 import { Button, Disclosure, EvidenceSource, State } from './UI'
 import { GovernedExplanationDisclosure } from './GovernedExplanationDisclosure'
 import { EvidencePassages } from './EvidencePassages'
+import { TechnicalDecompositionSection } from './TechnicalDecompositionSection'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
@@ -43,19 +44,14 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         <ul>{brief.risk_severity.factors.map(factor => <li key={factor.key}><strong>{factor.key.replaceAll('_', ' ')}</strong>: {factor.reason}</li>)}</ul>
       </div>
     </Disclosure>}
-    {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit">
+    <TechnicalDecompositionSection technical={brief.technical_opportunity} compact />
+    {brief.technical_opportunity && <Disclosure title="Potential BTX Technical Fit · components and evidence">
       <div className="seller-signal-details technical-fit">
-        {brief.technical_opportunity.event_summary && <p>{brief.technical_opportunity.event_summary}</p>}
-        {brief.technical_opportunity.program_candidates.length > 0 && <div><strong>Program / product</strong><ul>{[...brief.technical_opportunity.program_candidates, ...brief.technical_opportunity.product_candidates].map((item, index) => <li key={`candidate-${index}`}>{item.name} · {display(item.basis)}</li>)}</ul></div>}
-        {brief.technical_opportunity.technical_systems.length > 0 && <div><strong>Technical context</strong><ul>{brief.technical_opportunity.technical_systems.map((item, index) => <li key={`system-${index}`}>{item.name} · {display(item.basis)}</li>)}</ul></div>}
-        {brief.technical_opportunity.matches.length ? brief.technical_opportunity.matches.map((match, index) => <article key={`${match.candidate_name}:${index}`}>
-          <p><strong>{match.candidate_name}</strong> · <span>{display(match.basis)}</span></p>
-          {match.status === 'MATCHED' ? <>
-            <p>Controlled BTX match: {match.component_name ?? 'Available'}</p>
-            <p>Applicable BU{match.business_units.length === 1 ? '' : 's'}: {match.business_units.map(unit => unit.name).join(', ') || 'Unavailable'}</p>
-          </> : <p>{match.status === 'NO_MATCH' ? 'No controlled BTX capability match identified.' : match.status === 'POSSIBLE_MATCH_REVIEW_REQUIRED' ? 'Controlled taxonomy review required before a BTX match is asserted.' : 'Controlled BTX taxonomy is not specific enough for a match.'}</p>}
-        </article>) : <p>{brief.technical_opportunity.provider_status === 'AVAILABLE' ? 'No manufactured component candidates were identified from the supplied public evidence.' : 'Technical decomposition is unavailable; the governed public signal remains available.'}</p>}
-        {brief.technical_opportunity.uncertainties.length > 0 && <div><strong>Uncertainties</strong><ul>{brief.technical_opportunity.uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
+        <TechnicalDecompositionSection technical={brief.technical_opportunity} />
+        {[...brief.technical_opportunity.program_candidates, ...brief.technical_opportunity.product_candidates, ...brief.technical_opportunity.technical_systems].length > 0 && <div><strong>Additional technical candidates</strong><ul>{[...brief.technical_opportunity.program_candidates, ...brief.technical_opportunity.product_candidates, ...brief.technical_opportunity.technical_systems].map((item, index) => <li key={`${item.name}:${index}`}>{item.name} · {display(item.basis)}</li>)}</ul></div>}
+        {brief.technical_opportunity.matches.map((match, index) => <div key={`${match.candidate_name}:${index}`}>
+          {match.status === 'MATCHED' ? <><p><strong>Controlled BTX match:</strong> {match.component_name ?? match.candidate_name} · {display(match.basis)}. This remains a fit hypothesis, not evidence of program participation.</p><p><strong>Applicable BU:</strong> {match.business_units.map(unit => unit.name).join(', ') || 'Validation required'}</p></> : <p>{match.status === 'NO_MATCH' ? 'No controlled BTX capability match identified.' : match.status === 'POSSIBLE_MATCH_REVIEW_REQUIRED' ? 'Controlled taxonomy review required before a BTX match is asserted.' : 'Controlled BTX taxonomy is not specific enough for a match.'}</p>}
+        </div>)}
         <small>{brief.technical_opportunity.disclosure}</small>
         <GovernedExplanationDisclosure title="Why this technical fit may matter" explanation={brief.technical_opportunity.governed_explanation} />
       </div>

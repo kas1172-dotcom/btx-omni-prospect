@@ -937,7 +937,7 @@ def test_seller_window_prioritizes_persisted_relevance_before_recency(monkeypatc
                 },
             )
 
-        def technical_decomposition_for_event(self, _event_id):
+        def technical_decomposition_for_event(self, _event_id, _account_id=None):
             return None
 
     monitor = SimpleNamespace(
