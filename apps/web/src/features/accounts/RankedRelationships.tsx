@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
 import type { RankedRelationships as Result, RelationshipMode } from '../../types/relationships'
 import './ranked-relationships.css'
@@ -45,7 +45,7 @@ export function RankedRelationships({ accountId, onOmniContext }: { accountId: s
   }, [accountId, mode, depth, retry, component, target, targetComponent, selectedId, mobile, expansions, contextPage, revisionGuard, budgetLevel, includeRecords])
   const routes = result?.evaluated_routes ?? []
   const selected = routes.find(r => r.path_id === selectedId) ?? routes.find(r => r.path_id === result?.graph.selected_path_id) ?? routes[0]
-  useEffect(() => {
+  useLayoutEffect(() => {
     onOmniContext({ relationship_selection: selected && result?.scope && result.eligible_graph_revision && !pending && !error ? {
       source_account_id: accountId, target_ids: result.scope.target_ids, mode: result.mode, as_of: result.scope.as_of,
       depth: result.searched_depth, path_id: selected.path_id, graph_revision: result.eligible_graph_revision,
