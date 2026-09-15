@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Account, Alert, CommandCenter, MonitorSignalBrief, OmniContext, Signal } from '../../types/api'
+import type { Account, Alert, CommandCenter, MonitorSignalBrief, OmniAssessmentSelection, OmniContext, Signal } from '../../types/api'
 import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { curatedSignalBrief } from '../../components/signalBriefModel'
 import { Button, Disclosure, Empty, Panel, State } from '../../components/UI'
@@ -9,10 +9,11 @@ import './today.css'
 export interface TodayFilters { kind: 'ALL' | 'PUBLIC_SIGNAL' | 'COMMERCIAL_REVIEW'; accountId: string; businessUnit: string }
 const itemsById = <T extends { id: string }>(items: T[], ids?: string[]) => ids ? ids.flatMap(id => { const item = items.find(value => value.id === id); return item ? [item] : [] }) : items
 
-export function Today({ commandCenter, state, alerts, signals, accounts, filters, onFilters, onAccount, onAction, onIntelligence, onMonitor, onEventSelect, onOmniContext }: { commandCenter?: CommandCenter; state: 'loading' | 'loaded' | 'unavailable'; alerts: Alert[]; signals: Signal[]; accounts: Account[]; filters: TodayFilters; onFilters: (filters: TodayFilters) => void; onAccount: (id: string) => void; onAction: (alert: Alert) => void; onIntelligence: () => void; onMonitor: () => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'selected_event_id' | 'selected_program_id' | 'active_filters' | 'visible_record_ids'>) => void }) {
+export function Today({ commandCenter, state, alerts, signals, accounts, filters, onFilters, onAccount, onAction, onIntelligence, onMonitor, onEventSelect, onOmniContext }: { commandCenter?: CommandCenter; state: 'loading' | 'loaded' | 'unavailable'; alerts: Alert[]; signals: Signal[]; accounts: Account[]; filters: TodayFilters; onFilters: (filters: TodayFilters) => void; onAccount: (id: string) => void; onAction: (alert: Alert) => void; onIntelligence: () => void; onMonitor: () => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_program_id' | 'active_filters' | 'visible_record_ids'>) => void }) {
   const [market, setMarket] = useState('')
   const [watchOpen, setWatchOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string>()
+  const [selectedAssessment, setSelectedAssessment] = useState<OmniAssessmentSelection>()
   const [selectedBriefContextId, setSelectedBriefContextId] = useState<string>()
   const [selectedEventAccountId, setSelectedEventAccountId] = useState<string>()
   const [selectedProgramId, setSelectedProgramId] = useState<string>()
@@ -48,11 +49,11 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   const curated = useMemo(() => curatedSignals.map(signal => curatedSignalBrief(signal, accountById.get(signal.account_id ?? ''))), [accountById, curatedSignals])
   const missingCuratedCount = curatedIds.length - curated.length
   const visibleIds = useMemo(() => [...new Set([...priority.map(item => item.event_id ?? item.signal_brief?.id ?? item.id), ...(watchOpen ? [...visibleCurrent.map(item => item.id), ...visibleRadar.map(item => item.id), ...visibleAccounts.slice(0, 12).map(item => item.account_id), ...visiblePrograms.map(item => item.program_id), ...curated.map(item => item.id)] : [])])].slice(0, 50), [curated, priority, visibleAccounts, visibleCurrent, visiblePrograms, visibleRadar, watchOpen])
-  useEffect(() => { onOmniContext({ selected_event_id: selectedEventId, selected_program_id: selectedProgramId, active_filters: { market, priority_kind: filters.kind, account_id: selectedEventAccountId ?? filters.accountId, business_unit_id: filters.businessUnit }, visible_record_ids: visibleIds }) }, [market, filters, onOmniContext, selectedEventAccountId, selectedEventId, selectedProgramId, visibleIds])
+  useEffect(() => { onOmniContext({ selected_event_id: selectedEventId, selected_assessment: selectedAssessment, selected_program_id: selectedProgramId, active_filters: { market, priority_kind: filters.kind, account_id: selectedEventAccountId ?? filters.accountId, business_unit_id: filters.businessUnit }, visible_record_ids: visibleIds }) }, [market, filters, onOmniContext, selectedAssessment, selectedEventAccountId, selectedEventId, selectedProgramId, visibleIds])
   useEffect(() => () => { onEventSelect(undefined); onOmniContext({}) }, [onEventSelect, onOmniContext])
   const name = (id: string) => accountById.get(id)?.name ?? accountById.get(id)?.legal_name ?? 'Unresolved Customer'
-  const useBrief = (brief: MonitorSignalBrief) => { const contextId = brief.context_id ?? brief.id; const next = selectedBriefContextId === contextId ? undefined : brief.id; setSelectedBriefContextId(next ? contextId : undefined); setSelectedEventId(next); setSelectedEventAccountId(next ? brief.canonical_account_ids[0] : undefined); setSelectedProgramId(next ? brief.canonical_program_id : undefined); onEventSelect(next) }
-  const changeFilters = (next: TodayFilters) => { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined); onFilters(next) }
+  const useBrief = (brief: MonitorSignalBrief) => { const contextId = brief.context_id ?? brief.id; const next = selectedBriefContextId === contextId ? undefined : brief.id; const accountId = brief.canonical_account_ids[0]; setSelectedBriefContextId(next ? contextId : undefined); setSelectedEventId(next); setSelectedAssessment(next && brief.assessment_id && brief.assessment_version && accountId ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined); setSelectedEventAccountId(next ? accountId : undefined); setSelectedProgramId(next ? brief.canonical_program_id : undefined); onEventSelect(next) }
+  const changeFilters = (next: TodayFilters) => { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedAssessment(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined); onFilters(next) }
   const inspectPriority = (id: string) => {
     const target = document.getElementById(`priority-${id}`)
     target?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
@@ -62,7 +63,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
     const nextHub = commandCenter?.market_hubs.find(hub => hub.market === nextMarket)
     const nextVisibleEvents = new Set([...priority.map(item => item.event_id ?? item.signal_brief?.id ?? item.id), ...(nextHub ? nextHub.current_signal_ids : current.map(item => item.id)), ...(nextHub ? nextHub.upcoming_signal_ids : radar.map(item => item.id)), ...curated.map(item => item.id)])
     const nextVisiblePrograms = new Set(nextHub ? nextHub.watched_program_ids : (commandCenter?.watched_programs ?? []).map(item => item.program_id))
-    if (selectedEventId && !nextVisibleEvents.has(selectedEventId)) { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedEventAccountId(undefined); onEventSelect(undefined) }
+    if (selectedEventId && !nextVisibleEvents.has(selectedEventId)) { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedAssessment(undefined); setSelectedEventAccountId(undefined); onEventSelect(undefined) }
     if (selectedProgramId && !nextVisiblePrograms.has(selectedProgramId)) setSelectedProgramId(undefined)
     setMarket(nextMarket)
   }
@@ -103,7 +104,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
           </li>)}</ol> : <Empty>No priorities match this scope. Change the filters to review other work.</Empty>}
       </Panel>
     </div>
-    <Disclosure title="Market watch and source coverage" open={watchOpen} onOpenChange={open => { setWatchOpen(open); if (!open && !priority.some(item => (item.event_id ?? item.signal_brief?.id ?? item.id) === selectedEventId)) { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined) } }}>
+    <Disclosure title="Market watch and source coverage" open={watchOpen} onOpenChange={open => { setWatchOpen(open); if (!open && !priority.some(item => (item.event_id ?? item.signal_brief?.id ?? item.id) === selectedEventId)) { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedAssessment(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined) } }}>
     <Panel title="Current public intelligence" action={<Button variant="ghost" onClick={onMonitor}>Source health</Button>}>{visibleCurrent.length ? <div className="seller-signal-list">{visibleCurrent.map(brief => <SignalBriefCard key={brief.context_id ?? brief.id} brief={brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} />)}</div> : <Empty>No current public signal is eligible{market ? ` for ${market}` : ''}.</Empty>}</Panel>
     <Panel title="Upcoming Radar" action={<span className="panel-kicker">Only source-supported future dates</span>}>{visibleRadar.length ? <div className="seller-signal-list radar-list">{visibleRadar.map(brief => <SignalBriefCard key={brief.context_id ?? brief.id} brief={brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} />)}</div> : <Empty>No governed upcoming dates{market ? ` for ${market}` : ''}. Unknown dates are not promoted into Radar.</Empty>}</Panel>
     <section className="today-market-section" aria-labelledby="market-hubs-title"><div><span className="eyebrow">Navigation and context</span><h2 id="market-hubs-title">Market Hubs</h2></div><nav className="today-market-hubs" aria-label="Market hubs"><Button variant={market ? 'ghost' : 'primary'} aria-pressed={!market} onClick={() => changeMarket('')}>All markets</Button>{(commandCenter?.market_hubs ?? []).map(hub => <Button key={hub.market} variant={market === hub.market ? 'primary' : 'ghost'} aria-pressed={market === hub.market} onClick={() => changeMarket(hub.market)}>{hub.market}<span>{hub.current_signal_ids.length + hub.upcoming_signal_ids.length}</span></Button>)}</nav></section>

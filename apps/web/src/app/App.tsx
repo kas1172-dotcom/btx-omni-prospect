@@ -18,7 +18,7 @@ const Communications = deferredSurface(() => import('../features/communications/
 const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
 const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Monitor', 'Monitor')
 const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
-type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
+type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
 const nav: Array<[Surface, string]> = [
   ['today', 'Today'],
   ['accounts', 'Customers & Prospects'],
@@ -273,7 +273,8 @@ export default function App() {
   const omniContext: OmniContext = {
     surface: omniSurface,
     selected_account_id: selectedAccountId,
-    selected_event_id: surface === 'intelligence' || surface === 'today' || surface === 'map' ? (selectedEventId ?? viewContext.selected_event_id) : undefined,
+    selected_event_id: surface === 'intelligence' || surface === 'today' || surface === 'map' || (surface === 'accounts' && detail) ? (viewContext.selected_assessment?.event_id ?? selectedEventId ?? viewContext.selected_event_id) : undefined,
+    selected_assessment: viewContext.selected_assessment,
     selected_program_id: surface === 'today' ? viewContext.selected_program_id : undefined,
     selected_facility_id: surface === 'map' ? selectedMapFacilityId : undefined,
     selected_action_id: surface === 'actions' ? selectedActionId : undefined,

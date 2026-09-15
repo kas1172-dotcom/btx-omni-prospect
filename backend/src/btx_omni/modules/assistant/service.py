@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 
@@ -53,6 +54,7 @@ class OmniService:
         public_evidence_reader: Callable[[str, str | None], tuple[PublicEvidenceRecord, ...]] | None = None,
         market_reader: Callable[[dict], dict] | None = None,
     ) -> OmniResponse:
+        intelligence_events = tuple(intelligence_events)
         operational_contract = self._operational_contract(question)
         recent_turns = self._recent_turns(context.get("prior_turns"))
         work_items = tuple(work_items)
@@ -90,6 +92,9 @@ class OmniService:
             (ToolCall("resolve_governed_context", {"question": question}),)
         )[0]
         assert isinstance(deterministic, OmniResponse)
+        selected_assessment = self._selected_assessment_contract(
+            intelligence_events, deterministic
+        )
         market_filters = context.get('active_filters')
         if isinstance(market_filters, dict) and 'market_series_id' in market_filters:
             try:
@@ -166,7 +171,7 @@ class OmniService:
             )
         retrieval = None
         retrieval_notice = None
-        if deterministic.account_id in environment.commercial_ledgers and callable(getattr(self.provider, "choose_canonical_read", None)):
+        if selected_assessment is None and deterministic.account_id in environment.commercial_ledgers and callable(getattr(self.provider, "choose_canonical_read", None)):
             retrieval = CommercialToolSession(environment, deterministic.account_id, work_items=work_items,
                                               selected_relationship=deterministic.structured_relationship,
                                               selected_market=deterministic.structured_market).run(self.provider, question)
@@ -278,6 +283,8 @@ class OmniService:
             + ("\nCanonical public market series (macro context only; no score changes/customer orders/region allocation):\n" + json.dumps(enriched.structured_market) if enriched.structured_market else "")
             + ("\nAdditional scoped canonical tool reads (money display and major_units are already scaled by server code; do not rescale. Preserve currency and quoted/shipped/accepted/revenue distinctions):\n"
                + json.dumps(model_reads, default=str) if retrieval else "")
+            + ("\nAuthoritative selected Intelligence assessment (do not replace its score or action):\n"
+               + self._assessment_grounding(selected_assessment) if selected_assessment else "")
             + ("\nServer-owned operational boundary (preserve this outcome and do not substitute an unrelated next action):\n"
                + operational_contract[1] + "\nRequired next action: " + operational_contract[2] if operational_contract else ""),
             enriched.citations, enriched.missingness, recent_turns, public_findings, preferences,
@@ -314,6 +321,23 @@ class OmniService:
             return self._apply_operational_contract(replace(enriched, language_provider="deterministic", provider_status=ProviderStatus.UNAVAILABLE.value,
                            context_used={**enriched.context_used, "synthesis_validation": rejection, "synthesis_validation_details": validation_details},
                            missingness=(*enriched.missingness, "Model wording did not pass the evidence checks; the canonical answer and completed reads remain available.")), operational_contract)
+        assessment_rejection = self._assessment_synthesis_rejection(
+            synthesis.content, selected_assessment
+        )
+        if assessment_rejection:
+            return self._apply_operational_contract(replace(
+                enriched,
+                language_provider="deterministic",
+                provider_status=ProviderStatus.UNAVAILABLE.value,
+                context_used={
+                    **enriched.context_used,
+                    "assessment_synthesis_validation": assessment_rejection,
+                },
+                missingness=(
+                    *enriched.missingness,
+                    "Model wording did not preserve the selected Intelligence assessment; the canonical assessment is shown unchanged.",
+                ),
+            ), operational_contract)
         return self._apply_operational_contract(replace(
             enriched,
             content=(retrieval_notice + '\n\n' if retrieval_notice and not synthesis.content.startswith(retrieval_notice) else '') + synthesis.content,
@@ -321,6 +345,88 @@ class OmniService:
             language_model=synthesis.model,
             provider_status=ProviderStatus.AVAILABLE.value,
         ), operational_contract)
+
+    @staticmethod
+    def _selected_assessment_contract(
+        events: tuple[Mapping[str, object], ...], response: OmniResponse
+    ) -> Mapping[str, object] | None:
+        assessment_id = response.context_used.get("assessment_id")
+        assessment_version = response.context_used.get("assessment_version")
+        event_id = response.context_used.get("event_id")
+        account_id = response.context_used.get("account_id")
+        if not (
+            isinstance(assessment_id, str)
+            and isinstance(assessment_version, int)
+            and isinstance(event_id, str)
+        ):
+            return None
+        for event in events:
+            business = event.get("business_briefing")
+            if (
+                event.get("id") == event_id
+                and event.get("account_id") == account_id
+                and isinstance(business, Mapping)
+                and business.get("assessment_id") == assessment_id
+                and business.get("assessment_version") == assessment_version
+            ):
+                return business
+        return None
+
+    @staticmethod
+    def _assessment_grounding(assessment: Mapping[str, object]) -> str:
+        confidence = assessment.get("signal_confidence")
+        score = confidence.get("score") if isinstance(confidence, Mapping) else None
+        factors = confidence.get("factors", ()) if isinstance(confidence, Mapping) else ()
+        factor_lines = "\n".join(
+            f"- {str(item.get('key', 'factor')).replace('_', ' ').title()}: "
+            f"{item.get('points') if item.get('points') is not None else 'unavailable'}/100 — {item.get('reason')}"
+            for item in factors
+            if isinstance(item, Mapping)
+        )
+        return "\n".join(
+            (
+                f"Assessment version: {assessment.get('assessment_version')}",
+                f"Headline: {assessment.get('headline')}",
+                f"Verified change: {assessment.get('what_happened')}",
+                f"Account-specific implication: {assessment.get('why_it_may_matter')}",
+                f"Signal Confidence: {float(score):.2f}/100" if score is not None else "Signal Confidence: unavailable",
+                factor_lines,
+                f"Governed action: {assessment.get('recommended_action') or 'No seller action is established.'}",
+                "The governed action above must be retained verbatim as the final next step. Do not introduce a different action.",
+                "Use human-readable labels. Never include internal record identifiers in normal prose.",
+            )
+        )
+
+    @staticmethod
+    def _assessment_synthesis_rejection(
+        content: str, assessment: Mapping[str, object] | None
+    ) -> str | None:
+        if assessment is None:
+            return None
+        confidence = assessment.get("signal_confidence")
+        score = confidence.get("score") if isinstance(confidence, Mapping) else None
+        if score is not None:
+            rendered = f"{float(score):.2f}".rstrip("0").rstrip(".")
+            if rendered not in content or "signal confidence" not in content.casefold():
+                return "SELECTED_ASSESSMENT_SCORE_NOT_PRESERVED"
+        action = assessment.get("recommended_action")
+        if isinstance(action, str) and action.strip():
+            normalized_action = " ".join(action.casefold().split()).rstrip(".")
+            normalized_content = " ".join(content.casefold().split())
+            if normalized_action not in normalized_content:
+                return "SELECTED_ASSESSMENT_ACTION_NOT_PRESERVED"
+        elif re.search(
+            r"\b(?:next|recommended)\s+(?:step|action)\s*:",
+            content,
+            re.IGNORECASE,
+        ):
+            return "INFORMATIONAL_ASSESSMENT_ACTION_INVENTED"
+        if re.search(
+            r"\b(?:ROLE|QUO|ORD|SHP|INV|REV|MON|OPP|PLAN|INT|ACT)\d*-[A-Z0-9]+(?:-[A-Z0-9]+)+\b",
+            content,
+        ):
+            return "INTERNAL_IDENTIFIER_EXPOSED"
+        return None
 
     @staticmethod
     def _apply_operational_contract(

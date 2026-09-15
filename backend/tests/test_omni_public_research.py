@@ -135,6 +135,148 @@ def test_selected_persisted_public_passage_is_read_in_resolved_account_scope():
     assert 'passage:verified:0' in result.citations
 
 
+def assessment_event(*, action="Review the cited notice before changing a customer commitment."):
+    return {
+        "id": "event-assessment",
+        "account_id": "boeing",
+        "title": "Published program update",
+        "kind": "PROGRAM_UPDATE",
+        "source_url": "https://news.example.test/program",
+        "evidence_ids": ("passage:program:0",),
+        "business_briefing": {
+            "assessment_id": "a" * 64,
+            "assessment_version": 2,
+            "headline": "Specific program assessment",
+            "what_happened": "The company announced a scoped program change",
+            "why_it_may_matter": "The change merits an account-specific review",
+            "recommended_action": action,
+            "material_uncertainties": ("Production timing remains unverified.",),
+            "references": (
+                {
+                    "title": "Official program update",
+                    "url": "https://news.example.test/program",
+                },
+            ),
+            "evidence_package": {"commercial_records": ()},
+            "signal_confidence": {
+                "score": 84.71,
+                "configuration_version": "BTX_DECISION_FAMILIES_POC_1",
+                "factors": (
+                    {
+                        "key": "source_reliability",
+                        "points": 95,
+                        "reason": "The cited source is the company newsroom.",
+                    },
+                    {
+                        "key": "entity_match",
+                        "points": 100,
+                        "reason": "The named company resolves to this account.",
+                    },
+                ),
+            },
+        },
+    }
+
+
+def assessment_context():
+    return {
+        "surface": "TODAY",
+        "selected_event_id": "event-assessment",
+        "selected_assessment": {
+            "assessment_id": "a" * 64,
+            "assessment_version": 2,
+            "event_id": "event-assessment",
+            "account_id": "boeing",
+        },
+    }
+
+
+def test_selected_assessment_preserves_score_action_source_and_follow_up():
+    provider = ResearchProvider()
+    first = OmniService(provider).answer(
+        build_sample_environment(), account_id="boeing",
+        question="Explain this assessment.", observed_at=NOW,
+        context=assessment_context(), intelligence_events=(assessment_event(),),
+        work_items=(),
+    )
+    assert "Signal Confidence: 84.71/100" in first.content
+    assert "Review the cited notice before changing a customer commitment." in first.content
+    assert first.citation_links[0].url == "https://news.example.test/program"
+    assert first.context_used["assessment_version"] == 2
+    assert first.conversation_referent == {
+        "event_id": "event-assessment",
+        "assessment_id": "a" * 64,
+        "assessment_version": 2,
+        "account_id": "boeing",
+        "route": "EVENT",
+    }
+
+    follow_up = OmniService(provider).answer(
+        build_sample_environment(), account_id="boeing",
+        question="Explain this more simply.", observed_at=NOW,
+        context={"conversation_referent": first.conversation_referent},
+        intelligence_events=(assessment_event(),), work_items=(),
+    )
+    assert "Signal Confidence: 84.71/100" in follow_up.content
+    assert "Review the cited notice before changing a customer commitment." in follow_up.content
+    assert follow_up.context_used["assessment_version"] == 2
+
+
+def test_selected_assessment_rejects_replacement_action_and_internal_ids():
+    class ReplacingProvider(ResearchProvider):
+        def synthesize(self, request):
+            return LanguageResult(
+                "Signal Confidence is 84.71. Next action: contact ROLE2-BOEING-2 about QUO2-BOEING-BID4.",
+                self.name,
+                "fake-v1",
+                request.evidence_ids,
+            )
+
+    response = OmniService(ReplacingProvider()).answer(
+        build_sample_environment(), account_id="boeing",
+        question="Explain this assessment.", observed_at=NOW,
+        context=assessment_context(), intelligence_events=(assessment_event(),),
+        work_items=(),
+    )
+    assert response.language_provider == "deterministic"
+    assert response.provider_status == ProviderStatus.UNAVAILABLE.value
+    assert "Review the cited notice before changing a customer commitment." in response.content
+    assert "ROLE2-" not in response.content and "QUO2-" not in response.content
+
+
+def test_informational_assessment_does_not_acquire_an_action():
+    class InventingProvider(ResearchProvider):
+        def synthesize(self, request):
+            return LanguageResult(
+                "Signal Confidence: 84.71/100. Recommended action: create a pursuit.",
+                self.name,
+                "fake-v1",
+                request.evidence_ids,
+            )
+
+    response = OmniService(InventingProvider()).answer(
+        build_sample_environment(), account_id="boeing",
+        question="Explain this assessment.", observed_at=NOW,
+        context=assessment_context(), intelligence_events=(assessment_event(action=None),),
+        work_items=(),
+    )
+    assert response.recommended_action is None
+    assert "no seller action is established" in response.content
+    assert "create a pursuit" not in response.content
+
+
+def test_selected_assessment_rejects_stale_version_without_using_old_facts():
+    context = assessment_context()
+    context["selected_assessment"]["assessment_version"] = 1
+    response = OmniService(ResearchProvider()).answer(
+        build_sample_environment(), account_id="boeing",
+        question="Explain this assessment.", observed_at=NOW,
+        context=context, intelligence_events=(assessment_event(),), work_items=(),
+    )
+    assert "has changed or is no longer current" in response.content
+    assert "Specific program assessment" not in response.content
+
+
 def test_current_public_research_is_cited_and_keeps_canonical_referent() -> None:
     provider = ResearchProvider()
     response = answer(provider, "What has happened with Boeing this week?")

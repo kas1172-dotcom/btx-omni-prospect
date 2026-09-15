@@ -40,6 +40,8 @@ class OmniConversationReferent(BaseModel):
     model_config = ConfigDict(extra="forbid")
     account_id: str | None = None
     event_id: str | None = None
+    assessment_id: str | None = None
+    assessment_version: int | None = Field(default=None, ge=1)
     facility_id: str | None = None
     action_id: str | None = None
     comparison_account_ids: list[str] = Field(default_factory=list, max_length=2)
@@ -60,6 +62,16 @@ class OmniRelationshipSelection(BaseModel):
     target_component_id: str | None = Field(default=None, max_length=220)
 
 
+class OmniAssessmentSelection(BaseModel):
+    """References one server-owned persisted intelligence assessment."""
+
+    model_config = ConfigDict(extra="forbid")
+    assessment_id: str = Field(min_length=1, max_length=64)
+    assessment_version: int = Field(ge=1)
+    event_id: str = Field(min_length=1, max_length=160)
+    account_id: str = Field(min_length=1, max_length=64)
+
+
 class OmniContext(BaseModel):
     """Bounded passive product context; distinct from the user's explicit scope."""
 
@@ -69,6 +81,7 @@ class OmniContext(BaseModel):
     session_account_id: str | None = None
     selected_account_id: str | None = None
     selected_event_id: str | None = None
+    selected_assessment: OmniAssessmentSelection | None = None
     selected_facility_id: str | None = None
     selected_program_id: str | None = None
     selected_action_id: str | None = None
