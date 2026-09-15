@@ -1,5 +1,7 @@
 import json
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -835,6 +837,10 @@ def test_separate_worker_commit_reaches_running_api_with_identical_confidence(tm
         if item.get("data_mode") == "CONNECTED"
     ]
     assert len(visible) == 1
+    assert visible[0]["business_briefing"]["context_id"].endswith(
+        ":medtronic"
+    )
+    assert "governed public update" not in visible[0]["relevance_explanation"].casefold()
     actual = signal_briefs_for_monitor(reader.monitor, now=now)[0]
     assert actual.signal_confidence == expected.signal_confidence
     assert actual.publication_timestamp == expected.publication_timestamp
@@ -854,6 +860,104 @@ def test_separate_worker_commit_reaches_running_api_with_identical_confidence(tm
         if item.get("data_mode") == "CONNECTED"
     ]
     assert len(signal_briefs_for_monitor(reader.monitor, now=now)) == 1
+
+
+def test_seller_window_prioritizes_persisted_relevance_before_recency(monkeypatch):
+    from btx_omni.monitor.briefs import SignalBrief, signal_briefs_for_monitor
+
+    now = datetime(2026, 9, 15, tzinfo=UTC)
+
+    def brief(event_id: str, published_at: datetime) -> SignalBrief:
+        return SignalBrief(
+            id=event_id,
+            headline=event_id,
+            what_happened=event_id,
+            why_it_may_matter=event_id,
+            canonical_account_ids=("honeywell",),
+            canonical_program_id=None,
+            markets=(),
+            publication_timestamp=published_at,
+            collection_timestamp=now,
+            freshness="CURRENT",
+            evidence_ids=(f"evidence:{event_id}",),
+            source_url="https://example.com/source",
+            source_system="test",
+            data_mode="CONNECTED",
+            resolution_state="RESOLVED",
+            seller_promotion_state="RESOLVED_ELIGIBLE",
+            what_to_watch="Review",
+            recommended_action="Review",
+            missing_fields=(),
+            seller_summary=event_id,
+        )
+
+    briefs = {
+        "older-relevant": brief("older-relevant", now - timedelta(days=10)),
+        "newer-informational": brief(
+            "newer-informational", now - timedelta(hours=1)
+        ),
+    }
+    events = tuple(
+        (
+            SimpleNamespace(
+                id=event_id,
+                provenance=SimpleNamespace(source_system="test"),
+                subject_entities=(
+                    SimpleNamespace(canonical_account_id="honeywell"),
+                ),
+            ),
+            None,
+        )
+        for event_id in briefs
+    )
+
+    class Repository:
+        def current_intelligence_assessments(self, *, limit):
+            assert limit >= 1000
+            return (
+                {
+                    "event_id": "older-relevant",
+                    "account_id": "honeywell",
+                    "created_at": now - timedelta(days=1),
+                    "projection": {
+                        "priority_eligible": True,
+                        "commercial_relevance_state": (
+                            "ESTABLISHED_COMMERCIAL_RELEVANCE"
+                        ),
+                    },
+                },
+                {
+                    "event_id": "newer-informational",
+                    "account_id": "honeywell",
+                    "created_at": now,
+                    "projection": {
+                        "priority_eligible": False,
+                        "commercial_relevance_state": "INFORMATIONAL",
+                    },
+                },
+            )
+
+        def technical_decomposition_for_event(self, _event_id):
+            return None
+
+    monitor = SimpleNamespace(
+        repository=Repository(),
+        watch_targets={},
+        freshness_threshold_hours=lambda _source_id: 24,
+    )
+    monkeypatch.setattr(
+        "btx_omni.monitor.service.current_event_contexts", lambda _monitor: events
+    )
+    monkeypatch.setattr(
+        "btx_omni.monitor.briefs.signal_brief",
+        lambda event, _observation, **_kwargs: replace(briefs[event.id]),
+    )
+
+    projected = signal_briefs_for_monitor(
+        monitor, now=now, projection_limit=1
+    )
+
+    assert [item.id for item in projected] == ["older-relevant"]
 
 
 def test_governed_publisher_identity_does_not_copy_article_payload_into_entity_name():

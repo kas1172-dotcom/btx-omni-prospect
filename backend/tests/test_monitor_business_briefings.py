@@ -337,12 +337,16 @@ def test_assessment_history_reuses_unchanged_input_and_versions_material_change(
     history = repository.intelligence_assessment_history(
         "event-1", account_id="honeywell"
     )
+    current = repository.current_intelligence_assessments(limit=10)
     assert replay["id"] == first["id"] and len(history) == 2
     assert (
         changed["version"] == 2
         and history[0]["is_current"] is True
         and history[1]["is_current"] is False
     )
+    assert [(item["id"], item["version"]) for item in current] == [
+        (changed["id"], 2)
+    ]
     engine.dispose()
 
 

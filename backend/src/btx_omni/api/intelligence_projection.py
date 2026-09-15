@@ -25,7 +25,7 @@ def intelligence_signals(
     sample = runtime.environment()
     names = {item.legal_name: item.id for item in sample.accounts}
     accounts = {item.id: item for item in sample.accounts}
-    business_briefs = {}
+    projected_briefs = []
     live_briefs = (
         signal_briefs_for_monitor(
             runtime.monitor,
@@ -49,9 +49,7 @@ def intelligence_signals(
             if len(deterministic.canonical_account_ids) == 1
             else None
         )
-        business_briefs[(deterministic.id, account_id)] = apply_cached_synthesis(
-            deterministic, cached
-        )
+        projected_briefs.append(apply_cached_synthesis(deterministic, cached))
     # Public-source membership is independent of replaced commercial scenarios.
     # An enriched ledger must not hide pre-existing public evidence for its account.
     curated_membership = {(item.id, item.account_id) for item in sample.public_signals}
@@ -66,53 +64,47 @@ def intelligence_signals(
         and (item.source_id, names[item.account_name]) in curated_membership
         and (not account_ids or names[item.account_name] in account_ids)
     ]
+    contexts = {
+        event.id: (event, observation)
+        for event, observation in current_event_contexts(runtime.monitor)
+    }
     live: list[dict] = []
-    for event, observation in current_event_contexts(runtime.monitor):
-        subjects = tuple(
-            item for item in event.subject_entities if item.canonical_account_id
-        )
+    for business in projected_briefs:
+        event_context = contexts.get(business.id)
+        if event_context is None or len(business.canonical_account_ids) != 1:
+            continue
+        event, _observation = event_context
+        account_id = business.canonical_account_ids[0]
         if (
             event.seller_relevance_state.value
             not in {"RESOLVED_ELIGIBLE", "RESOLVED_NEEDS_REVIEW"}
             or event.resolution_state.value != "RESOLVED"
-            or not subjects
         ):
             continue
-        for subject in subjects:
-            business = business_briefs.get((event.id, subject.canonical_account_id))
-            if not business:
-                continue
-            live.append(
-                {
-                    "id": event.id,
-                    "context_id": business.context_id,
-                    "kind": event.event_type.value,
-                    "title": next(
-                        (
-                            claim.value
-                            for claim in event.claims
-                            if claim.predicate == "source_title"
-                        ),
-                        event.event_type.value,
-                    ),
-                    "source_url": observation.raw_evidence.locator
-                    if observation
-                    else event.provenance.source_url,
-                    "account_id": subject.canonical_account_id,
-                    "program_name": event.program.mention,
-                    "program_id": event.program.canonical_program_id,
-                    "facility_id": event.canonical_facility_id,
-                    "evidence_state": event.provenance.evidence_state,
-                    "resolution_state": event.resolution_state,
-                    "data_mode": event.provenance.data_mode,
-                    "observed_at": event.event_date or event.provenance.observed_at,
-                    "relevance_explanation": business.why_it_may_matter,
-                    "business_briefing": jsonable_encoder(business),
-                    "evidence_ids": tuple(item.evidence_id for item in event.evidence),
-                    "source_tier": event.source_confidence_basis,
-                    "provenance": event.provenance,
-                }
-            )
+        live.append(
+            {
+                "id": event.id,
+                "context_id": business.context_id,
+                "kind": event.event_type.value,
+                "title": business.headline,
+                "source_url": business.source_url,
+                "account_id": account_id,
+                "program_name": event.program.mention,
+                "program_id": event.program.canonical_program_id,
+                "facility_id": event.canonical_facility_id,
+                "evidence_state": event.provenance.evidence_state,
+                "resolution_state": event.resolution_state,
+                "data_mode": event.provenance.data_mode,
+                "observed_at": business.publication_timestamp
+                or event.event_date
+                or event.provenance.observed_at,
+                "relevance_explanation": business.why_it_may_matter,
+                "business_briefing": jsonable_encoder(business),
+                "evidence_ids": business.evidence_ids,
+                "source_tier": event.source_confidence_basis,
+                "provenance": event.provenance,
+            }
+        )
     return [
         *(
             {
