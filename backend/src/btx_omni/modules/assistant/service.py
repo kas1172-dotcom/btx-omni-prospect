@@ -105,29 +105,35 @@ class OmniService:
                                     recommended_action="Inspect exposed accounts' actual RFQs and delivery constraints before a local follow-up.",
                                     context_used={**deterministic.context_used, 'market_context': 'CANONICAL_CURRENT_VINTAGE', 'interpretation_status': 'RESOLVED',
                                                   'market_vintage_id': market_context['vintage_id']})
-        memories = memory_reader(deterministic.account_id) if memory_reader else []
-        # Explicit preferences are retrieved only after canonical account resolution.
-        # They are not passed to intent selection, public search, tools or score owners.
-        preferences = tuple(f"{m['kind']}: {m['content']}" for m in memories[:8])
-        if memories:
-            deterministic = replace(deterministic, context_used={**deterministic.context_used,
-                                    "private_memory_ids": [m["id"] for m in memories[:8]],
-                                    "private_memory_omitted": max(0, len(memories) - 8)})
         selection = context.get("relationship_selection")
         if isinstance(selection, dict) and OmniOrchestrator.should_apply_relationship_selection(
             question, context
         ):
             try:
                 structured = selected_relationship_context(environment, selection, account_id=account_id)
+                source_account_id = selection["source_account_id"]
+                source_account = next(
+                    account for account in environment.accounts if account.id == source_account_id
+                )
             except (KeyError, ValueError, PermissionError):
                 return replace(deterministic, content="The selected relationship context is unavailable, stale or outside the requested account scope. Refresh the route before asking Omni to explain it.",
                                missingness=("Selected relationship requires a current authorized canonical resolution.",), recommended_action=None,
                                context_used={**deterministic.context_used, "relationship_selection": "STALE_OR_UNAVAILABLE"})
             deterministic = replace(deterministic, content=structured["content"],
+                                    account_id=source_account.id, account_name=source_account.legal_name,
                                     citations=tuple(structured["route"]["evidence_ids"]),
                                     citation_links=tuple(OmniCitation(item["label"], item["url"]) for item in structured.get("source_links", ())),
                                     recommended_action=structured["route"]["next_action"], structured_relationship=structured,
                                     context_used={**deterministic.context_used, "relationship_path_id": selection["path_id"], "graph_revision": structured["graph_revision"]})
+        memories = memory_reader(deterministic.account_id) if memory_reader else []
+        # Explicit preferences are retrieved only after canonical account and selected
+        # relationship scope resolution. They are not passed to intent selection,
+        # public search, tools or score owners.
+        preferences = tuple(f"{m['kind']}: {m['content']}" for m in memories[:8])
+        if memories:
+            deterministic = replace(deterministic, context_used={**deterministic.context_used,
+                                    "private_memory_ids": [m["id"] for m in memories[:8]],
+                                    "private_memory_omitted": max(0, len(memories) - 8)})
         stored_findings = ()
         selected_event_id = context.get("selected_event_id")
         if public_evidence_reader and isinstance(selected_event_id, str):
