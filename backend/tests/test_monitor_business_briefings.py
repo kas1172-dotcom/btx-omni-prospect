@@ -492,3 +492,109 @@ def test_source_timeout_is_reported_but_does_not_block_successful_source_process
     assert "synthesized" in processed
     assert report["failed_sources"] == ("slow",)
     assert report["status"] == "FAILED" and code == 1
+
+
+def test_worker_preserves_event_when_research_stops_before_run_acquisition(
+    monkeypatch,
+):
+    class RepositoryWithLock:
+        @staticmethod
+        def operational_lock():
+            return nullcontext(True)
+
+        @staticmethod
+        def research_documents(*_args, **_kwargs):
+            return (
+                {
+                    "event_id": "event-deadline",
+                    "content_hash": "a" * 64,
+                    "source_url": "https://example.com/evidence",
+                    "title": "Bounded public event",
+                },
+            )
+
+    class Source:
+        @staticmethod
+        def available(_settings):
+            return True, None
+
+    class Runtime:
+        def __init__(self):
+            self.monitor = SimpleNamespace(
+                repository=RepositoryWithLock(),
+                registry={"source": Source()},
+                collect=lambda source_id, **_kwargs: CollectionRun(
+                    "run-source", source_id, NOW, NOW, None
+                ),
+            )
+            self.markets = SimpleNamespace(
+                worker_refresh=lambda **_kwargs: {"status": "DISABLED"}
+            )
+            self.technical_decomposition = SimpleNamespace()
+
+        @staticmethod
+        def environment():
+            return build_sample_environment()
+
+        @staticmethod
+        def observed_at():
+            return NOW
+
+    class Coordinator:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        @staticmethod
+        def investigate(*_args, **_kwargs):
+            return {"status": "DEADLINE_EXHAUSTED", "published": False}
+
+    monkeypatch.setattr("btx_omni.monitor.worker.PocRuntime", lambda _: Runtime())
+    monkeypatch.setattr(
+        "btx_omni.monitor.worker.get_ai_provider",
+        lambda _config: SimpleNamespace(configured=True),
+    )
+    monkeypatch.setattr(
+        "btx_omni.monitor.worker.MonitorResearchCoordinator", Coordinator
+    )
+    monkeypatch.setattr(
+        "btx_omni.monitor.worker.signal_briefs_for_monitor", lambda *_args, **_kwargs: ()
+    )
+    monkeypatch.setattr(
+        "btx_omni.monitor.worker.process_signal_brief_synthesis",
+        lambda *_args, **_kwargs: BriefSynthesisBatch(0, 0, 0, 0, (), False),
+    )
+    monkeypatch.setattr(
+        "btx_omni.monitor.worker.procurement_projection",
+        lambda _runtime: {"active": {"opportunities": []}},
+    )
+
+    report, code = run_worker(
+        Settings(
+            _env_file=None,
+            monitor_mode="live",
+            monitor_durable_state_enabled=True,
+            monitor_worker_sources="source",
+            monitor_research_cap=1,
+            monitor_technical_decomposition_cap=0,
+            market_refresh_enabled=False,
+        )
+    )
+
+    assert code == 0
+    assert report["research_investigations"] == [
+        {
+            "status": "DEADLINE_EXHAUSTED",
+            "published": False,
+            "event_id": "event-deadline",
+            "publication_state": "WITHHELD_BY_CANONICAL_GATES",
+            "publication_gates": {
+                "research_completed": False,
+                "canonical_identity_resolved": False,
+                "seller_relevance_eligible": False,
+                "analysis_lifetime_eligible": False,
+                "commercial_relevance_decided": False,
+                "technical_investigation_available": False,
+                "gemini_brief_available": False,
+            },
+        }
+    ]
