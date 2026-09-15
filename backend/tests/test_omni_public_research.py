@@ -195,7 +195,7 @@ def test_selected_assessment_preserves_score_action_source_and_follow_up():
     provider = ResearchProvider()
     first = OmniService(provider).answer(
         build_sample_environment(), account_id="boeing",
-        question="Explain this assessment.", observed_at=NOW,
+        question="Explain this selected assessment, including its Signal Confidence, source, uncertainty, and governed action.", observed_at=NOW,
         context=assessment_context(), intelligence_events=(assessment_event(),),
         work_items=(),
     )
