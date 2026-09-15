@@ -10,6 +10,7 @@ import {
   State,
 } from "../../components/UI";
 import { EvidencePassages } from "../../components/EvidencePassages";
+import { TechnicalDecompositionSection } from "../../components/TechnicalDecompositionSection";
 
 const date = (value?: string) =>
   value
@@ -146,7 +147,9 @@ export function IntelligenceBriefing({
               </div>
             </div>
             <p className="intelligence-context-qualification">{brief.evidence_package?.commercial_record_scope === "EXACT_PROGRAM" ? "These records share the resolved program scope; technical qualification remains a separate decision." : "Account context records do not establish that this public event applies to a BTX-supplied component, program, or site."}</p>
-            {eventFits.length ? (
+            {brief.technical_opportunity?.components?.length ? (
+              <TechnicalDecompositionSection technical={brief.technical_opportunity} />
+            ) : eventFits.length ? (
               <div className="intelligence-component-table" role="table" aria-label="Event-specific capability fit">
                 <div role="row" className="intelligence-component-head"><span role="columnheader">Public candidate</span><span role="columnheader">Controlled component</span><span role="columnheader">BTX business unit</span><span role="columnheader">State</span></div>
                 {eventFits.map((fit, index) => <div role="row" key={`${fit.candidate}:${index}`}><strong role="cell">{fit.candidate ?? "Candidate unavailable"}</strong><span role="cell">{fit.component ?? "Not established"}</span><span role="cell">{fit.business_unit ?? "Review required"}</span><State value={label(fit.status ?? "UNAVAILABLE")} /></div>)}

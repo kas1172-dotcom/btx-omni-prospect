@@ -44,6 +44,12 @@ const technicalBrief = () => ({
     product_candidates: [],
     program_candidates: [{ name: 'Fixture Program', basis: 'SOURCE_STATED' }],
     technical_systems: [{ name: 'Actuation system', basis: 'MODEL_INFERRED' }],
+    components: [
+      { component_id: 'component-round', name: 'Round', basis: 'SOURCE_STATED', evidence_layer: 'ANNOUNCED_SCOPE', confidence_state: 'DIRECTLY_ANNOUNCED', component_category: 'ALL_UP_ROUND', evidence_ids: ['lockheed-javelin'], source_publication_dates: ['2026-08-30'], research_methods: ['REVIEWED_PUBLIC_RELEASE_EXCERPT'], material_uncertainties: ['No BTX participation is established.'], validation_questions: ['Do governed customer records identify this program?'] },
+      { component_id: 'component-missile', name: 'Missile', parent_component: 'Round', basis: 'SOURCE_STATED', evidence_layer: 'SUPPORTED_PROGRAM_ARCHITECTURE', confidence_state: 'SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE', component_category: 'MISSILE_BODY', evidence_ids: ['army-javelin'], source_publication_dates: ['2023-10-17'], research_methods: ['REVIEWED_PUBLIC_ARTICLE_EXCERPT'], material_uncertainties: ['Supplier and qualification scope are unknown.'], validation_questions: ['Which manufactured hardware is addressable?'] },
+    ],
+    fit_hypotheses: [{ component_name: 'Missile', evidence_layer: 'BTX_FIT_HYPOTHESIS', fit_state: 'HYPOTHESIS_REQUIRES_VALIDATION', candidate_component_class: 'Structural hardware', candidate_capabilities: [{ id: 'capability-machining', name: 'Precision machining' }], candidate_business_units: [{ id: 'bu-aerospace', name: 'Aerospace' }], candidate_facilities: [], material_uncertainties: ['Program participation is not established.'], validation_questions: ['Validate material, tolerance, certification, and buyer scope.'], evidence_ids: ['army-javelin'], statement: 'Structural hardware is a possible manufacturing-family fit for the missile; program participation, qualification, capacity, and an award are not established.' }],
+    citations: [{ evidence_id: 'lockheed-javelin', title: 'Javelin co-production announcement', url: 'https://news.lockheedmartin.com/2026-08-30-Javelin-Joint-Venture-and-Tata-Advanced-Systems-Signs-Agreement-for-Missile-Co-Production-in-India', provenance: 'Lockheed Martin|2026-08-30|REVIEWED_PUBLIC_RELEASE_EXCERPT|partial' }, { evidence_id: 'army-javelin', title: 'U.S. Army Javelin system overview', url: 'https://www.army.mil/article/270870/through_lockheed_and_raytheon_collaboration_the_west_point_museum_unveils_javelin_exhibit', provenance: 'U.S. Army|2023-10-17|REVIEWED_PUBLIC_ARTICLE_EXCERPT|partial' }],
     uncertainties: ['The system and component candidate are model-inferred technical hypotheses.'],
     provider_status: 'AVAILABLE',
     language_provider: 'gemini',
@@ -97,7 +103,7 @@ async function openLockheedMobile(page) {
   await expect(page.locator('.account-workspace')).toBeVisible()
 }
 
-test('Signal Brief Technical Fit retains deterministic context while disclosing its governed explanation', async ({ page }) => {
+test('Signal Brief Technical Fit retains deterministic context while disclosing its governed explanation', async ({ page }, testInfo) => {
   await addTechnicalExplanationFixture(page)
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Monitor' }).click()
@@ -108,13 +114,18 @@ test('Signal Brief Technical Fit retains deterministic context while disclosing 
   await expect(brief).toContainText('Model inferred')
   await expect(brief).toContainText('Controlled BTX match: Actuator housing')
   await expect(brief).toContainText('Applicable BU: Aerospace')
+  await expect(brief).toContainText('Confirmed in this announcement')
+  await expect(brief).toContainText('Supported program architecture')
+  await expect(brief).toContainText('Possible BTX fit — validation required')
+  await expect(brief).toContainText('program participation, qualification, capacity, and an award are not established')
   const explanation = brief.getByRole('button', { name: 'Why this technical fit may matter' })
   await explanation.click()
   await expect(brief).toContainText('Technical capability alignment does not establish supplier participation')
   await expect(brief).not.toContainText(/BTX currently supplies|win probability|likely supplier|will win/i)
+  await brief.screenshot({ path: testInfo.outputPath('technical-fit-desktop.png') })
 })
 
-test('Technical Fit disclosure remains contained at 390px and 320px', async ({ page }) => {
+test('Technical Fit disclosure remains contained at 390px and 320px', async ({ page }, testInfo) => {
   await addTodayTechnicalExplanationFixture(page)
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }]) {
     await page.setViewportSize(viewport)
@@ -125,6 +136,7 @@ test('Technical Fit disclosure remains contained at 390px and 320px', async ({ p
     await brief.getByRole('button', { name: 'Why this technical fit may matter' }).click()
     await expect(brief).toContainText('Controlled BTX match: Actuator housing')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await brief.screenshot({ path: testInfo.outputPath(`technical-fit-${viewport.width}.png`) })
   }
 })
 

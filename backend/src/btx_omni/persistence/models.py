@@ -392,8 +392,14 @@ monitor_intelligence_assessments = Table(
 monitor_technical_decompositions = Table(
     "monitor_technical_decompositions",
     metadata,
-    Column("event_id", String(160), primary_key=True),
+    Column("id", String(64), primary_key=True),
+    Column("context_key", String(300), nullable=False),
+    Column("event_id", String(160), nullable=False),
+    Column("account_id", String(100)),
+    Column("source_revision", String(64)),
     Column("governed_content_hash", String(64), nullable=False),
+    Column("version", Integer, nullable=False),
+    Column("is_current", Boolean, nullable=False),
     Column("projection", Text),
     Column("provider", String(64)),
     Column("model", String(120)),
@@ -401,6 +407,8 @@ monitor_technical_decompositions = Table(
     Column("attempt_count", Integer, nullable=False),
     Column("next_retry_at", DateTime(timezone=True)),
     Column("processed_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("context_key", "version", name="uq_monitor_technical_context_version"),
+    Index("ix_monitor_technical_current", "context_key", "is_current"),
 )
 governed_explanations = Table(
     "governed_explanations",

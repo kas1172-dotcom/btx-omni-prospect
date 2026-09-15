@@ -157,7 +157,21 @@ def assessment_event(*, action="Review the cited notice before changing a custom
                     "url": "https://news.example.test/program",
                 },
             ),
-            "evidence_package": {"commercial_records": ()},
+            "evidence_package": {
+                "commercial_records": (),
+                "technical_decomposition": {
+                    "components": (
+                        {"name": "Round", "parent_component": None, "evidence_layer": "ANNOUNCED_SCOPE"},
+                        {"name": "Missile", "parent_component": "Round", "evidence_layer": "SUPPORTED_PROGRAM_ARCHITECTURE"},
+                    ),
+                    "fit_hypotheses": (
+                        {"statement": "A controlled structural-hardware capability is a possible fit; program participation is not established."},
+                    ),
+                    "citations": (
+                        {"title": "Official program architecture", "url": "https://www.army.mil/program"},
+                    ),
+                },
+            },
             "signal_confidence": {
                 "score": 84.71,
                 "configuration_version": "BTX_DECISION_FAMILIES_POC_1",
@@ -201,6 +215,8 @@ def test_selected_assessment_preserves_score_action_source_and_follow_up():
     )
     assert "Signal Confidence: 84.71/100" in first.content
     assert "Review the cited notice before changing a customer commitment." in first.content
+    assert "Round" in first.content and "Missile within Round" in first.content
+    assert "program participation is not established" in first.content
     assert first.citation_links[0].url == "https://news.example.test/program"
     assert first.context_used["assessment_version"] == 2
     assert first.conversation_referent == {
@@ -219,6 +235,7 @@ def test_selected_assessment_preserves_score_action_source_and_follow_up():
     )
     assert "Signal Confidence: 84.71/100" in follow_up.content
     assert "Review the cited notice before changing a customer commitment." in follow_up.content
+    assert "Round" in follow_up.content and "Missile within Round" in follow_up.content
     assert follow_up.context_used["assessment_version"] == 2
 
 

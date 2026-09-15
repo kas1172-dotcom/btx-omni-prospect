@@ -34,6 +34,14 @@ class TechnicalBasis(StrEnum):
     MODEL_INFERRED = "MODEL_INFERRED"
 
 
+class TechnicalEvidenceLayer(StrEnum):
+    """Authority of a technical statement; fit hypotheses are never supply facts."""
+
+    ANNOUNCED_SCOPE = "ANNOUNCED_SCOPE"
+    SUPPORTED_PROGRAM_ARCHITECTURE = "SUPPORTED_PROGRAM_ARCHITECTURE"
+    BTX_FIT_HYPOTHESIS = "BTX_FIT_HYPOTHESIS"
+
+
 class ExplanationType(StrEnum):
     CUSTOMER_ATTRACTIVENESS = "CUSTOMER_ATTRACTIVENESS"
     FEDERAL_OPPORTUNITY_RELEVANCE = "FEDERAL_OPPORTUNITY_RELEVANCE"
@@ -317,6 +325,7 @@ class PublicEvidenceRecord:
 @dataclass(frozen=True)
 class EntityCandidateResolutionRequest:
     """Bounded candidate interpretation; it is explicitly not an identity write."""
+
     mention: str
     title: str
     source_url: str | None
@@ -326,7 +335,11 @@ class EntityCandidateResolutionRequest:
     contract_version: str = "entity-candidate-resolution-v1"
 
     def __post_init__(self) -> None:
-        if not self.mention.strip() or len(self.mention) > 300 or not 1 <= len(self.candidate_account_ids) <= 12:
+        if (
+            not self.mention.strip()
+            or len(self.mention) > 300
+            or not 1 <= len(self.candidate_account_ids) <= 12
+        ):
             raise ValueError("Entity candidate request exceeds bounds.")
         if len(self.candidate_account_ids) != len(self.candidate_labels):
             raise ValueError("Entity candidate labels must match supplied IDs.")
@@ -350,6 +363,16 @@ class TechnicalCandidate:
     parent_system: str | None = None
     parent_product: str | None = None
     manufacturing_family: str | None = None
+    parent_component: str | None = None
+    component_category: str | None = None
+    evidence_layer: TechnicalEvidenceLayer = (
+        TechnicalEvidenceLayer.SUPPORTED_PROGRAM_ARCHITECTURE
+    )
+    confidence_state: str = "INCOMPLETE"
+    material_uncertainties: tuple[str, ...] = ()
+    validation_questions: tuple[str, ...] = ()
+    source_publication_dates: tuple[str, ...] = ()
+    research_methods: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         for value in (self.name, self.reason, self.source_support):
@@ -367,9 +390,22 @@ class TechnicalCandidate:
                 self.parent_system,
                 self.parent_product,
                 self.manufacturing_family,
+                self.parent_component,
+                self.component_category,
+                self.confidence_state,
             )
         ):
             raise ValueError("Technical candidate context exceeds bounds.")
+        for values in (
+            self.material_uncertainties,
+            self.validation_questions,
+            self.source_publication_dates,
+            self.research_methods,
+        ):
+            if len(values) > 6 or any(
+                not value.strip() or len(value) > 500 for value in values
+            ):
+                raise ValueError("Technical candidate qualification exceeds bounds.")
 
 
 @dataclass(frozen=True)
@@ -382,16 +418,21 @@ class TechnicalDecompositionRequest:
     canonical_program_name: str | None
     market: str | None
     evidence: tuple[PublicEvidenceRecord, ...]
-    contract_version: str = "technical-decomposition-v1"
-    prompt_version: str = "technical-decomposition-prompt-v1"
+    account_id: str | None = None
+    source_revision: str | None = None
+    reviewed_components: tuple[TechnicalCandidate, ...] = ()
+    contract_version: str = "technical-decomposition-v2"
+    prompt_version: str = "technical-decomposition-prompt-v2"
 
     def __post_init__(self) -> None:
         if not self.event_id.strip() or len(self.event_id) > 160:
             raise ValueError("Technical decomposition event ID is invalid.")
-        if not self.evidence or len(self.evidence) > 6:
+        if not self.evidence or len(self.evidence) > 16:
             raise ValueError(
-                "Technical decomposition requires one to six public evidence records."
+                "Technical decomposition requires one to sixteen public evidence records."
             )
+        if len(self.reviewed_components) > 32:
+            raise ValueError("Reviewed technical architecture exceeds bounds.")
 
 
 @dataclass(frozen=True)
@@ -414,10 +455,11 @@ class TechnicalDecompositionResult:
             self.product_candidates,
             self.program_candidates,
             self.technical_systems,
-            self.component_candidates,
         ):
             if len(collection) > 8:
                 raise ValueError("Technical decomposition list exceeds bounds.")
+        if len(self.component_candidates) > 32:
+            raise ValueError("Technical component hierarchy exceeds bounds.")
         if len(self.uncertainties) > 8 or any(
             not value.strip() or len(value) > 500 for value in self.uncertainties
         ):

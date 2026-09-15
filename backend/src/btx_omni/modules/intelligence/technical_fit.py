@@ -12,11 +12,14 @@ from btx_omni.ai.contracts import (
     LanguageProvider,
     LanguageProviderError,
     ProviderStatus,
+    PublicEvidenceRecord,
     TechnicalCandidate,
     TechnicalDecompositionRequest,
     TechnicalDecompositionResult,
+    TechnicalEvidenceLayer,
 )
 from btx_omni.domain.btx import BtxBusinessUnit
+from btx_omni.domain.capabilities import Capability
 from btx_omni.domain.programs import ComponentClass
 
 
@@ -41,6 +44,15 @@ APPROVED_ALIASES: dict[str, tuple[str, ...]] = {
     "cc-gas-manifold": ("hydraulic manifold", "fluid manifold", "hydraulic manifolds"),
     "cc-valve-body": ("valve body", "valve bodies"),
     "cc-sensor-housing": ("sensor housing", "electronics enclosure"),
+}
+
+CATEGORY_COMPONENTS: dict[str, tuple[str, ...]] = {
+    "GUIDANCE_ELECTRONICS": ("cc-sensor-housing",),
+    "CONTROL_ACTUATION": ("cc-actuator",),
+    "MISSILE_BODY": ("cc-missile-body-section", "cc-structural-airframe"),
+    "WARHEAD_BODY": ("cc-warhead-body",),
+    "LAUNCH_TUBE_HARDWARE": ("cc-missile-body-section", "cc-structural-airframe"),
+    "LAUNCH_AND_TARGETING": ("cc-c5isr-hardware",),
 }
 
 
@@ -71,6 +83,8 @@ class TechnicalFitMatch:
     business_units: tuple[tuple[str, str], ...] = ()
     match_rule: str | None = None
     taxonomy_provenance: str = "btx_component_taxonomy_v1"
+    capabilities: tuple[tuple[str, str], ...] = ()
+    facilities: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,6 +96,7 @@ class TechnicalOpportunityProjection:
     governed_content_hash: str
     language_provider: str | None = None
     language_model: str | None = None
+    citations: tuple[PublicEvidenceRecord, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -102,9 +117,13 @@ class TechnicalDecompositionService:
         *,
         components: tuple[ComponentClass, ...],
         business_units: tuple[BtxBusinessUnit, ...],
+        capabilities: tuple[Capability, ...] = (),
+        facilities: tuple[object, ...] = (),
     ) -> None:
         self.components = components
         self.business_units = {item.id: item.name for item in business_units}
+        self.capabilities = capabilities
+        self.facilities = facilities
 
     @staticmethod
     def provider_model(provider: LanguageProvider) -> str:
@@ -121,10 +140,16 @@ class TechnicalDecompositionService:
             request.canonical_customer_name or "",
             request.canonical_program_name or "",
             request.market or "",
+            request.account_id or "",
+            request.source_revision or "",
         ]
         fields.extend(
             f"{item.evidence_id}:{item.title}:{item.extract}:{item.source_url or ''}:{item.provenance}"
             for item in request.evidence
+        )
+        fields.extend(
+            f"reviewed:{item.name}:{item.parent_component or ''}:{item.component_category or ''}:{item.evidence_layer.value}:{','.join(item.evidence_ids)}"
+            for item in request.reviewed_components
         )
         return hashlib.sha256("\x1f".join(fields).encode()).hexdigest()
 
@@ -155,6 +180,7 @@ class TechnicalDecompositionService:
                     key,
                     cached.get("provider"),
                     cached.get("model"),
+                    request.evidence,
                 ),
                 False,
                 attempts,
@@ -171,6 +197,7 @@ class TechnicalDecompositionService:
                     key,
                     cached.get("provider"),
                     cached.get("model"),
+                    request.evidence,
                 ),
                 False,
                 attempts,
@@ -178,39 +205,91 @@ class TechnicalDecompositionService:
                 deferred=True,
             )
         if not provider.configured:
+            reviewed = self._reviewed_fallback(
+                request, provider="reviewed-public-sources", model="reviewed-catalog"
+            )
             projection = TechnicalOpportunityProjection(
                 request.event_id,
-                None,
-                (),
+                reviewed,
+                tuple(self.match(item) for item in reviewed.component_candidates)
+                if reviewed
+                else (),
                 ProviderStatus.NOT_CONFIGURED,
                 key,
                 getattr(provider, "name", None),
                 model or None,
+                request.evidence,
             )
         else:
             try:
                 decomposition = provider.decompose_technical_opportunity(request)
             except LanguageProviderError as error:
+                reviewed = self._reviewed_fallback(
+                    request,
+                    provider="reviewed-public-sources",
+                    model="reviewed-catalog",
+                )
                 projection = TechnicalOpportunityProjection(
                     request.event_id,
-                    None,
-                    (),
+                    reviewed,
+                    tuple(self.match(item) for item in reviewed.component_candidates)
+                    if reviewed
+                    else (),
                     error.status,
                     key,
                     getattr(provider, "name", None),
                     model or None,
+                    request.evidence,
                 )
             except (RuntimeError, ValueError):
+                reviewed = self._reviewed_fallback(
+                    request,
+                    provider="reviewed-public-sources",
+                    model="reviewed-catalog",
+                )
                 projection = TechnicalOpportunityProjection(
                     request.event_id,
-                    None,
-                    (),
+                    reviewed,
+                    tuple(self.match(item) for item in reviewed.component_candidates)
+                    if reviewed
+                    else (),
                     ProviderStatus.UNAVAILABLE,
                     key,
                     getattr(provider, "name", None),
                     model or None,
+                    request.evidence,
                 )
             else:
+                if request.reviewed_components:
+                    reviewed_names = {
+                        normalize(item.name) for item in request.reviewed_components
+                    }
+                    decomposition = TechnicalDecompositionResult(
+                        event_summary=decomposition.event_summary,
+                        product_candidates=decomposition.product_candidates,
+                        program_candidates=decomposition.program_candidates,
+                        technical_systems=decomposition.technical_systems,
+                        component_candidates=tuple(request.reviewed_components)
+                        + tuple(
+                            item
+                            for item in decomposition.component_candidates
+                            if normalize(item.name) not in reviewed_names
+                        ),
+                        uncertainties=tuple(
+                            dict.fromkeys(
+                                (
+                                    *decomposition.uncertainties,
+                                    *(
+                                        uncertainty
+                                        for item in request.reviewed_components
+                                        for uncertainty in item.material_uncertainties
+                                    ),
+                                )
+                            )
+                        )[:8],
+                        provider=decomposition.provider,
+                        model=decomposition.model,
+                    )
                 projection = TechnicalOpportunityProjection(
                     request.event_id,
                     decomposition,
@@ -221,12 +300,33 @@ class TechnicalDecompositionService:
                     key,
                     decomposition.provider,
                     decomposition.model,
+                    request.evidence,
                 )
         cooldown = (retry_policy or TechnicalRetryPolicy()).cooldown(
             projection.provider_status
         )
         return TechnicalProcessOutcome(
             projection, True, attempts + 1, clock + cooldown if cooldown else None
+        )
+
+    @staticmethod
+    def _reviewed_fallback(
+        request: TechnicalDecompositionRequest, *, provider: str, model: str
+    ) -> TechnicalDecompositionResult | None:
+        if not request.reviewed_components:
+            return None
+        return TechnicalDecompositionResult(
+            event_summary="Reviewed public sources establish a high-level program and component hierarchy; possible BTX fit remains subject to validation.",
+            component_candidates=request.reviewed_components,
+            uncertainties=tuple(
+                dict.fromkeys(
+                    uncertainty
+                    for item in request.reviewed_components
+                    for uncertainty in item.material_uncertainties
+                )
+            )[:8],
+            provider=provider,
+            model=model,
         )
 
     def match(self, candidate: TechnicalCandidate) -> TechnicalFitMatch:
@@ -238,9 +338,27 @@ class TechnicalDecompositionService:
             if value
             in {normalize(alias) for alias in APPROVED_ALIASES.get(item.id, ())}
         ]
-        candidates = exact or aliases
+        category = CATEGORY_COMPONENTS.get(candidate.component_category or "", ())
+        category_matches = [item for item in self.components if item.id in category]
+        candidates = exact or aliases or category_matches
         if len(candidates) == 1:
             item = candidates[0]
+            capabilities = tuple(
+                (
+                    f"{capability.id}:{index}",
+                    process,
+                )
+                for capability in self.capabilities
+                if set(capability.business_units) & set(item.business_unit_ids)
+                for index, process in enumerate(
+                    capability.processes or (capability.name,)
+                )
+            )
+            facilities = tuple(
+                (str(facility.id), str(facility.name))
+                for facility in self.facilities
+                if getattr(facility, "business_unit_id", None) in item.business_unit_ids
+            )
             return TechnicalFitMatch(
                 candidate,
                 TechnicalMatchStatus.MATCHED,
@@ -252,7 +370,39 @@ class TechnicalDecompositionService:
                     for unit in item.business_unit_ids
                     if unit in self.business_units
                 ),
-                "CONTROLLED_EXACT_NAME" if exact else "APPROVED_ALIAS_MATCH",
+                "CONTROLLED_EXACT_NAME"
+                if exact
+                else "APPROVED_ALIAS_MATCH"
+                if aliases
+                else "CONTROLLED_CATEGORY_MAPPING",
+                capabilities=capabilities,
+                facilities=facilities,
+            )
+        if len(candidates) > 1 and category_matches:
+            # More than one governed manufacturing family is a hypothesis set,
+            # not a stronger match. Keep each alternative visible downstream.
+            item = candidates[0]
+            capabilities = tuple(
+                (f"{capability.id}:{index}", process)
+                for capability in self.capabilities
+                if set(capability.business_units) & set(item.business_unit_ids)
+                for index, process in enumerate(
+                    capability.processes or (capability.name,)
+                )
+            )
+            return TechnicalFitMatch(
+                candidate,
+                TechnicalMatchStatus.POSSIBLE_MATCH_REVIEW_REQUIRED,
+                item.id,
+                item.name,
+                None,
+                tuple(
+                    (unit, self.business_units[unit])
+                    for unit in item.business_unit_ids
+                    if unit in self.business_units
+                ),
+                "CONTROLLED_CATEGORY_MAPPING_REVIEW_REQUIRED",
+                capabilities=capabilities,
             )
         tokens = set(value.split())
         if [
@@ -273,8 +423,22 @@ class TechnicalDecompositionService:
         return TechnicalFitMatch(candidate, TechnicalMatchStatus.NO_MATCH)
 
 
-def _candidate(item: TechnicalCandidate) -> dict:
+def _candidate(item: TechnicalCandidate, *, context_key: str = "") -> dict:
+    stable_id = (
+        "component-"
+        + hashlib.sha256(
+            "\x1f".join(
+                (
+                    context_key,
+                    item.evidence_layer.value,
+                    item.parent_component or "",
+                    normalize(item.name),
+                )
+            ).encode()
+        ).hexdigest()[:16]
+    )
     return {
+        "component_id": stable_id,
         "name": item.name,
         "basis": item.basis.value,
         "reason": item.reason,
@@ -283,23 +447,104 @@ def _candidate(item: TechnicalCandidate) -> dict:
         "parent_system": item.parent_system,
         "parent_product": item.parent_product,
         "manufacturing_family": item.manufacturing_family,
+        "parent_component": item.parent_component,
+        "component_category": item.component_category,
+        "evidence_layer": item.evidence_layer.value,
+        "confidence_state": item.confidence_state,
+        "material_uncertainties": list(item.material_uncertainties),
+        "validation_questions": list(item.validation_questions),
+        "source_publication_dates": list(item.source_publication_dates),
+        "research_methods": list(item.research_methods),
     }
 
 
 def seller_projection(value: TechnicalOpportunityProjection) -> dict:
     """Seller-safe projection: full useful context, never raw Gemini JSON."""
     decomposition = value.decomposition
+    components = (
+        [
+            _candidate(x, context_key=value.event_id)
+            for x in decomposition.component_candidates
+            if x.basis.value == "SOURCE_STATED"
+        ]
+        if decomposition
+        else []
+    )
+    component_names = {item["name"] for item in components}
+    parent_by_name = {
+        item["name"]: item.get("parent_component") for item in components
+    }
+    for item in components:
+        parent = item.get("parent_component")
+        if not parent or parent not in component_names or parent == item["name"]:
+            item["parent_component"] = None
+            continue
+        visited = {item["name"]}
+        cursor = parent
+        while cursor:
+            if cursor in visited:
+                item["parent_component"] = None
+                break
+            visited.add(cursor)
+            cursor = parent_by_name.get(cursor)
+    fit_hypotheses = []
+    for match in value.matches:
+        if not match.component_id or match.candidate.basis.value != "SOURCE_STATED":
+            continue
+        fit_hypotheses.append(
+            {
+                "component_name": match.candidate.name,
+                "evidence_layer": TechnicalEvidenceLayer.BTX_FIT_HYPOTHESIS.value,
+                "fit_state": "HYPOTHESIS_REQUIRES_VALIDATION",
+                "candidate_component_class": match.component_name,
+                "candidate_capabilities": [
+                    {"id": item_id, "name": name}
+                    for item_id, name in match.capabilities
+                ],
+                "candidate_business_units": [
+                    {"id": item_id, "name": name}
+                    for item_id, name in match.business_units
+                ],
+                "candidate_facilities": [
+                    {"id": item_id, "name": name} for item_id, name in match.facilities
+                ],
+                "material_uncertainties": list(match.candidate.material_uncertainties),
+                "validation_questions": list(match.candidate.validation_questions),
+                "evidence_ids": list(match.candidate.evidence_ids),
+                "statement": f"{match.component_name} is a possible manufacturing-family fit for {match.candidate.name}; program participation, qualification, capacity, and an award are not established.",
+            }
+        )
     return {
         "event_summary": decomposition.event_summary if decomposition else None,
-        "product_candidates": [_candidate(x) for x in decomposition.product_candidates]
+        "product_candidates": [
+            _candidate(x, context_key=value.event_id)
+            for x in decomposition.product_candidates
+        ]
         if decomposition
         else [],
-        "program_candidates": [_candidate(x) for x in decomposition.program_candidates]
+        "program_candidates": [
+            _candidate(x, context_key=value.event_id)
+            for x in decomposition.program_candidates
+        ]
         if decomposition
         else [],
-        "technical_systems": [_candidate(x) for x in decomposition.technical_systems]
+        "technical_systems": [
+            _candidate(x, context_key=value.event_id)
+            for x in decomposition.technical_systems
+        ]
         if decomposition
         else [],
+        "components": components,
+        "fit_hypotheses": fit_hypotheses,
+        "citations": [
+            {
+                "evidence_id": item.evidence_id,
+                "title": item.title,
+                "url": item.source_url,
+                "provenance": item.provenance,
+            }
+            for item in value.citations
+        ],
         "uncertainties": list(decomposition.uncertainties) if decomposition else [],
         "provider_status": value.provider_status.value,
         "language_provider": value.language_provider,
@@ -321,6 +566,10 @@ def seller_projection(value: TechnicalOpportunityProjection) -> dict:
                 ],
                 "match_rule": x.match_rule,
                 "evidence_ids": list(x.candidate.evidence_ids),
+                "capabilities": [
+                    {"id": uid, "name": name} for uid, name in x.capabilities
+                ],
+                "facilities": [{"id": uid, "name": name} for uid, name in x.facilities],
             }
             for x in value.matches
         ],

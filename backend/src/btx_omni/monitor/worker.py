@@ -43,6 +43,7 @@ from btx_omni.monitor.business_briefings import (
 )
 from btx_omni.monitor.documents import document_evidence
 from btx_omni.monitor.research import MonitorResearchCoordinator
+from btx_omni.providers.research.technical_programs import references_for_text
 
 
 def run_worker(
@@ -219,16 +220,43 @@ def run_worker(
                     ),
                     None,
                 )
+                retained_document = repository.event_document(
+                    brief.id, include_research=True
+                )
+                retained_evidence = document_evidence(
+                    retained_document, max_passages=10
+                )
+                references = references_for_text(
+                    " ".join(
+                        (
+                            brief.headline,
+                            brief.what_happened,
+                            *(item.extract for item in retained_evidence),
+                        )
+                    )
+                )
+                evidence_by_id = {
+                    item.evidence_id: item
+                    for reference in references
+                    for item in reference.sources
+                }
+                evidence_by_id.update(
+                    {item.evidence_id: item for item in retained_evidence}
+                )
                 request = TechnicalDecompositionRequest(
                     event_id=brief.id,
-                    event_type=brief.headline,
+                    event_type=brief.event_type or brief.headline,
                     canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
-                    evidence=document_evidence(
-                        repository.event_document(brief.id, include_research=True),
-                        max_passages=6,
-                    )
+                    account_id=account.id if account else None,
+                    source_revision=(retained_document or {}).get("content_hash"),
+                    reviewed_components=tuple(
+                        item
+                        for reference in references
+                        for item in reference.components
+                    ),
+                    evidence=tuple(evidence_by_id.values())[:16]
                     or (
                         PublicEvidenceRecord(
                             brief.evidence_ids[0] if brief.evidence_ids else brief.id,
@@ -246,13 +274,17 @@ def run_worker(
                 outcome = runtime.technical_decomposition.process(
                     request,
                     provider,
-                    cached=repository.technical_decomposition(brief.id, cache_key),
+                    cached=repository.technical_decomposition(
+                        brief.id, cache_key, account.id if account else None
+                    ),
                     now=runtime.observed_at(),
                 )
                 projection = outcome.projection
                 if outcome.should_persist:
                     repository.save_technical_decomposition(
                         event_id=brief.id,
+                        account_id=account.id if account else None,
+                        source_revision=request.source_revision,
                         governed_content_hash=projection.governed_content_hash,
                         projection=seller_projection(projection),
                         provider=projection.language_provider,
@@ -417,11 +449,7 @@ def run_worker(
                     ],
                     "decided_at": runtime.observed_at().isoformat(),
                 }
-                if (
-                    research_run_id
-                    and state
-                    and state.get("status") == "COMPLETED"
-                ):
+                if research_run_id and state and state.get("status") == "COMPLETED":
                     repository.research.record_publication(
                         research_run_id,
                         outcome=outcome,

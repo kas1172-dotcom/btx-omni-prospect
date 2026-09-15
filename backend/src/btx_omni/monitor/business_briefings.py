@@ -40,6 +40,8 @@ TECHNICAL_TYPES = frozenset(
         "SUPPLIER_AWARD",
         "GOVERNMENT_FUNDING",
         "GRANT_AWARD",
+        "PARTNERSHIP",
+        "SUPPLY_CHAIN_CHANGE",
     }
 )
 EXPANSION_TYPES = TECHNICAL_TYPES | {"CAPITAL_INVESTMENT", "PARTNERSHIP", "M_AND_A"}
@@ -268,6 +270,34 @@ def assemble_evidence_package(
         None,
     )
     technical = brief.technical_opportunity or {}
+    technical_citations = []
+    for citation in technical.get("citations", ()):
+        provenance_parts = str(citation.get("provenance") or "").split("|")
+        technical_citations.append(
+            {
+                "evidence_id": citation.get("evidence_id"),
+                "title": citation.get("title"),
+                "source_url": citation.get("url"),
+                "publication_date": provenance_parts[1]
+                if len(provenance_parts) > 1
+                and provenance_parts[1] != "date unavailable"
+                else None,
+                "retrieved_at": None,
+                "extraction_complete": len(provenance_parts) > 3
+                and provenance_parts[3] == "complete",
+                "extract": None,
+                "truth_class": "PUBLIC_SOURCE",
+            }
+        )
+    deduplicated_public = {}
+    for item in (*public, *technical_citations):
+        key = item.get("source_url") or item.get("evidence_id") or item.get("title")
+        previous = deduplicated_public.get(key)
+        if previous is None or (
+            not previous.get("publication_date") and item.get("publication_date")
+        ):
+            deduplicated_public[key] = item
+    public = list(deduplicated_public.values())
     fits = []
     for item in technical.get("matches", ())[:8]:
         units = item.get("business_units", ()) or (
@@ -316,6 +346,7 @@ def assemble_evidence_package(
         for item in fits
     )
     has_account_context = bool(records)
+    has_technical_hierarchy = bool(technical.get("components"))
     analysis_state = analysis_eligibility(
         brief.publication_timestamp,
         collected_at=brief.collection_timestamp,
@@ -323,6 +354,8 @@ def assemble_evidence_package(
     )
     if not account or not public or analysis_state != "ELIGIBLE":
         relevance = "INCOMPLETE" if account else "INFORMATIONAL"
+    elif has_technical_hierarchy and not has_exact_context and has_account_context:
+        relevance = "REVIEW_REQUIRED"
     elif brief.event_type in RISK_TYPES and has_account_context:
         relevance = "ESTABLISHED_ACCOUNT_REVIEW"
     elif brief.event_type in EXPANSION_TYPES and has_exact_context:
@@ -380,7 +413,24 @@ def assemble_evidence_package(
         )
     elif relevance == "REVIEW_REQUIRED":
         why = f"The development concerns {account_name} and suggests a possible capability fit, but the fit is not joined to a canonical program-specific BTX record."
-        action = "Review program and component scope before deciding whether customer follow-up is warranted."
+        components_for_validation = sorted(
+            technical.get("components", ()),
+            key=lambda component: (
+                0 if component.get("evidence_layer") == "ANNOUNCED_SCOPE" else 1
+            ),
+        )
+        validation_questions = tuple(
+            dict.fromkeys(
+                question
+                for component in components_for_validation
+                for question in component.get("validation_questions", ())
+            )
+        )
+        action = (
+            validation_questions[0]
+            if validation_questions
+            else "Validate governed customer and counterparty records for the announced program, facilities, component terms, and relevant buyer activity before proposing follow-up."
+        )
         rationale = "A broad capability and account history are insufficient to establish participation in this development."
     elif relevance == "INFORMATIONAL":
         why = f"The development is associated with {account_name}, but the current evidence does not establish a program-specific BTX commercial implication."
@@ -428,6 +478,7 @@ def assemble_evidence_package(
         "markets": brief.markets,
         "public_evidence": public,
         "capability_fit": fits,
+        "technical_decomposition": technical,
         "commercial_records": records,
         "commercial_record_scope": record_scope,
         "deterministic_scores": {
@@ -515,6 +566,7 @@ def assessment_projection(brief: SignalBrief) -> dict:
         "action_rationale": brief.action_rationale,
         "material_uncertainties": brief.material_uncertainties,
         "references": brief.references,
+        "technical_opportunity": brief.technical_opportunity,
         "evidence_ids": brief.evidence_ids,
         "analysis_status": brief.analysis_status,
         "commercial_relevance_state": brief.commercial_relevance_state,
