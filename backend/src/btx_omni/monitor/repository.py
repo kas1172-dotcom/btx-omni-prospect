@@ -1207,6 +1207,33 @@ class MonitorRepository:
             "created_at": _database_timestamp(row["created_at"]),
         }
 
+    def current_intelligence_assessments(
+        self, *, limit: int = 1000
+    ) -> tuple[dict, ...]:
+        """Return a bounded newest-first index for seller read-window selection."""
+        with self.engine.connect() as connection:
+            rows = (
+                connection.execute(
+                    select(monitor_intelligence_assessments)
+                    .where(monitor_intelligence_assessments.c.is_current.is_(True))
+                    .order_by(
+                        monitor_intelligence_assessments.c.created_at.desc(),
+                        monitor_intelligence_assessments.c.id,
+                    )
+                    .limit(limit)
+                )
+                .mappings()
+                .all()
+            )
+        return tuple(
+            {
+                **dict(row),
+                "projection": json.loads(row["projection"]),
+                "created_at": _database_timestamp(row["created_at"]),
+            }
+            for row in rows
+        )
+
     def save_intelligence_assessment(
         self,
         *,

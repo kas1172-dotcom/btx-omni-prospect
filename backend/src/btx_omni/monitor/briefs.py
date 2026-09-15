@@ -571,8 +571,38 @@ def signal_briefs_for_monitor(
             or bool(account_ids.intersection(brief.canonical_account_ids))
         )
 
-    candidates.sort(
-        key=lambda brief: (
+    repository = getattr(monitor, "repository", None)
+    assessment_index: dict[tuple[str, str | None], dict] = {}
+    if repository and projection_limit is not None:
+        assessment_reader = getattr(
+            repository, "current_intelligence_assessments", None
+        )
+        if callable(assessment_reader):
+            assessment_index = {
+                (item["event_id"], item.get("account_id")): item
+                for item in assessment_reader(limit=max(1000, projection_limit * 20))
+            }
+
+    def seller_window_key(brief: SignalBrief) -> tuple:
+        account_id = (
+            brief.canonical_account_ids[0]
+            if len(brief.canonical_account_ids) == 1
+            else None
+        )
+        assessment = assessment_index.get((brief.id, account_id))
+        projection = assessment.get("projection", {}) if assessment else {}
+        relevance_order = {
+            "ESTABLISHED_COMMERCIAL_RELEVANCE": 0,
+            "ESTABLISHED_ACCOUNT_REVIEW": 1,
+            "PLAUSIBLE_FIT_REQUIRES_VALIDATION": 2,
+            "INFORMATIONAL": 3,
+            "INCOMPLETE": 4,
+        }
+        return (
+            0 if assessment else 1,
+            0 if projection.get("priority_eligible") else 1,
+            relevance_order.get(projection.get("commercial_relevance_state"), 5),
+            -assessment["created_at"].timestamp() if assessment else 0,
             {
                 "RESOLVED_ELIGIBLE": 0,
                 "RESOLVED_NEEDS_REVIEW": 1,
@@ -587,7 +617,8 @@ def signal_briefs_for_monitor(
             brief.id,
             brief.canonical_account_ids,
         )
-    )
+
+    candidates.sort(key=seller_window_key)
     if projection_limit is not None:
         if projection_limit < 1:
             return ()
@@ -596,10 +627,10 @@ def signal_briefs_for_monitor(
     projected: list[SignalBrief] = []
     for brief in candidates:
         technical = None
-        if monitor.repository:
+        if repository:
             # Seller reads consume the exact worker-owned durable projection. They never
             # reconstruct a hash by guessing the configured provider model.
-            cached = monitor.repository.technical_decomposition_for_event(brief.id)
+            cached = repository.technical_decomposition_for_event(brief.id)
             if cached and cached.get("projection"):
                 technical = json.loads(cached["projection"])
                 technical["governed_explanation"] = persisted_seller_explanation(
@@ -608,7 +639,7 @@ def signal_briefs_for_monitor(
                     explanation_type=ExplanationType.TECHNICAL_OPPORTUNITY_FIT,
                 )
         brief = replace(brief, technical_opportunity=technical) if technical else brief
-        if environment is not None and monitor.repository:
+        if environment is not None and repository:
             from btx_omni.monitor.business_briefings import (
                 apply_evidence_package,
                 apply_persisted_assessment,
@@ -620,7 +651,7 @@ def signal_briefs_for_monitor(
                 assemble_evidence_package(
                     brief,
                     environment=environment,
-                    repository=monitor.repository,
+                    repository=repository,
                     now=now,
                 ),
             )
@@ -631,7 +662,7 @@ def signal_briefs_for_monitor(
             )
             brief = apply_persisted_assessment(
                 brief,
-                monitor.repository.intelligence_assessment(
+                repository.intelligence_assessment(
                     brief.id,
                     account_id=account_id,
                     input_revision=brief.input_revision,
