@@ -755,6 +755,17 @@ def test_monitor_health_multiple_eligible_briefs_never_constructs_provider(
     assert len(monitor_health(runtime)["signal_briefs"]) == 8
     assert provider_constructions == 0
 
+    monkeypatch.setattr("btx_omni.api.monitor.SELLER_BRIEF_WINDOW_LIMIT", 3)
+    bounded = monitor_health(runtime)
+    assert len(bounded["signal_briefs"]) == 3
+    assert bounded["signal_brief_window"] == {
+        "returned": 3,
+        "limit": 3,
+        "more_available": True,
+        "ordering": "seller relevance, resolution, publication date, stable identity",
+    }
+    assert len(signal_briefs_for_monitor(runtime.monitor, now=NOW)) == 8
+
 
 def test_synthesis_cache_hash_invalidation_eligibility_and_cap(tmp_path) -> None:
     engine = create_engine(f"sqlite:///{tmp_path / 'cache.db'}")

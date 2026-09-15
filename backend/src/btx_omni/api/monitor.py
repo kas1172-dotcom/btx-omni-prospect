@@ -27,6 +27,7 @@ from btx_omni.monitor.promotion import (
 from btx_omni.monitor.sources import REGISTRY
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
+SELLER_BRIEF_WINDOW_LIMIT = 50
 
 
 class CandidatePromotionRequest(BaseModel):
@@ -152,7 +153,7 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             ),
             "data_mode": "CURATED_PUBLIC",
         }
-        for signal in intelligence_signals(runtime)
+        for signal in intelligence_signals(runtime, include_live=False)
         if signal.get("data_mode") == "CURATED_PUBLIC"
         and signal.get("account_id") in accounts
     ]
@@ -235,8 +236,14 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         if provider_configured
         else ProviderStatus.NOT_CONFIGURED
     )
+    window = signal_briefs_for_monitor(
+        runtime.monitor,
+        environment=runtime.environment(),
+        projection_limit=SELLER_BRIEF_WINDOW_LIMIT + 1,
+    )
+    window_capped = len(window) > SELLER_BRIEF_WINDOW_LIMIT
     briefs = []
-    for deterministic in signal_briefs_for_monitor(runtime.monitor, environment=runtime.environment()):
+    for deterministic in window[:SELLER_BRIEF_WINDOW_LIMIT]:
         cached = (
             runtime.monitor.repository.brief_synthesis(
                 brief_cache_id(deterministic), governed_content_hash(deterministic)
@@ -275,6 +282,12 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         "rejected_observations": rejected,
         "curated_preview": curated_preview,
         "signal_briefs": briefs,
+        "signal_brief_window": {
+            "returned": len(briefs),
+            "limit": SELLER_BRIEF_WINDOW_LIMIT,
+            "more_available": window_capped,
+            "ordering": "seller relevance, resolution, publication date, stable identity",
+        },
     }
 
 

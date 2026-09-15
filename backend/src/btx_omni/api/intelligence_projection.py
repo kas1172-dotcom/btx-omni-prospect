@@ -15,12 +15,28 @@ from btx_omni.monitor.briefs import (
 from btx_omni.monitor.service import current_event_contexts
 
 
-def intelligence_signals(runtime: PocRuntime) -> list[dict]:
+def intelligence_signals(
+    runtime: PocRuntime,
+    *,
+    account_ids: frozenset[str] | None = None,
+    include_live: bool = True,
+    live_limit: int = 50,
+) -> list[dict]:
     sample = runtime.environment()
     names = {item.legal_name: item.id for item in sample.accounts}
     accounts = {item.id: item for item in sample.accounts}
     business_briefs = {}
-    for deterministic in signal_briefs_for_monitor(runtime.monitor, environment=sample):
+    live_briefs = (
+        signal_briefs_for_monitor(
+            runtime.monitor,
+            environment=sample,
+            projection_limit=live_limit,
+            account_ids=account_ids,
+        )
+        if include_live
+        else ()
+    )
+    for deterministic in live_briefs:
         cached = (
             runtime.monitor.repository.brief_synthesis(
                 brief_cache_id(deterministic), governed_content_hash(deterministic)
@@ -48,6 +64,7 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
         for item in sample.intelligence_events
         if item.account_name in names
         and (item.source_id, names[item.account_name]) in curated_membership
+        and (not account_ids or names[item.account_name] in account_ids)
     ]
     live: list[dict] = []
     for event, observation in current_event_contexts(runtime.monitor):
@@ -63,12 +80,12 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
             continue
         for subject in subjects:
             business = business_briefs.get((event.id, subject.canonical_account_id))
+            if not business:
+                continue
             live.append(
                 {
                     "id": event.id,
-                    "context_id": business.context_id
-                    if business
-                    else f"{event.id}:{subject.canonical_account_id}",
+                    "context_id": business.context_id,
                     "kind": event.event_type.value,
                     "title": next(
                         (
@@ -89,12 +106,8 @@ def intelligence_signals(runtime: PocRuntime) -> list[dict]:
                     "resolution_state": event.resolution_state,
                     "data_mode": event.provenance.data_mode,
                     "observed_at": event.event_date or event.provenance.observed_at,
-                    "relevance_explanation": business.why_it_may_matter
-                    if business
-                    else "Account-specific analysis is incomplete; the source is retained without a commercial recommendation.",
-                    "business_briefing": jsonable_encoder(business)
-                    if business
-                    else None,
+                    "relevance_explanation": business.why_it_may_matter,
+                    "business_briefing": jsonable_encoder(business),
                     "evidence_ids": tuple(item.evidence_id for item in event.evidence),
                     "source_tier": event.source_confidence_basis,
                     "provenance": event.provenance,

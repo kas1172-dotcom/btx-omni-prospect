@@ -205,6 +205,13 @@ export function Monitor({
               date are eligible for seller Intelligence. Unresolved or stale
               output remains operational evidence, not a seller recommendation.
             </p>
+            {health.signal_brief_window?.more_available ? (
+              <p className="muted" role="status">
+                Showing the {health.signal_brief_window.returned} most relevant
+                recent assessments. Additional retained events remain available
+                in operational evidence and account-specific views.
+              </p>
+            ) : null}
             {live.length ? (
               <div className="card-list monitor-live-list">
                 {live.map((brief) => <SignalBriefCard key={brief.id} brief={brief} onAccount={onAccount} />)}

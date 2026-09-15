@@ -153,7 +153,9 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     crm = commercial.crm
     signals = [
         item
-        for item in intelligence_signals(runtime)
+        for item in intelligence_signals(
+            runtime, account_ids=frozenset({account_id})
+        )
         if item["account_id"] == account.id
     ]
     matches = [
