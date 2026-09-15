@@ -263,6 +263,52 @@ def test_structured_language_can_improve_prose_but_not_governed_relevance():
     assert result.brief.recommended_action is None
 
 
+def test_persisted_datetime_evidence_is_serialized_for_synthesis_and_hashing():
+    class Provider:
+        configured = True
+        name = "fixture"
+        config = SimpleNamespace(model="fixture")
+
+        def __init__(self):
+            self.request = None
+
+        def synthesize_business_brief(self, request):
+            self.request = request
+            return BusinessBriefingResult(
+                "Specific development",
+                "A supported change",
+                "Account-specific implication",
+                None,
+                "Review the cited development.",
+                (),
+                (request.allowed_evidence_ids[0],),
+                "fixture",
+                "fixture",
+            )
+
+    base = brief("medtronic")
+    governed = apply_evidence_package(
+        base,
+        assemble_evidence_package(
+            base,
+            environment=build_sample_environment(),
+            repository=Repository(),
+            now=NOW,
+        ),
+    )
+    package = deepcopy(governed.evidence_package)
+    package["public_evidence"][0]["publication_date"] = NOW
+    package["public_evidence"][0]["retrieved_at"] = NOW
+    governed = replace(governed, evidence_package=package)
+    provider = Provider()
+
+    assert governed_content_hash(governed)
+    result = synthesize_signal_brief_with_status(governed, provider)
+
+    assert result.provider_status is ProviderStatus.AVAILABLE
+    assert NOW.isoformat() in provider.request.evidence[0].provenance
+
+
 def test_assessment_history_reuses_unchanged_input_and_versions_material_change(
     tmp_path,
 ):
