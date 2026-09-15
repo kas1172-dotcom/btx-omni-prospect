@@ -227,7 +227,7 @@ export function Intelligence({
   onEventSelect: (id?: string) => void;
   onCreateAction: (brief: MonitorSignalBrief) => void;
   onOmniContext: (
-    context: Pick<OmniContext, "active_filters" | "visible_record_ids">,
+    context: Pick<OmniContext, "selected_assessment" | "active_filters" | "visible_record_ids">,
   ) => void;
 }) {
   const [workspace, setWorkspace] = useState<"monitor" | "federal" | "markets">(() => window.location.hash.startsWith('#/intelligence/markets') ? 'markets' : window.location.hash.startsWith('#/intelligence/federal') ? 'federal' : 'monitor');
@@ -362,6 +362,12 @@ export function Intelligence({
     if (workspace === 'markets') return;
     const selectedBrief = base.find((item) => briefKey(item) === selected);
     onOmniContext({
+      selected_assessment: selectedBrief?.assessment_id && selectedBrief.assessment_version && selectedBrief.canonical_account_ids[0] ? {
+        assessment_id: selectedBrief.assessment_id,
+        assessment_version: selectedBrief.assessment_version,
+        event_id: selectedBrief.id,
+        account_id: selectedBrief.canonical_account_ids[0],
+      } : undefined,
       active_filters: {
         ...Object.fromEntries(active),
         ...(selectedBrief?.canonical_account_ids[0]

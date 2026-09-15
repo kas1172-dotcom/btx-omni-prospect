@@ -173,6 +173,17 @@ test('Omni shares governed conversation state across Quick and Full responsive w
   assert.doesNotMatch(drawer, /triggerStorageKey|setPointerCapture|dragThreshold|clampTriggerPosition/)
 })
 
+test('all intelligence launch surfaces pass the persisted assessment contract to Omni', () => {
+  assert.match(apiTypes, /interface OmniAssessmentSelection/)
+  assert.match(apiTypes, /selected_assessment\?: OmniAssessmentSelection/)
+  assert.match(today, /selected_assessment: selectedAssessment/)
+  assert.match(intelligence, /selected_assessment: selectedBrief/)
+  assert.match(map, /selected_assessment: selectedSignal/)
+  assert.match(accounts, /selected_assessment: selectedAssessment/)
+  assert.match(accounts, /Use in Omni/)
+  assert.match(app, /viewContext\.selected_assessment\?\.event_id/)
+})
+
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
   assert.match(map, /Map controls/)
   assert.match(map, /Layers &amp; filters/)

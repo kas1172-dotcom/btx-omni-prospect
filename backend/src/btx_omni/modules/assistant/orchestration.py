@@ -470,11 +470,20 @@ class OmniOrchestrator:
                 "is this actionable",
                 "this award",
                 "this event",
+                "this assessment",
                 "which account is it tied",
                 "what company is it tied",
                 "which account is associated",
                 "where did this come from",
                 "why is this important",
+                "explain this more simply",
+                "explain that more simply",
+                "simplify this",
+                "simplify that",
+                "say this more simply",
+                "say that more simply",
+                "put this more simply",
+                "put that more simply",
             )
         )
 
@@ -516,6 +525,15 @@ class OmniOrchestrator:
                 "go ahead and execute",
                 "which account is it for",
                 "what evidence supports it",
+                "this assessment",
+                "explain this more simply",
+                "explain that more simply",
+                "simplify this",
+                "simplify that",
+                "say this more simply",
+                "say that more simply",
+                "put this more simply",
+                "put that more simply",
             )
         )
 
@@ -719,6 +737,8 @@ class OmniOrchestrator:
         }
         action_ids = {getattr(item, "id", "") for item in work_items}
         event_id = referent.get("event_id")
+        assessment_id = referent.get("assessment_id")
+        assessment_version = referent.get("assessment_version")
         facility_id = referent.get("facility_id")
         action_id = referent.get("action_id")
         account_id = referent.get("account_id")
@@ -755,6 +775,27 @@ class OmniOrchestrator:
             and self._is_event_question(question)
         ):
             resolved["selected_event_id"] = event_id
+            if isinstance(assessment_id, str) and isinstance(assessment_version, int):
+                matching = next(
+                    (
+                        item
+                        for item in intelligence_events
+                        if item.get("id") == event_id
+                        and isinstance(item.get("business_briefing"), Mapping)
+                        and item["business_briefing"].get("assessment_id") == assessment_id
+                        and item["business_briefing"].get("assessment_version") == assessment_version
+                    ),
+                    None,
+                )
+                if matching is None:
+                    resolved["_conversation_stale"] = True
+                    return resolved, {}
+                resolved["selected_assessment"] = {
+                    "assessment_id": assessment_id,
+                    "assessment_version": assessment_version,
+                    "event_id": event_id,
+                    "account_id": matching.get("account_id"),
+                }
             used["event_id"] = event_id
             return resolved, used
         if isinstance(event_id, str) and self._is_event_question(question):
@@ -859,6 +900,11 @@ class OmniOrchestrator:
             if isinstance(event_id, str):
                 referent["event_id"] = event_id
                 route = "EVENT"
+        assessment_id = used.get("assessment_id")
+        assessment_version = used.get("assessment_version")
+        if isinstance(assessment_id, str) and isinstance(assessment_version, int):
+            referent["assessment_id"] = assessment_id
+            referent["assessment_version"] = assessment_version
         if "facility_id" in used:
             facility_id = used["facility_id"]
             if isinstance(facility_id, str):
@@ -2197,8 +2243,12 @@ class OmniOrchestrator:
         context: Mapping[str, object],
     ) -> OmniResponse:
         filters = context.get("active_filters")
+        selected_assessment = context.get("selected_assessment")
         selected_account_id = (
-            context.get("selected_account_id")
+            selected_assessment.get("account_id")
+            if isinstance(selected_assessment, Mapping)
+            and isinstance(selected_assessment.get("account_id"), str)
+            else context.get("selected_account_id")
             if isinstance(context.get("selected_account_id"), str)
             else filters.get("account_id")
             if isinstance(filters, Mapping) and isinstance(filters.get("account_id"), str)
@@ -2256,8 +2306,31 @@ class OmniOrchestrator:
         citation_links = [OmniCitation(title, source_url)] if source_url else []
         business = event.get("business_briefing")
         if isinstance(business, Mapping):
+            if isinstance(selected_assessment, Mapping) and (
+                selected_assessment.get("event_id") != event_id
+                or selected_assessment.get("account_id") != account_id
+                or selected_assessment.get("assessment_id") != business.get("assessment_id")
+                or selected_assessment.get("assessment_version") != business.get("assessment_version")
+            ):
+                return OmniResponse(
+                    "The selected Intelligence assessment has changed or is no longer current. Refresh the assessment before asking Omni to explain it.",
+                    account.id if account else "",
+                    (),
+                    (AssistantProvenance.MISSING_UNAVAILABLE,),
+                    ("Selected Intelligence assessment is stale or outside the requested account scope.",),
+                    None,
+                    (),
+                    account.legal_name if account else None,
+                    context_used=context_used,
+                )
             if account:
                 context_used["account_id"] = account.id
+            assessment_id = business.get("assessment_id")
+            assessment_version = business.get("assessment_version")
+            if isinstance(assessment_id, str):
+                context_used["assessment_id"] = assessment_id
+            if isinstance(assessment_version, int):
+                context_used["assessment_version"] = assessment_version
             references = business.get("references", ())
             citation_links = [
                 OmniCitation(str(item.get("title") or title), str(item["url"]))
@@ -2272,10 +2345,32 @@ class OmniOrchestrator:
             )
             uncertainties = tuple(str(item) for item in business.get("material_uncertainties", ()) if item)
             action = business.get("recommended_action") if isinstance(business.get("recommended_action"), str) else None
+            confidence = business.get("signal_confidence")
+            confidence_text = None
+            if isinstance(confidence, Mapping):
+                score = confidence.get("score")
+                factors = confidence.get("factors", ())
+                factor_text = "; ".join(
+                    f"{str(factor.get('key', 'factor')).replace('_', ' ').title()}: "
+                    f"{factor.get('points') if factor.get('points') is not None else 'unavailable'} out of 100 — {factor.get('reason')}"
+                    for factor in factors
+                    if isinstance(factor, Mapping)
+                )
+                if score is not None:
+                    score_text = f"{float(score):.2f}".rstrip("0").rstrip(".")
+                    confidence_text = (
+                        f"Signal Confidence: {score_text}/100."
+                        + (f" Relevant factors: {factor_text}." if factor_text else "")
+                    )
+                    if isinstance(assessment_id, str) and isinstance(assessment_version, int):
+                        context_used["signal_confidence_score"] = float(score)
+                        if isinstance(confidence.get("configuration_version"), str):
+                            context_used["signal_confidence_version"] = confidence["configuration_version"]
             explanation = " ".join(filter(None, (
                 str(business.get("headline") or title),
                 f"What changed: {business.get('what_happened')}." if business.get("what_happened") else None,
                 f"Why it matters: {business.get('why_it_may_matter')}." if business.get("why_it_may_matter") else None,
+                confidence_text,
                 f"Next step: {action}." if action else "This is informational; no seller action is established.",
                 f"What remains uncertain: {'; '.join(uncertainties)}" if uncertainties else None,
             )))
