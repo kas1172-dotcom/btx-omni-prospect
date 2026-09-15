@@ -13,14 +13,18 @@ type FullMode = 'conversation' | 'evidence' | 'customer'
 const starters = ['What should I review today?', 'Explain why this Customer matters', 'Compare selected Customers', 'Show the supporting evidence']
 const surfaceLabels: Record<string, string> = { TODAY: 'Today', ACCOUNTS: 'Customers & Prospects', ACCOUNT_DETAIL: 'Customer 360', INTELLIGENCE: 'Intelligence', MAP: 'Map', ACTIONS: 'Actions', MONITOR: 'Monitor' }
 const selectedRelationshipQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:relationship\s+)?(?:route|path|connection|relationship)\b/i.test(question)
+const selectedAssessmentQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:intelligence\s+)?assessment\b/i.test(question)
 
-async function waitForSelectedRelationshipContext(contextRef: { current: OmniContext }, question: string) {
+async function waitForSelectedGovernedContext(contextRef: { current: OmniContext }, question: string) {
   let current = contextRef.current
-  if (current.surface !== 'ACCOUNT_DETAIL' || current.relationship_selection || !selectedRelationshipQuestion(question)) return current
+  const relationshipPending = current.surface === 'ACCOUNT_DETAIL' && !current.relationship_selection && selectedRelationshipQuestion(question)
+  const assessmentPending = ['TODAY', 'INTELLIGENCE', 'ACCOUNT_DETAIL', 'MAP'].includes(current.surface ?? '') && !current.selected_assessment && selectedAssessmentQuestion(question)
+  if (!relationshipPending && !assessmentPending) return current
   const deadline = Date.now() + 5_000
-  while (!current.relationship_selection && Date.now() < deadline) {
+  while (Date.now() < deadline) {
     await new Promise(resolve => window.setTimeout(resolve, 100))
     current = contextRef.current
+    if ((!relationshipPending || current.relationship_selection) && (!assessmentPending || current.selected_assessment)) break
   }
   return current
 }
@@ -57,11 +61,17 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     const history = messages.slice(-6).map(message => `${message.role}: ${message.text}`).join('\n').slice(-1600)
     setMessages(old => [...old, { role: 'user', text }]); setQuestion(''); setLoading(true); setError('')
     try {
-      const currentContext = await waitForSelectedRelationshipContext(contextRef, text)
+      const currentContext = await waitForSelectedGovernedContext(contextRef, text)
       if (selectedRelationshipQuestion(text) && currentContext.surface === 'ACCOUNT_DETAIL' && !currentContext.relationship_selection) {
         setMessages(old => old.slice(0, -1))
         setQuestion(text)
         setError('The selected relationship is still refreshing. Wait for the connection update, then send again.')
+        return
+      }
+      if (selectedAssessmentQuestion(text) && ['TODAY', 'INTELLIGENCE', 'ACCOUNT_DETAIL', 'MAP'].includes(currentContext.surface ?? '') && !currentContext.selected_assessment && !conversationReferent?.assessment_id) {
+        setMessages(old => old.slice(0, -1))
+        setQuestion(text)
+        setError('The selected Intelligence assessment is still refreshing. Reopen its evidence and choose Use in Omni, then send again.')
         return
       }
       const response = await api.omni(activeAccount?.id, text, { ...currentContext, relationship_selection: activeAccount ? currentContext.relationship_selection : undefined, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent })
