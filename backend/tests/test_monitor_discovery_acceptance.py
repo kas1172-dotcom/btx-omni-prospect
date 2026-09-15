@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -73,6 +74,7 @@ def _live_signals(runtime: PocRuntime) -> list[dict]:
 
 def test_existing_account_monitor_enrichment_is_durable_idempotent_and_seller_visible(tmp_path) -> None:
     runtime = _runtime(tmp_path)
+    runtime.monitor.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
     client = _client(runtime)
     commercial_before = tuple((item.account_id, item.ttm_revenue_minor, item.ttm_bookings_minor) for item in runtime.sample.commercial_contexts)
     score_before = calculate_account_attractiveness(AccountAttractivenessInputs(runtime.sample.scoring_inputs["medtronic"]), evidence_ids=("medtronic-public-identity",), calculated_at=runtime.observed_at()).score

@@ -491,6 +491,7 @@ def test_governed_publisher_identity_does_not_copy_article_payload_into_entity_n
 
 def test_durable_monitor_events_rehydrate_after_runtime_restart_without_scoring_change(tmp_path) -> None:
     initial = _durable_runtime(tmp_path)
+    initial.monitor.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
     initial.monitor.registry["fda_openfda"] = _fda(
         {"k_number": "K-RESTART-MEDTRONIC", "device_name": "Medtronic device approval", "decision_date": "2026-08-15"}
     )
@@ -530,6 +531,7 @@ def test_durable_monitor_events_rehydrate_after_runtime_restart_without_scoring_
 
 def test_durable_restart_rehydrates_but_excludes_noneligible_events(tmp_path) -> None:
     initial = _durable_runtime(tmp_path)
+    initial.monitor.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
     repository = initial.monitor.repository
     assert repository is not None
     sample = initial.sample
@@ -574,6 +576,7 @@ def test_durable_restart_rehydrates_but_excludes_noneligible_events(tmp_path) ->
         ),
     )
     for service, source_id in zip(services, ("resolved", "unresolved", "rejected", "ambiguous"), strict=True):
+        service.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
         service.collect(source_id)
 
     restarted = PocRuntime(initial.settings)
