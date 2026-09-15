@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass, fields, replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from time import monotonic
 from typing import TYPE_CHECKING
@@ -47,6 +47,15 @@ EVENT_LABELS = {
     "GOVERNMENT_FUNDING": "Government funding reported",
     "PROGRAM_LAUNCH": "Program update reported",
 }
+
+
+def _json_default(value: object) -> object:
+    """Encode persisted scalar types without weakening evidence validation."""
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    raise TypeError(type(value).__name__)
 
 
 @dataclass(frozen=True)
@@ -284,6 +293,7 @@ def synthesize_signal_brief_with_status(
                         "retrieved_at": item.get("retrieved_at"),
                         "extraction_complete": item.get("extraction_complete"),
                     },
+                    default=_json_default,
                     sort_keys=True,
                 ),
             )
@@ -417,15 +427,8 @@ def governed_content_hash(brief: SignalBrief) -> str:
     # when it is observed again on a subsequent Monitor run.
     governed.pop("collection_timestamp", None)
 
-    def encode(value: object) -> object:
-        if isinstance(value, datetime):
-            return value.isoformat()
-        if isinstance(value, Decimal):
-            return str(value)
-        raise TypeError(type(value).__name__)
-
     payload = json.dumps(
-        governed, default=encode, sort_keys=True, separators=(",", ":")
+        governed, default=_json_default, sort_keys=True, separators=(",", ":")
     )
     return hashlib.sha256(payload.encode()).hexdigest()
 
