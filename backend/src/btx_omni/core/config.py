@@ -29,13 +29,15 @@ class Settings(BaseSettings):
         "sam_gov,usaspending,federal_register,sec_edgar,nasa,fda_openfda"
     )
     monitor_source_record_limit: int = Field(default=25, ge=1, le=100)
+    monitor_public_lookback_days: int = Field(default=14, ge=1, le=60)
     monitor_document_fetch_cap: int = Field(default=2, ge=0, le=5)
     monitor_research_cap: int = Field(default=2, ge=0, le=3)
     monitor_source_target_limit: int = 25
     monitor_worker_max_seconds: float = Field(default=240, gt=0, le=900)
     monitor_source_min_start_seconds: float = Field(default=2.0, gt=0, le=60)
-    # SAM NAICS filtering remains opt-in until BTX verifies the target codes.
-    # An empty list deliberately means the bounded date query is unclassified.
+    # SAM NAICS filtering remains opt-in until the governed BTX market taxonomy
+    # has been reviewed for this environment. An empty list deliberately means
+    # the bounded date query is unclassified.
     monitor_sam_naics: str = ""
     monitor_sam_naics_verification_state: str = "PENDING_VERIFICATION"
     monitor_brief_synthesis_cap: int = Field(default=3, ge=0, le=10)

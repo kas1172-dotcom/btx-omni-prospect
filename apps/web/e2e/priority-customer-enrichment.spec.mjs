@@ -18,11 +18,11 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
   const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects' })
   for (const name of priorityCustomers) {
     await search.fill(name)
-    await expect(page.locator('.portfolio-table-row').filter({ hasText: name })).toHaveCount(1)
+    await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name, exact: true })).toHaveCount(1)
   }
 
   await search.fill('Honeywell')
-  await page.locator('.portfolio-table-row').filter({ hasText: 'Honeywell' }).click()
+  await page.getByRole('link', { name: 'Honeywell', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Honeywell', level: 1 })).toBeVisible()
   await expect(page.getByText('SANITIZED REFERENCE SOURCE', { exact: true })).toBeVisible()
   await expect(page.getByText('SIMULATED BTX CONTEXT', { exact: true }).first()).toBeVisible()
@@ -59,7 +59,7 @@ for (const width of [390, 320]) test(`priority Customer disclosures remain usabl
   await page.setViewportSize({ width, height: 844 })
   await openPortfolio(page)
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Eaton')
-  await page.locator('.portfolio-mobile-list .ui-mobile-row').filter({ hasText: 'Eaton' }).click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Eaton', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Eaton', level: 1 })).toBeVisible()
   const attention = page.getByRole('button', { name: /What needs attention/ })
   await expect(attention).toHaveAttribute('aria-expanded', 'true')

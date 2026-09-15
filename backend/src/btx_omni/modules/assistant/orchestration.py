@@ -579,6 +579,43 @@ class OmniOrchestrator:
             re.search(r"\b(which|what)\s+(?:[a-z]+\s+){0,2}(accounts|customers|prospects)\b", question)
         )
 
+    @classmethod
+    def should_apply_relationship_selection(
+        cls, question: str, context: Mapping[str, object]
+    ) -> bool:
+        """Keep an active graph route only for an explicit relationship explanation.
+
+        A graph selection is durable UI context, but it must not override an explicit
+        portfolio-wide request. Short deictic follow-ups are allowed because the
+        selected canonical path, rather than prior assistant prose, supplies the facts.
+        """
+        normalized = " ".join(question.casefold().split())
+        if cls._is_global_cross_account_question(normalized):
+            return False
+        if cls._is_relationship_question(normalized):
+            return True
+        if re.search(
+            r"\b(?:this|that|selected)\s+(?:route|path|connection|relationship)\b",
+            normalized,
+        ):
+            return True
+        referent = context.get("conversation_referent")
+        relationship_referent = (
+            isinstance(referent, Mapping) and referent.get("route") == "RELATIONSHIP"
+        )
+        concise_explanation = any(
+            phrase in normalized
+            for phrase in (
+                "explain this more simply",
+                "explain that more simply",
+                "simplify this",
+                "simplify that",
+                "say that more simply",
+                "put that more simply",
+            )
+        )
+        return relationship_referent and concise_explanation
+
     @staticmethod
     def _is_comparison_follow_up(question: str) -> bool:
         return any(

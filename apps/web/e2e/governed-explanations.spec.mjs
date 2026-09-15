@@ -86,14 +86,14 @@ async function addTodayTechnicalExplanationFixture(page) {
 async function openLockheed(page) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await page.getByPlaceholder('Search Customer, industry, or location').fill('Lockheed')
-  await page.locator('.account-row').filter({ hasText: 'Lockheed' }).first().click()
+  await page.getByRole('link', { name: 'Lockheed Martin', exact: true }).click()
   await expect(page.locator('.account-workspace')).toBeVisible()
 }
 
 async function openLockheedMobile(page) {
   await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await page.getByPlaceholder('Search Customer, industry, or location').fill('Lockheed')
-  await page.locator('.portfolio-mobile-list .ui-mobile-row').filter({ hasText: 'Lockheed' }).first().click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Lockheed Martin', exact: true }).click()
   await expect(page.locator('.account-workspace')).toBeVisible()
 }
 

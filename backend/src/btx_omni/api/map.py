@@ -17,6 +17,10 @@ from btx_omni.modules.commercial.map_context import map_commercial_context
 from btx_omni.modules.scoring.account_attractiveness import (
     seller_attractiveness_projection,
 )
+from btx_omni.modules.scoring.prospect_fit import (
+    prospect_fit_payload,
+    prospect_fit_projection,
+)
 from btx_omni.monitor.briefs import (
     SignalBrief,
     apply_cached_synthesis,
@@ -122,11 +126,16 @@ def _map_intelligence_point(
     }
 
 
-def _account_segment(*, account_id: str, active_client_account_ids: set[str], dormant_customer_account_ids: set[str], prospect_account_ids: set[str]) -> str:
+def _account_segment(*, account_id: str, relationship: str, active_client_account_ids: set[str], dormant_customer_account_ids: set[str], prospect_account_ids: set[str]) -> str:
     """Project governed SAMPLE commercial state without treating history as active status."""
-    if account_id in dormant_customer_account_ids:
+    # Canonical account classification wins over the presence of SAMPLE context.
+    # A scenario record must not silently turn a researched public-market company
+    # into a current Customer.
+    if relationship == "FORMER_CUSTOMER" or account_id in dormant_customer_account_ids:
         return "DORMANT_CUSTOMER"
-    if account_id in active_client_account_ids:
+    if relationship in {"PUBLIC_MARKET", "PROSPECT", "TARGET"}:
+        return "PROSPECT"
+    if relationship == "CURRENT_CUSTOMER" or account_id in active_client_account_ids:
         return "CURRENT_CLIENT"
     if account_id in prospect_account_ids:
         return "PROSPECT"
@@ -206,6 +215,7 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
                 "primary_markets": account.industries,
                 "account_segment": _account_segment(
                     account_id=account.id,
+                    relationship=account.relationship.value,
                     active_client_account_ids=active_client_accounts,
                     dormant_customer_account_ids=dormant_customer_accounts,
                     prospect_account_ids=prospect_accounts,
@@ -240,7 +250,8 @@ def map_data(industry: str | None = None, runtime: PocRuntime = Depends(get_runt
                 for item in commercial_alerts
                 if item.account_id == account.id
             )
-            account_points.append({"id": f"account:{account.id}:facility:{location.id}", "entity_type": "ACCOUNT", "account_id": account.id, "facility_id": location.id, "name": account.legal_name, "primary_markets": account.industries, "industry": primary_market_label(account.industries), "relationship": account.relationship, "account_segment": _account_segment(account_id=account.id, active_client_account_ids=active_client_accounts, dormant_customer_account_ids=dormant_customer_accounts, prospect_account_ids=prospect_accounts), "is_rich_scenario": account.id in sample.rich_scenarios or account.id in sample.priority_scenarios, "btx_top_100": account.btx_top_100, "btx_top_100_provenance": account.btx_top_100_provenance, "coordinates": _coordinates(location.latitude, location.longitude), "location_truth_state": location.verification_state, "location_name": location.name, "location_type": location.facility_type, "location_provenance": location.provenance, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in commercial_accounts else "UNAVAILABLE", "attractiveness_score": score.score, "attractiveness_coverage": score.coverage, "score_status": score.status, "score_missingness": score.missingness, "nearest_btx_facility": {"id": nearest.id, "name": nearest.name, "distance_miles": str(distance), "distance_method": "HAVERSINE_STRAIGHT_LINE"} if nearest and distance is not None else None, "proximity_input": str(distance) if distance is not None else None, "current_signal_briefs": current_briefs_by_account.get(account.id, ()), "upcoming_signal_briefs": upcoming_briefs_by_account.get(account.id, ()), "governed_next_step": account_alerts[0].recommended_action if account_alerts else None, "selection_missingness": tuple(item for item, missing in (("Customer Attractiveness inputs", score.score is None), ("current eligible Signal Brief", not current_briefs_by_account.get(account.id)), ("upcoming governed date", not upcoming_briefs_by_account.get(account.id)), ("SAMPLE commercial context", account.id not in commercial_accounts)) if missing), "deep_account": account.id in commercial_accounts})
+            segment = _account_segment(account_id=account.id, relationship=account.relationship.value, active_client_account_ids=active_client_accounts, dormant_customer_account_ids=dormant_customer_accounts, prospect_account_ids=prospect_accounts)
+            account_points.append({"id": f"account:{account.id}:facility:{location.id}", "entity_type": "ACCOUNT", "account_id": account.id, "facility_id": location.id, "name": account.legal_name, "primary_markets": account.industries, "industry": primary_market_label(account.industries), "relationship": account.relationship, "account_segment": segment, "is_rich_scenario": account.id in sample.rich_scenarios or account.id in sample.priority_scenarios, "btx_top_100": account.btx_top_100, "btx_top_100_provenance": account.btx_top_100_provenance, "coordinates": _coordinates(location.latitude, location.longitude), "location_truth_state": location.verification_state, "location_name": location.name, "location_type": location.facility_type, "location_provenance": location.provenance, "commercial_state": "SIMULATED_BTX_CONTEXT" if account.id in commercial_accounts else "UNAVAILABLE", "attractiveness_score": score.score, "attractiveness_coverage": score.coverage, "score_status": score.status, "score_missingness": score.missingness, "prospect_fit": prospect_fit_payload(prospect_fit_projection(account, applicable=segment == "PROSPECT")), "nearest_btx_facility": {"id": nearest.id, "name": nearest.name, "distance_miles": str(distance), "distance_method": "HAVERSINE_STRAIGHT_LINE"} if nearest and distance is not None else None, "proximity_input": str(distance) if distance is not None else None, "current_signal_briefs": current_briefs_by_account.get(account.id, ()), "upcoming_signal_briefs": upcoming_briefs_by_account.get(account.id, ()), "governed_next_step": account_alerts[0].recommended_action if account_alerts else None, "selection_missingness": tuple(item for item, missing in (("Applicable score inputs", (segment == "PROSPECT" and not account.industries) or (segment != "PROSPECT" and score.score is None)), ("current eligible Signal Brief", not current_briefs_by_account.get(account.id)), ("upcoming governed date", not upcoming_briefs_by_account.get(account.id)), ("commercial context", account.id not in commercial_accounts)) if missing), "deep_account": account.id in commercial_accounts})
     facility_points = [{"id": f"facility:{facility.id}", "entity_type": "FACILITY", "account_id": facility.account_id, "facility_id": facility.id, "name": facility.name, "primary_markets": accounts[facility.account_id].industries, "city": facility.city, "region": facility.region, "country": facility.country, "location_type": facility.facility_type, "truth_state": facility.verification_state, "coordinates": _coordinates(facility.latitude, facility.longitude), "source_url": facility.source_url, "provenance": facility.provenance} for facility in facilities if facility.account_id in selected_ids]
     btx_points = [{"id": f"btx-facility:{facility.id}", "entity_type": "BTX_FACILITY", "facility_id": facility.id, "business_unit_id": facility.business_unit_id, "name": facility.name, "city": facility.city, "region": facility.region, "country": facility.country, "coordinates": _coordinates(facility.latitude, facility.longitude), "source_url": facility.source_url, "source_type": facility.source_type, "truth_state": facility.verification_state, "verification_state": facility.verification_state, "provenance": facility.provenance} for facility in btx_facilities]
     facility_coordinates = {facility.id: _coordinates(facility.latitude, facility.longitude) for facility in facilities}

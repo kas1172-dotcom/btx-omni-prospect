@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from datetime import timedelta
 from typing import Any
 
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER
 from btx_omni.monitor.briefs import SignalBrief
 
 _SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+SAVED_INTELLIGENCE_WINDOW_DAYS = 60
 
 
 def _brief_dict(brief: SignalBrief) -> dict[str, Any]:
@@ -42,6 +44,21 @@ def build_command_center(
         and brief.freshness == "CURRENT"
         and brief.event_timing == "OBSERVED"
     )
+    # A later collection with no new result must not erase still-relevant saved
+    # intelligence. These records passed identity/relevance gates when created;
+    # they remain explicitly stale and retain their real publication dates.
+    recent_saved = tuple(
+        brief
+        for brief in briefs
+        if brief.resolution_state == "RESOLVED"
+        and brief.seller_promotion_state == "WITHHELD_STALE"
+        and brief.freshness == "STALE"
+        and brief.event_timing == "OBSERVED"
+        and brief.publication_timestamp is not None
+        and generated_at - timedelta(days=SAVED_INTELLIGENCE_WINDOW_DAYS)
+        <= brief.publication_timestamp
+        <= generated_at
+    )
     upcoming = tuple(
         sorted(
             (
@@ -62,6 +79,16 @@ def build_command_center(
             key=lambda item: (
                 0 if item.watchlist_eligible else 1,
                 -(item.publication_timestamp.timestamp() if item.publication_timestamp else 0),
+                item.id,
+            ),
+        )
+    )
+    recent_saved = tuple(
+        sorted(
+            recent_saved,
+            key=lambda item: (
+                0 if item.watchlist_eligible else 1,
+                -item.publication_timestamp.timestamp(),
                 item.id,
             ),
         )
@@ -97,7 +124,9 @@ def build_command_center(
             if brief.canonical_account_ids
             else None,
             "reason": brief.why_it_may_matter,
-            "recommended_action": brief.recommended_action,
+            "recommended_action": brief.recommended_action
+            if brief.freshness == "CURRENT"
+            else "Review the saved source and revalidate material changes before seller follow-up.",
             "evidence_ids": brief.evidence_ids,
             "observed_at": brief.publication_timestamp,
             "data_mode": brief.data_mode,
@@ -108,8 +137,9 @@ def build_command_center(
                 for match in (brief.technical_opportunity or {}).get('matches', ())
                 if match.get('status') in {'MATCHED', 'POSSIBLE_MATCH_REVIEW_REQUIRED'}
                 for unit in match.get('business_units', ()) if unit.get('id')})),
+            "lifecycle_state": "CURRENT" if brief.freshness == "CURRENT" else "SAVED_RECENT",
         }
-        for brief in current
+        for brief in (*current, *recent_saved)
     ]
 
     watch_targets = {
@@ -243,6 +273,7 @@ def build_command_center(
         # selected before customer/BU scope. Cards are a projection of this list.
         "priority_briefing": (*alert_items, *signal_items),
         "current_signal_briefs": tuple(_brief_dict(item) for item in current),
+        "saved_recent_signal_briefs": tuple(_brief_dict(item) for item in recent_saved),
         "upcoming_radar": tuple(_brief_dict(item) for item in upcoming),
         "market_hubs": tuple(market_hubs),
         "watched_accounts": tuple(watched_accounts),

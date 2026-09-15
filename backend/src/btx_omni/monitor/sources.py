@@ -235,25 +235,64 @@ class SamAdapter(LiveSourceAdapter):
     def available(self, settings: Any) -> tuple[bool, str | None]: return bool(settings.sam_api_key), "SAM_API_KEY is not configured"
     def request_url(self, limit: int, *, collected_at: datetime | None = None) -> str:
         today = (collected_at or datetime.now(UTC)).date()
-        window_start = today - timedelta(days=14)
+        window_start = today - timedelta(days=getattr(self, "_lookback_days", 14))
         query: dict[str, object] = {'limit': limit, 'offset': 0, 'postedFrom': window_start.strftime('%m/%d/%Y'), 'postedTo': today.strftime('%m/%d/%Y')}
         # Do not apply unverified classifications to a production query.
         naics = tuple(
             code.strip() for code in getattr(self, "_sam_naics", ()) if code.strip()
         )
         if naics:
-            query["ncode"] = ",".join(naics)
+            # SAM's public opportunity API documents ncode as one six-digit
+            # string, so this diagnostic URL represents the first governed
+            # target. collect() executes the bounded multi-code plan.
+            query["ncode"] = naics[0]
         return f"{self.definition.api_base}?{urlencode(query)}"
     def collect(self, *, run_id: str, settings: Any, limit: int = 10, collected_at: datetime | None = None) -> list[SourceObservation]:
         self._sam_naics = (tuple(value.strip() for value in settings.monitor_sam_naics.split(",") if value.strip()) if settings.monitor_sam_naics_verification_state == "VERIFIED" else ())
+        self._lookback_days = min(
+            60, max(1, int(getattr(settings, "monitor_public_lookback_days", 14)))
+        )
         allowed, reason = self.available(settings)
         if not allowed:
             raise PermissionError(reason or "SAM.gov is not configured")
         observations: list[SourceObservation] = []
-        offset = 0
         today = (collected_at or datetime.now(UTC)).date()
+        if self._sam_naics:
+            # The official endpoint accepts one ncode per request. Search each
+            # governed code in stable order with an explicit total request cap;
+            # do not send an undocumented comma-separated value.
+            per_code = max(1, min(100, (limit + len(self._sam_naics) - 1) // len(self._sam_naics)))
+            seen: set[str] = set()
+            for code in sorted(self._sam_naics)[:32]:
+                query: dict[str, object] = {
+                    "limit": per_code,
+                    "offset": 0,
+                    "api_key": settings.sam_api_key,
+                    "postedFrom": (today - timedelta(days=self._lookback_days)).strftime("%m/%d/%Y"),
+                    "postedTo": today.strftime("%m/%d/%Y"),
+                    "ncode": code,
+                }
+                status, payload, _headers = self.get(
+                    f"{self.definition.api_base}?{urlencode(query)}",
+                    self.headers(settings),
+                )
+                if status == 429:
+                    raise RuntimeError("RATE_LIMITED")
+                if status >= 400:
+                    raise RuntimeError(f"HTTP_{status}")
+                try:
+                    rows = self.items(json.loads(payload))
+                except json.JSONDecodeError as exc:
+                    raise ValueError("MALFORMED_SOURCE_RESPONSE") from exc
+                for row in rows:
+                    observation = self._observation(row, run_id, collected_at=collected_at)
+                    if observation.source_identity.source_record_id not in seen:
+                        seen.add(observation.source_identity.source_record_id)
+                        observations.append(observation)
+            return observations[:limit]
+        offset = 0
         while len(observations) < limit:
-            query: dict[str, object] = {"limit": min(limit - len(observations), 100), "offset": offset, "api_key": settings.sam_api_key, "postedFrom": (today - timedelta(days=14)).strftime("%m/%d/%Y"), "postedTo": today.strftime("%m/%d/%Y")}
+            query: dict[str, object] = {"limit": min(limit - len(observations), 100), "offset": offset, "api_key": settings.sam_api_key, "postedFrom": (today - timedelta(days=self._lookback_days)).strftime("%m/%d/%Y"), "postedTo": today.strftime("%m/%d/%Y")}
             if self._sam_naics:
                 query["ncode"] = ",".join(self._sam_naics)
             status, payload, _headers = self.get(f"{self.definition.api_base}?{urlencode(query)}", self.headers(settings))

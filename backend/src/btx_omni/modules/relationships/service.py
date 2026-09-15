@@ -120,11 +120,33 @@ class RelationshipIntelligenceService:
         if selected_path_id and selected is None:
             raise ValueError("Selected path is not present in this query revision")
         components = {c["component_id"]: {"id": c["component_id"], "label": c["name"], "account_id": aid, "facility_id": c.get("btx_facility_id"), "business_unit_id": c["business_unit_id"]} for aid, ledger in self.sample.commercial_ledgers.items() for c in ledger["components"]}
+        from btx_omni.providers.research.enriched_evidence import public_sources
+
+        source_catalog = public_sources()
+
+        def assertion(edge_id: str, inverse: bool) -> dict:
+            edge = graph.edges[edge_id]
+            public_evidence = next(
+                (source_catalog[evidence_id] for evidence_id in edge.evidence_ids if evidence_id in source_catalog),
+                None,
+            )
+            return {
+                "id": edge_id,
+                "predicate": edge.predicate,
+                "inverse": inverse,
+                "truth_class": edge.truth_class,
+                "source_url": public_evidence.get("url") if public_evidence else None,
+                "source_record_id": edge.evidence_ids[0] if edge.evidence_ids else None,
+            }
+
         for route in [*routes, *recommendations, *result["research_candidates"]]:
             route["steps"] = [{**asdict(graph.nodes[nid]), "id": nid} for nid in route["node_ids"]]
-            route['assertions'] = [{'id': eid, 'predicate': graph.edges[eid].predicate,
-                                    'inverse': inverse, 'truth_class': graph.edges[eid].truth_class}
-                                   for eid, inverse in zip(route['edge_ids'], route['inverse_steps'], strict=True)]
+            route["assertions"] = [
+                assertion(edge_id, inverse)
+                for edge_id, inverse in zip(
+                    route["edge_ids"], route["inverse_steps"], strict=True
+                )
+            ]
             route["component_context"] = [components[cid] for cid in sorted({graph.edges[eid].component_id for eid in route["edge_ids"] if graph.edges[eid].component_id in components})]
             route["constraints"] = [metadata["constraints"][cid] for cid in route["constraint_ids"]]
             route["next_action"] = "Review recovery and feasibility constraints before making a commitment." if route["constraint_ids"] else "Review transferable experience and technical qualification; capability alone does not establish capacity." if query.mode != "contact_candidates" else "Verify the published role and identify the operational buyer; no introduction is established."

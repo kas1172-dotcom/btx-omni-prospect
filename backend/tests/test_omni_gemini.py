@@ -247,6 +247,37 @@ def test_provider_failure_returns_truthful_deterministic_fallback() -> None:
     assert response.language_provider == "deterministic"
 
 
+def test_selected_relationship_does_not_override_global_portfolio_question(
+    monkeypatch,
+) -> None:
+    def fail_if_resolved(*_args, **_kwargs):
+        raise AssertionError("global portfolio request must not resolve a sticky route")
+
+    monkeypatch.setattr(
+        "btx_omni.modules.assistant.service.selected_relationship_context",
+        fail_if_resolved,
+    )
+    response = OmniService(None).answer(
+        build_sample_environment(),
+        account_id=None,
+        question="Which accounts have open quotes?",
+        observed_at=datetime(2026, 8, 31, tzinfo=UTC),
+        context={
+            "relationship_selection": {"path_id": "selected-path"},
+            "conversation_referent": {
+                "relationship_account_ids": ["boeing", "lockheed-martin"],
+                "route": "RELATIONSHIP",
+            },
+        },
+        intelligence_events=(),
+        work_items=(),
+    )
+
+    assert "researched account(s) with open quotes" in response.content
+    assert response.structured_relationship is None
+    assert response.conversation_referent is None
+
+
 @pytest.mark.parametrize(
     "provider,status",
     [

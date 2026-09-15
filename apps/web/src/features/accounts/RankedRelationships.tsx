@@ -32,7 +32,6 @@ export function RankedRelationships({ accountId, onOmniContext }: { accountId: s
   const [revisionGuard, setRevisionGuard] = useState<string>()
   const [budgetLevel, setBudgetLevel] = useState(0)
   const [includeRecords, setIncludeRecords] = useState(false)
-  const [contextActive, setContextActive] = useState(false)
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches)
   const [layout, setLayout] = useState<{ key: string; positions: Map<string, Point> }>({ key: '', positions: new Map() })
   const stageRef = useRef<HTMLDivElement>(null)
@@ -47,12 +46,12 @@ export function RankedRelationships({ accountId, onOmniContext }: { accountId: s
   const routes = result?.evaluated_routes ?? []
   const selected = routes.find(r => r.path_id === selectedId) ?? routes.find(r => r.path_id === result?.graph.selected_path_id) ?? routes[0]
   useEffect(() => {
-    onOmniContext({ relationship_selection: contextActive && selected && result?.scope && result.eligible_graph_revision && !pending && !error ? {
+    onOmniContext({ relationship_selection: selected && result?.scope && result.eligible_graph_revision && !pending && !error ? {
       source_account_id: accountId, target_ids: result.scope.target_ids, mode: result.mode, as_of: result.scope.as_of,
       depth: result.searched_depth, path_id: selected.path_id, graph_revision: result.eligible_graph_revision,
       source_component_id: result.scope.source_component_id, target_component_id: result.scope.target_component_id,
     } : undefined })
-  }, [accountId, selected, result, pending, error, onOmniContext, contextActive])
+  }, [accountId, selected, result, pending, error, onOmniContext])
   useEffect(() => () => onOmniContext({ relationship_selection: undefined }), [onOmniContext])
   const layoutKey = JSON.stringify([accountId, result?.mode, result?.scope?.target_ids, result?.scope?.source_component_id, result?.scope?.target_component_id, mobile])
   if (result && (layout.key !== layoutKey || result.graph.nodes.some(n => !layout.positions.has(n.id)))) {
@@ -76,7 +75,7 @@ export function RankedRelationships({ accountId, onOmniContext }: { accountId: s
   const pageContext = (page: number) => { setPending(true); setContextPage(page); setSelectedId(selected?.path_id); setRevisionGuard(result?.eligible_graph_revision) }
   const toggleExpansion = (id: string) => { setPending(true); setExpansions(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]); setContextPage(0); setSelectedId(selected?.path_id); setRevisionGuard(result?.eligible_graph_revision); setExpanded(true) }
   const focusNode = (id: string) => { if (selectedNode && id !== selectedNode) setFocusHistory(history => [...history.slice(-19), selectedNode]); setSelectedNode(id) }
-  return <section className="ranked-relationships" aria-label="Ranked canonical relationships" aria-busy={pending} onFocusCapture={() => setContextActive(true)} onPointerDownCapture={() => setContextActive(true)}>
+  return <section className="ranked-relationships" aria-label="Ranked canonical relationships" aria-busy={pending}>
     <label><input type="checkbox" checked={includeRecords} disabled={pending || !['commercial_fit', 'cross_account_experience'].includes(mode)} onChange={event => {
       setIncludeRecords(event.target.checked); setPending(true); setContextPage(0); setExpansions([]);
       setSelectedId(selected?.path_id); setRevisionGuard(result?.eligible_graph_revision);

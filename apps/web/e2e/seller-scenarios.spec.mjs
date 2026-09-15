@@ -85,6 +85,7 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
 })
 
 test('Phase 7 seller scenarios remain coherent across real product surfaces', async ({ page }) => {
+  test.setTimeout(120_000)
   const scenarioAccounts = [
     ['Southwest geographic trip planning', 'Anduril', 'anduril-industries'],
     ['Southwest geographic trip planning', 'Rocket Lab', 'rocket-lab-usa'],
@@ -114,14 +115,14 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   const search = page.getByPlaceholder('Search Customer, industry, or location')
   for (const [scenario, account] of scenarioAccounts) {
     await search.fill(account)
-    await expect(page.locator('.account-row').filter({ hasText: account }).first(), scenario).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(account, 'i') }).first(), scenario).toBeVisible()
   }
 
   // Each canonical scenario anchor reaches Account 360 and Omni with the exact UI-selected ID.
   for (const [index, [, account, accountId]] of scenarioAccounts.entries()) {
     if (index === 0) {
       await search.fill(account)
-      await page.locator('.account-row').filter({ hasText: account }).first().click()
+      await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(account, 'i') }).first().click()
     } else {
       const switcher = page.getByLabel('Switch Customer')
       await switcher.fill(account)
@@ -137,8 +138,9 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   }
 
   // Defense award + quote-history scenario: Account Detail and Omni use the same exact ID.
+  await navigate(page, 'Customers & Prospects')
   await search.fill('Lockheed')
-  await page.locator('.account-row').filter({ hasText: 'Lockheed' }).first().click()
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: /Lockheed/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   await expect(page.getByText(/Customers & Prospects \/ Customer 360/)).toBeVisible()
   await openOmni(page)

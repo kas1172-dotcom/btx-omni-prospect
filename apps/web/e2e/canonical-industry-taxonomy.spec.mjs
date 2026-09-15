@@ -16,7 +16,7 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
   await expect(page.getByRole('button', { name: 'Aerospace', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Space Exploration', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Robotics', exact: true }).click()
-  await expect(page.locator('.account-row').filter({ hasText: 'Symbotic' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Symbotic', exact: true })).toBeVisible()
 
   await navigate(page, 'Intelligence')
   await page.getByLabel('Filter Intelligence by market').selectOption({ label: 'Robotics' })

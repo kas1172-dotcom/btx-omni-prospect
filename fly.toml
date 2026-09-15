@@ -5,7 +5,7 @@ primary_region = "iad"
   dockerfile = "backend/Dockerfile"
 
 [deploy]
-  release_command = "uv run alembic upgrade head"
+  release_command = "uv run --no-sync alembic upgrade head"
 
 [env]
   BTX_ENVIRONMENT = "production"
@@ -17,6 +17,10 @@ primary_region = "iad"
   BTX_COMMERCIAL_DURABLE_STATE_ENABLED = "true"
   BTX_MARKET_REFRESH_ENABLED = "true"
   BTX_MONITOR_SCHEDULE_CONFIGURED = "true"
+  # Source-backed POC scope from the governed 2022 NAICS market taxonomy.
+  BTX_MONITOR_SAM_NAICS = "336411,336412,336413,336414,332994,334511,333242,334413,334516,339112,334510,333998,334519,333611,335999,334513"
+  BTX_MONITOR_SAM_NAICS_VERIFICATION_STATE = "VERIFIED"
+  BTX_MONITOR_PUBLIC_LOOKBACK_DAYS = "60"
   BTX_AI_PROVIDER = "gemini"
   BTX_GEMINI_MODEL = "gemini-3.6-flash"
   BTX_GEMINI_MODE = "vertex"

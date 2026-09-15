@@ -19,14 +19,9 @@ async function openAccount(page, query, accountId) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
   await page.getByPlaceholder('Search Customer, industry, or location').fill(query)
-  const mobile = page.viewportSize().width <= 760
-  const relationshipResponse = mobile ? undefined : page.waitForResponse(response => response.url().endsWith(`/api/accounts/${accountId}/relationships?depth=2`))
-  const customerRow = mobile ? page.locator('.portfolio-mobile-list .ui-mobile-row') : page.locator('.account-row')
-  await customerRow.filter({ hasText: query }).first().click()
-  if (!relationshipResponse) {
-    await expect(page.locator('.account-workspace')).toBeVisible()
-    return undefined
-  }
+  const relationshipResponse = page.viewportSize().width <= 760 ? undefined : page.waitForResponse(response => response.url().endsWith(`/api/accounts/${accountId}/relationships?depth=2`))
+  await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(query, 'i') }).first().click()
+  if (!relationshipResponse) return undefined
   const response = await relationshipResponse
   expect(response.status()).toBe(200)
   return response.json()

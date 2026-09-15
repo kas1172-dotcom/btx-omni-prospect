@@ -82,7 +82,51 @@ def test_sam_naics_are_applied_only_after_explicit_verification() -> None:
     adapter.collect(run_id="pending", settings=pending)
     assert "ncode=" not in adapter.request_url(1)
     adapter.collect(run_id="verified", settings=verified)
-    assert "ncode=336411%2C334413" in adapter.request_url(1)
+    assert "ncode=336411" in adapter.request_url(1)
+
+
+def test_sam_queries_each_verified_naics_as_a_separate_bounded_request() -> None:
+    urls: list[str] = []
+
+    def get(url: str, _headers: dict[str, str]):
+        urls.append(url)
+        code = "336411" if "ncode=336411" in url else "334413"
+        return 200, json.dumps({"totalRecords": 1, "opportunitiesData": [{"noticeId": f"N-{code}", "title": code}]}).encode(), {}
+
+    settings = Settings(
+        _env_file=None,
+        sam_api_key="key",
+        monitor_sam_naics="336411,334413",
+        monitor_sam_naics_verification_state="VERIFIED",
+    )
+    observations = SamAdapter(get).collect(run_id="r", settings=settings, limit=4)
+    assert len(urls) == 2
+    assert all("%2C" not in url for url in urls)
+    assert {item.source_identity.source_record_id for item in observations} == {
+        "N-336411",
+        "N-334413",
+    }
+
+
+def test_sam_honors_bounded_public_retrieval_window() -> None:
+    urls: list[str] = []
+
+    def get(url: str, _headers: dict[str, str]):
+        urls.append(url)
+        return 200, json.dumps({"totalRecords": 0, "opportunitiesData": []}).encode(), {}
+
+    settings = Settings(
+        _env_file=None,
+        sam_api_key="key",
+        monitor_public_lookback_days=60,
+    )
+    SamAdapter(get).collect(
+        run_id="r",
+        settings=settings,
+        collected_at=datetime(2026, 9, 9, tzinfo=UTC),
+    )
+    assert "postedFrom=07%2F11%2F2026" in urls[0]
+    assert "postedTo=09%2F09%2F2026" in urls[0]
 
 
 def test_sam_uses_documented_query_key_and_paginates() -> None:
@@ -447,6 +491,7 @@ def test_governed_publisher_identity_does_not_copy_article_payload_into_entity_n
 
 def test_durable_monitor_events_rehydrate_after_runtime_restart_without_scoring_change(tmp_path) -> None:
     initial = _durable_runtime(tmp_path)
+    initial.monitor.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
     initial.monitor.registry["fda_openfda"] = _fda(
         {"k_number": "K-RESTART-MEDTRONIC", "device_name": "Medtronic device approval", "decision_date": "2026-08-15"}
     )
@@ -486,6 +531,7 @@ def test_durable_monitor_events_rehydrate_after_runtime_restart_without_scoring_
 
 def test_durable_restart_rehydrates_but_excludes_noneligible_events(tmp_path) -> None:
     initial = _durable_runtime(tmp_path)
+    initial.monitor.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
     repository = initial.monitor.repository
     assert repository is not None
     sample = initial.sample
@@ -530,6 +576,7 @@ def test_durable_restart_rehydrates_but_excludes_noneligible_events(tmp_path) ->
         ),
     )
     for service, source_id in zip(services, ("resolved", "unresolved", "rejected", "ambiguous"), strict=True):
+        service.clock = lambda: datetime(2026, 8, 31, tzinfo=UTC)
         service.collect(source_id)
 
     restarted = PocRuntime(initial.settings)

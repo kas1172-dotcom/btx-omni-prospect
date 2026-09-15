@@ -34,28 +34,35 @@ def selected_relationship_context(environment, selection: dict, *, account_id: s
                 records.append({"account_id": aid, **record})
                 break
     connection = " → ".join(step["label"] for step in route["steps"])
-    components = "; ".join(f"{c['label']} ({c['account_id']}, {c['id']})" for c in route["component_context"])
+    components = "; ".join(c['label'] for c in route["component_context"])
     reasons = " ".join(item["reason"] for item in route["factor_reasons"])
     constraints = " ".join(item["reason"] for item in route["constraints"])
     content = f"Selected connection: {connection}. Component scope: {components or 'published role scope'}. Why useful: {reasons} Limiting fact: {constraints or 'Current qualification and spare capacity are not established by this route.'} Next action: {route['next_action']}"
     financial_facts = []
+    account_names = {item.id: item.legal_name for item in environment.accounts}
     for item in records:
         record = item["record"]
         fields = {key: value for key, value in record.items() if key.endswith(("_minor", "_date")) or key in {"quantity", "currency", "buyer_accepted"}}
         if fields:
             currency = environment.commercial_ledgers[item["account_id"]]["currency"]
             from btx_omni.modules.commercial.money import model_money_projection
-            financial_facts.append(f"{item['record_id']} ({item['account_id']}, {currency}): {model_money_projection(fields, currency=currency)}")
+            financial_facts.append(f"{item['record_id']} ({account_names.get(item['account_id'], 'selected account')}, {currency}): {model_money_projection(fields, currency=currency)}")
     expanded_content = "Linked records (money display is already formatted by canonical server code): " + "; ".join(financial_facts)
     for aid in sorted(account_ids):
         ledger = environment.commercial_ledgers.get(aid)
         if ledger:
             revenue = Decimal(ledger["ttm_summary"]["revenue_minor"]) / 100
-            content += f"\n{aid}: {ledger['currency']} {revenue:,.2f} recognized revenue across {len(ledger['monthly_commercial_history'])} recorded months through {ledger['as_of']} (account-wide, not component-only)."
+            content += f"\n{account_names.get(aid, 'Selected account')}: {ledger['currency']} {revenue:,.2f} recognized revenue across {len(ledger['monthly_commercial_history'])} recorded months through {ledger['as_of']} (account-wide, not component-only)."
             from btx_omni.modules.commercial.money import model_money_projection
-            expanded_content += f"\nAccount-wide TTM summary {aid}, through {ledger['as_of']}: {model_money_projection(ledger['ttm_summary'], currency=ledger['currency'])}."
+            expanded_content += f"\nAccount-wide trailing-12-month summary for {account_names.get(aid, 'the selected account')}, through {ledger['as_of']}: {model_money_projection(ledger['ttm_summary'], currency=ledger['currency'])}."
+    source_links = tuple(
+        {"label": f"Supporting source for {assertion['predicate'].replace('_', ' ').lower()}", "url": assertion["source_url"]}
+        for assertion in route.get("assertions", ())
+        if assertion.get("source_url")
+    )
     return {"route": route, "graph_revision": result["eligible_graph_revision"], "search_complete": result["search_complete"],
             "rubric_version": result["rubric_version"], "commercial_as_of": result["commercial_as_of"],
             "content": content, "expanded_content": expanded_content, "evidence_records": records,
             "evidence_records_omitted": max(0, len(route["evidence_ids"]) - len(records)),
+            "source_links": source_links,
             "authority": "Canonical route factors and constraints; model language cannot modify this structured result."}

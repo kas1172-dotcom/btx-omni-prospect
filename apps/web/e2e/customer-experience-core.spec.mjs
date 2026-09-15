@@ -26,9 +26,10 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await search.fill('Lockheed')
   const row = table.getByRole('row').filter({ hasText: 'Lockheed Martin' })
   await expect(row).toHaveCount(1)
-  await row.focus()
-  await expect(row).toBeFocused()
-  await row.press('Enter')
+  const profileLink = row.getByRole('link', { name: 'Lockheed Martin' })
+  await profileLink.focus()
+  await expect(profileLink).toBeFocused()
+  await profileLink.press('Enter')
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   await expect(page.getByText('Why this Customer matters')).toBeVisible()
   await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
@@ -50,16 +51,16 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await expect(page.locator('.accounts-surface')).not.toContainText(/\b(Account|Accounts|Client|Clients|Company|Companies)\b/)
 })
 
-test('390px Portfolio transforms to mobile rows and Customer 360 uses accessible disclosures', async ({ page }) => {
+test('390px Portfolio keeps a semantic internally scrollable table and Customer 360 disclosures', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await openPortfolio(page)
-  await expect(page.getByRole('table', { name: 'Customers and Prospects' })).toBeHidden()
-  const rows = page.locator('.portfolio-mobile-list .ui-mobile-row')
-  await expect(rows.first()).toBeVisible()
+  const table = page.getByRole('table', { name: 'Customers and Prospects' })
+  await expect(table).toBeVisible()
+  await expect(table.getByRole('columnheader')).toHaveCount(6)
   await expect(page.getByRole('searchbox', { name: 'Search Customers and Prospects' })).toBeVisible()
   await expect(page.getByLabel('Sort Customers and Prospects')).toBeVisible()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Lockheed')
-  await rows.filter({ hasText: 'Lockheed Martin' }).click()
+  await table.getByRole('link', { name: 'Lockheed Martin' }).click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
 
   const commercial = page.getByRole('button', { name: /Commercial context/ })
@@ -83,10 +84,53 @@ test('390px Portfolio transforms to mobile rows and Customer 360 uses accessible
 test('320px Customer Experience remains navigable without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 })
   await openPortfolio(page)
-  await expect(page.locator('.portfolio-mobile-list .ui-mobile-row').first()).toBeVisible()
+  const table = page.getByRole('table', { name: 'Customers and Prospects' })
+  await expect(table).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Lockheed')
-  await page.locator('.portfolio-mobile-list .ui-mobile-row').filter({ hasText: 'Lockheed Martin' }).click()
+  await table.getByRole('link', { name: 'Lockheed Martin' }).click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+})
+
+test('Portfolio sorts the complete filtered result set before pagination and keeps missing values last', async ({ page }) => {
+  await openPortfolio(page)
+  await page.getByRole('button', { name: /Filters/ }).click()
+  await page.getByLabel('Customer scope').selectOption('ALL')
+  const table = page.getByRole('table', { name: 'Customers and Prospects' })
+  const names = async () => table.locator('tbody th[scope="row"] a').allTextContents()
+  const values = async (column) => table.locator(`tbody tr td:nth-child(${column})`).allTextContents()
+
+  await table.getByRole('button', { name: /Attractiveness/ }).click()
+  const descendingScores = (await values(4)).map(value => value.trim())
+  const knownDescending = descendingScores.filter(value => value !== 'Unavailable').map(Number)
+  expect(knownDescending).toEqual([...knownDescending].sort((a, b) => b - a))
+  expect(descendingScores.slice(knownDescending.length).every(value => value === 'Unavailable')).toBeTruthy()
+
+  await table.getByRole('button', { name: /Attractiveness/ }).click()
+  const ascendingScores = (await values(4)).map(value => value.trim())
+  const knownAscending = ascendingScores.filter(value => value !== 'Unavailable').map(Number)
+  expect(knownAscending).toEqual([...knownAscending].sort((a, b) => a - b))
+  expect(ascendingScores.slice(knownAscending.length).every(value => value === 'Unavailable')).toBeTruthy()
+
+  await table.getByRole('button', { name: /^Priority/ }).click()
+  const priorities = (await values(5)).map(value => value.trim())
+  const rank = { High: 3, Medium: 2, Low: 1 }
+  const knownPriorities = priorities.filter(value => value !== 'Unavailable')
+  expect(knownPriorities.map(value => rank[value])).toEqual([...knownPriorities.map(value => rank[value])].sort((a, b) => b - a))
+
+  await table.getByRole('button', { name: /Customer \/ Prospect/ }).click()
+  const firstPageNames = await names()
+  if (await page.getByRole('button', { name: 'Next', exact: true }).isEnabled()) {
+    await page.getByRole('button', { name: 'Next', exact: true }).click()
+    const secondPageNames = await names()
+    expect(firstPageNames.at(-1).localeCompare(secondPageNames[0], undefined, { sensitivity: 'base' })).toBeLessThanOrEqual(0)
+  }
+
+  await page.getByRole('button', { name: /Customer \/ Prospect/ }).click()
+  const selectedName = (await names())[0]
+  await table.getByRole('link', { name: selectedName, exact: true }).click()
+  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
+  await expect(table.getByRole('columnheader', { name: /Customer \/ Prospect/ })).toHaveAttribute('aria-sort', 'descending')
+  await expect(table.locator('tbody th[scope="row"] a').first()).toHaveText(selectedName)
 })

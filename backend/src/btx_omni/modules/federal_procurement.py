@@ -365,6 +365,11 @@ def fixture(now: datetime):
 def procurement_projection(runtime: Any, **filters: Any) -> dict:
     now = runtime.observed_at()
     verified = runtime.settings.monitor_sam_naics_verification_state == "VERIFIED"
+    verified_naics = {
+        code.strip()
+        for code in getattr(runtime.settings, "monitor_sam_naics", "").split(",")
+        if code.strip()
+    }
     opp = []
     aw = []
     from btx_omni.monitor.service import current_source_observations
@@ -377,7 +382,12 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
         if obs.source_identity.source_system == "sam_gov":
             opp.append(opportunity(p, obs, verified=verified))
         elif obs.source_identity.source_system == "usaspending":
-            aw.append(award(p, obs))
+            projected_award = award(p, obs)
+            # Recipient targeting establishes account identity, not manufacturing
+            # relevance. Once a governed NAICS scope is enabled, keep award
+            # analytics inside that same explicit scope.
+            if not verified or projected_award.get("naics") in verified_naics:
+                aw.append(projected_award)
     if getattr(runtime.settings, "federal_procurement_fixture_mode", False):
         opp, aw = fixture(now)
     for x in opp:

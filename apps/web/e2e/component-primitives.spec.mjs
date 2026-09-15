@@ -19,7 +19,7 @@ test('shared disclosure and controls expose keyboard and selected-state contract
   await search.focus()
   await expect(search).toBeFocused()
   await search.fill('Intel')
-  await expect(page.locator('.account-row')).toHaveCount(1)
+  await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
 
   const defense = page.getByRole('button', { name: 'Defense', exact: true })
   await defense.click()
