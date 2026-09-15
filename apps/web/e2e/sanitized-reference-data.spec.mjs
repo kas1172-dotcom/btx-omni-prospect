@@ -14,7 +14,7 @@ test('sanitized reference Customers, provenance, and BTX Top 100 flow through ca
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Honeywell')
   const honeywell = page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row').filter({ hasText: 'Honeywell' })
   await expect(honeywell).toContainText('BTX Top 100')
-  await honeywell.click()
+  await honeywell.getByRole('link', { name: 'Honeywell', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Honeywell', level: 1 })).toBeVisible()
   await expect(page.getByText('SANITIZED REFERENCE SOURCE', { exact: true })).toBeVisible()
   const detail = await (await page.request.get('/api/accounts/honeywell')).json()

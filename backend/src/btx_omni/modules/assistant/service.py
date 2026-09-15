@@ -114,7 +114,9 @@ class OmniService:
                                     "private_memory_ids": [m["id"] for m in memories[:8]],
                                     "private_memory_omitted": max(0, len(memories) - 8)})
         selection = context.get("relationship_selection")
-        if isinstance(selection, dict):
+        if isinstance(selection, dict) and OmniOrchestrator.should_apply_relationship_selection(
+            question, context
+        ):
             try:
                 structured = selected_relationship_context(environment, selection, account_id=account_id)
             except (KeyError, ValueError, PermissionError):

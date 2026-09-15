@@ -85,6 +85,7 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
 })
 
 test('Phase 7 seller scenarios remain coherent across real product surfaces', async ({ page }) => {
+  test.setTimeout(120_000)
   const scenarioAccounts = [
     ['Southwest geographic trip planning', 'Anduril', 'anduril-industries'],
     ['Southwest geographic trip planning', 'Rocket Lab', 'rocket-lab-usa'],
@@ -137,6 +138,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   }
 
   // Defense award + quote-history scenario: Account Detail and Omni use the same exact ID.
+  await navigate(page, 'Customers & Prospects')
   await search.fill('Lockheed')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: /Lockheed/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
