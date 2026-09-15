@@ -18,7 +18,9 @@ test('seller saves a dated private research shortlist and filters the same portf
   await page.getByLabel('Shortlist purpose').selectOption('RESEARCH')
   await page.getByLabel('Planning objective').fill('Confirm technical qualification and the correct buyer role.')
   await page.getByLabel('Target date').fill('2026-10-15')
+  const createShortlist = page.waitForResponse(response => response.url().endsWith('/api/planning/shortlist') && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Add to shortlist' }).click()
+  expect((await createShortlist).status()).toBe(200)
   await expect(page.getByText(/Saved for the signed-in user/)).toContainText('2026-10-15')
 
   await page.getByRole('button', { name: '← Customers & Prospects' }).click()
@@ -39,7 +41,9 @@ test('seller saves a dated private research shortlist and filters the same portf
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
+  const removeShortlist = page.waitForResponse(response => response.url().endsWith('/api/planning/shortlist') && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Remove from shortlist' }).click()
+  expect((await removeShortlist).status()).toBe(200)
   await expect(page.getByRole('button', { name: 'Add to shortlist' })).toBeVisible()
 })
 
