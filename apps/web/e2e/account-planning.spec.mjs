@@ -78,16 +78,24 @@ test('a late planning read cannot overwrite a seller draft', async ({ page }) =>
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')
   let releasePlanning
   const planningReleased = new Promise(resolve => { releasePlanning = resolve })
+  let finishPlanning
+  const planningFinished = new Promise(resolve => { finishPlanning = resolve })
   await page.route('**/api/planning', async route => {
     if (route.request().method() !== 'GET') return route.continue()
-    const response = await route.fetch()
-    await planningReleased
-    await route.fulfill({ response })
-  })
+    try {
+      const response = await route.fetch()
+      await planningReleased
+      await route.fulfill({ response })
+    } finally {
+      finishPlanning()
+    }
+  }, { times: 1 })
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
   const objective = 'Preserve this seller-authored qualification review.'
   await page.getByLabel('Planning objective').fill(objective)
   releasePlanning()
+  await planningFinished
+  await page.unroute('**/api/planning')
   await expect(page.getByRole('button', { name: 'Sales planning gap' })).toBeVisible()
   await expect(page.getByLabel('Planning objective')).toHaveValue(objective)
   await expect(page.getByRole('button', { name: 'Add to shortlist' })).toBeEnabled()
