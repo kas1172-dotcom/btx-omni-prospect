@@ -61,6 +61,16 @@ for (const viewport of viewports) {
       await section.getByRole('button', { name: 'Fit selected route', exact: true }).click()
       await expect(section).toHaveAttribute('aria-busy', 'false')
       await expect(section.getByRole('group', { name: 'Canonical relationship network', exact: true })).toBeVisible()
+      if (scene === 'D1' && viewport.width === 1440) {
+        await page.getByRole('button', { name: 'Open Omni assistant' }).click()
+        const omniResponse = page.waitForResponse(response => response.url().endsWith('/api/omni') && response.request().method() === 'POST')
+        await page.locator('#omni-message').fill('Explain this selected relationship route.')
+        await page.getByRole('button', { name: 'Send', exact: true }).click()
+        const response = await omniResponse
+        expect(response.status()).toBe(200)
+        expect(response.request().postDataJSON().context.relationship_selection.path_id).toBe(route.path_id)
+        await page.getByRole('button', { name: 'Close Omni', exact: true }).click()
+      }
       const labels = await section.locator('.ranked-stage foreignObject button.active').evaluateAll(nodes => nodes.map(node => ({
         text: node.textContent, clipped: node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth,
       })))
