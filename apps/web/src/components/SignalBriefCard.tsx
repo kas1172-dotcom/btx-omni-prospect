@@ -6,7 +6,7 @@ import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
 const display = (value: string) => value.replaceAll('_', ' ').toLocaleLowerCase().replace(/^./, letter => letter.toUpperCase())
-const modeLabel = (value: string) => ({ LIVE_PUBLIC: 'CONNECTED PUBLIC', CURATED_PUBLIC: 'CURATED PUBLIC', SANITIZED_REFERENCE: 'SANITIZED REFERENCE', SAMPLE: 'SAMPLE BTX CONTEXT' }[value] ?? display(value))
+const modeLabel = (value: string) => ({ LIVE_PUBLIC: 'CONNECTED PUBLIC', CURATED_PUBLIC: 'CURATED PUBLIC', SANITIZED_REFERENCE: 'REFERENCE EVIDENCE', SAMPLE: 'BTX COMMERCIAL CONTEXT' }[value] ?? display(value))
 
 export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, selected = false }: { brief: MonitorSignalBrief; accountName?: (id: string) => string; onAccount?: (id: string) => void; onUseInOmni?: (brief: MonitorSignalBrief) => void; selected?: boolean }) {
   const accountId = brief.canonical_account_ids[0]
@@ -22,6 +22,8 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
       <span>{brief.event_timing === 'UPCOMING' ? 'Event' : 'Published'}: {dateLabel(eventDate)}</span>
     </div>
     <p>{brief.seller_summary}</p>
+    {brief.analysis_status && brief.analysis_status !== 'READY' && <p className="notice">Analysis is incomplete. The source remains available, but no completed commercial recommendation is shown.</p>}
+    {brief.commercial_relevance_state === 'INFORMATIONAL' && <small>Informational update · no established commercial priority</small>}
     {brief.summary_mode === 'GEMINI_ASSISTED' && <small>Language assisted; governed evidence unchanged.</small>}
     {brief.signal_confidence && <Disclosure title={`Signal confidence · ${brief.signal_confidence.score == null ? 'More evidence needed' : `${brief.signal_confidence.score}/100`}`}>
       <div className="seller-signal-details">
@@ -63,10 +65,13 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         <p><strong>What happened:</strong> {brief.what_happened}</p>
         <p><strong>Why it may matter:</strong> {brief.why_it_may_matter}</p>
         <p><strong>What to watch:</strong> {brief.what_to_watch}</p>
+        {brief.action_rationale && <p><strong>Action rationale:</strong> {brief.action_rationale}</p>}
+        {!!brief.material_uncertainties?.length && <div><strong>What remains uncertain:</strong><ul>{brief.material_uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
         {brief.priority_reasons.length > 0 && <div><strong>Why watched:</strong><ul>{brief.priority_reasons.map(reason => <li key={`${reason.code}:${reason.source_system}:${reason.source_record_id ?? ''}`}>{reason.detail} <small>({display(reason.source_system)})</small></li>)}</ul></div>}
         {brief.recommended_action && <p><strong>Governed next step:</strong> {brief.recommended_action}</p>}
         {brief.missing_fields.length > 0 && <p><strong>Missing:</strong> {brief.missing_fields.join(', ')}</p>}
         <EvidenceSource title={brief.headline} source={brief.source_system} date={dateLabel(brief.publication_timestamp)} evidenceState={brief.resolution_state} validationState={brief.seller_promotion_state} url={brief.source_url} detail={`Evidence IDs: ${brief.evidence_ids.length ? brief.evidence_ids.join(', ') : 'Unavailable'}`} />
+        {brief.references?.filter(item => item.url && item.url !== brief.source_url).map(item => <EvidenceSource key={item.evidence_id} title={item.title} source="Public source" date={dateLabel(item.publication_date ?? undefined)} evidenceState="CITED" url={item.url} detail="Supporting passage used in this briefing" />)}
         {brief.data_mode === 'LIVE_PUBLIC' && <EvidencePassages key={brief.id} eventId={brief.id} />}
       </div>
     </Disclosure>

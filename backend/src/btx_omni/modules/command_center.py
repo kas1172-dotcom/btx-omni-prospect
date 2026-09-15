@@ -51,7 +51,7 @@ def build_command_center(
         brief
         for brief in briefs
         if brief.resolution_state == "RESOLVED"
-        and brief.seller_promotion_state == "WITHHELD_STALE"
+        and brief.seller_promotion_state in {"WITHHELD_STALE", "RESOLVED_NEEDS_REVIEW"}
         and brief.freshness == "STALE"
         and brief.event_timing == "OBSERVED"
         and brief.publication_timestamp is not None
@@ -118,15 +118,14 @@ def build_command_center(
     )
     signal_items = [
         {
-            "id": brief.id,
+            "id": brief.context_id or brief.id,
+            "event_id": brief.id,
             "kind": "PUBLIC_SIGNAL",
             "account_id": brief.canonical_account_ids[0]
             if brief.canonical_account_ids
             else None,
             "reason": brief.why_it_may_matter,
-            "recommended_action": brief.recommended_action
-            if brief.freshness == "CURRENT"
-            else "Review the saved source and revalidate material changes before seller follow-up.",
+            "recommended_action": brief.recommended_action,
             "evidence_ids": brief.evidence_ids,
             "observed_at": brief.publication_timestamp,
             "data_mode": brief.data_mode,
@@ -140,6 +139,7 @@ def build_command_center(
             "lifecycle_state": "CURRENT" if brief.freshness == "CURRENT" else "SAVED_RECENT",
         }
         for brief in (*current, *recent_saved)
+        if brief.priority_eligible
     ]
 
     watch_targets = {

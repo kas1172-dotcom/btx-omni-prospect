@@ -56,12 +56,18 @@ def projection(*briefs: SignalBrief, alerts: tuple = ()) -> dict:
         legal_name="Example Customer",
         relationship=SimpleNamespace(value="TARGET"),
     )
-    program = SimpleNamespace(id="program-1", name="Example Program", account_id="acct-1")
+    program = SimpleNamespace(
+        id="program-1", name="Example Program", account_id="acct-1"
+    )
     target = WatchTarget(
         "acct-1",
         "Example Customer",
         ("Defense",),
-        (TargetReason("REFERENCE", "Explicit reference target.", "REFERENCE", "ref-1"),),
+        (
+            TargetReason(
+                "REFERENCE", "Explicit reference target.", "REFERENCE", "ref-1"
+            ),
+        ),
         SimpleNamespace(),
     )
     source = SimpleNamespace(
@@ -90,9 +96,7 @@ def projection(*briefs: SignalBrief, alerts: tuple = ()) -> dict:
 
 def test_current_radar_and_market_hubs_are_governed_and_separate() -> None:
     current = brief("current", event_at=NOW - timedelta(hours=1))
-    upcoming = brief(
-        "upcoming", timing="UPCOMING", event_at=NOW + timedelta(days=2)
-    )
+    upcoming = brief("upcoming", timing="UPCOMING", event_at=NOW + timedelta(days=2))
     unknown = brief("unknown", timing="UNKNOWN", event_at=None)
     stale = brief("stale", event_at=NOW - timedelta(days=30), freshness="STALE")
     unresolved = brief("unresolved", event_at=NOW, resolved=False)
@@ -100,7 +104,9 @@ def test_current_radar_and_market_hubs_are_governed_and_separate() -> None:
 
     assert [item["id"] for item in result["current_signal_briefs"]] == ["current"]
     assert [item["id"] for item in result["upcoming_radar"]] == ["upcoming"]
-    defense = next(item for item in result["market_hubs"] if item["market"] == "Defense")
+    defense = next(
+        item for item in result["market_hubs"] if item["market"] == "Defense"
+    )
     assert defense["current_signal_ids"] == ("current",)
     assert defense["upcoming_signal_ids"] == ("upcoming",)
     assert len(result["market_hubs"]) == 7
@@ -131,7 +137,9 @@ def test_degraded_projection_does_not_claim_live_collection() -> None:
     result = projection()
     assert result["daily_briefing"]["live_intelligence_available"] is False
     assert result["curated_reference_signal_ids"] == ("curated-1",)
-    assert "No current eligible live Signal Briefs are available." in result["missingness"]
+    assert (
+        "No current eligible live Signal Briefs are available." in result["missingness"]
+    )
     assert result["source_health_warnings"][0]["state"] == "NEVER_ATTEMPTED"
 
 
@@ -150,7 +158,9 @@ def test_recent_saved_eligible_signal_remains_a_truthfully_labeled_priority() ->
         "saved-recent"
     ]
     assert result["priority_briefing"][0]["lifecycle_state"] == "SAVED_RECENT"
-    assert "revalidate" in result["priority_briefing"][0]["recommended_action"]
+    assert (
+        result["priority_briefing"][0]["recommended_action"] == saved.recommended_action
+    )
 
 
 def test_saved_signal_older_than_bounded_window_is_not_promoted() -> None:
@@ -166,14 +176,23 @@ def test_saved_signal_older_than_bounded_window_is_not_promoted() -> None:
 
 
 def test_filter_consumers_receive_priorities_beyond_old_eight_item_cutoff():
-    alerts = tuple(SimpleNamespace(id=f'alert-{index:02}', account_id=f'customer-{index}', severity='HIGH',
-        trigger_reason='Actual source reason', recommended_action='Actual next action',
-        evidence_ids=(f'source-{index}',), observed_at=NOW, business_unit='bu-scoped' if index == 10 else None)
-        for index in range(12))
-    items = projection(alerts=alerts)['priority_briefing']
-    assert [item['id'] for item in items] == [alert.id for alert in alerts]
-    assert items[10]['business_unit_ids'] == ('bu-scoped',)
-    assert items[0]['business_unit_ids'] == ()  # No inferred account-level fallback.
+    alerts = tuple(
+        SimpleNamespace(
+            id=f"alert-{index:02}",
+            account_id=f"customer-{index}",
+            severity="HIGH",
+            trigger_reason="Actual source reason",
+            recommended_action="Actual next action",
+            evidence_ids=(f"source-{index}",),
+            observed_at=NOW,
+            business_unit="bu-scoped" if index == 10 else None,
+        )
+        for index in range(12)
+    )
+    items = projection(alerts=alerts)["priority_briefing"]
+    assert [item["id"] for item in items] == [alert.id for alert in alerts]
+    assert items[10]["business_unit_ids"] == ("bu-scoped",)
+    assert items[0]["business_unit_ids"] == ()  # No inferred account-level fallback.
 
 
 def test_priority_projection_is_ordered_and_self_describing() -> None:
@@ -215,7 +234,9 @@ def test_priority_projection_is_ordered_and_self_describing() -> None:
     public = result["priority_briefing"][-1]
     assert public["signal_brief"]["id"] == "public"
     assert public["signal_brief"]["evidence_ids"] == ("evidence-1",)
-    defense = next(item for item in result["market_hubs"] if item["market"] == "Defense")
+    defense = next(
+        item for item in result["market_hubs"] if item["market"] == "Defense"
+    )
     assert defense["source_coverage"] == (
         {
             "source_id": "official",

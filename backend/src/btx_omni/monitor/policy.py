@@ -40,6 +40,15 @@ MATERIAL_EVENT_TYPES = frozenset(
         EventType.GOVERNMENT_FUNDING,
         EventType.GRANT_AWARD,
         EventType.BACKLOG_CHANGE,
+        EventType.REGULATORY_CHANGE,
+        EventType.FACILITY_CLOSURE,
+        EventType.WORKFORCE_REDUCTION,
+        EventType.FINANCIAL_DISTRESS,
+        EventType.EXPORT_RESTRICTION,
+        EventType.PRODUCTION_DELAY,
+        EventType.EARNINGS_SIGNAL,
+        EventType.CONTRACT_REDUCTION,
+        EventType.PROGRAM_CANCELLATION,
     }
 )
 NOISE_TERMS = ("charity", "philanthropy", "scholarship", "lifestyle", "award ceremony", "esg report")
@@ -89,3 +98,27 @@ def seller_relevance(
     if freshness == "RECENT":
         return SellerRelevanceState.RESOLVED_ELIGIBLE
     return SellerRelevanceState.RESOLVED_NEEDS_REVIEW
+
+
+def analysis_eligibility(
+    published_at: datetime | None,
+    *,
+    collected_at: datetime,
+    now: datetime | None = None,
+    lifetime_days: int = 60,
+) -> str:
+    """Classify whether saved evidence can still be commercially analyzed.
+
+    Publication age, collection freshness, and commercial usefulness are
+    intentionally separate. This never changes the source publication date.
+    """
+    clock = now or datetime.now(UTC)
+    if published_at is None:
+        return "PUBLICATION_DATE_REQUIRED"
+    if published_at > clock or collected_at > clock:
+        return "INVALID_FUTURE_DATE"
+    return (
+        "ELIGIBLE"
+        if clock - published_at <= timedelta(days=max(1, lifetime_days))
+        else "EXPIRED"
+    )

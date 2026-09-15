@@ -70,12 +70,14 @@ def _drafting_request(
     subject: str | None = None,
     body: str | None = None,
     evidence_ids: tuple[str, ...] = (),
+    intelligence_facts: tuple[str, ...] = (),
 ) -> GovernedDraftingRequest:
     facts = [
         f"Canonical Customer: {account.legal_name}. Public identity and market context are governed by Omni.",
         f"Public industries/markets: {', '.join(account.industries) or 'Unavailable'}.",
         "Do not imply BTX commercial activity, supplier status, score, relationship, or authorization unless supplied through a governed workflow.",
     ]
+    facts.extend(intelligence_facts)
     return GovernedDraftingRequest(
         subject_display_name=account.legal_name,
         instruction=instruction,
@@ -85,6 +87,27 @@ def _drafting_request(
         current_subject=subject,
         current_body=body,
     )
+
+
+def _intelligence_facts(runtime: PocRuntime, account_id: str, evidence_ids: tuple[str, ...]) -> tuple[str, ...]:
+    repository = runtime.monitor.repository
+    if not repository:
+        return ()
+    facts = []
+    for evidence_id in evidence_ids:
+        assessment = repository.intelligence_assessment_by_id(evidence_id)
+        if not assessment:
+            continue
+        if assessment["account_id"] != account_id or not assessment["is_current"]:
+            raise HTTPException(409, "The referenced Intelligence assessment changed or belongs to another Customer; refresh before drafting.")
+        projection = assessment["projection"]
+        facts.extend((
+            f"Current Intelligence development: {projection.get('headline')}",
+            f"Supported commercial implication: {projection.get('why_it_may_matter')}",
+            f"Governed next step: {projection.get('recommended_action') or 'No seller action is established.'}",
+            f"Material uncertainty: {'; '.join(projection.get('material_uncertainties', ())) or 'None recorded.'}",
+        ))
+    return tuple(facts)
 
 
 def _proposal_payload(outcome) -> dict:
@@ -218,6 +241,7 @@ def assist_draft(
             subject=draft.subject,
             body=draft.body,
             evidence_ids=draft.evidence_ids,
+            intelligence_facts=_intelligence_facts(runtime, draft.account_id, draft.evidence_ids),
         ),
         provider,
     )
@@ -247,6 +271,7 @@ def assist_new_draft(
             subject=body.subject,
             body=body.body,
             evidence_ids=body.evidence_ids,
+            intelligence_facts=_intelligence_facts(runtime, body.account_id, body.evidence_ids),
         ),
         provider,
     )

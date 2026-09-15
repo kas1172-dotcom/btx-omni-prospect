@@ -28,12 +28,13 @@ FOCUSES = {
     'program': 'official program product and operating facility context',
     'components': 'manufactured component families and supplier qualification requirements',
     'contacts': 'public professional procurement engineering supplier management roles employer and location',
+    'risk': 'official regulatory operational financial or supply risk scope and effective dates',
 }
 TOOLS = (
     {'name': 'fetch_document', 'arguments': ['source_id'],
      'description': 'Retrieve actual full text for a source ID already in the public source catalog. No arbitrary URLs. Reports missing or partial extraction.'},
     {'name': 'search_public', 'arguments': ['focus'],
-     'description': 'Find attributable public follow-up sources. Focus must be program, components, or contacts. Search findings are discovery leads, not extracted passages or identity proof.'},
+     'description': 'Find attributable public follow-up sources for a permitted focus. Search findings are discovery leads, not extracted passages or identity proof.'},
 )
 
 
@@ -166,6 +167,30 @@ class MonitorResearchCoordinator:
             stop = 'JOURNAL_BUDGET_EXHAUSTED'
         except ResearchLeaseUnavailable:
             return {'run_id': identifier, 'status': 'LEASE_EXPIRED', 'published': False}
+        # A final selector decision is not another retrieval. It allows evidence
+        # obtained by the last permitted tool to be judged sufficient instead of
+        # being mislabeled as a budget failure merely because no tool slot remains.
+        if stop == 'TOOL_BUDGET_EXHAUSTED' and documents and deadline_monotonic > monotonic():
+            context = ({'public_source': public, 'source_catalog': tuple(catalog.values()),
+                        'searched_focuses': sorted(searched), 'fetched_source_ids': sorted(fetched),
+                        'documents': documents},)
+            number = journal.start_step(identifier, token, tool='decide_evidence_sufficiency',
+                                        arguments={'retrieval_budget_remaining': 0}, now=self.clock())
+            try:
+                choice = self.provider.choose_canonical_read(CanonicalToolSelectionRequest(
+                    question='Decide whether the retrieved public passages are sufficient for a bounded factual briefing. No tools remain. Return done only when at least one attributable passage supports the development; otherwise do not invent a tool or fact.',
+                    account_id='PUBLIC_RESEARCH_ONLY', tools=(), completed_reads=context,
+                    remaining_calls=0))
+                if choice != {'done': True}:
+                    raise ValueError('Final evidence decision must stop or fail closed.')
+                journal.complete_step(identifier, token, number, result=choice, now=self.clock())
+                finished = any(d.get('document', {}).get('passages') for d in documents)
+                stop = 'RESEARCH_RECORDED' if finished else 'NO_RETRIEVED_PASSAGES'
+            except (LanguageProviderError, ValueError, TypeError, StopIteration) as exc:
+                journal.complete_step(identifier, token, number, result={'failure': type(exc).__name__,
+                    'provider_status': getattr(getattr(exc, 'status', None), 'value', None)},
+                    now=self.clock(), failed=True)
+                stop = 'EVIDENCE_SUFFICIENCY_UNCONFIRMED'
         result = {'run_id': identifier, 'event_id': public['event_id'], 'source_revision': source_revision,
                   'status': stop, 'reused': False,
                   'provider': self.provider.name, 'model': model, 'configuration_version': VERSION,

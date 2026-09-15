@@ -25,11 +25,14 @@ const label = (value: string) =>
 const money = (value?: number | null, currency = "USD") =>
   value == null
     ? "Unavailable"
-    : new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 0,
-      }).format(value / 100);
+    : currency !== "USD"
+      ? `${value} ${currency} minor units`
+      : new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(value / 100);
 
 function BriefingLoading({ onBack }: { onBack: () => void }) {
   return (
@@ -87,10 +90,11 @@ export function IntelligenceBriefing({
     [detail],
   );
   const components = detail?.customer_360.components ?? [];
-  const commercial = detail?.customer_360.commercial.records ?? [];
   const contact = detail?.public_contacts[0];
   const facility = detail?.public_facilities[0];
   const confidence = brief.signal_confidence;
+  const eventRecords = brief.evidence_package?.commercial_records ?? [];
+  const eventFits = brief.evidence_package?.capability_fit ?? [];
 
   if (accountId && (load.accountId !== accountId || load.loading)) return <BriefingLoading onBack={onBack} />;
 
@@ -141,8 +145,13 @@ export function IntelligenceBriefing({
                 <h2>{isProspect ? "Component research" : "Components and BTX business units"}</h2>
               </div>
             </div>
-            <p className="intelligence-context-qualification">These records provide account context only. They do not establish that this public event applies to a BTX-supplied component, program, or site.</p>
-            {components.length ? (
+            <p className="intelligence-context-qualification">{brief.evidence_package?.commercial_record_scope === "EXACT_PROGRAM" ? "These records share the resolved program scope; technical qualification remains a separate decision." : "Account context records do not establish that this public event applies to a BTX-supplied component, program, or site."}</p>
+            {eventFits.length ? (
+              <div className="intelligence-component-table" role="table" aria-label="Event-specific capability fit">
+                <div role="row" className="intelligence-component-head"><span role="columnheader">Public candidate</span><span role="columnheader">Controlled component</span><span role="columnheader">BTX business unit</span><span role="columnheader">State</span></div>
+                {eventFits.map((fit, index) => <div role="row" key={`${fit.candidate}:${index}`}><strong role="cell">{fit.candidate ?? "Candidate unavailable"}</strong><span role="cell">{fit.component ?? "Not established"}</span><span role="cell">{fit.business_unit ?? "Review required"}</span><State value={label(fit.status ?? "UNAVAILABLE")} /></div>)}
+              </div>
+            ) : components.length ? (
               <div className="intelligence-component-table" role="table" aria-label="Components and applicable business units">
                 <div role="row" className="intelligence-component-head">
                   <span role="columnheader">Component</span>
@@ -168,13 +177,13 @@ export function IntelligenceBriefing({
             <section>
               <span className="eyebrow">Existing commercial context</span>
               <h2>BTX account context</h2>
-              {commercial.length ? (
+              {eventRecords.length ? (
                 <div className="intelligence-commercial-grid">
-                  {commercial.map((record) => (
-                    <article key={record.business_unit ?? record.id}>
-                      <strong>{record.business_unit ?? "Business unit unavailable"}</strong>
-                      <span>TTM revenue {money(record.ttm_revenue_minor, record.currency)}</span>
-                      <span>TTM bookings {money(record.ttm_bookings_minor, record.currency)}</span>
+                  {eventRecords.map((record) => (
+                    <article key={`${record.collection}:${record.record_id}`}>
+                      <strong>{label(record.collection)}</strong>
+                      <span>{record.title ?? record.status ?? "Recorded context"}</span>
+                      <span>{record.amount_minor != null ? money(record.amount_minor, record.currency) : record.total_minor != null ? money(record.total_minor, record.currency) : record.line_total_minor != null ? money(record.line_total_minor, record.currency) : record.value_minor != null ? money(record.value_minor, record.currency) : record.date ?? "Value unavailable"}</span>
                     </article>
                   ))}
                 </div>
@@ -186,6 +195,7 @@ export function IntelligenceBriefing({
             <span className="eyebrow">Next conversation</span>
             <h2>What should the seller do next?</h2>
             <p>{brief.recommended_action ?? brief.what_to_watch}</p>
+            {brief.action_rationale && <p>{brief.action_rationale}</p>}
             {!isProspect && (
               <div>
                 <strong>Confirm applicability before acting</strong>
@@ -233,7 +243,8 @@ export function IntelligenceBriefing({
           <section className="intelligence-briefing-actions">
             <span className="eyebrow">Pursuit actions</span>
             <Button variant="primary" onClick={() => onUseInOmni(brief)}>Ask Omni about this signal</Button>
-            {brief.recommended_action && accountId && <Button variant="secondary" onClick={() => onCreateAction(brief)}>Create action proposal</Button>}
+            {brief.recommended_action && accountId && brief.assessment_id && <Button variant="secondary" onClick={() => onCreateAction(brief)}>Create action proposal</Button>}
+            {brief.recommended_action && accountId && !brief.assessment_id && <p>The assessment is awaiting durable publication before an action proposal can be created.</p>}
             <p>{accountId ? "The subject already exists in Customers & Prospects; no duplicate account will be created." : "Account creation is unavailable until canonical identity resolution succeeds."}</p>
           </section>
         </aside>
@@ -242,6 +253,7 @@ export function IntelligenceBriefing({
       <Disclosure title="Evidence and operational details">
         <div className="intelligence-evidence">
           <p><b>Watch next:</b> {brief.what_to_watch}</p>
+          {!!brief.material_uncertainties?.length && <div><b>Material uncertainties</b><ul>{brief.material_uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
           <p><b>Collected:</b> {date(brief.collection_timestamp)} · <b>Resolution:</b> {label(brief.resolution_state)} · <b>Publication:</b> {label(brief.seller_promotion_state)}</p>
           <EvidenceSource title={brief.headline} source={brief.source_system} date={brief.publication_timestamp} evidenceState={brief.resolution_state} validationState={brief.seller_promotion_state} url={brief.source_url} detail={`Evidence IDs: ${brief.evidence_ids.length ? brief.evidence_ids.join(", ") : "Unavailable"}`} />
           {brief.data_mode === "LIVE_PUBLIC" && <EvidencePassages eventId={brief.id} />}

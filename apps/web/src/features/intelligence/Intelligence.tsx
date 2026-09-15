@@ -33,6 +33,7 @@ type Filters = {
 };
 type Sort = "PRIORITY" | "MOST_RECENT" | "UPCOMING_EVENT" | "CUSTOMER";
 const empty: Filters = { customer: "", market: "", source: "", timing: "" };
+const briefKey = (brief: MonitorSignalBrief) => brief.context_id ?? brief.id;
 const markets = [
   "Commercial Aerospace",
   "Defense",
@@ -58,8 +59,8 @@ const when = (brief: MonitorSignalBrief) =>
 const mode = (value: string) =>
   ({
     LIVE_PUBLIC: "CONNECTED public",
-    CURATED_PUBLIC: "SAMPLE public",
-    SAMPLE: "SAMPLE BTX context",
+    CURATED_PUBLIC: "Curated public",
+    SAMPLE: "BTX commercial context",
   })[value] ?? label(value);
 const unique = (values: string[]) =>
   [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -285,7 +286,7 @@ export function Intelligence({
   const base = useMemo(() => {
     const items = new Map<string, MonitorSignalBrief>();
     [...priority, ...current, ...curated].forEach((item) =>
-      items.set(item.id, item),
+      items.set(briefKey(item), item),
     );
     return [...items.values()];
   }, [priority, current, curated]);
@@ -359,20 +360,29 @@ export function Intelligence({
   useEffect(() => () => onEventSelect(undefined), [onEventSelect]);
   useEffect(() => {
     if (workspace === 'markets') return;
+    const selectedBrief = base.find((item) => briefKey(item) === selected);
     onOmniContext({
-      active_filters: Object.fromEntries(active),
+      active_filters: {
+        ...Object.fromEntries(active),
+        ...(selectedBrief?.canonical_account_ids[0]
+          ? { account_id: selectedBrief.canonical_account_ids[0] }
+          : {}),
+      },
       visible_record_ids: ordered.map((item) => item.id).slice(0, 50),
     });
-  }, [active, onOmniContext, ordered, workspace]);
+  }, [active, base, onOmniContext, ordered, selected, workspace]);
   useEffect(() => () => onOmniContext({}), [onOmniContext]);
   const select = (brief: MonitorSignalBrief) => {
-    const next = selected === brief.id ? undefined : brief.id;
+    const contextId = briefKey(brief);
+    const next = selected === contextId ? undefined : contextId;
     setSelected(next);
-    onEventSelect(next);
+    onEventSelect(next ? brief.id : undefined);
   };
   const openBriefing = (brief: MonitorSignalBrief) => {
-    setBriefingId(brief.id);
-    window.location.hash = `/intelligence/brief/${encodeURIComponent(brief.id)}`;
+    setSelected(briefKey(brief));
+    onEventSelect(brief.id);
+    setBriefingId(briefKey(brief));
+    window.location.hash = `/intelligence/brief/${encodeURIComponent(briefKey(brief))}`;
   };
   const closeBriefing = () => {
     setBriefingId("");
@@ -388,8 +398,8 @@ export function Intelligence({
     },
     {
       title: "Internal commercial context",
-      detail: "BTX commercial context is SAMPLE",
-      state: "SAMPLE",
+      detail: "Account-scoped BTX commercial records",
+      state: "AVAILABLE",
     },
     {
       title: "CRM / contacts",
@@ -428,17 +438,18 @@ export function Intelligence({
         <FederalProcurementView />
       </>
     );
-  const selectedBriefing = base.find((item) => item.id === briefingId);
+  const selectedBriefing = base.find((item) => briefKey(item) === briefingId)
+    ?? base.find((item) => item.id === briefingId);
   if (briefingId && selectedBriefing) return (
     <div className="surface intelligence-surface">
       <IntelligenceBriefing
-        key={selectedBriefing.id}
+        key={briefKey(selectedBriefing)}
         brief={selectedBriefing}
         onBack={closeBriefing}
         onAccount={onAccount}
         onCreateAction={onCreateAction}
         onUseInOmni={(brief) => {
-          setSelected(brief.id);
+          setSelected(briefKey(brief));
           onEventSelect(brief.id);
         }}
       />
@@ -484,7 +495,7 @@ export function Intelligence({
         {ranked.length ? (
           <ol>
             {ranked.map((brief, index) => (
-              <li key={brief.id}>
+              <li key={briefKey(brief)}>
                 <b>{index + 1}</b>
                 <div>
                   <button
@@ -668,13 +679,13 @@ export function Intelligence({
           <div className="intelligence-signal-list">
             {ordered.map((brief, index) => (
               <Card
-                key={brief.id}
+                key={briefKey(brief)}
                 brief={brief}
                 rank={sort === "PRIORITY" ? index + 1 : undefined}
                 name={name}
                 onAccount={onAccount}
                 onSelect={select}
-                selected={selected === brief.id}
+                selected={selected === briefKey(brief)}
                 onCreateAction={onCreateAction}
                 onOpenBriefing={openBriefing}
               />
@@ -699,12 +710,12 @@ export function Intelligence({
           <div className="intelligence-signal-list">
             {radar.map((brief) => (
               <Card
-                key={brief.id}
+                key={briefKey(brief)}
                 brief={brief}
                 name={name}
                 onAccount={onAccount}
                 onSelect={select}
-                selected={selected === brief.id}
+                selected={selected === briefKey(brief)}
                 onCreateAction={onCreateAction}
                 onOpenBriefing={openBriefing}
               />

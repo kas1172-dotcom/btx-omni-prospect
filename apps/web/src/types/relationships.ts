@@ -20,4 +20,6 @@ export type RankedRelationships = {
   scope?: { source_id: string; target_ids: string[]; as_of: string; source_component_id?: string; target_component_id?: string }
   graph: { nodes: CanonicalGraphNode[]; edges: CanonicalGraphEdge[]; selected_path_id?: string; additional_route_nodes?: number; neighborhood_depth?: number; expanded_node_ids?: string[]; context_page?: number; page_count?: number; context_edge_count?: number; hidden_context_edges?: number; context_complete?: boolean; context_stop_reason?: string; selection_elapsed_ms?: number }
   query_options?: { components: Array<{ id: string; label: string }>; target_components: Array<{ id: string; label: string }>; accounts: Array<{ id: string; label: string }> }
+  related_intelligence?: Array<{ event_id: string; account_id: string; assessment: { headline: string; why_it_may_matter: string; recommended_action?: string; commercial_relevance_state?: string; priority_eligible?: boolean; assessment_id?: string; assessment_version?: number } }>
+  intelligence_boundary?: string
 }

@@ -4,18 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from time import monotonic
 from typing import TYPE_CHECKING
 
 from btx_omni.ai.contracts import (
+    BusinessBriefingRequest,
     ExplanationType,
     GroundedSynthesisRequest,
     LanguageProvider,
     LanguageProviderError,
     ProviderStatus,
+    PublicEvidenceRecord,
 )
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     persisted_seller_explanation,
@@ -80,6 +82,19 @@ class SignalBrief:
     signal_confidence: dict | None = None
     risk_severity: dict | None = None
     event_type: str | None = None
+    analysis_status: str = "PENDING_ANALYSIS"
+    commercial_relevance_state: str = "UNASSESSED"
+    priority_eligible: bool = True
+    action_rationale: str | None = None
+    material_uncertainties: tuple[str, ...] = ()
+    references: tuple[dict, ...] = ()
+    evidence_package: dict | None = None
+    input_revision: str | None = None
+    generation_status: str = "NOT_GENERATED"
+    assessment_id: str | None = None
+    assessment_version: int | None = None
+    geographic_scope: str = "ACCOUNT"
+    context_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -150,7 +165,9 @@ def signal_brief(
         if item.canonical_account_id
     )
     collected = observation.observed_at if observation else event.provenance.observed_at
-    published = observation.source_published_at if observation else event.source_published_at
+    published = (
+        observation.source_published_at if observation else event.source_published_at
+    )
     eligible = (
         event.resolution_state is ResolutionState.RESOLVED
         and event.seller_relevance_state is SellerRelevanceState.RESOLVED_ELIGIBLE
@@ -183,6 +200,7 @@ def signal_brief(
     deterministic_summary = f"{headline}. {title}" if title else headline
     return SignalBrief(
         id=event.id,
+        context_id=None,
         headline=headline,
         what_happened=title
         or "The source record is available, but a seller-readable source summary is unavailable.",
@@ -224,9 +242,12 @@ def signal_brief(
         watchlist_eligible=bool(target_reasons),
         priority_reasons=target_reasons,
         canonical_facility_id=event.canonical_facility_id,
-        signal_confidence=public_signal_assessment(event, observation, now=clock, freshness_hours=freshness_hours),
+        signal_confidence=public_signal_assessment(
+            event, observation, now=clock, freshness_hours=freshness_hours
+        ),
         risk_severity=public_risk_assessment(event, observation, now=clock),
         event_type=event.event_type.value,
+        geographic_scope="FACILITY" if event.canonical_facility_id else "ACCOUNT",
     )
 
 
@@ -248,6 +269,62 @@ def synthesize_signal_brief_with_status(
         return BriefSynthesisOutcome(brief, ProviderStatus.UNAVAILABLE)
     if not provider.configured:
         return BriefSynthesisOutcome(brief, ProviderStatus.NOT_CONFIGURED)
+    structured = getattr(provider, "synthesize_business_brief", None)
+    if callable(structured) and brief.evidence_package:
+        package = brief.evidence_package
+        public = tuple(
+            PublicEvidenceRecord(
+                str(item["evidence_id"]),
+                str(item["title"]),
+                str(item["extract"]),
+                item.get("source_url"),
+                json.dumps(
+                    {
+                        "publication_date": item.get("publication_date"),
+                        "retrieved_at": item.get("retrieved_at"),
+                        "extraction_complete": item.get("extraction_complete"),
+                    },
+                    sort_keys=True,
+                ),
+            )
+            for item in package.get("public_evidence", ())
+        )
+        try:
+            result = structured(
+                BusinessBriefingRequest(
+                    event_id=brief.id,
+                    evidence_package=package,
+                    evidence=public,
+                    allowed_evidence_ids=tuple(item.evidence_id for item in public),
+                )
+            )
+        except LanguageProviderError as error:
+            return BriefSynthesisOutcome(brief, error.status)
+        except (RuntimeError, ValueError, TypeError, json.JSONDecodeError):
+            return BriefSynthesisOutcome(brief, ProviderStatus.UNAVAILABLE)
+        if any(
+            item not in {e.evidence_id for e in public} for item in result.evidence_ids
+        ):
+            return BriefSynthesisOutcome(brief, ProviderStatus.UNAVAILABLE)
+        return BriefSynthesisOutcome(
+            replace(
+                brief,
+                headline=result.headline,
+                what_happened=result.what_changed,
+                why_it_may_matter=result.why_it_matters,
+                recommended_action=result.recommended_action
+                if brief.recommended_action is not None
+                else None,
+                action_rationale=result.action_rationale,
+                material_uncertainties=result.material_uncertainties,
+                evidence_ids=result.evidence_ids or brief.evidence_ids,
+                seller_summary=result.why_it_matters,
+                language_provider=result.provider,
+                summary_mode="GEMINI_ASSISTED",
+                generation_status="GEMINI_ASSISTED",
+            ),
+            ProviderStatus.AVAILABLE,
+        )
     technical = brief.technical_opportunity or {}
     matched = tuple(
         f"{item.get('candidate_name')} → {item.get('component_name') or item.get('status')}"
@@ -293,20 +370,48 @@ def synthesize_signal_brief_with_status(
 
 
 def is_synthesis_eligible(brief: SignalBrief) -> bool:
+    analysis_ready = brief.analysis_status == "READY" or (
+        brief.evidence_package is None and brief.freshness == "CURRENT"
+    )
     return (
-        brief.seller_promotion_state == SellerRelevanceState.RESOLVED_ELIGIBLE.value
-        and brief.freshness == "CURRENT"
+        brief.seller_promotion_state
+        in {
+            SellerRelevanceState.RESOLVED_ELIGIBLE.value,
+            SellerRelevanceState.RESOLVED_NEEDS_REVIEW.value,
+            "WITHHELD_STALE",
+        }
         and brief.resolution_state == ResolutionState.RESOLVED.value
         and brief.publication_timestamp is not None
+        and analysis_ready
+        and brief.commercial_relevance_state != "INCOMPLETE"
     )
 
 
 def governed_content_hash(brief: SignalBrief) -> str:
     """Hash every governed input that can affect safe displayed synthesis."""
     governed = asdict(brief)
+    if brief.evidence_package:
+        # Generated language is an output, never an input to its own cache key.
+        # The evidence package carries the exact public passages, deterministic
+        # decisions, commercial records, identity scope, and their revisions.
+        for field_name in (
+            "headline",
+            "what_happened",
+            "why_it_may_matter",
+            "recommended_action",
+            "action_rationale",
+            "material_uncertainties",
+            "evidence_ids",
+            "references",
+            "what_to_watch",
+        ):
+            governed.pop(field_name, None)
     governed.pop("seller_summary", None)
     governed.pop("language_provider", None)
     governed.pop("summary_mode", None)
+    governed.pop("generation_status", None)
+    governed.pop("assessment_id", None)
+    governed.pop("assessment_version", None)
     # Collection time is operational provenance, not an input to seller prose.
     # A source record with unchanged governed content must reuse its synthesis
     # when it is observed again on a subsequent Monitor run.
@@ -325,6 +430,19 @@ def governed_content_hash(brief: SignalBrief) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
+def brief_cache_id(brief: SignalBrief) -> str:
+    if not brief.evidence_package:
+        return brief.id
+    account_id = (
+        brief.canonical_account_ids[0]
+        if len(brief.canonical_account_ids) == 1
+        else "UNRESOLVED"
+    )
+    return (
+        "assessment:" + hashlib.sha256(f"{brief.id}|{account_id}".encode()).hexdigest()
+    )
+
+
 def apply_cached_synthesis(brief: SignalBrief, cached: dict | None) -> SignalBrief:
     """Apply only a successful exact-hash cache entry to an eligible brief."""
     if (
@@ -332,19 +450,72 @@ def apply_cached_synthesis(brief: SignalBrief, cached: dict | None) -> SignalBri
         or not is_synthesis_eligible(brief)
         or cached.get("governed_content_hash") != governed_content_hash(brief)
         or cached.get("status") != ProviderStatus.AVAILABLE.value
-        or not cached.get("summary")
+        or not (cached.get("summary") or cached.get("projection"))
     ):
         return brief
+    projection = cached.get("projection") or {}
+    if isinstance(projection, str):
+        try:
+            projection = json.loads(projection)
+        except json.JSONDecodeError:
+            projection = {}
+    allowed = {field.name for field in fields(SignalBrief)}
+    safe = {
+        key: value
+        for key, value in projection.items()
+        if key in allowed
+        and key
+        not in {
+            "id",
+            "canonical_account_ids",
+            "canonical_program_id",
+            "evidence_package",
+            "signal_confidence",
+            "risk_severity",
+            "priority_eligible",
+            "commercial_relevance_state",
+            "generation_status",
+        }
+    }
+    for key in ("material_uncertainties", "evidence_ids"):
+        if key in safe:
+            safe[key] = tuple(safe[key])
     return replace(
         brief,
-        seller_summary=str(cached["summary"]),
+        **safe,
+        seller_summary=str(
+            cached.get("summary")
+            or safe.get("why_it_may_matter")
+            or brief.seller_summary
+        ),
         language_provider=str(cached.get("provider") or "gemini"),
         summary_mode="GEMINI_ASSISTED",
+        generation_status="GEMINI_ASSISTED",
+    )
+
+
+def persisted_brief_projection(brief: SignalBrief, *, include_language: bool) -> dict:
+    projection = {
+        "headline": brief.headline,
+        "what_happened": brief.what_happened,
+        "why_it_may_matter": brief.why_it_may_matter,
+        "recommended_action": brief.recommended_action,
+        "action_rationale": brief.action_rationale,
+        "material_uncertainties": brief.material_uncertainties,
+        "evidence_ids": brief.evidence_ids,
+        "analysis_status": brief.analysis_status,
+        "generation_status": brief.generation_status,
+        "evidence_package": brief.evidence_package,
+    }
+    return (
+        projection
+        if include_language
+        else {**projection, "generation_status": "DETERMINISTIC_READY"}
     )
 
 
 def signal_briefs_for_monitor(
-    monitor: MonitorService, *, now: datetime | None = None
+    monitor: MonitorService, *, now: datetime | None = None, environment=None
 ) -> tuple[SignalBrief, ...]:
     """Project governed briefs without invoking any language provider."""
     from btx_omni.monitor.service import current_event_contexts
@@ -363,27 +534,65 @@ def signal_briefs_for_monitor(
             if target.canonical_account_id in subject_ids
             for reason in target.reasons
         )
-        brief = signal_brief(
+        base = signal_brief(
             event,
             observation,
             freshness_hours=monitor.freshness_threshold_hours(source_id),
             now=now,
             target_reasons=reasons,
         )
+        technical = None
         if monitor.repository:
             # Seller reads consume the exact worker-owned durable projection. They never
             # reconstruct a hash by guessing the configured provider model.
-            cached = monitor.repository.technical_decomposition_for_event(brief.id)
+            cached = monitor.repository.technical_decomposition_for_event(base.id)
             if cached and cached.get("projection"):
                 technical = json.loads(cached["projection"])
                 technical["governed_explanation"] = persisted_seller_explanation(
                     monitor.repository,
-                    subject_key=technical_opportunity_subject_key(brief.id),
+                    subject_key=technical_opportunity_subject_key(base.id),
                     explanation_type=ExplanationType.TECHNICAL_OPPORTUNITY_FIT,
                 )
-                projected.append(replace(brief, technical_opportunity=technical))
-                continue
-        projected.append(brief)
+        base = replace(base, technical_opportunity=technical) if technical else base
+        contextual = (
+            tuple(
+                replace(base, canonical_account_ids=(account_id,))
+                for account_id in base.canonical_account_ids
+            )
+            if environment is not None and base.canonical_account_ids
+            else (base,)
+        )
+        for brief in contextual:
+            if environment is not None and monitor.repository:
+                from btx_omni.monitor.business_briefings import (
+                    apply_evidence_package,
+                    apply_persisted_assessment,
+                    assemble_evidence_package,
+                )
+
+                brief = apply_evidence_package(
+                    brief,
+                    assemble_evidence_package(
+                        brief,
+                        environment=environment,
+                        repository=monitor.repository,
+                        now=now,
+                    ),
+                )
+                account_id = (
+                    brief.canonical_account_ids[0]
+                    if len(brief.canonical_account_ids) == 1
+                    else None
+                )
+                brief = apply_persisted_assessment(
+                    brief,
+                    monitor.repository.intelligence_assessment(
+                        brief.id,
+                        account_id=account_id,
+                        input_revision=brief.input_revision,
+                    ),
+                )
+            projected.append(brief)
     return tuple(projected)
 
 
@@ -404,12 +613,20 @@ def process_signal_brief_synthesis(
     attempted = reused = deferred = assisted = 0
     statuses: list[ProviderStatus] = []
     eligible = tuple(
-        sorted(filter(is_synthesis_eligible, briefs), key=lambda item: item.id)
+        sorted(
+            filter(is_synthesis_eligible, briefs),
+            key=lambda item: (
+                not item.priority_eligible,
+                -float((item.signal_confidence or {}).get("coverage", 0) or 0),
+                item.id,
+            ),
+        )
     )
     capped = False
     for brief in eligible:
         content_hash = governed_content_hash(brief)
-        cached = repository.brief_synthesis(brief.id, content_hash)
+        cache_id = brief_cache_id(brief)
+        cached = repository.brief_synthesis(cache_id, content_hash)
         cached_status = (
             ProviderStatus(cached["status"])
             if cached and cached.get("status") in ProviderStatus._value2member_map_
@@ -421,7 +638,7 @@ def process_signal_brief_synthesis(
         if not provider.configured:
             if cached_status is not ProviderStatus.NOT_CONFIGURED:
                 repository.save_brief_synthesis(
-                    brief_id=brief.id,
+                    brief_id=cache_id,
                     governed_content_hash=content_hash,
                     summary=None,
                     provider=None,
@@ -430,6 +647,13 @@ def process_signal_brief_synthesis(
                     attempt_count=int(cached.get("attempt_count", 0)) if cached else 0,
                     next_retry_at=None,
                     synthesized_at=clock,
+                    projection=persisted_brief_projection(
+                        brief, include_language=False
+                    ),
+                    source_revision=(brief.evidence_package or {}).get(
+                        "source_revision"
+                    ),
+                    input_revision=brief.input_revision,
                 )
             deferred += 1
             continue
@@ -456,7 +680,7 @@ def process_signal_brief_synthesis(
         assisted += int(outcome.brief.summary_mode == "GEMINI_ASSISTED")
         cooldown = policy.cooldown(outcome.provider_status)
         repository.save_brief_synthesis(
-            brief_id=brief.id,
+            brief_id=cache_id,
             governed_content_hash=content_hash,
             summary=(
                 outcome.brief.seller_summary
@@ -473,6 +697,15 @@ def process_signal_brief_synthesis(
             attempt_count=(int(cached.get("attempt_count", 0)) if cached else 0) + 1,
             next_retry_at=clock + cooldown if cooldown else None,
             synthesized_at=clock,
+            projection=(
+                persisted_brief_projection(outcome.brief, include_language=True)
+                if outcome.provider_status is ProviderStatus.AVAILABLE
+                else persisted_brief_projection(brief, include_language=False)
+            ),
+            source_revision=(outcome.brief.evidence_package or {}).get(
+                "source_revision"
+            ),
+            input_revision=outcome.brief.input_revision,
         )
     return BriefSynthesisBatch(
         attempted, reused, deferred, assisted, tuple(statuses), capped

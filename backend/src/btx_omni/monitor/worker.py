@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from contextlib import nullcontext
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from time import monotonic
 
 from btx_omni.ai.config import AiConfig
@@ -32,9 +32,14 @@ from btx_omni.modules.scoring.account_attractiveness import (
 from btx_omni.monitor.briefs import (
     BriefRetryPolicy,
     apply_cached_synthesis,
+    brief_cache_id,
     governed_content_hash,
     process_signal_brief_synthesis,
     signal_briefs_for_monitor,
+)
+from btx_omni.monitor.business_briefings import (
+    persist_assessment,
+    requires_technical_investigation,
 )
 from btx_omni.monitor.documents import document_evidence
 from btx_omni.monitor.research import MonitorResearchCoordinator
@@ -47,7 +52,10 @@ def run_worker(
     limit: int | None = None,
 ) -> tuple[dict, int]:
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
-        return {"status": "INVALID_LIMIT", "detail": "Choose 1–100 records per source."}, 2
+        return {
+            "status": "INVALID_LIMIT",
+            "detail": "Choose 1–100 records per source.",
+        }, 2
     if (
         settings.monitor_mode.lower() != "live"
         or not settings.monitor_durable_state_enabled
@@ -88,10 +96,13 @@ def run_worker(
         deadline = monotonic() + settings.monitor_worker_max_seconds
         # Public macro observations use their own canonical owner, not fabricated
         # Monitor customer events. Reuse this worker and its operational lock.
-        market_refresh = runtime.markets.worker_refresh(deadline_monotonic=deadline) if settings.market_refresh_enabled else {'status': 'DISABLED'}
+        market_refresh = (
+            runtime.markets.worker_refresh(deadline_monotonic=deadline)
+            if settings.market_refresh_enabled
+            else {"status": "DISABLED"}
+        )
         runs = []
         deadline_exhausted = False
-        source_deadline_exceeded = False
         for index, source_id in enumerate(configured):
             remaining = deadline - monotonic()
             if remaining < settings.monitor_source_min_start_seconds:
@@ -103,7 +114,8 @@ def run_worker(
             remaining_sources = len(configured) - index
             source_deadline = min(
                 deadline,
-                monotonic() + max(
+                monotonic()
+                + max(
                     settings.monitor_source_min_start_seconds,
                     remaining / remaining_sources,
                 ),
@@ -114,16 +126,11 @@ def run_worker(
                 deadline_monotonic=source_deadline,
             )
             runs.append(run)
-            source_deadline_exceeded = source_deadline_exceeded or (
-                "DEADLINE_EXCEEDED" in run.failures
-            )
             if monotonic() >= deadline:
                 deadline_exhausted = True
                 break
-        # A timed-out source does not prevent later sources from running, but
-        # it consumes its reserved collection slice; do not start optional AI
-        # work after a bounded collection deadline condition.
-        deadline_exhausted = deadline_exhausted or source_deadline_exceeded
+        # Source deadlines are isolated. Successful sources retain their worker
+        # budget and can proceed to bounded research and briefing generation.
         synthesis = None
         investigations = []
         technical: list[dict] = []
@@ -138,29 +145,64 @@ def run_worker(
                     optional_budget_stops.append(stage)
                 return False
             return True
+
         if runs and not deadline_exhausted and repository:
-            research_provider = get_ai_provider(AiConfig.from_settings(settings, purpose='monitor_public_research'))
+            environment = (
+                runtime.environment()
+                if callable(getattr(runtime, "environment", None))
+                else runtime.sample
+            )
+
+            def projected_briefs():
+                if callable(getattr(runtime, "environment", None)):
+                    return signal_briefs_for_monitor(
+                        runtime.monitor, environment=environment
+                    )
+                return signal_briefs_for_monitor(runtime.monitor)
+
+            research_provider = get_ai_provider(
+                AiConfig.from_settings(settings, purpose="monitor_public_research")
+            )
             coordinator = MonitorResearchCoordinator(repository, research_provider)
             # Investigate only this collection cycle, not arbitrary private or
             # historical account rows. Public relevance still controls publication.
-            candidates = (repository.collection_documents(tuple(run.id for run in runs), limit=settings.monitor_research_cap)
-                          if getattr(research_provider, 'configured', False) and settings.monitor_research_cap else ())
+            candidates = (
+                repository.research_documents(
+                    tuple(run.id for run in runs),
+                    limit=settings.monitor_research_cap,
+                    now=runtime.observed_at(),
+                    retained_days=60,
+                )
+                if getattr(research_provider, "configured", False)
+                and settings.monitor_research_cap
+                else ()
+            )
             for document in candidates:
-                if not can_start_optional('RESEARCH_COORDINATOR'):
+                if not can_start_optional("RESEARCH_COORDINATOR"):
                     break
-                investigations.append(coordinator.investigate(document, source_revision=document['content_hash'],
-                    deadline_monotonic=min(deadline, monotonic() + 90)))
+                investigations.append(
+                    coordinator.investigate(
+                        document,
+                        source_revision=document["content_hash"],
+                        deadline_monotonic=min(deadline, monotonic() + 90),
+                    )
+                )
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
             provider = get_ai_provider(AiConfig.from_settings(settings))
-            for brief in signal_briefs_for_monitor(runtime.monitor)[
-                : settings.monitor_technical_decomposition_cap
-            ]:
-                if not can_start_optional('TECHNICAL_DECOMPOSITION'):
+            technical_briefs = tuple(
+                {
+                    brief.id: brief
+                    for brief in projected_briefs()
+                    if requires_technical_investigation(brief.event_type)
+                }.values()
+            )[: settings.monitor_technical_decomposition_cap]
+            for brief in technical_briefs:
+                if not can_start_optional("TECHNICAL_DECOMPOSITION"):
                     break
                 account = next(
                     (
                         item
-                        for item in runtime.sample.accounts
+                        for item in environment.accounts
                         if item.id in brief.canonical_account_ids
                     ),
                     None,
@@ -168,7 +210,7 @@ def run_worker(
                 program = next(
                     (
                         item
-                        for item in runtime.sample.programs
+                        for item in environment.programs
                         if item.id == brief.canonical_program_id
                     ),
                     None,
@@ -179,7 +221,11 @@ def run_worker(
                     canonical_customer_name=account.legal_name if account else None,
                     canonical_program_name=program.name if program else None,
                     market=brief.markets[0] if brief.markets else None,
-                    evidence=document_evidence(repository.event_document(brief.id, include_research=True), max_passages=6) or (
+                    evidence=document_evidence(
+                        repository.event_document(brief.id, include_research=True),
+                        max_passages=6,
+                    )
+                    or (
                         PublicEvidenceRecord(
                             brief.evidence_ids[0] if brief.evidence_ids else brief.id,
                             brief.what_happened,
@@ -212,7 +258,9 @@ def run_worker(
                         attempt_count=outcome.attempt_count,
                         next_retry_at=outcome.next_retry_at,
                     )
-                if projection.decomposition and can_start_optional('TECHNICAL_EXPLANATION'):
+                if projection.decomposition and can_start_optional(
+                    "TECHNICAL_EXPLANATION"
+                ):
                     technical_explanation = process_technical_opportunity_explanation(
                         projection=seller_projection(projection),
                         event_id=brief.id,
@@ -237,8 +285,13 @@ def run_worker(
             # Brief synthesis runs after technical investigation so the governed
             # content hash and seller prose include the current persisted research
             # projection. A stale pre-investigation summary cannot remain current.
+            prepared_briefs = projected_briefs()
+            for prepared in prepared_briefs:
+                persist_assessment(
+                    prepared, repository=repository, now=runtime.observed_at()
+                )
             synthesis = process_signal_brief_synthesis(
-                signal_briefs_for_monitor(runtime.monitor),
+                prepared_briefs,
                 provider=get_ai_provider(AiConfig.from_settings(settings)),
                 repository=repository,
                 cap=settings.monitor_brief_synthesis_cap,
@@ -254,53 +307,132 @@ def run_worker(
             # Publication remains a deterministic server decision. Gemini may
             # select public reads and improve prose, but cannot pass these gates.
             final_briefs = []
-            briefs_by_id = {}
-            for deterministic in signal_briefs_for_monitor(runtime.monitor):
+            briefs_by_id: dict[str, list] = {}
+            for deterministic in projected_briefs():
                 cached = repository.brief_synthesis(
-                    deterministic.id, governed_content_hash(deterministic)
+                    brief_cache_id(deterministic), governed_content_hash(deterministic)
                 )
                 rendered = apply_cached_synthesis(deterministic, cached)
-                briefs_by_id[rendered.id] = rendered
+                persisted = persist_assessment(
+                    rendered,
+                    repository=repository,
+                    now=runtime.observed_at(),
+                    provider=rendered.language_provider,
+                    model=getattr(getattr(provider, "config", None), "model", None),
+                )
+                if persisted:
+                    rendered = replace(
+                        rendered,
+                        assessment_id=persisted["id"],
+                        assessment_version=persisted["version"],
+                    )
+                briefs_by_id.setdefault(rendered.id, []).append(rendered)
             for investigation in investigations:
-                state = repository.research.get(investigation['run_id'])
-                event_id = investigation.get('event_id') or (state or {}).get('event_reference')
-                brief = briefs_by_id.get(event_id)
+                state = repository.research.get(investigation["run_id"])
+                event_id = investigation.get("event_id") or (state or {}).get(
+                    "event_reference"
+                )
+                contexts = sorted(
+                    briefs_by_id.get(event_id, ()),
+                    key=lambda item: (
+                        not item.priority_eligible,
+                        item.canonical_account_ids[0]
+                        if item.canonical_account_ids
+                        else "",
+                    ),
+                )
+                brief = contexts[0] if contexts else None
                 has_passages = any(
-                    document.get('document', {}).get('passages')
-                    for document in investigation.get('documents', ())
+                    document.get("document", {}).get("passages")
+                    for document in investigation.get("documents", ())
                 )
                 gates = {
-                    'research_completed': investigation.get('status') == 'RESEARCH_RECORDED' and has_passages,
-                    'canonical_identity_resolved': bool(brief and brief.resolution_state == 'RESOLVED' and brief.canonical_account_ids),
-                    'seller_relevance_eligible': bool(brief and brief.seller_promotion_state == 'RESOLVED_ELIGIBLE'),
-                    'publication_current': bool(brief and brief.freshness == 'CURRENT'),
-                    'technical_investigation_available': bool(brief and brief.technical_opportunity and brief.technical_opportunity.get('provider_status') == 'AVAILABLE'),
-                    'gemini_brief_available': bool(brief and brief.summary_mode == 'GEMINI_ASSISTED'),
+                    "research_completed": investigation.get("status")
+                    == "RESEARCH_RECORDED"
+                    and has_passages,
+                    "canonical_identity_resolved": bool(
+                        brief
+                        and brief.resolution_state == "RESOLVED"
+                        and brief.canonical_account_ids
+                    ),
+                    "seller_relevance_eligible": bool(
+                        brief
+                        and brief.seller_promotion_state
+                        in {
+                            "RESOLVED_ELIGIBLE",
+                            "RESOLVED_NEEDS_REVIEW",
+                            "WITHHELD_STALE",
+                        }
+                    ),
+                    "analysis_lifetime_eligible": bool(
+                        brief and brief.analysis_status == "READY"
+                    ),
+                    "commercial_relevance_decided": bool(
+                        brief and brief.commercial_relevance_state != "UNASSESSED"
+                    ),
+                    "technical_investigation_available": bool(
+                        brief
+                        and (
+                            not requires_technical_investigation(brief.event_type)
+                            or (
+                                brief.technical_opportunity
+                                and brief.technical_opportunity.get("provider_status")
+                                == "AVAILABLE"
+                            )
+                        )
+                    ),
+                    "gemini_brief_available": bool(
+                        brief and brief.summary_mode == "GEMINI_ASSISTED"
+                    ),
                 }
                 published = all(gates.values())
                 outcome = {
-                    'published': published,
-                    'state': 'PUBLISHED_SELLER_BRIEF' if published else 'WITHHELD_BY_CANONICAL_GATES',
-                    'event_id': event_id,
-                    'brief_id': brief.id if brief else None,
-                    'gates': gates,
-                    'decided_at': runtime.observed_at().isoformat(),
+                    "published": published,
+                    "state": "PUBLISHED_SELLER_BRIEF"
+                    if published
+                    else "WITHHELD_BY_CANONICAL_GATES",
+                    "event_id": event_id,
+                    "brief_id": brief.id if brief else None,
+                    "gates": gates,
+                    "assessment_contexts": [
+                        {
+                            "account_id": item.canonical_account_ids[0]
+                            if item.canonical_account_ids
+                            else None,
+                            "assessment_id": item.assessment_id,
+                            "assessment_version": item.assessment_version,
+                            "commercial_relevance_state": item.commercial_relevance_state,
+                            "priority_eligible": item.priority_eligible,
+                        }
+                        for item in contexts
+                    ],
+                    "decided_at": runtime.observed_at().isoformat(),
                 }
-                if state and state.get('status') == 'COMPLETED':
-                    repository.research.record_publication(investigation['run_id'], outcome=outcome, now=runtime.observed_at())
-                investigation.update({'published': published, 'publication_state': outcome['state'], 'publication_gates': gates})
+                if state and state.get("status") == "COMPLETED":
+                    repository.research.record_publication(
+                        investigation["run_id"],
+                        outcome=outcome,
+                        now=runtime.observed_at(),
+                    )
+                investigation.update(
+                    {
+                        "published": published,
+                        "publication_state": outcome["state"],
+                        "publication_gates": gates,
+                    }
+                )
                 final_briefs.append(outcome)
             # Customer/Federal explanation calls share the bounded worker and durable cache.
             explanation_provider = get_ai_provider(AiConfig.from_settings(settings))
             cap = settings.monitor_technical_decomposition_cap
-            for account in runtime.sample.accounts[:cap]:
-                if not can_start_optional('CUSTOMER_EXPLANATION'):
+            for account in environment.accounts[:cap]:
+                if not can_start_optional("CUSTOMER_EXPLANATION"):
                     break
-                scenario = runtime.sample.priority_scenarios.get(
+                scenario = environment.priority_scenarios.get(
                     account.id
-                ) or runtime.sample.rich_scenarios.get(account.id)
+                ) or environment.rich_scenarios.get(account.id)
                 attractiveness = seller_attractiveness_projection(
-                    runtime.sample.attractiveness_inputs(account.id),
+                    environment.attractiveness_inputs(account.id),
                     calculated_at=runtime.observed_at(),
                     excluded=bool(scenario and scenario.exclusion_reason),
                     exclusion_reason=scenario.exclusion_reason if scenario else None,
@@ -321,17 +453,17 @@ def run_worker(
                     }
                 )
             relationship_service = SellerRelationshipPresentationService()
-            for account in runtime.sample.accounts[:cap]:
-                if not can_start_optional('RELATIONSHIP_EXPLANATION'):
+            for account in environment.accounts[:cap]:
+                if not can_start_optional("RELATIONSHIP_EXPLANATION"):
                     break
                 relationships = RelationshipIntelligenceService(
-                    runtime.sample
+                    environment
                 ).account_relationships(account.id)
                 paths = relationship_service.present(relationships)[
                     "seller_projection"
                 ]["validated"][:1]
                 for path in paths:
-                    if not can_start_optional('RELATIONSHIP_EXPLANATION'):
+                    if not can_start_optional("RELATIONSHIP_EXPLANATION"):
                         break
                     outcome = process_relationship_path_explanation(
                         path=path,
@@ -350,7 +482,7 @@ def run_worker(
             for opportunity in procurement_projection(runtime)["active"][
                 "opportunities"
             ][:cap]:
-                if not can_start_optional('FEDERAL_EXPLANATION'):
+                if not can_start_optional("FEDERAL_EXPLANATION"):
                     break
                 outcome = process_federal_opportunity_explanation(
                     opportunity=opportunity,
@@ -370,7 +502,7 @@ def run_worker(
         "status": "DEADLINE_EXHAUSTED"
         if deadline_exhausted
         else "FAILED"
-        if failed or market_refresh['status'] == 'FAILED'
+        if failed or market_refresh["status"] == "FAILED"
         else "SUCCESS",
         "configured_sources": configured,
         "skipped_sources": skipped,
@@ -379,7 +511,7 @@ def run_worker(
         "brief_synthesis": asdict(synthesis) if synthesis else None,
         "technical_decomposition": technical,
         "research_investigations": investigations,
-        "seller_publication": final_briefs if 'final_briefs' in locals() else [],
+        "seller_publication": final_briefs if "final_briefs" in locals() else [],
         "governed_explanations": explanations,
         "optional_budget_stops": optional_budget_stops,
         "market_refresh": market_refresh,
@@ -390,7 +522,9 @@ def run_worker(
             "deadline_scope": "Source collection is interruptible; optional AI stages require a full configured provider timeout before starting. In-flight provider timeout and transactional persistence may finish after the scheduling deadline.",
         },
     }
-    return report, 1 if failed or not runs or deadline_exhausted or market_refresh['status'] == 'FAILED' else 0
+    return report, 1 if failed or not runs or deadline_exhausted or market_refresh[
+        "status"
+    ] == "FAILED" else 0
 
 
 def main(argv: list[str] | None = None) -> int:

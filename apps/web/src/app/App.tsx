@@ -118,6 +118,31 @@ export default function App() {
     setSurface(id)
     if (recordHistory && window.location.hash !== workspaceHash(id)) window.history.pushState({ btxOmniNavigation: true }, '', workspaceHash(id))
   }, [surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext])
+  const createIntelligenceAction = useCallback(async (brief: import('../types/api').MonitorSignalBrief) => {
+    const accountId = brief.canonical_account_ids[0]
+    if (!accountId || !brief.assessment_id || !brief.recommended_action) {
+      setError('A current account-specific Intelligence assessment with a supported next step is required.')
+      return
+    }
+    try {
+      setError('')
+      const created = await api.createAction({
+        account_id: accountId,
+        title: brief.recommended_action,
+        description: `${brief.why_it_may_matter}${brief.action_rationale ? ` ${brief.action_rationale}` : ''}`,
+        priority: brief.commercial_relevance_state === 'ESTABLISHED_ACCOUNT_REVIEW' ? 'HIGH' : 'MEDIUM',
+        evidence_ids: [brief.assessment_id, ...brief.evidence_ids],
+        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id]],
+        approval_required: false,
+        idempotency_key: `monitor-${brief.assessment_id.slice(0, 56)}`,
+      })
+      setItems(current => current.some(item => item.id === created.id) ? current : [created, ...current])
+      setActionWarning('Action proposal created from the current Intelligence assessment. Review ownership and due date before execution.')
+      navigate('actions')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The action proposal could not be created.')
+    }
+  }, [navigate])
   useEffect(() => {
     if (authState !== 'authenticated') return
     const restore = () => { const location = workspaceLocation(window.location.hash); if (location.accountId) void select(location.accountId, false); else navigate(location.surface, false) }
@@ -162,7 +187,7 @@ export default function App() {
     surface === 'accounts' ? (
       <Accounts accounts={accounts} detail={detail} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => { navigate('actions'); setError(`Create an internal Action for ${accounts.find(account => account.id === brief.canonical_account_ids[0])?.name ?? 'the linked Customer'} using the governed next step.`) }} onOmniContext={setViewContext} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onOmniContext={setViewContext} />
     ) : surface === 'map' ? (
       <Map
         records={records}
@@ -241,7 +266,10 @@ export default function App() {
             monitor: 'MONITOR',
           } as const
         )[surface]
-  const selectedAccountId = detail?.account.id ?? (surface === 'map' ? selectedMapAccountId : undefined)
+  const filteredAccountId = typeof viewContext.active_filters?.account_id === 'string'
+    ? viewContext.active_filters.account_id
+    : undefined
+  const selectedAccountId = detail?.account.id ?? (surface === 'map' ? selectedMapAccountId : filteredAccountId)
   const omniContext: OmniContext = {
     surface: omniSurface,
     selected_account_id: selectedAccountId,

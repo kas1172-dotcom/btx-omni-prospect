@@ -1,4 +1,5 @@
 """Exact-only traversal catalog used by the Monitor normalizer."""
+
 from __future__ import annotations
 
 import re
@@ -11,7 +12,9 @@ from btx_omni.monitor.ontology import ResolutionState
 from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
 
 
-def governed_phrase_in_text(phrase: str, text: str, *, allow_short: bool = False) -> bool:
+def governed_phrase_in_text(
+    phrase: str, text: str, *, allow_short: bool = False
+) -> bool:
     """Whole lexical phrase, not an arbitrary substring of a word or checksum.
 
     Bare short abbreviations in prose are insufficient company identity evidence;
@@ -19,7 +22,11 @@ def governed_phrase_in_text(phrase: str, text: str, *, allow_short: bool = False
     """
     if not phrase.strip() or (not allow_short and len(re.sub(r"\W", "", phrase)) <= 3):
         return False
-    pattern = r"(?<!\w)" + r"\s+".join(re.escape(token) for token in phrase.split()) + r"(?!\w)"
+    pattern = (
+        r"(?<!\w)"
+        + r"\s+".join(re.escape(token) for token in phrase.split())
+        + r"(?!\w)"
+    )
     return re.search(pattern, text, re.IGNORECASE) is not None
 
 
@@ -54,29 +61,91 @@ class MonitorCatalog:
             source_identifiers=source_identifiers,
             source_url=source_url,
         )
-        if identifier_resolution and identifier_resolution.state is ResolutionState.RESOLVED:
-            profile = next(item for item in self.profiles if item.canonical_account_id == identifier_resolution.canonical_account_id)
+        if (
+            identifier_resolution
+            and identifier_resolution.state is ResolutionState.RESOLVED
+        ):
+            profile = next(
+                item
+                for item in self.profiles
+                if item.canonical_account_id
+                == identifier_resolution.canonical_account_id
+            )
             # Identifier/publisher ownership is the recorded resolution basis.
             # The entire article/JSON is evidence, never an entity display name.
-            return (replace(identifier_resolution, mention=profile.legal_name),)
-        resolved = [resolve_entity(mention, self.profiles) for mention in dict.fromkeys(mentions)]
+            owner = replace(identifier_resolution, mention=profile.legal_name)
+            # Publisher ownership establishes the article owner, but it does not
+            # erase other companies explicitly named by a multi-party release.
+            # Preserve one resolution per canonical identity so account-scoped
+            # assessments can be distinct without treating the event as an
+            # ambiguous identity collision.
+            resolved_mentions = [
+                resolve_entity(mention, self.profiles)
+                for mention in dict.fromkeys(mentions)
+            ]
+            return tuple(
+                {
+                    item.canonical_account_id: item
+                    for item in (owner, *resolved_mentions)
+                    if item.canonical_account_id
+                }.values()
+            )
+        resolved = [
+            resolve_entity(mention, self.profiles)
+            for mention in dict.fromkeys(mentions)
+        ]
         return tuple(resolved) or (
-            EntityResolution("unresolved source subject", None, ResolutionState.UNRESOLVED, "no_governed_match", "source text has no exact governed account name"),
+            EntityResolution(
+                "unresolved source subject",
+                None,
+                ResolutionState.UNRESOLVED,
+                "no_governed_match",
+                "source text has no exact governed account name",
+            ),
         )
 
     def resolve_program(self, text: str) -> ProgramResolution:
-        matches = [program for program in self.programs if governed_phrase_in_text(program.name, text)]
+        matches = [
+            program
+            for program in self.programs
+            if governed_phrase_in_text(program.name, text)
+        ]
         if len(matches) == 1:
             program = matches[0]
-            return ProgramResolution(program.name, program.id, ResolutionState.RESOLVED, "canonical_program_name_exact", "exact canonical program name appears in source text")
+            return ProgramResolution(
+                program.name,
+                program.id,
+                ResolutionState.RESOLVED,
+                "canonical_program_name_exact",
+                "exact canonical program name appears in source text",
+            )
         if len(matches) > 1:
-            return ProgramResolution(None, None, ResolutionState.AMBIGUOUS, "canonical_program_name_collision", "multiple canonical program names appear in source text")
-        return ProgramResolution(None, None, ResolutionState.UNRESOLVED, "no_canonical_program_name", "no exact canonical program name appears in source text")
+            return ProgramResolution(
+                None,
+                None,
+                ResolutionState.AMBIGUOUS,
+                "canonical_program_name_collision",
+                "multiple canonical program names appear in source text",
+            )
+        return ProgramResolution(
+            None,
+            None,
+            ResolutionState.UNRESOLVED,
+            "no_canonical_program_name",
+            "no exact canonical program name appears in source text",
+        )
 
     def resolve_facility_id(self, text: str) -> str | None:
-        matches = [facility.id for facility in self.facilities if governed_phrase_in_text(facility.name, text)]
+        matches = [
+            facility.id
+            for facility in self.facilities
+            if governed_phrase_in_text(facility.name, text)
+        ]
         return matches[0] if len(matches) == 1 else None
 
     def markets_for_account(self, account_id: str | None) -> tuple[str, ...]:
-        profile = next((item for item in self.profiles if item.canonical_account_id == account_id), None)
+        profile = next(
+            (item for item in self.profiles if item.canonical_account_id == account_id),
+            None,
+        )
         return profile.industries if profile else ()

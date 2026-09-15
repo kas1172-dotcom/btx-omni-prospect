@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from contextlib import contextmanager
 from dataclasses import asdict, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import Engine, delete, insert, or_, select, text
+from sqlalchemy import Engine, case, delete, insert, or_, select, text, update
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -45,6 +46,7 @@ from btx_omni.persistence.models import (
     monitor_entity_candidate_resolutions,
     monitor_event_clusters,
     monitor_events,
+    monitor_intelligence_assessments,
     monitor_observations,
     monitor_organization_candidates,
     monitor_program_candidate_promotion_audits,
@@ -482,8 +484,12 @@ class MonitorRepository:
         with self.engine.connect() as connection:
             return {
                 "runs": tuple(
-                    {**dict(row), "funnel": json.loads(row["funnel"]) if row["funnel"] else None,
-                     "failures": json.loads(row["failures"]), "cursor": json.loads(row["cursor"]) if row["cursor"] else None}
+                    {
+                        **dict(row),
+                        "funnel": json.loads(row["funnel"]) if row["funnel"] else None,
+                        "failures": json.loads(row["failures"]),
+                        "cursor": json.loads(row["cursor"]) if row["cursor"] else None,
+                    }
                     for row in connection.execute(
                         select(monitor_collection_runs)
                         .order_by(monitor_collection_runs.c.started_at.desc())
@@ -499,10 +505,23 @@ class MonitorRepository:
                 "events": tuple(
                     dict(row)
                     for row in connection.execute(
-                        select(monitor_events, (monitor_events.c.source_observation_id == monitor_source_versions.c.last_observation_id).label("is_current_source_version")).outerjoin(
+                        select(
+                            monitor_events,
+                            (
+                                monitor_events.c.source_observation_id
+                                == monitor_source_versions.c.last_observation_id
+                            ).label("is_current_source_version"),
+                        )
+                        .outerjoin(
                             monitor_source_versions,
-                            (monitor_source_versions.c.source_id == monitor_events.c.source_id)
-                            & (monitor_source_versions.c.source_record_id == monitor_events.c.provenance_source_id),
+                            (
+                                monitor_source_versions.c.source_id
+                                == monitor_events.c.source_id
+                            )
+                            & (
+                                monitor_source_versions.c.source_record_id
+                                == monitor_events.c.provenance_source_id
+                            ),
                         )
                         .order_by(monitor_events.c.updated_at.desc())
                         .limit(100)
@@ -516,13 +535,24 @@ class MonitorRepository:
                         .limit(20)
                     ).mappings()
                 ),
+                "intelligence_assessments": tuple(
+                    {**dict(row), "projection": json.loads(row["projection"])}
+                    for row in connection.execute(
+                        select(monitor_intelligence_assessments)
+                        .where(monitor_intelligence_assessments.c.is_current.is_(True))
+                        .order_by(monitor_intelligence_assessments.c.created_at.desc())
+                        .limit(100)
+                    ).mappings()
+                ),
             }
 
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
         return tuple(event for event, _observation in self.event_contexts())
 
-    def event_contexts(self) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
+    def event_contexts(
+        self,
+    ) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
         """One committed current-source snapshot for every public read consumer.
 
         Reconstitute only stored source fields, without rerunning identity or
@@ -530,94 +560,362 @@ class MonitorRepository:
         """
         with self.engine.connect() as connection:
             rows = connection.execute(
-                select(monitor_events.c.event_payload, monitor_observations,
-                    monitor_source_versions.c.first_seen_at.label('version_first_seen'),
-                    monitor_source_versions.c.last_seen_at.label('version_last_seen'),
-                    monitor_source_versions.c.changed_at.label('version_changed_at'),
-                ).select_from(monitor_events).outerjoin(
-                    monitor_observations, monitor_events.c.source_observation_id == monitor_observations.c.id
-                ).outerjoin(
+                select(
+                    monitor_events.c.event_payload,
+                    monitor_observations,
+                    monitor_source_versions.c.first_seen_at.label("version_first_seen"),
+                    monitor_source_versions.c.last_seen_at.label("version_last_seen"),
+                    monitor_source_versions.c.changed_at.label("version_changed_at"),
+                )
+                .select_from(monitor_events)
+                .outerjoin(
+                    monitor_observations,
+                    monitor_events.c.source_observation_id == monitor_observations.c.id,
+                )
+                .outerjoin(
                     monitor_source_versions,
                     (monitor_source_versions.c.source_id == monitor_events.c.source_id)
-                    & (monitor_source_versions.c.source_record_id == monitor_events.c.provenance_source_id),
-                ).where(or_(monitor_source_versions.c.last_observation_id.is_(None), monitor_events.c.source_observation_id == monitor_source_versions.c.last_observation_id)).order_by(
-                    monitor_events.c.updated_at.desc()
+                    & (
+                        monitor_source_versions.c.source_record_id
+                        == monitor_events.c.provenance_source_id
+                    ),
                 )
+                .where(
+                    or_(
+                        monitor_source_versions.c.last_observation_id.is_(None),
+                        monitor_events.c.source_observation_id
+                        == monitor_source_versions.c.last_observation_id,
+                    )
+                )
+                .order_by(monitor_events.c.updated_at.desc())
             ).mappings()
             contexts = []
             for row in rows:
                 event = _event_from_payload(row["event_payload"])
-                if event.source_published_at is None and row["published_at"] is not None:
-                    event = replace(event, source_published_at=_database_timestamp(row["published_at"]))
-                primary = tuple(item.evidence_id for item in event.evidence if item.role == 'PRIMARY')
+                if (
+                    event.source_published_at is None
+                    and row["published_at"] is not None
+                ):
+                    event = replace(
+                        event,
+                        source_published_at=_database_timestamp(row["published_at"]),
+                    )
+                primary = tuple(
+                    item.evidence_id
+                    for item in event.evidence
+                    if item.role == "PRIMARY"
+                )
                 observation = None
-                if row['id'] is not None and len(primary) == 1 and row['version_first_seen'] is not None:
-                    identity = SourceIdentity(row['source_id'], row['source_record_id'])
-                    version = SourceVersion(row['source_record_id'], row['source_version'], row['content_hash'],
-                        _database_timestamp(row['version_first_seen']), _database_timestamp(row['version_last_seen']),
-                        _database_timestamp(row['version_changed_at']) if row['version_changed_at'] else None)
-                    retrieved = _database_timestamp(row['retrieved_at'])
-                    observation = SourceObservation(row['id'], identity, version, retrieved, row['title'] or '',
-                        RawEvidenceReference(primary[0], identity, version, row['canonical_url'], retrieved),
-                        _database_timestamp(row['published_at']) if row['published_at'] else None,
-                        row['payload_reference'], row['source_tier'], row['collection_run_id'], row['structured_payload'])
+                if (
+                    row["id"] is not None
+                    and len(primary) == 1
+                    and row["version_first_seen"] is not None
+                ):
+                    identity = SourceIdentity(row["source_id"], row["source_record_id"])
+                    version = SourceVersion(
+                        row["source_record_id"],
+                        row["source_version"],
+                        row["content_hash"],
+                        _database_timestamp(row["version_first_seen"]),
+                        _database_timestamp(row["version_last_seen"]),
+                        _database_timestamp(row["version_changed_at"])
+                        if row["version_changed_at"]
+                        else None,
+                    )
+                    retrieved = _database_timestamp(row["retrieved_at"])
+                    observation = SourceObservation(
+                        row["id"],
+                        identity,
+                        version,
+                        retrieved,
+                        row["title"] or "",
+                        RawEvidenceReference(
+                            primary[0],
+                            identity,
+                            version,
+                            row["canonical_url"],
+                            retrieved,
+                        ),
+                        _database_timestamp(row["published_at"])
+                        if row["published_at"]
+                        else None,
+                        row["payload_reference"],
+                        row["source_tier"],
+                        row["collection_run_id"],
+                        row["structured_payload"],
+                    )
                 contexts.append((event, observation))
             return tuple(contexts)
 
-    def source_observation_payload(self, source_id: str, source_record_id: str) -> str | None:
+    def source_observation_payload(
+        self, source_id: str, source_record_id: str
+    ) -> str | None:
         """Current exact source assertion, for conservative failed-refresh retention."""
         with self.engine.connect() as connection:
-            return connection.execute(select(monitor_observations.c.structured_payload).join(
-                monitor_source_versions, monitor_source_versions.c.last_observation_id == monitor_observations.c.id
-            ).where(monitor_source_versions.c.source_id == source_id,
-                    monitor_source_versions.c.source_record_id == source_record_id)).scalar_one_or_none()
+            return connection.execute(
+                select(monitor_observations.c.structured_payload)
+                .join(
+                    monitor_source_versions,
+                    monitor_source_versions.c.last_observation_id
+                    == monitor_observations.c.id,
+                )
+                .where(
+                    monitor_source_versions.c.source_id == source_id,
+                    monitor_source_versions.c.source_record_id == source_record_id,
+                )
+            ).scalar_one_or_none()
 
-    def event_document(self, event_id: str, *, include_research: bool = False) -> dict | None:
+    def event_document(
+        self, event_id: str, *, include_research: bool = False
+    ) -> dict | None:
         """One exact event's persisted source; never a global evidence search."""
         with self.engine.connect() as connection:
-            row = connection.execute(
-                select(monitor_observations, monitor_events.c.event_payload).join(
-                    monitor_events, monitor_events.c.source_observation_id == monitor_observations.c.id
-                ).where(monitor_events.c.id == event_id)
-            ).mappings().one_or_none()
+            row = (
+                connection.execute(
+                    select(monitor_observations, monitor_events.c.event_payload)
+                    .join(
+                        monitor_events,
+                        monitor_events.c.source_observation_id
+                        == monitor_observations.c.id,
+                    )
+                    .where(monitor_events.c.id == event_id)
+                )
+                .mappings()
+                .one_or_none()
+            )
         if row is None:
             return None
         document = self._document_projection(row, event_id)
         if include_research:
-            state = self.research.latest_for_source(event_id, document['content_hash'])
-            document['research'] = None if state is None else {
-                'run_id': state['id'], 'source_revision': state['source_revision'], 'status': state['status'],
-                'updated_at': state['updated_at'], 'attempt_count': state['attempt_count'],
-                'result': state['result'], 'steps': [{key: step[key] for key in
-                    ('number', 'tool', 'status', 'started_at', 'completed_at')} for step in state['steps']],
-            }
+            state = self.research.latest_for_source(event_id, document["content_hash"])
+            document["research"] = (
+                None
+                if state is None
+                else {
+                    "run_id": state["id"],
+                    "source_revision": state["source_revision"],
+                    "status": state["status"],
+                    "updated_at": state["updated_at"],
+                    "attempt_count": state["attempt_count"],
+                    "result": state["result"],
+                    "steps": [
+                        {
+                            key: step[key]
+                            for key in (
+                                "number",
+                                "tool",
+                                "status",
+                                "started_at",
+                                "completed_at",
+                            )
+                        }
+                        for step in state["steps"]
+                    ],
+                }
+            )
         return document
 
-    def collection_documents(self, run_ids: tuple[str, ...], *, limit: int) -> tuple[dict, ...]:
+    def collection_documents(
+        self, run_ids: tuple[str, ...], *, limit: int
+    ) -> tuple[dict, ...]:
         """Bounded current-cycle public research input, without scanning history."""
         if type(limit) is not int or not 0 <= limit <= 3 or len(run_ids) > 100:
-            raise ValueError('Invalid collection research bounds.')
+            raise ValueError("Invalid collection research bounds.")
         if not run_ids or not limit:
             return ()
         with self.engine.connect() as connection:
-            rows = connection.execute(select(monitor_observations, monitor_events.c.event_payload,
-                monitor_events.c.id.label('event_id')).join(monitor_events,
-                    monitor_events.c.source_observation_id == monitor_observations.c.id)
-                .where(monitor_observations.c.collection_run_id.in_(run_ids))
-                .order_by(monitor_events.c.id).limit(limit)).mappings().all()
-        return tuple(self._document_projection(row, row['event_id']) for row in rows)
+            rows = (
+                connection.execute(
+                    select(
+                        monitor_observations,
+                        monitor_events.c.event_payload,
+                        monitor_events.c.id.label("event_id"),
+                    )
+                    .join(
+                        monitor_events,
+                        monitor_events.c.source_observation_id
+                        == monitor_observations.c.id,
+                    )
+                    .where(monitor_observations.c.collection_run_id.in_(run_ids))
+                    .order_by(
+                        case(
+                            (monitor_events.c.resolution_state == "RESOLVED", 0),
+                            else_=1,
+                        ),
+                        case(
+                            (
+                                monitor_events.c.seller_relevance_state
+                                == "RESOLVED_ELIGIBLE",
+                                0,
+                            ),
+                            else_=1,
+                        ),
+                        monitor_events.c.publication_date.desc().nullslast(),
+                        monitor_events.c.id,
+                    )
+                    .limit(limit)
+                )
+                .mappings()
+                .all()
+            )
+        return tuple(self._document_projection(row, row["event_id"]) for row in rows)
+
+    def research_documents(
+        self,
+        run_ids: tuple[str, ...],
+        *,
+        limit: int,
+        now: datetime,
+        retained_days: int = 60,
+    ) -> tuple[dict, ...]:
+        """Rank current-cycle and retained relevant evidence for bounded research."""
+        if type(limit) is not int or not 0 <= limit <= 3 or len(run_ids) > 100:
+            raise ValueError("Invalid collection research bounds.")
+        if not limit:
+            return ()
+        cutoff = now - timedelta(days=max(1, min(retained_days, 60)))
+        with self.engine.connect() as connection:
+            rows = (
+                connection.execute(
+                    select(
+                        monitor_observations,
+                        monitor_events.c.event_payload,
+                        monitor_events.c.id.label("event_id"),
+                    )
+                    .join(
+                        monitor_events,
+                        monitor_events.c.source_observation_id
+                        == monitor_observations.c.id,
+                    )
+                    .join(
+                        monitor_source_versions,
+                        monitor_source_versions.c.last_observation_id
+                        == monitor_observations.c.id,
+                    )
+                    .where(
+                        or_(
+                            monitor_observations.c.collection_run_id.in_(run_ids),
+                            monitor_events.c.publication_date >= cutoff,
+                        )
+                    )
+                    .where(monitor_events.c.resolution_state == "RESOLVED")
+                    .where(
+                        monitor_events.c.seller_relevance_state.in_(
+                            ("RESOLVED_ELIGIBLE", "RESOLVED_NEEDS_REVIEW")
+                        )
+                    )
+                    .order_by(
+                        case(
+                            (
+                                monitor_events.c.seller_relevance_state
+                                == "RESOLVED_ELIGIBLE",
+                                0,
+                            ),
+                            else_=1,
+                        ),
+                        monitor_events.c.publication_date.desc().nullslast(),
+                        monitor_events.c.id,
+                    )
+                    .limit(500)
+                )
+                .mappings()
+                .all()
+            )
+        candidates = []
+        for row in rows:
+            projected = self._document_projection(row, row["event_id"])
+            prior = self.research.latest_for_source(
+                projected["event_id"], projected["content_hash"]
+            )
+            if prior and prior.get("status") == "COMPLETED":
+                continue
+            document = projected.get("document") or {}
+            passage_count = len(document.get("passages", ()))
+            extraction_complete = bool(document.get("extraction_complete"))
+            coverage_rank = (
+                2
+                if extraction_complete and passage_count
+                else 1
+                if passage_count
+                else 0
+            )
+            pending_since = projected.get("retrieved_at") or projected.get(
+                "published_at"
+            )
+            if pending_since and pending_since.tzinfo is None:
+                pending_since = pending_since.replace(tzinfo=UTC)
+            projected["pending_since"] = pending_since
+            projected["queue_age_seconds"] = (
+                max(0, int((now - pending_since).total_seconds()))
+                if pending_since
+                else None
+            )
+            candidates.append(
+                (
+                    0
+                    if projected.get("seller_relevance_state") == "RESOLVED_ELIGIBLE"
+                    else 1,
+                    coverage_rank,
+                    (
+                        projected["published_at"].timestamp()
+                        if projected.get("published_at")
+                        else 0
+                    ),
+                    projected["event_id"],
+                    projected,
+                )
+            )
+        ordered = [item[-1] for item in sorted(candidates)]
+        selected: list[dict] = []
+        used_accounts: set[str] = set()
+        used_sources: set[str] = set()
+        for diversify in (True, False):
+            for item in ordered:
+                if item in selected:
+                    continue
+                account_ids = set(item.get("canonical_account_ids", ()))
+                if diversify and (
+                    item.get("source_id") in used_sources
+                    or bool(account_ids & used_accounts)
+                ):
+                    continue
+                selected.append(item)
+                used_sources.add(str(item.get("source_id")))
+                used_accounts.update(account_ids)
+                if len(selected) == limit:
+                    return tuple(selected)
+        return tuple(selected)
 
     @staticmethod
     def _document_projection(row, event_id: str) -> dict:
         payload = json.loads(row["structured_payload"] or "{}")
         event = json.loads(row["event_payload"])
-        return {"event_id": event_id, "observation_id": row["id"], "source_id": row["source_id"],
-                "canonical_account_ids": sorted({item["canonical_account_id"] for item in event["subject_entities"] if item.get("canonical_account_id")}),
-                "source_record_id": row["source_record_id"], "content_hash": row["content_hash"],
-                "source_url": row["canonical_url"], "title": row["title"], "published_at": row["published_at"],
-                "retrieved_at": row["retrieved_at"], "collection_run_id": row["collection_run_id"],
-                "document": payload.get("_retrieved_document"),
-                "availability": "DOCUMENT_ATTEMPT_RECORDED" if "_retrieved_document" in payload else "NO_DOCUMENT_ATTEMPT_RECORDED"}
+        return {
+            "event_id": event_id,
+            "observation_id": row["id"],
+            "source_id": row["source_id"],
+            "event_type": event.get("event_type"),
+            "resolution_state": event.get("resolution_state"),
+            "seller_relevance_state": event.get("seller_relevance_state"),
+            "canonical_account_ids": sorted(
+                {
+                    item["canonical_account_id"]
+                    for item in event["subject_entities"]
+                    if item.get("canonical_account_id")
+                }
+            ),
+            "source_record_id": row["source_record_id"],
+            "content_hash": row["content_hash"],
+            "source_url": row["canonical_url"],
+            "title": row["title"],
+            "published_at": row["published_at"],
+            "retrieved_at": row["retrieved_at"],
+            "collection_run_id": row["collection_run_id"],
+            "document": payload.get("_retrieved_document"),
+            "availability": "DOCUMENT_ATTEMPT_RECORDED"
+            if "_retrieved_document" in payload
+            else "NO_DOCUMENT_ATTEMPT_RECORDED",
+        }
 
     def organization_candidate(self, identity_key: str) -> OrganizationCandidate | None:
         with self.engine.connect() as connection:
@@ -806,10 +1104,190 @@ class MonitorRepository:
         if not row:
             return None
         value = dict(row)
+        if value.get("projection"):
+            value["projection"] = json.loads(value["projection"])
         if value.get("next_retry_at"):
             value["next_retry_at"] = _database_timestamp(value["next_retry_at"])
         value["synthesized_at"] = _database_timestamp(value["synthesized_at"])
         return value
+
+    @staticmethod
+    def _assessment_context_key(
+        event_id: str, account_id: str | None, business_unit_id: str | None
+    ) -> str:
+        return "|".join(
+            (
+                event_id,
+                account_id or "UNRESOLVED",
+                business_unit_id or "ALL_BUSINESS_UNITS",
+            )
+        )
+
+    def intelligence_assessment(
+        self,
+        event_id: str,
+        *,
+        account_id: str | None,
+        business_unit_id: str | None = None,
+        input_revision: str | None = None,
+    ) -> dict | None:
+        context_key = self._assessment_context_key(
+            event_id, account_id, business_unit_id
+        )
+        conditions = [
+            monitor_intelligence_assessments.c.context_key == context_key,
+            monitor_intelligence_assessments.c.is_current.is_(True),
+        ]
+        if input_revision:
+            conditions.append(
+                monitor_intelligence_assessments.c.input_revision == input_revision
+            )
+        with self.engine.connect() as connection:
+            row = (
+                connection.execute(
+                    select(monitor_intelligence_assessments).where(*conditions)
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if not row:
+            return None
+        value = dict(row)
+        value["projection"] = json.loads(value["projection"])
+        value["created_at"] = _database_timestamp(value["created_at"])
+        return value
+
+    def intelligence_assessment_history(
+        self,
+        event_id: str,
+        *,
+        account_id: str | None,
+        business_unit_id: str | None = None,
+    ) -> tuple[dict, ...]:
+        context_key = self._assessment_context_key(
+            event_id, account_id, business_unit_id
+        )
+        with self.engine.connect() as connection:
+            rows = (
+                connection.execute(
+                    select(monitor_intelligence_assessments)
+                    .where(
+                        monitor_intelligence_assessments.c.context_key == context_key
+                    )
+                    .order_by(monitor_intelligence_assessments.c.version.desc())
+                )
+                .mappings()
+                .all()
+            )
+        return tuple(
+            {
+                **dict(row),
+                "projection": json.loads(row["projection"]),
+                "created_at": _database_timestamp(row["created_at"]),
+            }
+            for row in rows
+        )
+
+    def intelligence_assessment_by_id(self, assessment_id: str) -> dict | None:
+        with self.engine.connect() as connection:
+            row = (
+                connection.execute(
+                    select(monitor_intelligence_assessments).where(
+                        monitor_intelligence_assessments.c.id == assessment_id
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if not row:
+            return None
+        return {
+            **dict(row),
+            "projection": json.loads(row["projection"]),
+            "created_at": _database_timestamp(row["created_at"]),
+        }
+
+    def save_intelligence_assessment(
+        self,
+        *,
+        event_id: str,
+        account_id: str | None,
+        business_unit_id: str | None,
+        input_revision: str,
+        source_revision: str | None,
+        projection: dict,
+        generation_status: str,
+        provider: str | None,
+        model: str | None,
+        created_at: datetime,
+    ) -> dict:
+        context_key = self._assessment_context_key(
+            event_id, account_id, business_unit_id
+        )
+        serialized = json.dumps(projection, default=str, sort_keys=True)
+        with self.engine.begin() as connection:
+            current = (
+                connection.execute(
+                    select(monitor_intelligence_assessments).where(
+                        monitor_intelligence_assessments.c.context_key == context_key,
+                        monitor_intelligence_assessments.c.is_current.is_(True),
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if current and current["input_revision"] == input_revision:
+                if (
+                    current["projection"] != serialized
+                    or current["generation_status"] != generation_status
+                ):
+                    connection.execute(
+                        update(monitor_intelligence_assessments)
+                        .where(monitor_intelligence_assessments.c.id == current["id"])
+                        .values(
+                            projection=serialized,
+                            generation_status=generation_status,
+                            provider=provider,
+                            model=model,
+                        )
+                    )
+                version = int(current["version"])
+                assessment_id = current["id"]
+            else:
+                version = int(current["version"]) + 1 if current else 1
+                if current:
+                    connection.execute(
+                        update(monitor_intelligence_assessments)
+                        .where(monitor_intelligence_assessments.c.id == current["id"])
+                        .values(is_current=False)
+                    )
+                assessment_id = hashlib.sha256(
+                    f"{context_key}|{version}|{input_revision}".encode()
+                ).hexdigest()
+                connection.execute(
+                    insert(monitor_intelligence_assessments).values(
+                        id=assessment_id,
+                        context_key=context_key,
+                        event_id=event_id,
+                        account_id=account_id,
+                        business_unit_id=business_unit_id,
+                        input_revision=input_revision,
+                        source_revision=source_revision,
+                        version=version,
+                        is_current=True,
+                        projection=serialized,
+                        generation_status=generation_status,
+                        provider=provider,
+                        model=model,
+                        created_at=created_at,
+                    )
+                )
+        return {
+            "id": assessment_id,
+            "version": version,
+            "input_revision": input_revision,
+            "generation_status": generation_status,
+        }
 
     def save_brief_synthesis(
         self,
@@ -823,6 +1301,9 @@ class MonitorRepository:
         attempt_count: int,
         next_retry_at: datetime | None,
         synthesized_at: datetime,
+        projection: dict | None = None,
+        source_revision: str | None = None,
+        input_revision: str | None = None,
     ) -> None:
         """Replace the one cached attempt for a brief with its current content hash."""
         with self.engine.begin() as connection:
@@ -836,6 +1317,11 @@ class MonitorRepository:
                     brief_id=brief_id,
                     governed_content_hash=governed_content_hash,
                     summary=summary,
+                    projection=json.dumps(projection, default=str, sort_keys=True)
+                    if projection
+                    else None,
+                    source_revision=source_revision,
+                    input_revision=input_revision,
                     provider=provider,
                     model=model,
                     status=status,
@@ -879,13 +1365,43 @@ class MonitorRepository:
 
     def entity_candidate_resolution(self, cache_key: str) -> dict | None:
         with self.engine.connect() as connection:
-            row = connection.execute(select(monitor_entity_candidate_resolutions).where(monitor_entity_candidate_resolutions.c.cache_key == cache_key)).mappings().one_or_none()
+            row = (
+                connection.execute(
+                    select(monitor_entity_candidate_resolutions).where(
+                        monitor_entity_candidate_resolutions.c.cache_key == cache_key
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
         return dict(row) if row else None
 
-    def save_entity_candidate_resolution(self, *, cache_key: str, projection: dict, provider: str | None, model: str | None, status: str, processed_at: datetime) -> None:
+    def save_entity_candidate_resolution(
+        self,
+        *,
+        cache_key: str,
+        projection: dict,
+        provider: str | None,
+        model: str | None,
+        status: str,
+        processed_at: datetime,
+    ) -> None:
         with self.engine.begin() as connection:
-            connection.execute(delete(monitor_entity_candidate_resolutions).where(monitor_entity_candidate_resolutions.c.cache_key == cache_key))
-            connection.execute(insert(monitor_entity_candidate_resolutions).values(cache_key=cache_key, projection=_json(projection), provider=provider, model=model, status=status, processed_at=processed_at))
+            connection.execute(
+                delete(monitor_entity_candidate_resolutions).where(
+                    monitor_entity_candidate_resolutions.c.cache_key == cache_key
+                )
+            )
+            connection.execute(
+                insert(monitor_entity_candidate_resolutions).values(
+                    cache_key=cache_key,
+                    projection=_json(projection),
+                    provider=provider,
+                    model=model,
+                    status=status,
+                    processed_at=processed_at,
+                )
+            )
 
     def technical_decomposition_for_event(self, event_id: str) -> dict | None:
         """Read the worker-owned latest durable projection without reconstructing a provider model."""
