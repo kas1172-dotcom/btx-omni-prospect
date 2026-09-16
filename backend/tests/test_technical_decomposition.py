@@ -32,8 +32,10 @@ from btx_omni.providers.sample.environment import build_sample_environment
 class _Models:
     def __init__(self, text: str) -> None:
         self.text = text
+        self.config = None
 
-    def generate_content(self, **_: object) -> object:
+    def generate_content(self, **values: object) -> object:
+        self.config = values.get("config")
         return type("Response", (), {"text": self.text})()
 
 
@@ -184,6 +186,36 @@ def test_gemini_schema_rejects_extra_fields_and_preserves_basis(ai_usage) -> Non
     )
     with pytest.raises(ValueError, match="unsupported fields"):
         bad.decompose_technical_opportunity(request())
+
+
+def test_gemini_three_technical_request_has_bounded_complete_json_budget(ai_usage) -> None:
+    payload = {
+        "event_summary": "Award.",
+        "product_candidates": [],
+        "program_candidates": [],
+        "technical_systems": [],
+        "component_candidates": [],
+        "uncertainties": [],
+    }
+    client = _Client(json.dumps(payload))
+    provider = GeminiProvider(
+        AiConfig(
+            "gemini",
+            "key",
+            "gemini-3.6-flash",
+            "developer",
+            None,
+            "global",
+            5,
+            usage=ai_usage,
+        ),
+        client,
+    )
+
+    provider.decompose_technical_opportunity(request())
+
+    assert client.models.config.max_output_tokens == 6000
+    assert client.models.config.thinking_config.thinking_level.value == "LOW"
 
 
 def test_gemini_rejects_invented_evidence_and_requires_source_stated_support(

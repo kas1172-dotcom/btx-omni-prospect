@@ -242,6 +242,13 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         projection_limit=SELLER_BRIEF_WINDOW_LIMIT + 1,
     )
     window_capped = len(window) > SELLER_BRIEF_WINDOW_LIMIT
+    persisted_window = (
+        runtime.monitor.repository.current_display_assessments(
+            limit=SELLER_BRIEF_WINDOW_LIMIT + 1
+        )
+        if runtime.monitor.repository
+        else ()
+    )
     briefs = []
     for deterministic in window[:SELLER_BRIEF_WINDOW_LIMIT]:
         cached = (
@@ -287,6 +294,12 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             "limit": SELLER_BRIEF_WINDOW_LIMIT,
             "more_available": window_capped,
             "ordering": "seller relevance, resolution, publication date, stable identity",
+        },
+        "persisted_assessments": {
+            "available": bool(persisted_window),
+            "returned": min(len(persisted_window), SELLER_BRIEF_WINDOW_LIMIT),
+            "more_available": len(persisted_window) > SELLER_BRIEF_WINDOW_LIMIT,
+            "selection": "evidence and display eligibility, commercial relevance, then deterministic rank before limit",
         },
     }
 

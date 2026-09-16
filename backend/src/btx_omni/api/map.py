@@ -91,7 +91,8 @@ def _map_brief_marker_mode(
     eligible = (
         account_id is not None
         and brief.resolution_state == "RESOLVED"
-        and brief.seller_promotion_state == "RESOLVED_ELIGIBLE"
+        and brief.seller_promotion_state
+        in {"RESOLVED_ELIGIBLE", "RESOLVED_NEEDS_REVIEW"}
         and brief.data_mode != "CURATED_PUBLIC"
         and coordinates is not None
     )
@@ -209,7 +210,7 @@ def map_data(
             if account_id in brief.canonical_account_ids
             and brief.resolution_state == "RESOLVED"
             and brief.analysis_status == "READY"
-            and brief.event_timing == "OBSERVED"
+            and brief.event_timing != "UPCOMING"
         )[:5]
         for account_id in selected_ids
     }
