@@ -19,7 +19,7 @@ from btx_omni.persistence.models import (
     monitor_intelligence_assessments,
 )
 
-NOW = datetime(2026, 9, 15, 12, tzinfo=UTC)
+NOW = datetime(2026, 9, 16, 12, tzinfo=UTC)
 LOCKHEED_SOURCE = "https://news.lockheedmartin.com/2026-08-30-Javelin"
 
 
@@ -51,7 +51,9 @@ def test_canonical_evidence_keeps_distinct_revisions_and_merges_best_metadata():
         ]
     )
 
-    assert len(rows) == 3  # revisionless reviewed metadata cannot choose between two revisions
+    assert (
+        len(rows) == 3
+    )  # revisionless reviewed metadata cannot choose between two revisions
     assert any(item["publication_date"] == "2026-08-30" for item in rows)
     assert {item["source_revision"] for item in rows if item["source_revision"]} == {
         "a" * 64,
@@ -65,6 +67,7 @@ def _projection(
     relevance: str,
     evidence: bool = True,
     facility: dict | None = None,
+    analysis_status: str | None = None,
 ) -> dict:
     public = (
         [
@@ -91,12 +94,13 @@ def _projection(
     )
     return {
         "headline": "Lockheed Martin Javelin co-production agreement",
-        "analysis_status": "READY" if evidence else "INCOMPLETE",
+        "analysis_status": analysis_status or ("READY" if evidence else "INCOMPLETE"),
         "commercial_relevance_state": relevance,
         "priority_eligible": priority,
         "recommended_action": (
             "Verify internal Lockheed and RTX records for Javelin activity."
-            if priority or relevance == "ESTABLISHED_ACCOUNT_REVIEW"
+            if priority
+            or relevance in {"ESTABLISHED_ACCOUNT_REVIEW", "REVIEW_REQUIRED"}
             else None
         ),
         "evidence_package": {
@@ -105,7 +109,9 @@ def _projection(
             "deterministic_scores": {"signal_confidence": {"score": 84.71}},
             "technical_decomposition": {
                 "components": [{"name": "Round"}],
-                "fit_hypotheses": [{"component_name": f"Fit {index}"} for index in range(8)],
+                "fit_hypotheses": [
+                    {"component_name": f"Fit {index}"} for index in range(8)
+                ],
                 "citations": [
                     {
                         "evidence_id": item["evidence_id"],
@@ -177,10 +183,8 @@ def test_current_display_assessments_filter_and_rank_before_bound(tmp_path):
             connection,
             event_id="javelin",
             created_at=NOW - timedelta(days=10),
-            projection=_projection(
-                priority=False, relevance="ESTABLISHED_ACCOUNT_REVIEW"
-            ),
-            seller_state="RESOLVED_NEEDS_REVIEW",
+            projection=_projection(priority=False, relevance="REVIEW_REQUIRED"),
+            seller_state="RESOLVED_ELIGIBLE",
             version=4,
         )
         for index in range(55):
@@ -194,26 +198,34 @@ def test_current_display_assessments_filter_and_rank_before_bound(tmp_path):
             connection,
             event_id="ineligible",
             created_at=NOW + timedelta(minutes=1),
-            projection=_projection(priority=True, relevance="INCOMPLETE", evidence=False),
+            projection=_projection(
+                priority=True, relevance="INCOMPLETE", evidence=False
+            ),
             seller_state="REJECTED",
         )
 
     repository = MonitorRepository(engine)
     selected = repository.current_display_assessments(limit=50)
-    javelin = selected[0]
+    javelin = next(item for item in selected if item["event_id"] == "javelin")
 
     assert len(selected) == 50
     assert javelin["event_id"] == "javelin"
     assert javelin["version"] == 4
-    assert javelin["event_seller_relevance_state"] == "RESOLVED_NEEDS_REVIEW"
-    assert javelin["projection"]["evidence_package"]["deterministic_scores"][
-        "signal_confidence"
-    ]["score"] == 84.71
-    assert len(
-        javelin["projection"]["evidence_package"]["technical_decomposition"][
-            "fit_hypotheses"
-        ]
-    ) == 8
+    assert javelin["event_seller_relevance_state"] == "RESOLVED_ELIGIBLE"
+    assert (
+        javelin["projection"]["evidence_package"]["deterministic_scores"][
+            "signal_confidence"
+        ]["score"]
+        == 84.71
+    )
+    assert (
+        len(
+            javelin["projection"]["evidence_package"]["technical_decomposition"][
+                "fit_hypotheses"
+            ]
+        )
+        == 8
+    )
     assert len(javelin["projection"]["references"]) == 1
     assert javelin["projection"]["references"][0]["publication_date"] == "2026-08-30"
     assert "ineligible" not in {item["event_id"] for item in selected}
@@ -222,9 +234,12 @@ def test_current_display_assessments_filter_and_rank_before_bound(tmp_path):
         and not item["projection"]["priority_eligible"]
         for item in selected
     )
-    assert repository.current_display_assessments(
-        limit=1, account_ids=frozenset({"lockheed-martin"}), priority_only=True
-    ) == ()
+    assert (
+        repository.current_display_assessments(
+            limit=1, account_ids=frozenset({"lockheed-martin"}), priority_only=True
+        )
+        == ()
+    )
     engine.dispose()
 
 
@@ -254,9 +269,11 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
     def get(url: str, _headers: dict[str, str]):
         if url == "https://fixture.test/feed":
             return 200, feed["body"], {}
-        return 200, b"<html><body>Official public source.</body></html>", {
-            "content-type": "text/html"
-        }
+        return (
+            200,
+            b"<html><body>Official public source.</body></html>",
+            {"content-type": "text/html"},
+        )
 
     runtime.monitor.registry["company_newsroom"] = CompanyNewsAdapter(get)
     runtime.monitor.clock = lambda: NOW
@@ -272,7 +289,7 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
         published = (
             "Sun, 30 Aug 2026 10:00:00 GMT"
             if is_javelin
-            else "Tue, 15 Sep 2026 10:00:00 GMT"
+            else "Wed, 16 Sep 2026 10:00:00 GMT"
         )
         feed["body"] = (
             "<rss><channel><item>"
@@ -284,33 +301,44 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
         runtime.monitor.collect("company_newsroom", limit=1)
         event_id = next(iter(set(runtime.monitor.events) - before))
         event_ids.append(event_id)
-        if not is_javelin:
-            with runtime.monitor.repository.engine.begin() as connection:
-                payload = json.loads(
-                    connection.execute(
-                        select(monitor_events.c.event_payload).where(
-                            monitor_events.c.id == event_id
-                        )
-                    ).scalar_one()
-                )
-                payload["seller_relevance_state"] = "RESOLVED_ELIGIBLE"
+        with runtime.monitor.repository.engine.begin() as connection:
+            payload = json.loads(
                 connection.execute(
-                    monitor_events.update()
-                    .where(monitor_events.c.id == event_id)
-                    .values(
-                        seller_relevance_state="RESOLVED_ELIGIBLE",
-                        event_payload=json.dumps(payload),
+                    select(monitor_events.c.event_payload).where(
+                        monitor_events.c.id == event_id
                     )
+                ).scalar_one()
+            )
+            event_seller_state = "REJECTED" if index == 3 else "RESOLVED_ELIGIBLE"
+            payload["seller_relevance_state"] = event_seller_state
+            connection.execute(
+                monitor_events.update()
+                .where(monitor_events.c.id == event_id)
+                .values(
+                    seller_relevance_state=event_seller_state,
+                    event_payload=json.dumps(payload),
                 )
-        projection = _projection(
-            priority=False,
-            relevance="ESTABLISHED_ACCOUNT_REVIEW" if is_javelin else "INFORMATIONAL",
-            facility=(
-                {"id": "lockheed-orlando", "name": "Lockheed Martin Orlando"}
-                    if index == 55
-                else None
-            ),
-        )
+            )
+        if is_javelin:
+            projection = _projection(priority=False, relevance="REVIEW_REQUIRED")
+        elif index == 1:
+            projection = _projection(
+                priority=True, relevance="ESTABLISHED_COMMERCIAL_RELEVANCE"
+            )
+        elif index == 2:
+            projection = _projection(
+                priority=False,
+                relevance="REVIEW_REQUIRED",
+                evidence=False,
+                analysis_status="READY",
+            )
+        else:
+            projection = _projection(priority=False, relevance="INFORMATIONAL")
+        if index == 55:
+            projection["evidence_package"]["facility"] = {
+                "id": "lockheed-orlando",
+                "name": "Lockheed Martin Orlando",
+            }
         versions = range(1, 5) if is_javelin else (1,)
         for version in versions:
             runtime.monitor.repository.save_intelligence_assessment(
@@ -326,27 +354,18 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
                 created_at=NOW + timedelta(minutes=index, seconds=version),
             )
     javelin_event = event_ids[0]
-    with runtime.monitor.repository.engine.begin() as connection:
-        payload = json.loads(
-            connection.execute(
-                select(monitor_events.c.event_payload).where(
-                    monitor_events.c.id == javelin_event
-                )
-            ).scalar_one()
-        )
-        payload["seller_relevance_state"] = "RESOLVED_NEEDS_REVIEW"
-        connection.execute(
-            monitor_events.update()
-            .where(monitor_events.c.id == javelin_event)
-            .values(
-                seller_relevance_state="RESOLVED_NEEDS_REVIEW",
-                event_payload=json.dumps(payload),
-            )
-        )
+    action_event = event_ids[1]
+    insufficient_evidence_event = event_ids[2]
+    ineligible_event = event_ids[3]
 
     selected = runtime.monitor.repository.current_display_assessments(limit=50)
-    assert selected and selected[0]["event_id"] == javelin_event
-    assert selected[0]["projection"]["evidence_package"]["facility"] is None
+    selected_javelin = next(
+        item for item in selected if item["event_id"] == javelin_event
+    )
+    assert selected_javelin["projection"]["evidence_package"]["facility"] is None
+    assert selected_javelin["event_seller_relevance_state"] == "RESOLVED_ELIGIBLE"
+    assert insufficient_evidence_event not in {item["event_id"] for item in selected}
+    assert ineligible_event not in {item["event_id"] for item in selected}
     assert any(
         item["projection"]["evidence_package"].get("facility")
         == {"id": "lockheed-orlando", "name": "Lockheed Martin Orlando"}
@@ -356,9 +375,32 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
         runtime.monitor, environment=runtime.environment(), projection_limit=50
     )
     assert javelin_event in {item.id for item in briefs}
+    action_brief = next(item for item in briefs if item.id == action_event)
+    assert (
+        action_brief.resolution_state,
+        action_brief.seller_promotion_state,
+        action_brief.analysis_status,
+        action_brief.commercial_relevance_state,
+        action_brief.priority_eligible,
+        action_brief.freshness,
+        action_brief.event_timing,
+    ) == (
+        "RESOLVED",
+        "RESOLVED_ELIGIBLE",
+        "READY",
+        "ESTABLISHED_COMMERCIAL_RELEVANCE",
+        True,
+        "CURRENT",
+        "OBSERVED",
+    )
     intelligence = intelligence_signals(runtime)
     connected = [item for item in intelligence if item["id"] in set(event_ids)]
     javelin = next(item for item in connected if item["id"] == javelin_event)
+    informational = next(item for item in connected if item["id"] == event_ids[55])
+    assert (
+        informational["business_briefing"]["commercial_relevance_state"]
+        == "INFORMATIONAL"
+    )
     assessment = javelin["business_briefing"]
     profile = account_360("lockheed-martin", runtime)
     profile_brief = next(
@@ -378,9 +420,10 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
         if item["id"] == javelin_event
     )
     today_projection = today(runtime)
+    command_center = today_projection["command_center"]
     today_brief = next(
         item["signal_brief"]
-        for item in today_projection["command_center"]["needs_validation_assessments"]
+        for item in command_center["needs_validation_assessments"]
         if item.get("event_id") == javelin_event
     )
 
@@ -392,10 +435,37 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
     assert next(iter(identities))[1] == 4
     assert assessment["signal_confidence"]["score"] == 84.71
     assert len(assessment["technical_opportunity"]["fit_hypotheses"]) == 8
-    assert assessment["seller_promotion_state"] == "RESOLVED_NEEDS_REVIEW"
+    assert assessment["seller_promotion_state"] == "RESOLVED_ELIGIBLE"
+    assert assessment["commercial_relevance_state"] == "REVIEW_REQUIRED"
     assert assessment["priority_eligible"] is False
     assert assessment["recommended_action"].startswith("Verify internal Lockheed")
-    assert not any(item["event_id"] == javelin_event for item in map_projection["intelligence"])
+    assert not any(
+        item["event_id"] == javelin_event for item in map_projection["intelligence"]
+    )
     assert len(assessment["references"]) == 1
     assert assessment["references"][0]["publication_date"] == "2026-08-30"
+    assert command_center["public_intelligence_counts"] == {
+        "action_priorities": 1,
+        "needs_validation": 1,
+    }
+    assert [item["event_id"] for item in command_center["action_priorities"]] == [
+        action_event
+    ]
+    assert all(
+        item["event_id"]
+        not in {event_ids[55], insufficient_evidence_event, ineligible_event}
+        for item in (
+            *command_center["action_priorities"],
+            *command_center["needs_validation_assessments"],
+        )
+    )
+    with runtime.monitor.repository.engine.connect() as connection:
+        assert (
+            connection.execute(
+                select(monitor_events.c.seller_relevance_state).where(
+                    monitor_events.c.id == javelin_event
+                )
+            ).scalar_one()
+            == "RESOLVED_ELIGIBLE"
+        )
     runtime.monitor.repository.engine.dispose()
