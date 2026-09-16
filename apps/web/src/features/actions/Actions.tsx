@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { api } from '../../api/client'
+import { api, resolveFederalAssessment } from '../../api/client'
 import { Button, Disclosure, Drawer, Empty, EvidenceSource, FilterChip, FilterTrigger, Notice, Panel, SearchInput, SelectInput, StatTile, StatusBadge, Textarea, TextInput } from '../../components/UI'
 import type { Account, Action, ActionHistoryEvent, ActionPriority, ActionStatus, FederalAssessment, OmniContext, OmniFederalSelection, Principal, Signal, Suggestion } from '../../types/api'
 import './actions.css'
 import { SuggestionList } from './SuggestionList'
 import { CrmProposalPanel } from './CrmProposalPanel'
 import { actorDisplayName, presentationLabel, safeRecordTitle } from '../../components/presentation'
+import type { WorkspaceLocation } from '../../app/navigation'
 
 const priorityRank: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 const statusRank: Record<string, number> = { OPEN: 0, IN_PROGRESS: 1, COMPLETED: 2, CANCELED: 3 }
@@ -18,11 +19,12 @@ type Props = {
   items: Action[]; suggestions: Suggestion[]; principal?: Principal; accounts: Account[]; signals: Signal[]; warning: string
   onItem: (item: Action) => void; onSuggestions: (items: Suggestion[]) => void; onAccount: (id: string) => void
   onActionSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids' | 'selected_federal_opportunity'>) => void
+  location: WorkspaceLocation; onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void
 }
 
-export function Actions({ items, suggestions, principal, accounts, signals, warning, onItem, onSuggestions, onAccount, onActionSelect, onOmniContext, sourceAlertId, initialActionId, onClearSource }: Props) {
-  const [tab, setTab] = useState<'ACTIONS' | 'SUGGESTIONS' | 'COMPLETED'>(() => sourceAlertId ? 'SUGGESTIONS' : 'ACTIONS')
-  const [query, setQuery] = useState(''); const [status, setStatus] = useState('ACTIVE'); const [priority, setPriority] = useState('ALL'); const [sort, setSort] = useState('PRIORITY')
+export function Actions({ items, suggestions, principal, accounts, signals, warning, onItem, onSuggestions, onAccount, onActionSelect, onOmniContext, sourceAlertId, initialActionId, onClearSource, location, onLocationChange }: Props) {
+  const [tab, setTab] = useState<'ACTIONS' | 'SUGGESTIONS' | 'COMPLETED'>(() => location.subview === 'suggestions' || sourceAlertId ? 'SUGGESTIONS' : location.subview === 'completed' ? 'COMPLETED' : 'ACTIONS')
+  const [query, setQuery] = useState(() => String(location.filters?.query ?? '')); const [status, setStatus] = useState(() => String(location.filters?.status ?? 'ACTIVE')); const [priority, setPriority] = useState(() => String(location.filters?.priority ?? 'ALL')); const [sort, setSort] = useState(() => location.sort ?? 'PRIORITY')
   const [selectedId, setSelectedId] = useState<string | undefined>(initialActionId); const [selectedAction, setSelectedAction] = useState<Action>(); const [editorOpen, setEditorOpen] = useState(false); const [editing, setEditing] = useState<Action>(); const [notice, setNotice] = useState(''); const [history, setHistory] = useState<ActionHistoryEvent[]>([]); const [federalAssessment, setFederalAssessment] = useState<FederalAssessment>()
   const accountById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts]); const signalByAccount = useMemo(() => new Map(signals.filter(signal => signal.account_id).map(signal => [signal.account_id!, signal])), [signals])
   const customerName = useCallback((id: string) => accountById.get(id)?.name ?? accountById.get(id)?.legal_name ?? 'Unknown Customer', [accountById])
@@ -34,7 +36,8 @@ export function Actions({ items, suggestions, principal, accounts, signals, warn
   const scopedSuggestions = useMemo(() => sourceAlertId ? suggestions.filter(item => item.source_alert_id === sourceAlertId) : suggestions, [sourceAlertId, suggestions])
   const selected = tab === 'SUGGESTIONS' ? undefined : selectedAction?.id === selectedId ? selectedAction : items.find(item => item.id === selectedId) ?? visible[0]
   const activeFilters = useMemo(() => ({ ...(status === 'ACTIVE' ? { action_status: 'ACTIVE' } : status === 'ALL' ? {} : { action_status: status }), ...(priority === 'ALL' ? {} : { priority }), ...(tab === 'SUGGESTIONS' ? { action_view: 'SUGGESTIONS', source_alert_id: sourceAlertId ?? '' } : {}) }), [priority, status, sourceAlertId, tab])
-  useEffect(() => onActionSelect(selected?.id), [onActionSelect, selected?.id]); useEffect(() => () => onActionSelect(undefined), [onActionSelect])
+  useEffect(() => { onActionSelect(selected?.id); if (selected?.id && selected.id !== location.actionId) onLocationChange({ ...location, actionId: selected.id }, selectedId ? 'replace' : 'push') }, [location, onActionSelect, onLocationChange, selected?.id, selectedId]); useEffect(() => () => onActionSelect(undefined), [onActionSelect])
+  useEffect(() => { onLocationChange({ ...location, subview: tab === 'SUGGESTIONS' ? 'suggestions' : tab === 'COMPLETED' ? 'completed' : undefined, filters: { ...(query ? { query } : {}), ...(status !== 'ACTIVE' ? { status } : {}), ...(priority !== 'ALL' ? { priority } : {}) }, sort }, 'replace') }, [location, onLocationChange, priority, query, sort, status, tab])
   useEffect(() => {
     let current = true
     if (!selected?.id) return () => { current = false }
@@ -43,7 +46,14 @@ export function Actions({ items, suggestions, principal, accounts, signals, warn
   }, [selected])
   const selectedFederalAssessment = useMemo(() => selected?.context_referents.some(([kind, value]) => kind === 'federal_assessment' && value === federalAssessment?.assessment_id) ? federalAssessment : undefined, [federalAssessment, selected])
   const federalSelection = useMemo<OmniFederalSelection | undefined>(() => { if (!selected || !selectedFederalAssessment) return undefined; const refs = new Map(selected.context_referents); const route = selectedFederalAssessment.routes.find(item => item.route_type === refs.get('federal_route_type') && item.account_id === selected.account_id); return route ? { opportunity_id: selectedFederalAssessment.opportunity_id, assessment_id: selectedFederalAssessment.assessment_id, assessment_version: selectedFederalAssessment.assessment_version, route_type: route.route_type, account_id: route.account_id, partnership_id: route.route_type === 'STRATEGIC_PARTNER' ? route.account_id : undefined } : undefined }, [selectedFederalAssessment, selected])
-  useEffect(() => { const assessmentId = selected?.context_referents.find(([kind]) => kind === 'federal_assessment')?.[1]; if (!assessmentId) return; const controller = new AbortController(); void api.federalAssessment(assessmentId, controller.signal).then(value => { if (!controller.signal.aborted) setFederalAssessment(value) }).catch(() => undefined); return () => controller.abort() }, [selected])
+  useEffect(() => {
+    const assessmentId = selected?.context_referents.find(([kind]) => kind === 'federal_assessment')?.[1]
+    const federal = location.federal
+    if (!assessmentId || !federal || federal.assessmentId !== assessmentId) return
+    const controller = new AbortController()
+    void resolveFederalAssessment({ opportunity_id: federal.opportunityId, assessment_id: federal.assessmentId, assessment_version: federal.assessmentVersion, route_type: federal.routeType, account_id: federal.accountId, partnership_id: federal.partnershipId }, controller.signal).then(value => { if (!controller.signal.aborted) setFederalAssessment(value) }).catch(() => undefined)
+    return () => controller.abort()
+  }, [location.federal, selected])
   useEffect(() => onOmniContext({ active_filters: activeFilters, visible_record_ids: (tab === 'SUGGESTIONS' ? scopedSuggestions : visible).map(item => item.id).slice(0, 50), selected_federal_opportunity: federalSelection }), [activeFilters, federalSelection, onOmniContext, visible, scopedSuggestions, tab]); useEffect(() => () => onOmniContext({}), [onOmniContext])
   const refreshSuggestions = (id: string, patch: Partial<Suggestion>) => onSuggestions(suggestions.map(item => item.id === id ? { ...item, ...patch } : item))
   const convert = async (suggestion: Suggestion) => { try { const action = await api.convertSuggestion(suggestion.id, suggestion.revision); onItem(action); refreshSuggestions(suggestion.id, { converted_action_id: action.id }); setSelectedId(action.id); setTab('ACTIONS'); setNotice('Suggestion converted to one durable Action. No external operation was executed.') } catch (error) { setNotice(error instanceof Error ? error.message : 'Suggestion could not be converted.') } }

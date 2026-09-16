@@ -188,7 +188,8 @@ test('all intelligence launch surfaces pass the persisted assessment contract to
   assert.match(accounts, /initialAssessment/)
   assert.match(signalBrief, /Use in Omni/)
   assert.match(app, /viewContext\.selected_assessment\?\.event_id/)
-  assert.match(app, /initialAssessment=\{viewContext\.selected_assessment\}/)
+  assert.match(app, /initialAssessment=\{locationAssessment\}/)
+  assert.match(app, /assessment_id: location\.assessment\.assessmentId/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
@@ -327,7 +328,7 @@ test('Intelligence sends canonical selected event context to the shared Omni req
 
 test('Intelligence briefing uses canonical account context without substituting an unrelated account action', () => {
   assert.match(intelligence, /Open briefing/)
-  assert.match(intelligence, /intelligence\/brief/)
+  assert.match(intelligence, /subview: ['"]brief['"]/)
   assert.match(intelligenceBriefing, /api\.account\(accountId, controller\.signal\)/)
   assert.match(intelligenceBriefing, /brief\.recommended_action \?\? brief\.what_to_watch/)
   assert.doesNotMatch(intelligenceBriefing, /brief\.recommended_action \?\? detail\?\.recommended_next_step/)
@@ -343,7 +344,7 @@ test('Map selection sends canonical Customer and facility context without invent
   assert.match(mapModel, /accountId: facility\.account_id/)
   assert.match(app, /selectedMapAccountId/)
   assert.match(app, /selectedMapFacilityId/)
-  assert.match(app, /selected_facility_id:\s*surface === ['"]map['"] \? selectedMapFacilityId : undefined/)
+  assert.match(app, /selected_facility_id:\s*surface === ['"]map['"] \? selectedMapFacilityId : surface === ['"]accounts['"] \? location\.facilityId : undefined/)
   assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
 })
 
@@ -379,8 +380,8 @@ test('list surfaces publish only their current filters and bounded canonical vis
 })
 
 test('shell clears stale list, detail, and passive entity context across surface changes', () => {
-  assert.match(app, /const navigate = useCallback\(\(id: Surface, recordHistory = true\) => \{[\s\S]*clearSelectedEvent\(\)[\s\S]*clearMapSelection\(\)[\s\S]*clearSelectedAction\(\)[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(undefined\)[\s\S]*setSurface\(id\)/)
-  assert.match(app, /await api\.account\(id, controller\.signal\)[\s\S]*if \(controller\.signal\.aborted\) return[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(result\)[\s\S]*setSurface\(['"]accounts['"]\)/)
+  assert.match(app, /const navigate = useCallback\(\(id: Surface, recordHistory = true\) => \{[\s\S]*clearSelectedEvent\(\)[\s\S]*clearMapSelection\(\)[\s\S]*clearSelectedAction\(\)[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(undefined\)[\s\S]*commitLocation\(\{ surface: id \}/)
+  assert.match(app, /await api\.account\(id, controller\.signal\)[\s\S]*if \(controller\.signal\.aborted\) return[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(federalAssessment[\s\S]*commitLocation\(next/)
   assert.match(app, /active_filters:[\s\S]*viewContext\.active_filters/)
   assert.match(app, /visible_record_ids:[\s\S]*viewContext\.visible_record_ids/)
 })

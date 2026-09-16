@@ -1,4 +1,4 @@
-import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalAssessment, FederalProcurement, HostedSession, Itinerary, ItineraryStop, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, ShortlistItem, Signal, StrategicPartnershipDesignation, Suggestion, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalAssessment, FederalProcurement, HostedSession, Itinerary, ItineraryStop, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniFederalSelection, OmniResponse, Principal, PublicLocation, ShortlistItem, Signal, StrategicPartnershipDesignation, Suggestion, WorkspaceSettings } from '../types/api'
 import type { RankedRelationships, RelationshipQuery } from '../types/relationships'
 import type { OmniMemory, OmniMemoryInput } from '../types/memory'
 import type { PendingMapAccount } from '../types/api'
@@ -86,5 +86,13 @@ export const api = {
   editMemory: (id: string, body: OmniMemoryInput & { expected_version: number }) => actionRequest<OmniMemory>(`/omni/memories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteMemory: (id: string, expected_version: number) => actionRequest<{ deleted: boolean }>(`/omni/memories/${encodeURIComponent(id)}/delete`, { method: 'POST', body: JSON.stringify({ expected_version }) }),
   monitor: (signal?: AbortSignal) => request<MonitorHealth>('/monitor/health', { signal }),
+}
+
+export async function resolveFederalAssessment(selection: OmniFederalSelection, signal?: AbortSignal): Promise<FederalAssessment | undefined> {
+  try { return await api.federalAssessment(selection.assessment_id, signal) }
+  catch {
+    const projection = await api.federalProcurement('', signal)
+    return projection.active.opportunities.map(item => item.assessment).find(item => item?.assessment_id === selection.assessment_id && item.assessment_version === selection.assessment_version && item.opportunity_id === selection.opportunity_id)
+  }
 }
 import type { CommercialDecisions, FollowupPreview } from '../types/decisions'

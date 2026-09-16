@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { RelatedBtxRecord } from '../types/api'
 import { CanonicalRecord } from './CanonicalRecord'
@@ -10,11 +10,12 @@ const money = (record: RelatedBtxRecord) => {
   return minor == null ? null : new Intl.NumberFormat('en-US', { style: 'currency', currency: record.currency ?? 'USD', maximumFractionDigits: 0 }).format(minor / 100)
 }
 
-export function RelatedBtxActivity({ accountId, records }: { accountId: string; records: RelatedBtxRecord[] }) {
+export function RelatedBtxActivity({ accountId, records, initialRecordId, onRecord }: { accountId: string; records: RelatedBtxRecord[]; initialRecordId?: string; onRecord?: (recordId?: string) => void }) {
   const [detail, setDetail] = useState<{ key: string; loading: boolean; value?: Record<string, unknown>; error?: string }>()
   const inspect = async (record: RelatedBtxRecord) => {
     const key = `${record.collection}:${record.record_id}`
-    if (detail?.key === key) { setDetail(undefined); return }
+    if (detail?.key === key) { setDetail(undefined); onRecord?.(); return }
+    onRecord?.(record.record_id)
     setDetail({ key, loading: true })
     try {
       const result = await api.commercialRecord(accountId, record.collection, record.record_id)
@@ -23,10 +24,20 @@ export function RelatedBtxActivity({ accountId, records }: { accountId: string; 
       setDetail({ key, loading: false, error: 'The source record could not be loaded. The assessment context remains selected.' })
     }
   }
+  useEffect(() => {
+    if (!initialRecordId) return
+    if (detail) return
+    const record = records.find(item => item.record_id === initialRecordId)
+    if (!record) return
+    const key = `${record.collection}:${record.record_id}`
+    const controller = new AbortController()
+    void api.commercialRecord(accountId, record.collection, record.record_id, controller.signal).then(result => { if (!controller.signal.aborted) setDetail({ key, loading: false, value: result.records[0] }) }).catch(() => { if (!controller.signal.aborted) setDetail({ key, loading: false, error: 'The source record could not be loaded. The assessment context remains selected.' }) })
+    return () => controller.abort()
+  }, [accountId, detail, initialRecordId, records])
   if (!records.length) return <Empty>No related BTX activity was found. This does not establish that no relationship exists.</Empty>
   return <div className="related-activity-list" id="related-btx-activity">{records.map(record => {
     const key = `${record.collection}:${record.record_id}`
-    const expanded = detail?.key === key
+    const expanded = detail?.key === key && (!initialRecordId || initialRecordId === record.record_id)
     return <article className="related-activity" key={key}>
       <div><span className="eyebrow">{label(record.collection)}</span><h4>{record.display_name}</h4><p>{record.date || 'Date unavailable'}{record.status ? ` · ${label(record.status)}` : ''}{money(record) ? ` · ${money(record)}` : ''}</p></div>
       <StatusBadge value={record.match_strength} kind="evidence" />

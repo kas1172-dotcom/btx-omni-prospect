@@ -44,6 +44,10 @@ test('governed Action proposal is durable and restores the same opportunity cont
 
 test('strategic route exposes only the governed partnership entry point and joint-pursuit hypothesis', async ({ page }) => {
   let assessment
+  const accountResponse = await page.request.get('/api/accounts/eaton')
+  const accountBody = await accountResponse.json()
+  const planningResponse = await page.request.get('/api/planning')
+  const planningBody = await planningResponse.json()
   await page.route(/\/api\/federal-procurement(?:\?.*)?$/, async route => {
     const response = await route.fetch()
     const body = await response.json()
@@ -54,15 +58,15 @@ test('strategic route exposes only the governed partnership entry point and join
     await route.fulfill({ response, json: body })
   })
   await page.route('**/api/accounts/eaton', async route => {
-    const response = await route.fetch(); const body = await response.json()
+    const body = structuredClone(accountBody)
     body.federal_opportunities = [{ ...assessment, account_routes: [assessment.recommended_route] }]
-    await route.fulfill({ response, json: body })
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
   })
   await page.route('**/api/planning', async route => {
-    const response = await route.fetch(); const body = await response.json()
+    const body = structuredClone(planningBody)
     const designation = { account_id: 'eaton', designated: true, reason: 'Governed complementary capability review.', version: 1, updated_by: 'manager', updated_at: '2026-09-16T12:00:00Z' }
     body.strategic_partnerships = [designation]; body.partnership_records = [designation]
-    await route.fulfill({ response, json: body })
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
   })
   await openOpportunity(page)
   await expect(page.getByRole('button', { name: 'Open Strategic Partnership profile' })).toBeVisible()

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api } from '../api/client'
+import { api, resolveFederalAssessment } from '../api/client'
 import { OmniDrawer } from '../components/OmniDrawer'
 import { Disclosure } from '../components/UI'
 import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
+import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
 import { Today, type TodayFilters } from '../features/today/Today'
-import { workspaceHash, workspaceLocation, type Surface } from './navigation'
-import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalOpportunity, FederalRoute, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
+import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
+import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
@@ -39,20 +40,42 @@ const surfaceLabels: Record<Surface, string> = {
   settings: 'Settings',
   monitor: 'Monitor',
 }
+const portfolioSnapshotFromLocation = (location: WorkspaceLocation): PortfolioSnapshot | undefined => {
+  if (location.surface !== 'accounts' || location.accountId) return undefined
+  const filters = location.filters ?? {}; const sortKey = ['name', 'classification', 'industry', 'attractiveness', 'priority', 'evidence'].includes(location.sort ?? '') ? location.sort as PortfolioSnapshot['sortKey'] : 'name'
+  return { query: String(filters.query ?? ''), scope: filters.coverage === 'RICH' ? 'RICH' : 'ALL', industry: String(filters.industry ?? 'ALL'), entity: ['CUSTOMER', 'PROSPECT', 'UNAVAILABLE'].includes(String(filters.classification)) ? String(filters.classification) as PortfolioSnapshot['entity'] : 'ALL', top100: filters.top100 === 'true', partnershipScope: ['EXCLUDE', 'ONLY'].includes(String(filters.partnership)) ? String(filters.partnership) as NonNullable<PortfolioSnapshot['partnershipScope']> : 'ALL', shortlistOnly: filters.shortlist === 'true', sortKey, sortDirection: filters.sort_direction === 'descending' ? 'descending' : 'ascending', filtersOpen: false, page: Number(filters.page ?? 1) || 1 }
+}
+const values = (value: string | string[] | undefined) => value === undefined ? [] : Array.isArray(value) ? value : [value]
+const mapSnapshotFromLocation = (location: WorkspaceLocation): MapViewSnapshot | undefined => {
+  if (location.surface !== 'map') return undefined
+  const source = location.filters ?? {}; const radius = Number(source.radius)
+  const filters: MapFilters = {
+    coverage: source.coverage === 'RICH' ? 'RICH' : 'ALL', top100: source.top100 === 'true', industries: values(source.industries),
+    relationships: values(source.relationships) as MapAccountSegment[], layers: (values(source.layers).length ? values(source.layers) : DEFAULT_MAP_LAYERS) as MapLayer[], signalTiming: (values(source.signal_timing).length ? values(source.signal_timing) : ['CURRENT', 'UPCOMING']) as Array<'CURRENT' | 'UPCOMING'>,
+    strategicPartnership: ['EXCLUDE', 'ONLY'].includes(String(source.partnership)) ? String(source.partnership) as 'EXCLUDE' | 'ONLY' : 'ALL', shortlistOnly: source.shortlist === 'true', radiusMiles: [30, 50, 100].includes(radius) ? radius as 30 | 50 | 100 : undefined,
+    naicsCodes: values(source.naics), businessUnitIds: values(source.business_units), fulfillmentStates: values(source.fulfillment),
+  }
+  return { filters }
+}
+const todayFiltersFromLocation = (location: WorkspaceLocation): TodayFilters => ({ kind: ['PUBLIC_SIGNAL', 'COMMERCIAL_REVIEW'].includes(String(location.filters?.kind)) ? String(location.filters?.kind) as TodayFilters['kind'] : 'ALL', accountId: String(location.filters?.account ?? ''), businessUnit: String(location.filters?.business_unit ?? '') })
 export default function App() {
+  const initialLocation = decodeWorkspaceLocation(window.location.hash)
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'required'>(import.meta.env.DEV ? 'authenticated' : 'checking')
   const [commandCenter, setCommandCenter] = useState<CommandCenter>()
   const [todayState, setTodayState] = useState<'loading' | 'loaded' | 'unavailable'>('loading')
-  const [todayFilters, setTodayFilters] = useState<TodayFilters>({ kind: 'ALL', accountId: '', businessUnit: '' })
-  const [surface, setSurface] = useState<Surface>(() => workspaceLocation(window.location.hash).surface)
+  const [todayFilters, setTodayFilters] = useState<TodayFilters>(() => todayFiltersFromLocation(initialLocation.location))
+  const [location, setLocation] = useState<WorkspaceLocation>(initialLocation.location)
+  const locationRef = useRef(location)
+  const surface = location.surface
+  const [linkRecovery, setLinkRecovery] = useState(initialLocation.recovery ? 'This link could not be restored completely. A safe workspace view is shown instead.' : '')
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
-  const [portfolioSnapshot, setPortfolioSnapshot] = useState<PortfolioSnapshot>()
+  const [portfolioSnapshot, setPortfolioSnapshot] = useState<PortfolioSnapshot | undefined>(() => portfolioSnapshotFromLocation(initialLocation.location))
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [signals, setSignals] = useState<Signal[]>([])
   const [records, setRecords] = useState<MapRecord[]>([])
   const [pendingMapAccounts, setPendingMapAccounts] = useState<import('../types/api').PendingMapAccount[]>([])
-  const [mapViewSnapshot, setMapViewSnapshot] = useState<import('../features/map/mapModel').MapViewSnapshot>()
+  const [mapViewSnapshot, setMapViewSnapshot] = useState<MapViewSnapshot | undefined>(() => mapSnapshotFromLocation(initialLocation.location))
   const [publicLocations, setPublicLocations] = useState<PublicLocation[]>([])
   const [btxFacilities, setBtxFacilities] = useState<BtxMapFacility[]>([])
   const [mapSignals, setMapSignals] = useState<MapIntelligence[]>([])
@@ -78,6 +101,16 @@ export default function App() {
   const [selectedActionId, setSelectedActionId] = useState<string>()
   const [actionSourceAlertId, setActionSourceAlertId] = useState<string>()
   const [viewContext, setViewContext] = useState<OmniViewContext>({})
+  useEffect(() => { locationRef.current = location }, [location])
+  const commitLocation = useCallback((next: WorkspaceLocation, mode: NavigationMode = 'push') => {
+    if (sameWorkspaceLocation(locationRef.current, next)) return
+    const update = historyUpdate(window.location.hash, next, mode)
+    if (update.method === 'none' && update.hash === decodeWorkspaceLocation(window.location.hash).canonicalHash) return
+    if (update.method === 'push') window.history.pushState({ btxOmniNavigation: true }, '', update.hash)
+    else if (update.method === 'replace') window.history.replaceState({ btxOmniNavigation: true }, '', update.hash)
+    setLocation(next)
+    setLinkRecovery('')
+  }, [])
   const clearSelectedEvent = useCallback(() => setSelectedEventId(undefined), [])
   const clearMapSelection = useCallback(() => {
     setSelectedMapAccountId(undefined)
@@ -86,28 +119,56 @@ export default function App() {
   const clearSelectedAction = useCallback(() => { setSelectedActionId(undefined); setActionSourceAlertId(undefined) }, [])
   const clearViewContext = useCallback(() => setViewContext({}), [])
   const selectMapFacility = useCallback((facilityId?: string, accountId?: string) => { setSelectedMapFacilityId(facilityId); setSelectedMapAccountId(accountId) }, [])
-  const select = useCallback(async (id: string, recordHistory = true, assessment?: OmniAssessmentSelection, federal?: OmniFederalSelection) => {
+  const updateMapSnapshot = useCallback((snapshot: MapViewSnapshot) => {
+    setMapViewSnapshot(snapshot)
+    commitLocation({ ...locationRef.current, filters: { ...(snapshot.filters.coverage !== 'ALL' ? { coverage: snapshot.filters.coverage } : {}), ...(snapshot.filters.top100 ? { top100: 'true' } : {}), ...(snapshot.filters.industries.length ? { industries: snapshot.filters.industries } : {}), ...(snapshot.filters.relationships.length ? { relationships: snapshot.filters.relationships } : {}), ...(snapshot.filters.layers.length ? { layers: snapshot.filters.layers } : {}), ...(snapshot.filters.signalTiming.length ? { signal_timing: snapshot.filters.signalTiming } : {}), ...(snapshot.filters.naicsCodes?.length ? { naics: snapshot.filters.naicsCodes } : {}), ...(snapshot.filters.businessUnitIds?.length ? { business_units: snapshot.filters.businessUnitIds } : {}), ...(snapshot.filters.fulfillmentStates?.length ? { fulfillment: snapshot.filters.fulfillmentStates } : {}), ...(snapshot.filters.radiusMiles ? { radius: String(snapshot.filters.radiusMiles) } : {}), ...(snapshot.filters.strategicPartnership && snapshot.filters.strategicPartnership !== 'ALL' ? { partnership: snapshot.filters.strategicPartnership } : {}), ...(snapshot.filters.shortlistOnly ? { shortlist: 'true' } : {}) }, accountId: snapshot.selected?.accountId, facilityId: snapshot.selected?.facilityId, eventId: snapshot.selected?.eventId, scope: snapshot.selected?.facilityId ? 'FACILITY' : snapshot.selected?.accountId ? 'ACCOUNT' : undefined }, 'replace')
+  }, [commitLocation])
+  const updateMapAccount = useCallback((id?: string) => {
+    setSelectedMapAccountId(id); setSelectedMapFacilityId(undefined)
+    commitLocation({ ...locationRef.current, accountId: id, facilityId: undefined, scope: id ? 'ACCOUNT' : undefined }, 'replace')
+  }, [commitLocation])
+  const updateMapFacility = useCallback((facilityId?: string, accountId?: string) => {
+    selectMapFacility(facilityId, accountId)
+    commitLocation({ ...locationRef.current, accountId, facilityId, scope: facilityId ? 'FACILITY' : accountId ? 'ACCOUNT' : undefined }, 'replace')
+  }, [commitLocation, selectMapFacility])
+  const updateMapEvent = useCallback((eventId?: string) => {
+    setSelectedEventId(eventId); commitLocation({ ...locationRef.current, eventId }, 'replace')
+  }, [commitLocation])
+  const select = useCallback(async (id: string, recordHistory = true, assessment?: OmniAssessmentSelection, federal?: OmniFederalSelection, subview?: WorkspaceLocation['subview'], suppliedFederalAssessment?: FederalAssessment) => {
     accountRequest.current?.abort()
     const controller = new AbortController(); accountRequest.current = controller
     setAccountOpening(id)
     try {
       setError('')
       const result = await api.account(id, controller.signal)
+      const federalAssessment = suppliedFederalAssessment ?? (federal ? await resolveFederalAssessment(federal, controller.signal).catch(() => undefined) : undefined)
       if (controller.signal.aborted) return
       if (assessment) setSelectedEventId(assessment.event_id)
       else clearSelectedEvent()
       clearMapSelection()
       clearSelectedAction()
-      if (federal) setViewContext({ selected_federal_opportunity: federal })
+      const exactFederal = !federal || (federalAssessment?.assessment_id === federal.assessment_id && federalAssessment.assessment_version === federal.assessment_version && federalAssessment.opportunity_id === federal.opportunity_id)
+      if (federal && exactFederal) setViewContext({ selected_federal_opportunity: federal })
       else if (assessment) setViewContext({ selected_event_id: assessment.event_id, selected_assessment: assessment })
       else clearViewContext()
-      setDetail(result)
-      setSurface('accounts')
-      if (recordHistory && window.location.hash !== workspaceHash('accounts', id)) window.history.pushState({ btxOmniNavigation: true }, '', workspaceHash('accounts', id))
+      if (federal && !exactFederal) setLinkRecovery('The selected federal assessment version is no longer available in your authorized scope. The organization remains open without substituting another assessment.')
+      setDetail(federalAssessment && exactFederal ? { ...result, federal_opportunities: [federalAssessment, ...(result.federal_opportunities ?? []).filter(item => item.assessment_id !== federalAssessment.assessment_id)] } : result)
+      const origin = locationRef.current
+      const next: WorkspaceLocation = {
+        surface: 'accounts', accountId: id, scope: origin.surface === 'map' && origin.facilityId ? 'FACILITY' : 'ACCOUNT',
+        facilityId: origin.surface === 'map' ? origin.facilityId : undefined,
+        assessment: assessment ? { assessmentId: assessment.assessment_id, assessmentVersion: assessment.assessment_version, eventId: assessment.event_id, accountId: assessment.account_id } : undefined,
+        eventId: assessment?.event_id,
+        federal: federal && exactFederal ? { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } : undefined,
+        partnershipId: federal?.partnership_id ?? undefined,
+        subview,
+        returnTo: recordHistory ? { ...origin, returnTo: undefined } : origin.returnTo,
+      }
+      commitLocation(next, recordHistory ? 'push' : 'none')
     } catch (err) {
       if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Customer context unavailable.')
     } finally { if (accountRequest.current === controller) setAccountOpening(undefined) }
-  }, [clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext])
+  }, [clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
   const navigate = useCallback((id: Surface, recordHistory = true) => {
     accountRequest.current?.abort(); setAccountOpening(undefined)
     setWorkspaceMenuOpen(false)
@@ -118,9 +179,8 @@ export default function App() {
       clearViewContext()
       setDetail(undefined)
     }
-    setSurface(id)
-    if (recordHistory && window.location.hash !== workspaceHash(id)) window.history.pushState({ btxOmniNavigation: true }, '', workspaceHash(id))
-  }, [surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext])
+    commitLocation({ surface: id }, recordHistory ? 'push' : 'none')
+  }, [surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
   const createIntelligenceAction = useCallback(async (brief: import('../types/api').MonitorSignalBrief) => {
     const accountId = brief.canonical_account_ids[0]
     if (!accountId || !brief.assessment_id || !brief.recommended_action) {
@@ -141,11 +201,11 @@ export default function App() {
       })
       setItems(current => current.some(item => item.id === created.id) ? current : [created, ...current])
       setActionWarning('Action proposal created from the current Intelligence assessment. Review ownership and due date before execution.')
-      navigate('actions')
+      commitLocation({ surface: 'actions', actionId: created.id, returnTo: { ...locationRef.current, returnTo: undefined } }, 'push')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The action proposal could not be created.')
     }
-  }, [navigate])
+  }, [commitLocation])
   const createFederalAction = useCallback(async (opportunity: FederalOpportunity, route: FederalRoute) => {
     const assessment = opportunity.assessment
     if (!assessment || !route.account_id) {
@@ -172,28 +232,52 @@ export default function App() {
       })
       setItems(current => current.some(item => item.id === created.id) ? current : [created, ...current])
       setActionWarning('Federal opportunity validation proposal restored from its canonical assessment. No external write was performed.')
-      navigate('actions')
       setSelectedActionId(created.id)
+      commitLocation({ surface: 'actions', actionId: created.id, federal: { opportunityId: assessment.opportunity_id, assessmentId: assessment.assessment_id, assessmentVersion: assessment.assessment_version, routeType: route.route_type, accountId: route.account_id ?? undefined, partnershipId: route.route_type === 'STRATEGIC_PARTNER' ? route.account_id ?? undefined : undefined }, returnTo: { ...locationRef.current, returnTo: undefined } }, 'push')
     } catch (err) { setError(err instanceof Error ? err.message : 'The federal Action proposal could not be created.') }
-  }, [navigate])
+  }, [commitLocation])
   useEffect(() => {
     if (authState !== 'authenticated') return
-    const restore = () => { const location = workspaceLocation(window.location.hash); if (location.accountId) void select(location.accountId, false); else navigate(location.surface, false) }
+    const restore = () => {
+      const decoded = decodeWorkspaceLocation(window.location.hash)
+      if (decoded.recovery) setLinkRecovery('This link is malformed or no longer supported. A safe workspace view is shown instead.')
+      if (window.location.hash !== decoded.canonicalHash) window.history.replaceState({ btxOmniNavigation: true }, '', decoded.canonicalHash)
+      if (!decoded.location.accountId) { setDetail(undefined); clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext() }
+      setLocation(decoded.location)
+    }
+    restore()
     window.addEventListener('hashchange', restore)
-    return () => window.removeEventListener('hashchange', restore)
-  }, [authState, select, navigate])
+    window.addEventListener('popstate', restore)
+    return () => { window.removeEventListener('hashchange', restore); window.removeEventListener('popstate', restore) }
+  }, [authState, clearMapSelection, clearSelectedAction, clearSelectedEvent, clearViewContext])
   useEffect(() => {
     if (authState !== 'authenticated') return
-    const location = workspaceLocation(window.location.hash)
     if (!location.accountId) return
     const controller = new AbortController(); accountRequest.current = controller
-    void api.account(location.accountId, controller.signal).then(result => {
-      if (!controller.signal.aborted) { setDetail(result); setSurface('accounts') }
-    }).catch(err => {
-      if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Customer context unavailable.')
+    const federalSelection: OmniFederalSelection | undefined = location.federal ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined
+    const federalRequest = federalSelection ? resolveFederalAssessment(federalSelection, controller.signal).catch(() => undefined) : Promise.resolve(undefined)
+    void Promise.all([api.account(location.accountId, controller.signal), federalRequest]).then(([result, federalAssessment]) => {
+      if (controller.signal.aborted) return
+      const assessment = location.assessment
+      const exactAssessment = !assessment || result.customer_360.intelligence.some(item => item.business_briefing?.assessment_id === assessment.assessmentId && item.business_briefing?.assessment_version === assessment.assessmentVersion)
+      const federal = location.federal
+      const exactFederal = !federal || (federalAssessment?.assessment_id === federal.assessmentId && federalAssessment.assessment_version === federal.assessmentVersion && federalAssessment.opportunity_id === federal.opportunityId)
+      if (!exactAssessment || !exactFederal) {
+        setLinkRecovery('The selected investigation version is no longer available in your authorized scope. The organization remains open without substituting a newer assessment.')
+      }
+      setDetail(federalAssessment && exactFederal ? { ...result, federal_opportunities: [federalAssessment, ...(result.federal_opportunities ?? []).filter(item => item.assessment_id !== federalAssessment.assessment_id)] } : result)
+      setSelectedEventId(exactAssessment ? assessment?.eventId : undefined)
+      setSelectedMapFacilityId(location.facilityId)
+      setViewContext({
+        selected_event_id: exactAssessment ? assessment?.eventId : undefined,
+        selected_assessment: exactAssessment && assessment ? { assessment_id: assessment.assessmentId, assessment_version: assessment.assessmentVersion, event_id: assessment.eventId, account_id: assessment.accountId } : undefined,
+        selected_federal_opportunity: exactFederal && federal ? { opportunity_id: federal.opportunityId, assessment_id: federal.assessmentId, assessment_version: federal.assessmentVersion, route_type: federal.routeType, account_id: federal.accountId, partnership_id: federal.partnershipId } : undefined,
+      })
+    }).catch(() => {
+      if (!controller.signal.aborted) setLinkRecovery('This organization is unavailable or you do not have access. No details from the link were disclosed.')
     })
     return () => controller.abort()
-  }, [authState])
+  }, [authState, location.accountId, location.assessment, location.facilityId, location.federal])
   useEffect(() => { if (import.meta.env.DEV) return; void api.session().then(() => setAuthState('authenticated')).catch(() => setAuthState('required')) }, [])
   useEffect(() => {
     if (authState !== 'authenticated') return
@@ -216,37 +300,38 @@ export default function App() {
   useEffect(() => () => accountRequest.current?.abort(), [])
   if (authState === 'checking') return <main className="app-shell app-shell-loading"><div className="loading-stage"><span className="eyebrow">Secure workspace</span><h1>Checking hosted session</h1><p>Validating the server-held POC session without exposing role credentials.</p></div></main>
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
+  const locationAssessment: OmniAssessmentSelection | undefined = location.assessment ? { assessment_id: location.assessment.assessmentId, assessment_version: location.assessment.assessmentVersion, event_id: location.assessment.eventId, account_id: location.assessment.accountId } : undefined
+  const locationFederal: OmniFederalSelection | undefined = location.federal ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined
   const content =
     surface === 'accounts' ? (
-      <Accounts accounts={accounts} detail={detail} initialAssessment={viewContext.selected_assessment} initialFederal={viewContext.selected_federal_opportunity} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
+      <Accounts accounts={accounts} detail={detail} initialAssessment={locationAssessment} initialFederal={locationFederal} initialSnapshot={portfolioSnapshot} onSnapshot={(snapshot) => { setPortfolioSnapshot(snapshot); if (!location.accountId) commitLocation({ surface: 'accounts', filters: { ...(snapshot.query ? { query: snapshot.query } : {}), ...(snapshot.scope === 'RICH' ? { coverage: snapshot.scope } : {}), ...(snapshot.industry !== 'ALL' ? { industry: snapshot.industry } : {}), ...(snapshot.entity !== 'ALL' ? { classification: snapshot.entity } : {}), ...(snapshot.top100 ? { top100: 'true' } : {}), ...(snapshot.partnershipScope && snapshot.partnershipScope !== 'ALL' ? { partnership: snapshot.partnershipScope } : {}), ...(snapshot.shortlistOnly ? { shortlist: 'true' } : {}), ...(snapshot.page && snapshot.page > 1 ? { page: String(snapshot.page) } : {}), ...(snapshot.sortDirection === 'descending' ? { sort_direction: snapshot.sortDirection } : {}) }, sort: snapshot.sortKey }, 'replace') }} onSelect={(id) => void select(id)} onBack={() => location.returnTo ? commitLocation(location.returnTo, 'push') : navigate('accounts')} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal) => void select(id, true, undefined, federal)} onFederalPartnership={(id, federal) => void select(id, true, undefined, federal)} onFederalRelationship={(id, federal) => void select(id, true, undefined, federal)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'overview', federalAssessment)} onFederalPartnership={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'partnership', federalAssessment)} onFederalRelationship={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'relationships', federalAssessment)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); commitLocation({ ...location, federal: { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } }, 'replace'); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'map' ? (
       <Map
         records={records}
         pendingAccounts={pendingMapAccounts}
         initialSnapshot={mapViewSnapshot}
-        onSnapshot={setMapViewSnapshot}
+        initialAccountId={location.accountId}
+        initialFacilityId={location.facilityId}
+        onSnapshot={updateMapSnapshot}
         publicLocations={publicLocations}
         btxFacilities={btxFacilities}
         layers={layers}
         signals={mapSignals}
         onAccount={(id, assessment) => void select(id, true, assessment)}
         onRelationships={(id) => void select(id)}
-        onMapAccountSelect={(id) => {
-          setSelectedMapAccountId(id)
-          setSelectedMapFacilityId(undefined)
-        }}
-        onMapFacilitySelect={selectMapFacility}
-        onMapEventSelect={setSelectedEventId}
+        onMapAccountSelect={updateMapAccount}
+        onMapFacilitySelect={updateMapFacility}
+        onMapEventSelect={updateMapEvent}
         onOmniContext={setViewContext}
       />
     ) : surface === 'actions' ? (
-      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={selectedActionId} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} />
+      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={location.actionId ?? selectedActionId} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} location={location} onLocationChange={commitLocation} />
     ) : surface === 'communications' ? (
       <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
-      <Settings accounts={accounts} settings={workspaceSettings} state={settingsState} onSettings={setWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { setWorkspaceSettings(value); setSettingsState('loaded'); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => { Object.keys(sessionStorage).filter(key => key.startsWith('btx-private-')).forEach(key => sessionStorage.removeItem(key)); window.location.reload() })} />
+      <Settings accounts={accounts} location={location} settings={workspaceSettings} state={settingsState} onSettings={setWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { setWorkspaceSettings(value); setSettingsState('loaded'); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => { Object.keys(sessionStorage).filter(key => key.startsWith('btx-private-')).forEach(key => sessionStorage.removeItem(key)); window.location.reload() })} />
     ) : surface === 'monitor' ? (
       <Monitor
         health={monitor}
@@ -282,6 +367,8 @@ export default function App() {
           setError('')
         }}
         onOmniContext={setViewContext}
+        location={location}
+        onLocationChange={commitLocation}
       />
     )
   const omniSurface: OmniSurface =
@@ -310,7 +397,11 @@ export default function App() {
     selected_assessment: viewContext.selected_assessment,
     selected_federal_opportunity: viewContext.selected_federal_opportunity,
     selected_program_id: surface === 'today' ? viewContext.selected_program_id : undefined,
-    selected_facility_id: surface === 'map' ? selectedMapFacilityId : undefined,
+    // A facility-supported map investigation remains scoped to that facility
+    // after the user opens Organization 360.  The URL never promotes an
+    // account-wide assessment to facility evidence; it only preserves the
+    // already selected canonical site for Omni's supporting context.
+    selected_facility_id: surface === 'map' ? selectedMapFacilityId : surface === 'accounts' ? location.facilityId : undefined,
     selected_action_id: surface === 'actions' ? selectedActionId : undefined,
     relationship_selection: omniSurface === 'ACCOUNT_DETAIL' ? viewContext.relationship_selection : undefined,
     active_filters: omniSurface === 'ACCOUNT_DETAIL' ? undefined : viewContext.active_filters,
@@ -358,6 +449,7 @@ export default function App() {
           </div>
         </header>
         <aside className="demonstration-banner" aria-label="Demonstration environment">Simulated data environment</aside>
+        {linkRecovery && <div className="api-notice" role="alert">{linkRecovery} <button type="button" onClick={() => navigate(surface)}>Return to {surfaceLabels[surface]}</button></div>}
         {error && <div className="api-notice">{error}</div>}
         {accountOpening && <div className="api-notice" role="status">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'account'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></div>}
         {surface !== 'settings' && resourceState[surface] === 'error' && <div className="api-notice" role="alert">{surfaceLabels[surface]} could not refresh. Previously loaded content is retained, if available. <button type="button" onClick={() => setRefreshVersion(version => version + 1)}>Retry workspace reads</button></div>}

@@ -5,18 +5,15 @@ import { CanonicalRecord } from '../../components/CanonicalRecord'
 import type { Account, OmniContext } from '../../types/api'
 import type { MarketDetail, MarketOverview, MarketPoint, MarketTransformation } from '../../types/markets'
 import './markets.css'
+import type { WorkspaceLocation } from '../../app/navigation'
 
 const kinds: MarketTransformation[] = ['LEVEL', 'MOM_PERCENT', 'YOY_PERCENT']
 const kindLabel = { LEVEL: 'Production index · 2017=100', MOM_PERCENT: 'Month-over-month change · %', YOY_PERCENT: 'Year-over-year change · %' }
-function location() {
-  const query = new URLSearchParams(window.location.hash.split('?')[1] ?? '')
-  const page = Number(query.get('page') ?? '0')
-  return { market: query.get('market') ?? 'Semiconductor', kind: kinds.includes(query.get('metric') as MarketTransformation) ? query.get('metric') as MarketTransformation : 'YOY_PERCENT' as MarketTransformation, average: query.get('average') === '3', page: Number.isInteger(page) && page >= 0 && page <= 100 ? page : 0 }
-}
+function selectionFromLocation(location: WorkspaceLocation) { const page = Number(location.filters?.page ?? '0'); const metric = String(location.filters?.metric ?? ''); return { market: String(location.filters?.market ?? 'Semiconductor'), kind: kinds.includes(metric as MarketTransformation) ? metric as MarketTransformation : 'YOY_PERCENT' as MarketTransformation, average: location.filters?.average === '3', page: Number.isInteger(page) && page >= 0 && page <= 100 ? page : 0 } }
 const show = (point?: MarketPoint) => point?.value == null ? '—' : Number(point.value).toLocaleString('en-US', { maximumFractionDigits: 2 })
 
-export function MarketIntelligence({ accounts, onAccount, onOmniContext }: { accounts: Account[]; onAccount: (id: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
-  const [selection, setSelection] = useState(location)
+export function MarketIntelligence({ accounts, onAccount, onOmniContext, location, onLocationChange }: { accounts: Account[]; onAccount: (id: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void; location: WorkspaceLocation; onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void }) {
+  const selection = selectionFromLocation(location)
   const [overview, setOverview] = useState<MarketOverview>()
   const [detail, setDetail] = useState<MarketDetail>()
   const [errorKey, setErrorKey] = useState('')
@@ -26,11 +23,8 @@ export function MarketIntelligence({ accounts, onAccount, onOmniContext }: { acc
   const requestKey = `${selection.kind}:${selection.average}:${refresh}`
   const pending = requestKey !== settledKey
   const error = errorKey === requestKey
-  useEffect(() => { const changed = () => setSelection(location()); window.addEventListener('hashchange', changed); return () => window.removeEventListener('hashchange', changed) }, [])
   const choose = (next: typeof selection) => {
-    setSelection(next)
-    const query = new URLSearchParams({ market: next.market, metric: next.kind, average: next.average ? '3' : '0', page: String(next.page) })
-    window.location.hash = `/intelligence/markets?${query}`
+    onLocationChange({ ...location, subview: 'markets', filters: { market: next.market, metric: next.kind, average: next.average ? '3' : '0', page: String(next.page) } }, 'replace')
   }
   useEffect(() => {
     const controller = new AbortController()

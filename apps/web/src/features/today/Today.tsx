@@ -4,6 +4,7 @@ import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { curatedSignalBrief } from '../../components/signalBriefModel'
 import { Button, Disclosure, Empty, Panel, State } from '../../components/UI'
 import { CommercialRecoveryBriefing } from './CommercialRecoveryBriefing'
+import type { WorkspaceLocation } from '../../app/navigation'
 import './today.css'
 
 export interface TodayFilters { kind: 'ALL' | 'PUBLIC_SIGNAL' | 'COMMERCIAL_REVIEW'; accountId: string; businessUnit: string }
@@ -14,26 +15,15 @@ const matchesScope = (item: CommandPriorityItem, filters: TodayFilters) =>
   (!filters.businessUnit || item.business_unit_ids?.includes(filters.businessUnit))
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' }) : undefined
 
-export function Today({ commandCenter, state, alerts, signals, accounts, filters, onFilters, onAccount, onAction, onIntelligence, onMonitor, onEventSelect, onOmniContext }: { commandCenter?: CommandCenter; state: 'loading' | 'loaded' | 'unavailable'; alerts: Alert[]; signals: Signal[]; accounts: Account[]; filters: TodayFilters; onFilters: (filters: TodayFilters) => void; onAccount: (id: string, assessment?: OmniAssessmentSelection) => void; onAction: (alert: Alert) => void; onIntelligence: () => void; onMonitor: () => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_program_id' | 'active_filters' | 'visible_record_ids'>) => void }) {
+export function Today({ commandCenter, state, alerts, signals, accounts, filters, onFilters, onAccount, onAction, onIntelligence, onMonitor, onEventSelect, onOmniContext, location, onLocationChange }: { commandCenter?: CommandCenter; state: 'loading' | 'loaded' | 'unavailable'; alerts: Alert[]; signals: Signal[]; accounts: Account[]; filters: TodayFilters; onFilters: (filters: TodayFilters) => void; onAccount: (id: string, assessment?: OmniAssessmentSelection) => void; onAction: (alert: Alert) => void; onIntelligence: () => void; onMonitor: () => void; onEventSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_program_id' | 'active_filters' | 'visible_record_ids'>) => void; location: WorkspaceLocation; onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void }) {
   const [market, setMarket] = useState('')
   const [watchOpen, setWatchOpen] = useState(false)
-  const [selectedEventId, setSelectedEventId] = useState<string>()
-  const [selectedAssessment, setSelectedAssessment] = useState<OmniAssessmentSelection>()
-  const [selectedBriefContextId, setSelectedBriefContextId] = useState<string>()
-  const [selectedEventAccountId, setSelectedEventAccountId] = useState<string>()
+  const [selectedEventId, setSelectedEventId] = useState<string | undefined>(location.eventId)
+  const [selectedAssessment, setSelectedAssessment] = useState<OmniAssessmentSelection | undefined>(() => location.assessment ? { assessment_id: location.assessment.assessmentId, assessment_version: location.assessment.assessmentVersion, event_id: location.assessment.eventId, account_id: location.assessment.accountId } : undefined)
+  const [selectedBriefContextId, setSelectedBriefContextId] = useState<string | undefined>(location.assessment?.assessmentId)
+  const [selectedEventAccountId, setSelectedEventAccountId] = useState<string | undefined>(location.assessment?.accountId)
   const [selectedProgramId, setSelectedProgramId] = useState<string>()
-  const [recoveryId, setRecoveryId] = useState(() => {
-    const match = window.location.hash.match(/^#\/today\/brief\/([^/]+)$/)
-    return match ? decodeURIComponent(match[1]) : ''
-  })
-  useEffect(() => {
-    const changed = () => {
-      const match = window.location.hash.match(/^#\/today\/brief\/([^/]+)$/)
-      setRecoveryId(match ? decodeURIComponent(match[1]) : '')
-    }
-    window.addEventListener('hashchange', changed)
-    return () => window.removeEventListener('hashchange', changed)
-  }, [])
+  const recoveryId = location.subview === 'recovery' ? location.recordId ?? '' : ''
   const accountById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts])
   const current = useMemo(() => commandCenter?.current_signal_briefs ?? [], [commandCenter])
   const radar = useMemo(() => commandCenter?.upcoming_radar ?? [], [commandCenter])
@@ -56,8 +46,8 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   useEffect(() => { onOmniContext({ selected_event_id: selectedEventId, selected_assessment: selectedAssessment, selected_program_id: selectedProgramId, active_filters: { market, priority_kind: filters.kind, account_id: selectedEventAccountId ?? filters.accountId, business_unit_id: filters.businessUnit }, visible_record_ids: visibleIds }) }, [market, filters, onOmniContext, selectedAssessment, selectedEventAccountId, selectedEventId, selectedProgramId, visibleIds])
   useEffect(() => () => { onEventSelect(undefined); onOmniContext({}) }, [onEventSelect, onOmniContext])
   const name = (id: string) => accountById.get(id)?.name ?? accountById.get(id)?.legal_name ?? 'Unresolved Customer'
-  const useBrief = (brief: MonitorSignalBrief) => { const contextId = brief.context_id ?? brief.id; const next = selectedBriefContextId === contextId ? undefined : brief.id; const accountId = brief.canonical_account_ids[0]; setSelectedBriefContextId(next ? contextId : undefined); setSelectedEventId(next); setSelectedAssessment(next && brief.assessment_id && brief.assessment_version && accountId ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined); setSelectedEventAccountId(next ? accountId : undefined); setSelectedProgramId(next ? brief.canonical_program_id : undefined); onEventSelect(next) }
-  const changeFilters = (next: TodayFilters) => { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedAssessment(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined); onFilters(next) }
+  const useBrief = (brief: MonitorSignalBrief) => { const contextId = brief.context_id ?? brief.id; const next = selectedBriefContextId === contextId ? undefined : brief.id; const accountId = brief.canonical_account_ids[0]; const assessment = next && brief.assessment_id && brief.assessment_version && accountId ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined; setSelectedBriefContextId(next ? contextId : undefined); setSelectedEventId(next); setSelectedAssessment(assessment); setSelectedEventAccountId(next ? accountId : undefined); setSelectedProgramId(next ? brief.canonical_program_id : undefined); onEventSelect(next); onLocationChange({ ...location, eventId: next, assessment: assessment ? { assessmentId: assessment.assessment_id, assessmentVersion: assessment.assessment_version, eventId: assessment.event_id, accountId: assessment.account_id } : undefined, anchor: next ? `priority-${brief.id}` : undefined }, 'replace') }
+  const changeFilters = (next: TodayFilters) => { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedAssessment(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined); onFilters(next); onLocationChange({ surface: 'today', filters: { ...(next.kind !== 'ALL' ? { kind: next.kind } : {}), ...(next.accountId ? { account: next.accountId } : {}), ...(next.businessUnit ? { business_unit: next.businessUnit } : {}) } }, 'replace') }
   const inspectPriority = (id: string) => {
     const target = document.getElementById(`priority-${id}`)
     target?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
@@ -72,7 +62,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
     setMarket(nextMarket)
   }
   const recoveryItem = allPriority.find(item => item.id === recoveryId && item.kind === 'COMMERCIAL_REVIEW')
-  if (recoveryItem) return <div className="surface today-surface"><CommercialRecoveryBriefing key={recoveryItem.id} item={recoveryItem} alert={alertById.get(recoveryItem.id)} onBack={() => { setRecoveryId(''); window.location.hash = '/today' }} onAccount={onAccount} onAction={onAction} /></div>
+  if (recoveryItem) return <div className="surface today-surface"><CommercialRecoveryBriefing key={recoveryItem.id} item={recoveryItem} alert={alertById.get(recoveryItem.id)} onBack={() => onLocationChange({ ...location, subview: undefined, recordId: undefined }, 'push')} onAccount={onAccount} onAction={onAction} /></div>
   return <div className="surface today-surface">
     <header className="page-title today-title"><h1>Today</h1><p>Your next commercial decisions</p></header>
     {state === 'loading' && <p role="status">Refreshing your briefing…</p>}
@@ -102,7 +92,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
             <div className="today-item-heading"><button className="today-customer-link" disabled={!item.account_id} onClick={() => item.account_id && onAccount(item.account_id)}>{item.account_id ? name(item.account_id) : 'Prospect research'}</button><small>{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence · revalidate' : 'Public intelligence') : 'Internal intelligence'}</small>{item.observed_at && <time dateTime={item.observed_at}>{dateLabel(item.observed_at)}</time>}</div>
             <div className="today-priority-meaning"><h3>{item.signal_brief?.headline ?? item.reason}</h3><p><strong>Why:</strong> {item.reason}</p><p><strong>Next:</strong> {item.recommended_action ?? 'Review evidence before choosing the next action.'}</p>
               <Disclosure title="Evidence and governed action">
-                {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedBriefContextId === (item.signal_brief.context_id ?? item.signal_brief.id)} /> : <><p className="today-evidence-note">BTX commercial record · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button variant="primary" onClick={() => { setRecoveryId(item.id); window.location.hash = `/today/brief/${encodeURIComponent(item.id)}` }}>Open recovery briefing</Button>{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="ghost" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
+                {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedBriefContextId === (item.signal_brief.context_id ?? item.signal_brief.id)} /> : <><p className="today-evidence-note">BTX commercial record · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button variant="primary" onClick={() => onLocationChange({ ...location, subview: 'recovery', recordId: item.id, anchor: `priority-${item.id}` }, 'push')}>Open recovery briefing</Button>{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="ghost" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
               </Disclosure>
             </div>
             {item.severity && <State value={item.severity} />}

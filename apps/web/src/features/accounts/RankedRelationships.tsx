@@ -11,8 +11,8 @@ const modes: Array<[RelationshipMode, string]> = [['cross_account_experience', '
 const label = (value: string) => presentationLabel(value, 'relationship')
 type Point = { x: number; y: number }
 
-export function RankedRelationships({ accountId, onOmniContext }: { accountId: string; onOmniContext: (context: Pick<OmniContext, 'relationship_selection'>) => void }) {
-  const [mode, setMode] = useState<RelationshipMode>('cross_account_experience')
+export function RankedRelationships({ accountId, initialMode, initialPathId, onSelection, onOmniContext }: { accountId: string; initialMode?: string; initialPathId?: string; onSelection?: (pathId: string | undefined, mode: RelationshipMode) => void; onOmniContext: (context: Pick<OmniContext, 'relationship_selection'>) => void }) {
+  const [mode, setMode] = useState<RelationshipMode>(() => modes.some(([value]) => value === initialMode) ? initialMode as RelationshipMode : 'cross_account_experience')
   const [depth, setDepth] = useState(4)
   const [component, setComponent] = useState('')
   const [target, setTarget] = useState('')
@@ -21,7 +21,7 @@ export function RankedRelationships({ accountId, onOmniContext }: { accountId: s
   const [pending, setPending] = useState(true)
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
-  const [selectedId, setSelectedId] = useState<string>()
+  const [selectedId, setSelectedId] = useState<string | undefined>(initialPathId)
   const [selectedEdge, setSelectedEdge] = useState<string>()
   const [evidenceId, setEvidenceId] = useState('')
   const [selectedNode, setSelectedNode] = useState<string>()
@@ -73,8 +73,8 @@ export function RankedRelationships({ accountId, onOmniContext }: { accountId: s
   const edge = result?.graph.edges.find(e => e.id === selectedEdge)
   const node = result?.graph.nodes.find(n => n.id === selectedNode)
   const relatedIntelligence = result?.related_intelligence?.find(item => item.assessment.priority_eligible) ?? result?.related_intelligence?.[0]
-  const changing = (nextMode: RelationshipMode, nextDepth: number) => { setPending(true); setError(''); setSelectedId(undefined); setSelectedEdge(undefined); setSelectedNode(undefined); setExpansions([]); setContextPage(0); setRevisionGuard(undefined); setMode(nextMode); setDepth(nextDepth) }
-  const selectRoute = (id: string) => { if (id === selectedId && contextPage === 0) return; setPending(true); setSelectedId(id); setSelectedEdge(undefined); setContextPage(0); setRevisionGuard(result?.eligible_graph_revision) }
+  const changing = (nextMode: RelationshipMode, nextDepth: number) => { setPending(true); setError(''); setSelectedId(undefined); setSelectedEdge(undefined); setSelectedNode(undefined); setExpansions([]); setContextPage(0); setRevisionGuard(undefined); setMode(nextMode); setDepth(nextDepth); onSelection?.(undefined, nextMode) }
+  const selectRoute = (id: string) => { if (id === selectedId && contextPage === 0) return; setPending(true); setSelectedId(id); setSelectedEdge(undefined); setContextPage(0); setRevisionGuard(result?.eligible_graph_revision); onSelection?.(id, mode) }
   const pageContext = (page: number) => { setPending(true); setContextPage(page); setSelectedId(selected?.path_id); setRevisionGuard(result?.eligible_graph_revision) }
   const toggleExpansion = (id: string) => { setPending(true); setExpansions(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]); setContextPage(0); setSelectedId(selected?.path_id); setRevisionGuard(result?.eligible_graph_revision); setExpanded(true) }
   const focusNode = (id: string) => { if (selectedNode && id !== selectedNode) setFocusHistory(history => [...history.slice(-19), selectedNode]); setSelectedNode(id) }

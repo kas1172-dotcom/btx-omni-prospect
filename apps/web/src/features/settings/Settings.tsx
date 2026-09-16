@@ -6,23 +6,22 @@ import './settings.css'
 import { OmniMemory } from './OmniMemory'
 import { ReleaseIdentity } from './ReleaseIdentity'
 import { AiUsage } from './AiUsage'
+import type { WorkspaceLocation } from '../../app/navigation'
 
 const names: Record<string, string> = { google_maps: 'Google Maps', gemini: 'Gemini', hubspot: 'HubSpot / CRM', communications: 'Communication delivery', prism: 'Commercial data boundary', sam_gov: 'SAM.gov', usaspending: 'USAspending' }
 const humanize = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/^./, char => char.toUpperCase())
-export function Settings({ accounts, ...props }: Parameters<typeof SettingsContent>[0] & { accounts: Account[] }) {
+export function Settings({ accounts, location, ...props }: Parameters<typeof SettingsContent>[0] & { accounts: Account[]; location: WorkspaceLocation }) {
   useEffect(() => {
     if (props.state !== 'loaded') return
     const restoreSection = () => {
-      const id = window.location.hash.match(/^#\/settings\/(personal|access|integrations)$/)?.[1]
+      const id = location.subview
       if (!id) return
       const anchor = document.getElementById(id)
       anchor?.closest('.settings-section')?.scrollIntoView({ block: 'start' })
       anchor?.focus({ preventScroll: true })
     }
     restoreSection()
-    window.addEventListener('hashchange', restoreSection)
-    return () => window.removeEventListener('hashchange', restoreSection)
-  }, [props.state])
+  }, [location.subview, props.state])
   return <><SettingsContent {...props} />{props.state === 'loaded' && props.settings && <><section className="settings-release"><ReleaseIdentity backend={props.settings.release_diagnostics?.build} /><AiUsage key={props.settings.principal.user_id} /></section><OmniMemory key={props.settings.principal.user_id} principalId={props.settings.principal.user_id} accounts={accounts} /></>}</>
 }
 function SettingsContent({ settings, state, onSettings, onRetry, onSignOut }: { settings?: WorkspaceSettings; state: 'loading' | 'loaded' | 'error'; onSettings: (settings: WorkspaceSettings) => void; onRetry: () => void; onSignOut: () => void }) {
