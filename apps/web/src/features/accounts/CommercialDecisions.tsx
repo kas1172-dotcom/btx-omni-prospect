@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
 import type { CommercialDecision, FollowupPreview } from '../../types/decisions'
 import { CommercialEvidence } from './CommercialEvidence'
+import { actorDisplayName, presentationLabel } from '../../components/presentation'
 
-const words = (value: string) => value.replaceAll('_', ' ').toLowerCase()
+const words = (value: string) => presentationLabel(value, 'assessment')
 const index = (value: string | number | null) => value == null ? null : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value))
 
 function Decision({ decision, onEvidence }: { decision: CommercialDecision; onEvidence: (id: string) => void }) {
@@ -40,7 +41,7 @@ function Followup({ accountId, actionId, onCreated }: { accountId: string; actio
   }
   return <div><button type="button" disabled={pending} onClick={() => void inspect()}>{pending ? 'Working…' : 'Preview local follow-up'}</button>
     {preview && <section aria-label="Local follow-up preview"><h4>{preview.destination}</h4><p><strong>{preview.proposal.title}</strong></p><p>{preview.proposal.description}</p>
-      <dl><dt>Owner</dt><dd>{preview.proposal.owner_id}</dd><dt>Due</dt><dd>{preview.proposal.due_date ?? 'Not set'}</dd><dt>Priority</dt><dd>{words(preview.proposal.priority)}</dd></dl>
+      <dl><dt>Owner</dt><dd>{actorDisplayName(preview.proposal.owner_id)}</dd><dt>Due</dt><dd>{preview.proposal.due_date ?? 'Not set'}</dd><dt>Priority</dt><dd>{words(preview.proposal.priority)}</dd></dl>
       <p>{preview.note}</p><p>Supporting records: {preview.proposal.evidence_ids.join(', ')}</p>
       {preview.existing_work_id ? <p>Already linked: {preview.existing_work_id} · {words(preview.existing_work_status ?? '')}. Review it in Work; no duplicate will be created.</p> : <button type="button" disabled={pending} onClick={() => void confirm()}>Confirm local follow-up</button>}
       <button type="button" disabled={pending} onClick={() => setPreview(undefined)}>Close preview</button></section>}
@@ -67,7 +68,7 @@ export function CommercialDecisions({ accountId, onWorkChanged }: { accountId: s
         {result.public_risk_events.length > 0 && <ul>{result.public_risk_events.map(event => <li key={event.underlying_event_id}><strong>{words(event.risk_domain)}</strong> · {index(event.severity)} · {event.active ? 'current and eligible' : 'retained, not active in rollup'}</li>)}</ul>}
         <small>Provisional configuration {result.overall_customer_risk.configuration_version}. Public confidence does not replace severity and no macro signal proves an account order.</small>
       </details>
-      {result.opportunities.map(opportunity => <section key={opportunity.opportunity_id}><h3>{opportunity.opportunity_id} · {opportunity.component_id}</h3><p>{words(opportunity.stage)} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: opportunity.currency }).format(opportunity.value_minor / 100)} quoted opportunity</p>
+      {result.opportunities.map(opportunity => <section key={opportunity.opportunity_id}><h3>Quoted component opportunity</h3><p>{words(opportunity.stage)} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: opportunity.currency }).format(opportunity.value_minor / 100)} quoted opportunity</p>
         <p>{words(opportunity.qualification_status)} · {words(opportunity.durability_status)}</p>
         {[opportunity.opportunity_priority, opportunity.pwin, opportunity.delivery_feasibility].map(decision => <Decision key={decision.family} decision={decision} onEvidence={setEvidence} />)}</section>)}
       {result.action_priorities.map(action => <section key={action.action_id}><h3>{action.title}</h3><p>{words(action.work_status)}</p><Decision decision={action.decision} onEvidence={setEvidence} />

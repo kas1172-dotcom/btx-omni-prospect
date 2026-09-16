@@ -36,7 +36,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
       {brief.signal_confidence && <Disclosure title={`Score details · Signal Confidence ${brief.signal_confidence.score == null ? 'needs more evidence' : `${brief.signal_confidence.score}/100`}`}>
       <div className="seller-signal-details">
         <p>Confidence describes this assertion, not its commercial value or risk severity.</p>
-        <p>{brief.signal_confidence.data_coverage.present} of {brief.signal_confidence.data_coverage.applicable} required fields are supported. POC calibration is provisional.</p>
+        <p>{brief.signal_confidence.data_coverage.present} of {brief.signal_confidence.data_coverage.applicable} required fields are supported. Calibration is provisional pending BTX validation.</p>
         <ul>{brief.signal_confidence.factors.map(factor => <li key={factor.key}>
           <strong>{display(factor.key)}:</strong> {factor.points == null ? 'Unknown' : `${factor.points}/100`} · {factor.reason}
           {factor.evidence_ids.length > 0 && <small> Evidence: {factor.evidence_ids.join(', ')}</small>}

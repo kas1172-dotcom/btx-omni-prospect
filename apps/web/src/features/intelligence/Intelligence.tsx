@@ -27,6 +27,7 @@ import { curatedSignalBrief } from "../../components/signalBriefModel";
 import { FederalProcurementView } from "./FederalProcurement";
 import { MarketIntelligence } from "./MarketIntelligence";
 import { IntelligenceBriefing } from "./IntelligenceBriefing";
+import { presentationLabel } from "../../components/presentation";
 import "./intelligence.css";
 
 type Filters = {
@@ -47,11 +48,7 @@ const markets = [
   "Robotics",
   "Energy",
 ];
-const label = (value: string) =>
-  value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/^./, (char) => char.toUpperCase());
+const label = (value: string) => presentationLabel(value);
 const date = (value?: string) =>
   value
     ? new Date(value).toLocaleDateString("en-US", { timeZone: "UTC" })
@@ -60,12 +57,6 @@ const when = (brief: MonitorSignalBrief) =>
   brief.relevant_event_timestamp ??
   brief.publication_timestamp ??
   brief.collection_timestamp;
-const mode = (value: string) =>
-  ({
-    LIVE_PUBLIC: "CONNECTED public",
-    CURATED_PUBLIC: "Curated public",
-    SAMPLE: "BTX commercial context",
-  })[value] ?? label(value);
 const unique = (values: string[]) =>
   [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -121,6 +112,8 @@ function Card({
   onOpenBriefing: (brief: MonitorSignalBrief) => void;
 }) {
   const accountId = brief.canonical_account_ids[0];
+  const complete = brief.analysis_status === "READY";
+  const uncertainty = brief.material_uncertainties?.[0] ?? (!complete ? brief.missing_fields[0] : undefined);
   return (
     <article
       className={`intelligence-card ${selected ? "selected" : ""}`}
@@ -136,10 +129,7 @@ function Card({
           </span>
           <span>{date(when(brief))}</span>
         </div>
-        <div className="intelligence-card-states">
-          <State value={mode(brief.data_mode)} />
-          <State value={label(brief.freshness)} />
-        </div>
+        <div className="intelligence-card-states"><State value={brief.analysis_status ?? "PENDING_ANALYSIS"} /><State value={brief.freshness} /></div>
       </header>
       <div className="intelligence-card-main">
         <button
@@ -150,12 +140,13 @@ function Card({
           {accountId ? name(accountId) : "Customer association unavailable"}
         </button>
         <h3>{brief.headline}</h3>
-        <p>{brief.seller_summary}</p>
+        <p>{complete ? brief.seller_summary : "Account-specific analysis is still in progress. The source remains available while the commercial implication is assessed."}</p>
       </div>
       <section className="intelligence-bottom-line">
         <span>Why it matters</span>
-        <strong>{brief.why_it_may_matter}</strong>
-        {brief.recommended_action && (
+        <strong>{complete ? brief.why_it_may_matter : "The commercial implication has not yet been established."}</strong>
+        {uncertainty && <p><b>Still uncertain:</b> {uncertainty}</p>}
+        {complete && brief.recommended_action && (
           <p>
             <b>Next:</b> {brief.recommended_action}
           </p>
@@ -299,7 +290,7 @@ export function Intelligence({
   );
   const base = useMemo(() => {
     const items = new Map<string, MonitorSignalBrief>();
-    [...priority, ...current, ...curated].forEach((item) =>
+    [...curated, ...current, ...priority].forEach((item) =>
       items.set(briefKey(item), item),
     );
     return [...items.values()];
@@ -531,7 +522,7 @@ export function Intelligence({
                   <span>{brief.what_happened}</span>
                 </div>
                 <small>
-                  {date(when(brief))} · {mode(brief.data_mode)}
+                  {date(when(brief))} · {presentationLabel(brief.analysis_status ?? "PENDING_ANALYSIS", "assessment")}
                 </small>
               </li>
             ))}

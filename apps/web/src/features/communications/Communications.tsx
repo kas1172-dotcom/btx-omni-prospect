@@ -21,6 +21,7 @@ import type {
   Principal,
 } from "../../types/api";
 import "./communications.css";
+import { actorDisplayName, presentationLabel } from "../../components/presentation";
 
 type Props = {
   accounts: Account[];
@@ -29,11 +30,7 @@ type Props = {
   onItem: (item: CommunicationDraft) => void;
   onAccount: (id: string) => void;
 };
-const humanize = (value: string) =>
-  value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/^./, (value) => value.toUpperCase());
+const humanize = (value: string) => presentationLabel(value, "communication");
 
 export function Communications({
   accounts,
@@ -214,15 +211,15 @@ export function Communications({
             <span className="panel-kicker">{visible.length} visible</span>
           }
         >
-          <div className="communication-list" role="list">
+          <div className="communication-list" role="listbox" aria-label="Customer communications">
             {visible.length ? (
               visible.map((item) => (
                 <button
                   type="button"
-                  role="listitem"
+                  role="option"
                   key={item.id}
                   className={`communication-row ${selected?.id === item.id ? "selected" : ""}`}
-                  aria-pressed={selected?.id === item.id}
+                  aria-selected={selected?.id === item.id}
                   onClick={() => setSelectedId(item.id)}
                 >
                   <span>
@@ -273,7 +270,7 @@ export function Communications({
                   </div>
                   <div>
                     <dt>Creator</dt>
-                    <dd>{selected.created_by}</dd>
+                    <dd>{actorDisplayName(selected.created_by, principal)}</dd>
                   </div>
                 </dl>
                 <div className="card-actions">
@@ -354,7 +351,7 @@ export function Communications({
                       <li key={event.id}>
                         <strong>{humanize(event.event)}</strong>
                         <span>
-                          {event.actor_id} ·{" "}
+                          Actor ID {event.actor_id} ·{" "}
                           {new Date(event.occurred_at).toLocaleString()}
                         </span>
                       </li>

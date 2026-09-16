@@ -3,6 +3,7 @@ import { SignalBriefCard } from "../../components/SignalBriefCard";
 import { Empty, Panel, State } from "../../components/UI";
 import { CanonicalRecord } from "../../components/CanonicalRecord";
 import { EvidencePassages } from "../../components/EvidencePassages";
+import { presentationLabel } from "../../components/presentation";
 import "./monitor.css";
 
 const validation = (state: string) =>
@@ -39,7 +40,7 @@ function PreviewCard({
       <div className="monitor-preview-head">
         <div>
           <span className="eyebrow">
-            {signal.event_type.replaceAll("_", " ")}
+            {presentationLabel(signal.event_type, "assessment")}
           </span>
           <h3>{signal.company}</h3>
           <small>
@@ -47,7 +48,7 @@ function PreviewCard({
           </small>
         </div>
         <div className="monitor-states">
-          <State value="CURATED PUBLIC · NOT LIVE INGESTION" />
+          <State value="Stored public reference" />
           <State value={signal.evidence_state} />
         </div>
       </div>
@@ -60,7 +61,7 @@ function PreviewCard({
           {validation(signal.source_validation_state)}
         </span>
         <span>
-          <strong>Monitor state</strong>Not live ingestion
+          <strong>Monitor state</strong>Stored source review
         </span>
       </div>
       <div className="card-actions">
@@ -112,7 +113,7 @@ export function Monitor({
             {health.seller_message}{" "}
             {health.durable_run_state
               ? ""
-              : "Run history is not durable in this POC."}
+              : "Run history is not persisted for this environment."}
           </p>
           <div className="monitor-summary-grid" aria-label="Monitor summary">
             <article>
@@ -128,7 +129,7 @@ export function Monitor({
             <article>
               <span>Curated preview</span>
               <strong>{health.curated_preview.length}</strong>
-              <small>Stored public POC scenarios</small>
+              <small>Stored public reference events</small>
             </article>
           </div>
           <div className="monitor-status-grid">
@@ -225,7 +226,7 @@ export function Monitor({
           </Panel>
           {collected.length > 0 && <Panel title="Collected operational evidence"><p>These source records may be unresolved or rejected. Inspecting them does not make them seller recommendations.</p>{collected.map(event => <details key={event.id} className="monitor-collected-record"><summary>{event.source_id} · {event.id} · {event.resolution_state.replaceAll('_', ' ')}</summary><p>Relevance: {event.seller_relevance_state?.replaceAll('_', ' ') ?? 'not evaluated'}</p><EvidencePassages eventId={event.id} /></details>)}</Panel>}
           <Panel
-            title="Curated POC signal preview"
+            title="Stored public signal preview"
             action={
               <span className="panel-kicker">
                 {health.curated_preview.length} stored public events
@@ -234,8 +235,8 @@ export function Monitor({
           >
             <p className="monitor-intro">
               These are stored, sourced public scenarios used to demonstrate
-              Monitor output. They are curated POC material, not a collection
-              result. {health.scheduler_state === "COLLECTION_OBSERVED_CURRENT"
+              Monitor output. They are saved public-source references, not a
+              claim that collection just occurred. {health.scheduler_state === "COLLECTION_OBSERVED_CURRENT"
                 ? "Scheduled collection evidence is reported separately above."
                 : "No active scheduler is verified."}
             </p>
@@ -257,7 +258,7 @@ export function Monitor({
               </div>
             ) : (
               <Empty>
-                No curated public events are available for this POC preview.
+                No stored public events are available for this preview.
               </Empty>
             )}
           </Panel>

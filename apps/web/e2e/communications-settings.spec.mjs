@@ -52,7 +52,7 @@ test('manager can review but approval does not bypass recipient and confirmation
   await manager.getByRole('button', { name: 'Approve' }).click()
   await approvalResponse
   await expect(manager.getByText(/approved by human review.*No message was sent/i)).toBeVisible()
-  await expect(manager.getByText('READY', { exact: true }).last()).toBeVisible()
+  await expect(manager.getByText('Ready for delivery confirmation', { exact: true }).last()).toBeVisible()
   await expect(manager.getByRole('button', { name: 'Confirm send' })).toBeDisabled()
   await manager.getByRole('button', { name: 'Audit history' }).click()
   await expect(manager.getByText('Approved', { exact: true }).last()).toBeVisible()

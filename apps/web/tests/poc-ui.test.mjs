@@ -279,9 +279,9 @@ test('External Intelligence preserves governed priority, source modes, Radar, an
   assert.match(intelligence, /Intelligence Monitor/)
   assert.match(intelligence, /Federal Procurement/)
   assert.match(intelligence, /new Date\(item\.relevant_event_timestamp\)\.getTime\(\) > Date\.now\(\)/)
-  assert.match(intelligence, /CONNECTED public/)
-  assert.match(intelligence, /BTX commercial context/)
-  assert.doesNotMatch(intelligence, /SAMPLE BTX context/)
+  assert.match(intelligence, /presentationLabel\(brief\.analysis_status/)
+  assert.match(intelligence, /Account-specific analysis is still in progress/)
+  assert.doesNotMatch(intelligence, /CONNECTED public|BTX commercial context|SAMPLE BTX context/)
   assert.doesNotMatch(intelligence, /Confidence Fit|For BU 1 Sales Leadership|momentum percentage/i)
 })
 
@@ -393,8 +393,9 @@ test('curated public evidence is never labeled as synthetic demo', () => {
 
 test('Monitor keeps inactive collection separate from curated public preview signals', () => {
   assert.match(monitor, /schedulerLabel\(health\.scheduler_state\)/)
-  assert.match(monitor, /Curated POC signal preview/)
-  assert.match(monitor, /CURATED PUBLIC · NOT LIVE INGESTION/)
+  assert.match(monitor, /Stored public signal preview/)
+  assert.match(monitor, /Stored public reference/)
+  assert.doesNotMatch(monitor, /Curated POC|NOT LIVE INGESTION/)
   assert.match(monitor, /No active scheduler is verified/)
   assert.match(monitor, /Open Customer 360/)
   assert.match(monitor, /Source freshness/)
