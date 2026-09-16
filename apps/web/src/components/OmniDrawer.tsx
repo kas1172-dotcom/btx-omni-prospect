@@ -10,8 +10,8 @@ type Message = { role: 'user' | 'assistant'; text: string; response?: OmniRespon
 type SessionAccount = { id: string; name: string }
 type FullMode = 'conversation' | 'evidence' | 'customer'
 
-const starters = ['What should I review today?', 'Explain why this Customer matters', 'Compare selected Customers', 'Show the supporting evidence']
-const surfaceLabels: Record<string, string> = { TODAY: 'Today', ACCOUNTS: 'Customers & Prospects', ACCOUNT_DETAIL: 'Customer 360', INTELLIGENCE: 'Intelligence', MAP: 'Map', ACTIONS: 'Actions', MONITOR: 'Monitor' }
+const starters = ['What should I review today?', 'Explain why this organization matters', 'Compare selected organizations', 'Show the supporting evidence']
+const surfaceLabels: Record<string, string> = { TODAY: 'Today', ACCOUNTS: 'Customers & Prospects', ACCOUNT_DETAIL: 'Organization 360', INTELLIGENCE: 'Intelligence', MAP: 'Map', ACTIONS: 'Actions', MONITOR: 'Monitor' }
 const selectedRelationshipQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:relationship\s+)?(?:route|path|connection|relationship)\b/i.test(question)
 const selectedAssessmentQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:intelligence\s+)?assessment\b/i.test(question)
 
@@ -43,7 +43,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const input = useRef<HTMLTextAreaElement>(null)
   const conversation = useRef<HTMLDivElement>(null)
   const contextRef = useRef(context)
-  const activeAccount = accountId && clearedAccountId !== accountId ? { id: accountId, name: accountName ?? 'Selected Customer' } : !accountId && clearedAccountId !== 'SESSION' ? sessionAccount : undefined
+  const activeAccount = accountId && clearedAccountId !== accountId ? { id: accountId, name: accountName ?? 'Selected organization' } : !accountId && clearedAccountId !== 'SESSION' ? sessionAccount : undefined
   const latestResponse = [...messages].reverse().find(message => message.response)?.response
 
   useLayoutEffect(() => { contextRef.current = context }, [context])
@@ -88,18 +88,18 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     <button className="omni-launch" ref={opener} onClick={() => setView('quick')} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
     <Drawer open={view === 'quick'} onClose={close} titleId="quick-omni-title" className="quick-omni" initialFocus={input}>
       <header><h2 id="quick-omni-title">Ask Omni</h2><Button variant="ghost" onClick={() => setView('full')}>Open in Omni</Button><IconButton onClick={close} label="Minimize Omni">−</IconButton><IconButton onClick={close} label="Close Omni">×</IconButton></header>
-      <div className="omni-awareness">Aware of: {activeAccount?.name ?? (context.surface && surfaceLabels[context.surface]) ?? 'current workspace'}{activeAccount && <button onClick={clearContext}>Clear</button>}{!activeAccount && accountId && <button onClick={useSelectedContext}>Use selected Customer</button>}</div>
+      <div className="omni-awareness">Aware of: {activeAccount?.name ?? (context.surface && surfaceLabels[context.surface]) ?? 'current workspace'}{activeAccount && <button onClick={clearContext}>Clear</button>}{!activeAccount && accountId && <button onClick={useSelectedContext}>Use selected organization</button>}</div>
       <Conversation messages={messages} loading={loading} compact transcriptRef={conversation} onStarter={prompt => void ask(prompt)} />
       <Composer value={question} loading={loading} inputRef={input} onChange={setQuestion} onKeyDown={onKeyDown} onSubmit={() => void ask()} />
       {error && <p className="omni-error" role="alert">{error}</p>}
     </Drawer>
     <Drawer open={view === 'full'} onClose={close} titleId="full-omni-title" className="full-omni" initialFocus={input}>
       <header><IconButton onClick={() => setView('quick')} label="Back to Quick Omni">‹</IconButton><div><span className="eyebrow">Research · Compare · Explain · Plan</span><h1 id="full-omni-title">Omni</h1></div><IconButton onClick={close} label="Close Full Omni">×</IconButton></header>
-      <nav className="omni-modes" aria-label="Omni workspace modes" role="tablist">{(['conversation', 'evidence', 'customer'] as const).map(mode => <button id={`omni-tab-${mode}`} key={mode} className={fullMode === mode ? 'active' : ''} role="tab" aria-selected={fullMode === mode} aria-controls={`omni-panel-${mode}`} tabIndex={fullMode === mode ? 0 : -1} onClick={() => setFullMode(mode)}>{mode === 'customer' ? 'Customer context' : mode[0].toUpperCase() + mode.slice(1)}</button>)}</nav>
+      <nav className="omni-modes" aria-label="Omni workspace modes" role="tablist">{(['conversation', 'evidence', 'customer'] as const).map(mode => <button id={`omni-tab-${mode}`} key={mode} className={fullMode === mode ? 'active' : ''} role="tab" aria-selected={fullMode === mode} aria-controls={`omni-panel-${mode}`} tabIndex={fullMode === mode ? 0 : -1} onClick={() => setFullMode(mode)}>{mode === 'customer' ? 'Organization context' : mode[0].toUpperCase() + mode.slice(1)}</button>)}</nav>
       <div className="full-omni-grid">
         <main id="omni-panel-conversation" aria-labelledby="omni-tab-conversation" className={`omni-conversation-pane ${fullMode === 'conversation' ? 'mobile-active' : ''}`} role="tabpanel"><div className="omni-context-chips">{activeAccount && <span>{activeAccount.name}</span>}<span>{(context.surface && surfaceLabels[context.surface]) ?? 'Global'}</span></div><Conversation messages={messages} loading={loading} transcriptRef={conversation} onStarter={prompt => void ask(prompt)} /><Composer value={question} loading={loading} inputRef={input} onChange={setQuestion} onKeyDown={onKeyDown} onSubmit={() => void ask()} />{error && <p className="omni-error" role="alert">{error}</p>}</main>
-        <aside id="omni-panel-evidence" aria-label="Evidence" aria-labelledby="omni-tab-evidence" className={`omni-evidence-pane ${fullMode === 'evidence' ? 'mobile-active' : ''}`}><h2>Evidence &amp; sources</h2><EvidencePanel response={latestResponse} /></aside>
-        <aside id="omni-panel-customer" aria-label="Customer context" aria-labelledby="omni-tab-customer" className={`omni-customer-pane ${fullMode === 'customer' ? 'mobile-active' : ''}`}><h2>Customer context</h2>{activeAccount ? <div className="omni-context-card"><strong>{activeAccount.name}</strong><span>Canonical Customer context</span><p>Current selection and governed conversation referents determine what Omni may read.</p><Button variant="ghost" onClick={clearContext}>Clear Customer context</Button></div> : <p className="muted">No Customer selected. Global questions remain unscoped.</p>}{latestResponse?.recommended_action && <div className="omni-context-card"><strong>Suggested next step</strong><p>{latestResponse.recommended_action}</p><small>Discussion only. Use the governed Actions workspace for mutations.</small></div>}</aside>
+        <aside id="omni-panel-evidence" aria-label="Evidence" aria-labelledby="omni-tab-evidence" className={`omni-evidence-pane ${fullMode === 'evidence' ? 'mobile-active' : ''}`}><h2>Evidence &amp; sources</h2><Disclosure title={`View supporting evidence (${latestResponse?.citation_links?.length ?? 0})`}><EvidencePanel response={latestResponse} /></Disclosure></aside>
+        <aside id="omni-panel-customer" aria-label="Organization context" aria-labelledby="omni-tab-customer" className={`omni-customer-pane ${fullMode === 'customer' ? 'mobile-active' : ''}`}><h2>Organization context</h2>{activeAccount ? <div className="omni-context-card"><strong>{activeAccount.name}</strong><span>Canonical organization context</span><p>Current selection and governed conversation referents determine what Omni may read.</p><Button variant="ghost" onClick={clearContext}>Clear organization context</Button></div> : <p className="muted">No organization selected. Global questions remain unscoped.</p>}{latestResponse?.recommended_action && <div className="omni-context-card"><strong>Suggested next step</strong><p>{latestResponse.recommended_action}</p><small>Discussion only. Use the governed Actions workspace for mutations.</small></div>}</aside>
       </div>
     </Drawer>
   </>

@@ -108,6 +108,7 @@ test('public briefing joins the selected signal to canonical account context wit
   await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
   await expect(page).toHaveURL(/#\/intelligence\/brief\//)
   await expect(page.getByRole('heading', { name: 'Commercial relevance' })).toBeVisible()
+  await page.getByRole('button', { name: /View supporting evidence/ }).click()
   await expect(page.getByRole('table', { name: 'Components and applicable business units' })).toBeVisible()
   await expect(page.getByText(/do not establish that this public event applies/)).toBeVisible()
   const next = page.getByRole('heading', { name: 'What should the seller do next?' }).locator('..')

@@ -6,7 +6,7 @@ import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { Today, type TodayFilters } from '../features/today/Today'
 import { workspaceHash, workspaceLocation, type Surface } from './navigation'
-import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
@@ -86,7 +86,7 @@ export default function App() {
   const clearSelectedAction = useCallback(() => { setSelectedActionId(undefined); setActionSourceAlertId(undefined) }, [])
   const clearViewContext = useCallback(() => setViewContext({}), [])
   const selectMapFacility = useCallback((facilityId?: string, accountId?: string) => { setSelectedMapFacilityId(facilityId); setSelectedMapAccountId(accountId) }, [])
-  const select = useCallback(async (id: string, recordHistory = true) => {
+  const select = useCallback(async (id: string, recordHistory = true, assessment?: OmniAssessmentSelection) => {
     accountRequest.current?.abort()
     const controller = new AbortController(); accountRequest.current = controller
     setAccountOpening(id)
@@ -94,10 +94,12 @@ export default function App() {
       setError('')
       const result = await api.account(id, controller.signal)
       if (controller.signal.aborted) return
-      clearSelectedEvent()
+      if (assessment) setSelectedEventId(assessment.event_id)
+      else clearSelectedEvent()
       clearMapSelection()
       clearSelectedAction()
-      clearViewContext()
+      if (assessment) setViewContext({ selected_event_id: assessment.event_id, selected_assessment: assessment })
+      else clearViewContext()
       setDetail(result)
       setSurface('accounts')
       if (recordHistory && window.location.hash !== workspaceHash('accounts', id)) window.history.pushState({ btxOmniNavigation: true }, '', workspaceHash('accounts', id))
@@ -185,9 +187,9 @@ export default function App() {
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
   const content =
     surface === 'accounts' ? (
-      <Accounts accounts={accounts} detail={detail} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
+      <Accounts accounts={accounts} detail={detail} initialAssessment={viewContext.selected_assessment} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id) => void select(id)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onOmniContext={setViewContext} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onOmniContext={setViewContext} />
     ) : surface === 'map' ? (
       <Map
         records={records}
@@ -198,7 +200,7 @@ export default function App() {
         btxFacilities={btxFacilities}
         layers={layers}
         signals={mapSignals}
-        onAccount={(id) => void select(id)}
+        onAccount={(id, assessment) => void select(id, true, assessment)}
         onRelationships={(id) => void select(id)}
         onMapAccountSelect={(id) => {
           setSelectedMapAccountId(id)
@@ -235,7 +237,7 @@ export default function App() {
         alerts={alerts}
         signals={signals}
         accounts={accounts}
-        onAccount={(id) => void select(id)}
+        onAccount={(id, assessment) => void select(id, true, assessment)}
         onIntelligence={() => navigate('intelligence')}
         onMonitor={() => navigate('monitor')}
         onEventSelect={setSelectedEventId}

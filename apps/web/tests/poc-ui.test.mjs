@@ -27,19 +27,21 @@ const communications = readFileSync(new URL('../src/features/communications/Comm
 const settings = readFileSync(new URL('../src/features/settings/Settings.tsx', import.meta.url), 'utf8')
 const federal = readFileSync(new URL('../src/features/intelligence/FederalProcurement.tsx', import.meta.url), 'utf8')
 const governedExplanation = readFileSync(new URL('../src/components/GovernedExplanationDisclosure.tsx', import.meta.url), 'utf8')
+const supportingEvidence = readFileSync(new URL('../src/components/SupportingEvidence.tsx', import.meta.url), 'utf8')
+const relatedBtxActivity = readFileSync(new URL('../src/components/RelatedBtxActivity.tsx', import.meta.url), 'utf8')
 
 test('governed explanations are subordinate, truthful, and additive on seller detail surfaces', () => {
   assert.match(governedExplanation, /if \(!explanation\) return null/)
   assert.match(governedExplanation, /explanation\.assisted \? explanation\.disclosure/)
   assert.match(governedExplanation, /Key drivers/)
   assert.match(governedExplanation, /Limitations \/ missing context/)
-  assert.match(accounts, /Why this Customer stands out/)
-  assert.match(accounts, /Prospect Fit rationale & missingness/)
-  assert.match(accounts, /Opportunity Priority rationale & missingness/)
+  assert.match(accounts, /Why this organization matters/)
+  assert.match(accounts, /organization\.classification_basis/)
+  assert.match(accounts, /Coverage does not increase opportunity quality/)
   assert.match(federal, /Why this opportunity is relevant/)
   assert.match(federal, /Relevance \$\{selected\.relevance\.score\}\/100/)
   assert.match(federal, /Draft relevance model — pending BTX calibration|selected\.relevance\.calibration_label/)
-  assert.match(signalBrief, /Potential BTX Technical Fit/)
+  assert.match(signalBrief, /Program, components and possible BTX fit/)
   assert.match(signalBrief, /Why this technical fit may matter/)
   assert.match(signalBrief, /MODEL_INFERRED|display\(match\.basis\)/)
   assert.match(signalBrief, /Controlled BTX match/)
@@ -92,20 +94,23 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
 test('Technical Opportunity disclosure preserves the model hypothesis and controlled-match boundary', () => {
   assert.match(apiTypes, /TechnicalFitMatch/)
   assert.match(apiTypes, /POSSIBLE_MATCH_REVIEW_REQUIRED/)
-  assert.match(signalBrief, /Potential BTX Technical Fit/)
+  assert.match(signalBrief, /Program, components and possible BTX fit/)
   assert.match(signalBrief, /Controlled BTX match/)
   assert.match(signalBrief, /No controlled BTX capability match identified/)
   assert.doesNotMatch(signalBrief, /probability|supplier claim/i)
 })
 
-test('Customer 360 distinguishes public evidence from simulated BTX context', () => {
+test('adaptive Organization 360 distinguishes relationship mode and progressive evidence', () => {
   assert.match(accounts, /Public professional contact research/)
   assert.match(app, /aria-label="Demonstration environment"/)
   assert.match(app, /Simulated data environment/)
-  assert.match(accounts, /Prospect Fit · deterministic rubric/)
-  assert.match(accounts, /Opportunity Priority · scenario hypothesis/)
-  assert.match(accounts, /Coverage/)
-  assert.match(accounts, /Curated scenarios/)
+  assert.match(accounts, /organization\.title/)
+  assert.match(accounts, /organization\.mode === 'PROSPECT'/)
+  assert.match(accounts, /No confirmed BTX commercial history is available for this Prospect/)
+  assert.match(accounts, /Expansion pursuit/)
+  assert.match(accounts, /<SupportingEvidence/)
+  assert.match(supportingEvidence, /'View'\} supporting evidence/)
+  assert.match(supportingEvidence, /aria-expanded=\{open\}/)
 })
 
 test('Customers and Prospects uses one semantic sortable table with bounded mobile overflow', () => {
@@ -124,8 +129,8 @@ test('Customers and Prospects uses one semantic sortable table with bounded mobi
 
 test('Customer 360 renders deterministic seller-facing canonical relationship paths', () => {
   assert.match(client, /relationships: \(accountId: string\) => request<AccountRelationships>\(`\/accounts\/\$\{accountId\}\/relationships\?depth=2`\)/)
-  assert.match(accounts, /Relationship Intelligence/)
-  assert.match(accounts, /How this Customer is connected/)
+  assert.match(accounts, /People and relationship paths/)
+  assert.match(accounts, /How this organization is connected/)
   assert.match(accounts, /Public professional contact research remains separate/)
   assert.match(accounts, /does not establish a BTX relationship, introduction path, or relationship strength/)
   assert.match(accounts, /No eligible validated connection is currently available/)
@@ -156,7 +161,7 @@ test('Customer 360 renders backend-owned commercial source states without zero i
 
 test('Omni shares governed conversation state across Quick and Full responsive workspaces', () => {
   const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
-  assert.match(drawer, /No Customer selected/)
+  assert.match(drawer, /No organization selected/)
   assert.match(drawer, /Clear/)
   assert.match(drawer, /What should I review today\?/)
   assert.match(drawer, /session_account_id/)
@@ -167,7 +172,7 @@ test('Omni shares governed conversation state across Quick and Full responsive w
   assert.match(drawer, /Open in Omni/)
   assert.match(drawer, /Back to Quick Omni/)
   assert.match(drawer, /Evidence &amp; sources/)
-  assert.match(drawer, /Customer context/)
+  assert.match(drawer, /Organization context/)
   assert.match(drawer, /titleId="full-omni-title"/)
   assert.match(ui, /aria-modal="true"/)
   assert.doesNotMatch(drawer, /triggerStorageKey|setPointerCapture|dragThreshold|clampTriggerPosition/)
@@ -180,8 +185,10 @@ test('all intelligence launch surfaces pass the persisted assessment contract to
   assert.match(intelligence, /selected_assessment: selectedBrief/)
   assert.match(map, /selected_assessment: selectedSignal/)
   assert.match(accounts, /selected_assessment: selectedAssessment/)
-  assert.match(accounts, /Use in Omni/)
+  assert.match(accounts, /initialAssessment/)
+  assert.match(signalBrief, /Use in Omni/)
   assert.match(app, /viewContext\.selected_assessment\?\.event_id/)
+  assert.match(app, /initialAssessment=\{viewContext\.selected_assessment\}/)
 })
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
@@ -255,8 +262,7 @@ test('Actions creation and editing use canonical Customers and role-aware contro
 })
 
 test('Intelligence distinguishes browser validation from publisher-blocked source checks', () => {
-  assert.match(signalBrief, /validationState=\{brief\.seller_promotion_state\}/)
-  assert.match(signalBrief, /evidenceState=\{brief\.resolution_state\}/)
+  assert.match(signalBrief, /evidenceState="Source reviewed"/)
   assert.match(signalBrief, /source=\{brief\.source_system\}/)
   assert.match(signalBrief, /timeZone: 'UTC'/)
   assert.match(intelligence, /curatedSignalBrief\(signal, byId\.get/)
@@ -363,7 +369,8 @@ test('shell clears stale list, detail, and passive entity context across surface
 })
 
 test('curated public evidence is never labeled as synthetic demo', () => {
-  assert.match(signalBrief, /CURATED PUBLIC/)
+  assert.match(signalBrief, /Source reviewed/)
+  assert.doesNotMatch(signalBrief, />CURATED PUBLIC</)
   assert.doesNotMatch(map, /CURATED_POC_PUBLIC|INDUSTRY_UPDATE|CONTRACT_AWARD/)
 })
 
@@ -412,8 +419,9 @@ test('Seller Command Center reuses governed Signal Briefs with market, Radar, an
   assert.match(intelligence, /Why it matters/)
   assert.match(intelligence, /Evidence, freshness, and context/)
   assert.match(monitor, /SignalBriefCard/)
-  assert.match(signalBrief, /Evidence, why it matters, and next step/)
-  assert.match(signalBrief, /Language assisted; governed evidence unchanged/)
+  assert.match(signalBrief, /What Omni recommends/)
+  assert.match(signalBrief, /View supporting evidence|SupportingEvidence/)
+  assert.match(relatedBtxActivity, /Why Omni selected it/)
   assert.doesNotMatch(signalBrief, />CURATED_POC_PUBLIC<|>INDUSTRY_UPDATE<|canonical account/i)
 })
 

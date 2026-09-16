@@ -4,6 +4,7 @@ import type {
   CommandCenter,
   MonitorHealth,
   MonitorSignalBrief,
+  OmniAssessmentSelection,
   OmniContext,
   Signal,
   WorkspaceSettings,
@@ -110,7 +111,7 @@ function Card({
   brief: MonitorSignalBrief;
   rank?: number;
   name: (id: string) => string;
-  onAccount: (id: string) => void;
+  onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onSelect: (brief: MonitorSignalBrief) => void;
   selected: boolean;
   onCreateAction: (brief: MonitorSignalBrief) => void;
@@ -141,7 +142,7 @@ function Card({
         <button
           className="intelligence-customer-link"
           disabled={!accountId}
-          onClick={() => accountId && onAccount(accountId)}
+          onClick={() => accountId && onAccount(accountId, brief.assessment_id && brief.assessment_version ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined)}
         >
           {accountId ? name(accountId) : "Customer association unavailable"}
         </button>
@@ -223,7 +224,7 @@ export function Intelligence({
   commandCenter?: CommandCenter;
   monitor?: MonitorHealth;
   settings?: WorkspaceSettings;
-  onAccount: (id: string) => void;
+  onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onEventSelect: (id?: string) => void;
   onCreateAction: (brief: MonitorSignalBrief) => void;
   onOmniContext: (
