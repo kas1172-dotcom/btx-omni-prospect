@@ -11,11 +11,10 @@ from btx_omni.monitor.briefs import SignalBrief
 
 _SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
 SAVED_INTELLIGENCE_WINDOW_DAYS = 60
-_VALIDATION_RELEVANCE_STATES = {
-    "REVIEW_REQUIRED",
-    "ESTABLISHED_ACCOUNT_REVIEW",
-    "ESTABLISHED_COMMERCIAL_RELEVANCE",
-    "PLAUSIBLE_FIT_REQUIRES_VALIDATION",
+_SELLER_FACING_EVENT_STATES = {
+    "RESOLVED_ELIGIBLE",
+    "RESOLVED_NEEDS_REVIEW",
+    "WITHHELD_STALE",
 }
 
 
@@ -57,6 +56,51 @@ def _public_item(brief: SignalBrief, *, outcome_lane: str) -> dict[str, Any]:
         if brief.freshness == "CURRENT"
         else "SAVED_RECENT",
     }
+
+
+def _has_attributable_public_evidence(brief: SignalBrief) -> bool:
+    """Require a traceable public source without conflating it with relevance."""
+    package = brief.evidence_package or {}
+    return bool(
+        brief.references
+        or package.get("public_evidence")
+        or (brief.source_url and brief.evidence_ids)
+    )
+
+
+def _event_is_seller_facing(brief: SignalBrief) -> bool:
+    """Evaluate source admission independently from the assessment outcome."""
+    return (
+        brief.resolution_state == "RESOLVED"
+        and brief.seller_promotion_state in _SELLER_FACING_EVENT_STATES
+        and brief.event_timing == "OBSERVED"
+    )
+
+
+def _assessment_has_account_scope(brief: SignalBrief) -> bool:
+    return bool(brief.canonical_account_ids)
+
+
+def _is_action_priority(brief: SignalBrief) -> bool:
+    return (
+        _event_is_seller_facing(brief)
+        and brief.analysis_status == "READY"
+        and brief.priority_eligible
+        and _assessment_has_account_scope(brief)
+        and _has_attributable_public_evidence(brief)
+    )
+
+
+def _is_validation_assessment(brief: SignalBrief) -> bool:
+    """Classify the persisted commercial outcome, not the event admission state."""
+    return (
+        _event_is_seller_facing(brief)
+        and brief.analysis_status == "READY"
+        and brief.commercial_relevance_state == "REVIEW_REQUIRED"
+        and not brief.priority_eligible
+        and _assessment_has_account_scope(brief)
+        and _has_attributable_public_evidence(brief)
+    )
 
 
 def build_command_center(
@@ -124,7 +168,11 @@ def build_command_center(
             current,
             key=lambda item: (
                 0 if item.watchlist_eligible else 1,
-                -(item.publication_timestamp.timestamp() if item.publication_timestamp else 0),
+                -(
+                    item.publication_timestamp.timestamp()
+                    if item.publication_timestamp
+                    else 0
+                ),
                 item.id,
             ),
         )
@@ -151,7 +199,9 @@ def build_command_center(
             "evidence_ids": item.evidence_ids,
             "observed_at": item.observed_at,
             "data_mode": "SAMPLE",
-            "business_unit_ids": (item.business_unit,) if getattr(item, 'business_unit', None) else (),
+            "business_unit_ids": (item.business_unit,)
+            if getattr(item, "business_unit", None)
+            else (),
         }
         for item in alerts
     ]
@@ -163,30 +213,24 @@ def build_command_center(
         )
     )
     action_briefs = tuple(
-        brief for brief in (*current, *recent_saved) if brief.priority_eligible
+        brief for brief in (*current, *recent_saved) if _is_action_priority(brief)
     )
     signal_items = [
-        _public_item(brief, outcome_lane="ACTION_PRIORITIES")
-        for brief in action_briefs
+        _public_item(brief, outcome_lane="ACTION_PRIORITIES") for brief in action_briefs
     ]
     review_briefs = tuple(
         sorted(
             (
                 brief
                 for brief in briefs
-                if brief.resolution_state == "RESOLVED"
-                and brief.seller_promotion_state == "RESOLVED_NEEDS_REVIEW"
-                and brief.analysis_status == "READY"
-                and brief.commercial_relevance_state
-                in _VALIDATION_RELEVANCE_STATES
-                and not brief.priority_eligible
-                and brief.event_timing == "OBSERVED"
+                if _is_validation_assessment(brief)
                 and (
                     brief.freshness == "CURRENT"
                     or (
                         brief.freshness == "STALE"
                         and brief.publication_timestamp is not None
-                        and public_clock - timedelta(days=SAVED_INTELLIGENCE_WINDOW_DAYS)
+                        and public_clock
+                        - timedelta(days=SAVED_INTELLIGENCE_WINDOW_DAYS)
                         <= brief.publication_timestamp
                         <= public_clock
                     )
@@ -194,14 +238,17 @@ def build_command_center(
             ),
             key=lambda item: (
                 0 if item.watchlist_eligible else 1,
-                -(item.publication_timestamp.timestamp() if item.publication_timestamp else 0),
+                -(
+                    item.publication_timestamp.timestamp()
+                    if item.publication_timestamp
+                    else 0
+                ),
                 item.context_id or item.id,
             ),
         )
     )
     validation_items = [
-        _public_item(brief, outcome_lane="NEEDS_VALIDATION")
-        for brief in review_briefs
+        _public_item(brief, outcome_lane="NEEDS_VALIDATION") for brief in review_briefs
     ]
 
     watch_targets = {
@@ -213,7 +260,9 @@ def build_command_center(
         {
             "account_id": target.canonical_account_id,
             "name": target.legal_name,
-            "relationship": account_by_id[target.canonical_account_id].relationship.value,
+            "relationship": account_by_id[
+                target.canonical_account_id
+            ].relationship.value,
             "markets": target.markets,
             "watch_type": "SYSTEM_RECOMMENDED",
             "reasons": tuple(asdict(reason) for reason in target.reasons),
@@ -221,7 +270,9 @@ def build_command_center(
         for target in watch_targets.values()
         if target.canonical_account_id in account_by_id
     ]
-    watched_accounts.sort(key=lambda item: (item["name"].casefold(), item["account_id"]))
+    watched_accounts.sort(
+        key=lambda item: (item["name"].casefold(), item["account_id"])
+    )
 
     watched_program_ids = {
         brief.canonical_program_id
@@ -245,7 +296,9 @@ def build_command_center(
     market_hubs = []
     for market in PRIMARY_MARKET_ORDER:
         market_current = tuple(brief.id for brief in current if market in brief.markets)
-        market_upcoming = tuple(brief.id for brief in upcoming if market in brief.markets)
+        market_upcoming = tuple(
+            brief.id for brief in upcoming if market in brief.markets
+        )
         market_accounts = tuple(
             item["account_id"] for item in watched_accounts if market in item["markets"]
         )

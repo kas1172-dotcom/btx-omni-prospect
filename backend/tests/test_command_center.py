@@ -47,6 +47,9 @@ def brief(
         )
         if watched
         else (),
+        analysis_status="READY",
+        commercial_relevance_state="ESTABLISHED_COMMERCIAL_RELEVANCE",
+        priority_eligible=True,
     )
 
 
@@ -303,9 +306,9 @@ def test_public_outcome_lanes_preserve_governed_assessments() -> None:
             freshness="STALE",
         ),
         headline="Lockheed Martin Javelin co-production agreement",
-        seller_promotion_state="RESOLVED_NEEDS_REVIEW",
+        seller_promotion_state="RESOLVED_ELIGIBLE",
         analysis_status="READY",
-        commercial_relevance_state="ESTABLISHED_ACCOUNT_REVIEW",
+        commercial_relevance_state="REVIEW_REQUIRED",
         priority_eligible=False,
         recommended_action="Verify internal Lockheed and RTX records for Javelin activity.",
         context_id="javelin|acct-1|ALL_BUSINESS_UNITS",
@@ -350,13 +353,17 @@ def test_public_outcome_lanes_preserve_governed_assessments() -> None:
     assert review["outcome_lane"] == "NEEDS_VALIDATION"
     assert review["business_unit_ids"] == ("BU-GENELMEC",)
     assert review["signal_brief"]["priority_eligible"] is False
-    assert review["signal_brief"]["seller_promotion_state"] == "RESOLVED_NEEDS_REVIEW"
+    assert review["signal_brief"]["seller_promotion_state"] == "RESOLVED_ELIGIBLE"
+    assert review["signal_brief"]["commercial_relevance_state"] == "REVIEW_REQUIRED"
     assert review["signal_brief"]["assessment_version"] == 4
     assert review["signal_brief"]["signal_confidence"]["score"] == 84.71
     assert len(review["signal_brief"]["technical_opportunity"]["fit_hypotheses"]) == 8
     assert review["recommended_action"] == validation.recommended_action
     displayed = {
         item["event_id"]
-        for item in (*result["action_priorities"], *result["needs_validation_assessments"])
+        for item in (
+            *result["action_priorities"],
+            *result["needs_validation_assessments"],
+        )
     }
     assert "informational" not in displayed
