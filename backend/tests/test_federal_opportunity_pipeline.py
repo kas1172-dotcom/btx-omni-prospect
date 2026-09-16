@@ -1,16 +1,25 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 
+from btx_omni.api.actions import CreateAction
+from btx_omni.api.actions import create as create_action
 from btx_omni.core.config import Settings
 from btx_omni.domain.accounts import AccountRelationship
+from btx_omni.domain.work import ActionPriority, Principal, PrincipalRole
+from btx_omni.modules.assistant.orchestration import OmniResponse
+from btx_omni.modules.assistant.service import OmniService
 from btx_omni.modules.federal_opportunity_routing import (
     build_assessment,
     procurement_stage,
     route_opportunity,
 )
+from btx_omni.modules.work.service import WorkService
 from btx_omni.monitor.procurement import CoverageState
 from btx_omni.monitor.repository import MonitorRepository
 from btx_omni.monitor.sources import SamAdapter, UsaSpendingAdapter
@@ -124,6 +133,23 @@ def test_checkpoint_and_assessment_round_trip_is_replay_safe(tmp_path) -> None:
     assert first["version"] == replay["version"] == 1
     assert changed["version"] == 2
     assert len(repository.current_federal_assessments()) == 1
+    assert repository.federal_assessment_by_id(changed["id"], version=2)["input_revision"] == "input-v2"
+
+
+def test_concurrent_assessment_replay_creates_one_current_version(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'federal-concurrent.db'}")
+    metadata.create_all(engine)
+    repository = MonitorRepository(engine)
+    projection = {
+        "opportunity_id": "notice-concurrent",
+        "source_revision": "source-v1",
+        "input_revision": "input-v1",
+    }
+    with ThreadPoolExecutor(max_workers=4) as workers:
+        rows = tuple(workers.map(lambda _: repository.persist_federal_assessment(projection, now=NOW), range(8)))
+    assert {row["id"] for row in rows} == {rows[0]["id"]}
+    assert {row["version"] for row in rows} == {1}
+    assert len(repository.current_federal_assessments()) == 1
 
 
 def test_usaspending_recipient_pages_resume_without_starving_other_targets() -> None:
@@ -209,3 +235,71 @@ def test_sources_sought_stage_and_durability_remain_conservative() -> None:
     assert assessment["durability"]["state"] == "ONE_TIME_OR_UNKNOWN"
     assert assessment["technical"]["nsn"] == "2840-00-863-4330RV"
     assert assessment["technical"]["estimated_quantity"] == "12"
+
+
+def _persisted_cross_surface_context(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'federal-context.db'}")
+    metadata.create_all(engine)
+    repository = MonitorRepository(engine)
+    assessment = build_assessment(
+        {
+            **_opportunity("Existing Customer TF33 precision machining Sources Sought"),
+            "official_source_url": "https://sam.gov/opp/notice-1/view",
+            "posted_date": NOW.date().isoformat(),
+            "agency": "Department of Defense",
+        },
+        environment=_environment(), awards=[], partnerships=set(), now=NOW,
+    )
+    row = repository.persist_federal_assessment(assessment, now=NOW)
+    route = next(item for item in assessment["routes"] if item["route_type"] == "CUSTOMER_EXPANSION")
+    return repository, row, route
+
+
+def test_federal_action_preserves_current_assessment_and_replays_idempotently(tmp_path) -> None:
+    repository, row, route = _persisted_cross_surface_context(tmp_path)
+    runtime = SimpleNamespace(
+        monitor=SimpleNamespace(repository=repository),
+        work=WorkService(),
+        environment=lambda: _environment(),
+        observed_at=lambda: NOW,
+    )
+    principal = Principal("seller", "Seller", PrincipalRole.SALESPERSON)
+    body = CreateAction(
+        account_id="customer", title=route["governed_action"],
+        description="Review the governed federal route.",
+        priority=ActionPriority.MEDIUM,
+        evidence_ids=(row["id"], "obs-1"),
+        context_referents=(
+            ("federal_opportunity", row["opportunity_id"]),
+            ("federal_assessment", row["id"]),
+            ("federal_assessment_version", "1"),
+            ("federal_route_type", "CUSTOMER_EXPANSION"),
+        ),
+        idempotency_key="federal-route-replay",
+    )
+    first = create_action(body, runtime, principal)
+    replay = create_action(body, runtime, principal)
+    assert first.id == replay.id
+    assert dict(first.context_referents)["federal_assessment"] == row["id"]
+    with pytest.raises(HTTPException, match="does not support"):
+        create_action(body.model_copy(update={"account_id": "prospect"}), runtime, principal)
+
+
+def test_omni_federal_context_keeps_stage_action_identity_and_source(tmp_path) -> None:
+    _repository, row, route = _persisted_cross_surface_context(tmp_path)
+    projection = {
+        **row["projection"],
+        "assessment_id": row["id"],
+        "assessment_version": row["version"],
+        "selected_route": route,
+        "selected_account_id": "customer",
+        "selected_partnership_id": None,
+    }
+    base = OmniResponse("base", "customer", (), (), (), None)
+    answer = OmniService._federal_opportunity_answer(base, projection)
+    assert "not an open bid" in answer.content
+    assert answer.recommended_action == route["governed_action"]
+    assert answer.context_used["federal_assessment_id"] == row["id"]
+    assert answer.conversation_referent["opportunity_id"] == "notice-1"
+    assert answer.citation_links[0].url == "https://sam.gov/opp/notice-1/view"
+    assert "contract value" not in answer.content.casefold()

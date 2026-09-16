@@ -1,4 +1,4 @@
-import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalProcurement, HostedSession, Itinerary, ItineraryStop, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, ShortlistItem, Signal, StrategicPartnershipDesignation, Suggestion, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalAssessment, FederalProcurement, HostedSession, Itinerary, ItineraryStop, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, ShortlistItem, Signal, StrategicPartnershipDesignation, Suggestion, WorkspaceSettings } from '../types/api'
 import type { RankedRelationships, RelationshipQuery } from '../types/relationships'
 import type { OmniMemory, OmniMemoryInput } from '../types/memory'
 import type { PendingMapAccount } from '../types/api'
@@ -47,6 +47,7 @@ export const api = {
   marketSeries: (id: string, kind: MarketTransformation, average: boolean, signal?: AbortSignal) => actionRequest<MarketDetail>(`/markets/${encodeURIComponent(id)}?kind=${kind}&moving_average=${average}`, { signal }),
   intelligenceEvidence: (eventId: string, signal?: AbortSignal) => request<PublicSourceEvidence>(`/intelligence/${encodeURIComponent(eventId)}/evidence`, { signal }),
   federalProcurement: (params = '', signal?: AbortSignal) => request<FederalProcurement>(`/federal-procurement${params}`, { signal }),
+  federalAssessment: (id: string, signal?: AbortSignal) => actionRequest<FederalAssessment>(`/federal-procurement/assessments/${encodeURIComponent(id)}`, { signal }),
   map: (industry?: string, signal?: AbortSignal) => request<{ layers: string[]; accounts: MapRecord[]; pending_accounts?: PendingMapAccount[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : ''), { signal }),
   currentItinerary: (signal?: AbortSignal) => actionRequest<{ itinerary: Itinerary | null }>('/itineraries/current', { signal }),
   saveItinerary: (body: { title: string; origin_label: string; origin_latitude: string | null; origin_longitude: string | null; stops: ItineraryStop[]; expected_version: number | null; idempotency_key: string }) => actionRequest<Itinerary>('/itineraries/current', { method: 'POST', body: JSON.stringify(body) }),

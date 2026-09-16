@@ -6,6 +6,9 @@ import type {
   MonitorSignalBrief,
   OmniAssessmentSelection,
   OmniContext,
+  OmniFederalSelection,
+  FederalOpportunity,
+  FederalRoute,
   Signal,
   WorkspaceSettings,
 } from "../../types/api";
@@ -217,6 +220,11 @@ export function Intelligence({
   onAccount,
   onEventSelect,
   onCreateAction,
+  onFederalAccount,
+  onFederalPartnership,
+  onFederalRelationship,
+  onFederalOmni,
+  onFederalAction,
   onOmniContext,
 }: {
   signals: Signal[];
@@ -227,8 +235,13 @@ export function Intelligence({
   onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onEventSelect: (id?: string) => void;
   onCreateAction: (brief: MonitorSignalBrief) => void;
+  onFederalAccount: (id: string, selection: OmniFederalSelection) => void;
+  onFederalPartnership: (id: string, selection: OmniFederalSelection) => void;
+  onFederalRelationship: (id: string, selection: OmniFederalSelection) => void;
+  onFederalOmni: (selection: OmniFederalSelection) => void;
+  onFederalAction: (opportunity: FederalOpportunity, route: FederalRoute) => void;
   onOmniContext: (
-    context: Pick<OmniContext, "selected_assessment" | "active_filters" | "visible_record_ids">,
+    context: Pick<OmniContext, "selected_assessment" | "selected_federal_opportunity" | "active_filters" | "visible_record_ids">,
   ) => void;
 }) {
   const [workspace, setWorkspace] = useState<"monitor" | "federal" | "markets">(() => window.location.hash.startsWith('#/intelligence/markets') ? 'markets' : window.location.hash.startsWith('#/intelligence/federal') ? 'federal' : 'monitor');
@@ -378,7 +391,6 @@ export function Intelligence({
       visible_record_ids: ordered.map((item) => item.id).slice(0, 50),
     });
   }, [active, base, onOmniContext, ordered, selected, workspace]);
-  useEffect(() => () => onOmniContext({}), [onOmniContext]);
   const select = (brief: MonitorSignalBrief) => {
     const contextId = briefKey(brief);
     const next = selected === contextId ? undefined : contextId;
@@ -442,7 +454,7 @@ export function Intelligence({
             <Button onClick={() => selectWorkspace('markets')}>Market Intelligence</Button>
           </nav>
         </div>
-        <FederalProcurementView />
+        <FederalProcurementView onAccount={onFederalAccount} onPartnership={onFederalPartnership} onRelationship={onFederalRelationship} onAskOmni={onFederalOmni} onCreateAction={onFederalAction} onOmniContext={onOmniContext} />
       </>
     );
   const selectedBriefing = base.find((item) => briefKey(item) === briefingId)

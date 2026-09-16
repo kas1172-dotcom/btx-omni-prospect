@@ -47,6 +47,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
   const latestResponse = [...messages].reverse().find(message => message.response)?.response
 
   useLayoutEffect(() => { contextRef.current = context }, [context])
+  useEffect(() => { const open = () => setView('quick'); window.addEventListener('btx:open-omni', open); return () => window.removeEventListener('btx:open-omni', open) }, [])
 
   useEffect(() => {
     const transcript = conversation.current
@@ -88,7 +89,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
     <button className="omni-launch" ref={opener} onClick={() => setView('quick')} aria-label="Open Omni assistant">✦ <span>Ask Omni</span></button>
     <Drawer open={view === 'quick'} onClose={close} titleId="quick-omni-title" className="quick-omni" initialFocus={input}>
       <header><h2 id="quick-omni-title">Ask Omni</h2><Button variant="ghost" onClick={() => setView('full')}>Open in Omni</Button><IconButton onClick={close} label="Minimize Omni">−</IconButton><IconButton onClick={close} label="Close Omni">×</IconButton></header>
-      <div className="omni-awareness">Aware of: {activeAccount?.name ?? (context.surface && surfaceLabels[context.surface]) ?? 'current workspace'}{activeAccount && <button onClick={clearContext}>Clear</button>}{!activeAccount && accountId && <button onClick={useSelectedContext}>Use selected organization</button>}</div>
+      <div className="omni-awareness">Aware of: {context.selected_federal_opportunity ? 'selected federal opportunity' : activeAccount?.name ?? (context.surface && surfaceLabels[context.surface]) ?? 'current workspace'}{activeAccount && <button onClick={clearContext}>Clear</button>}{!activeAccount && accountId && <button onClick={useSelectedContext}>Use selected organization</button>}</div>
       <Conversation messages={messages} loading={loading} compact transcriptRef={conversation} onStarter={prompt => void ask(prompt)} />
       <Composer value={question} loading={loading} inputRef={input} onChange={setQuestion} onKeyDown={onKeyDown} onSubmit={() => void ask()} />
       {error && <p className="omni-error" role="alert">{error}</p>}

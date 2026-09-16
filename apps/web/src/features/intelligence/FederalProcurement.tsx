@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../api/client'
-import type { FederalOpportunity, FederalProcurement, FederalRoute } from '../../types/api'
+import type { FederalOpportunity, FederalProcurement, FederalRoute, OmniContext, OmniFederalSelection } from '../../types/api'
 import { Button, Drawer, Empty, Notice, Panel, SelectInput, StatTile, StatusBadge } from '../../components/UI'
 import { GovernedExplanationDisclosure } from '../../components/GovernedExplanationDisclosure'
 import { SupportingEvidence } from '../../components/SupportingEvidence'
@@ -10,7 +10,18 @@ const displayDate = (value?: string) => value ? new Date(value).toLocaleDateStri
 const routeLabel = (route?: FederalRoute | null) => route?.label ?? 'Route needs investigation'
 type SortKey = 'title' | 'stage' | 'agency' | 'deadline' | 'relevance' | 'route'
 
-export function FederalProcurementView() {
+type FederalHandlers = {
+  onAccount: (id: string, selection: OmniFederalSelection) => void
+  onPartnership: (id: string, selection: OmniFederalSelection) => void
+  onRelationship: (id: string, selection: OmniFederalSelection) => void
+  onAskOmni: (selection: OmniFederalSelection) => void
+  onCreateAction: (opportunity: FederalOpportunity, route: FederalRoute) => void
+  onOmniContext: (context: Pick<OmniContext, 'selected_federal_opportunity' | 'visible_record_ids'>) => void
+}
+
+const federalSelection = (opportunity: FederalOpportunity, route: FederalRoute): OmniFederalSelection | undefined => opportunity.assessment ? ({ opportunity_id: opportunity.opportunity_id, assessment_id: opportunity.assessment.assessment_id, assessment_version: opportunity.assessment.assessment_version, route_type: route.route_type, account_id: route.account_id, partnership_id: route.route_type === 'STRATEGIC_PARTNER' ? route.account_id : undefined }) : undefined
+
+export function FederalProcurementView({ onAccount, onPartnership, onRelationship, onAskOmni, onCreateAction, onOmniContext }: FederalHandlers) {
   const [tab, setTab] = useState<'active' | 'awarded'>('active')
   const [data, setData] = useState<FederalProcurement>()
   const [filter, setFilter] = useState(''); const [fiscalYear, setFiscalYear] = useState('')
@@ -21,6 +32,7 @@ export function FederalProcurementView() {
     void api.federalProcurement(params.size ? `?${params}` : '', controller.signal).then(value => { if (!controller.signal.aborted) { setData(value); setState('loaded') } }).catch(error => { if (error?.name !== 'AbortError') setState('error') })
     return () => controller.abort()
   }, [filter, fiscalYear, retry])
+  useEffect(() => { onOmniContext({ visible_record_ids: data?.active.opportunities.map(item => item.opportunity_id).slice(0, 50) ?? [] }) }, [data?.active.opportunities, onOmniContext])
   const retryRecords = () => { setState('loading'); setRetry(value => value + 1) }
   if (!data) return <div className="surface federal-procurement"><header className="page-title intelligence-title"><span className="eyebrow">Intelligence workspace</span><h1>Federal Procurement</h1><p>Federal requirements, award history and governed commercial routes.</p></header>{state === 'loading' ? <p role="status">Loading saved federal procurement records…</p> : <Empty>Federal procurement data could not be loaded. No zero-value metrics are shown. <Button onClick={retryRecords}>Retry federal records</Button></Empty>}</div>
   return <div className="surface intelligence-surface federal-procurement">
@@ -28,8 +40,8 @@ export function FederalProcurementView() {
     <div className="federal-tabs" role="tablist" aria-label="Federal Procurement views"><Button role="tab" aria-selected={tab === 'active'} onClick={() => setTab('active')}>Opportunity pipeline</Button><Button role="tab" aria-selected={tab === 'awarded'} onClick={() => setTab('awarded')}>Awarded dollars</Button></div>
     {state === 'loading' && <p role="status">Refreshing federal procurement records… Existing records retain their prior source dates.</p>}
     {state === 'error' && <Notice tone="warning">Federal procurement could not refresh. Previously loaded records remain visible with their saved source dates. <Button onClick={retryRecords}>Retry federal records</Button></Notice>}
-    {tab === 'active' ? <Active data={data} filter={filter} setFilter={value => { setState('loading'); setFilter(value) }} onSelect={setSelected} /> : <Awarded data={data} fiscalYear={fiscalYear} setFiscalYear={value => { setState('loading'); setFiscalYear(value) }} />}
-    <OpportunityDrawer selected={selected} close={() => setSelected(undefined)} />
+    {tab === 'active' ? <Active data={data} filter={filter} setFilter={value => { setState('loading'); setFilter(value) }} onSelect={item => { setSelected(item); const route = item.assessment?.recommended_route; onOmniContext({ selected_federal_opportunity: route ? federalSelection(item, route) : undefined }) }} /> : <Awarded data={data} fiscalYear={fiscalYear} setFiscalYear={value => { setState('loading'); setFiscalYear(value) }} />}
+    <OpportunityDrawer key={selected?.assessment?.assessment_id ?? 'none'} selected={selected} close={() => { setSelected(undefined); onOmniContext({ selected_federal_opportunity: undefined }) }} onAccount={onAccount} onPartnership={onPartnership} onRelationship={onRelationship} onAskOmni={(selection) => { onOmniContext({ selected_federal_opportunity: selection }); onAskOmni(selection) }} onCreateAction={onCreateAction} onSelectContext={(selection) => onOmniContext({ selected_federal_opportunity: selection })} />
   </div>
 }
 
@@ -56,11 +68,14 @@ function Active({ data, filter, setFilter, onSelect }: { data: FederalProcuremen
     <Panel title="Opportunity pipeline"><div className="federal-table-scroll" tabIndex={0} aria-label="Scrollable federal opportunity results"><table className="federal-results-table"><thead><tr>{([['title','Requirement'],['stage','Stage'],['agency','Agency'],['deadline','Response date'],['relevance','Relevance'],['route','Best supported route']] as Array<[SortKey,string]>).map(([key,label]) => <th key={key} scope="col" aria-sort={ariaSort(key)}><button type="button" onClick={() => changeSort(key)}>{label}<span aria-hidden="true">{sort === key ? ascending ? '↑' : '↓' : '↕'}</span></button></th>)}</tr></thead><tbody>{opportunities.map(item => <tr key={item.canonical_source_id}><th scope="row"><button className="federal-result-link" onClick={() => onSelect(item)}>{item.title}</button><small>{item.solicitation_number ?? item.opportunity_id}</small></th><td><StatusBadge value={item.stage.label} /><small>{item.stage.code === 'SOURCES_SOUGHT' ? 'Not an open bid' : item.stage.explanation}</small></td><td>{item.agency ?? 'Unavailable'}</td><td>{displayDate(item.response_deadline)}</td><td>{item.relevance.score}/100</td><td>{routeLabel(item.assessment?.recommended_route)}</td></tr>)}</tbody></table>{!opportunities.length && <Empty>No active SAM opportunities are currently collected. This is not a zero market estimate.</Empty>}</div></Panel></>
 }
 
-function OpportunityDrawer({ selected, close }: { selected?: FederalOpportunity; close: () => void }) {
+function OpportunityDrawer({ selected, close, onAccount, onPartnership, onRelationship, onAskOmni, onCreateAction, onSelectContext }: { selected?: FederalOpportunity; close: () => void; onAccount: FederalHandlers['onAccount']; onPartnership: FederalHandlers['onPartnership']; onRelationship: FederalHandlers['onRelationship']; onAskOmni: FederalHandlers['onAskOmni']; onCreateAction: FederalHandlers['onCreateAction']; onSelectContext: (selection: OmniFederalSelection) => void }) {
   const assessment = selected?.assessment
+  const [routeType, setRouteType] = useState<FederalRoute['route_type'] | undefined>(assessment?.recommended_route?.route_type)
+  const route = assessment?.routes.find(item => item.route_type === routeType) ?? assessment?.recommended_route
+  const selection = selected && route ? federalSelection(selected, route) : undefined
   return <Drawer open={Boolean(selected)} onClose={close} titleId="federal-detail"><div className="drawer-head"><h2 id="federal-detail">{selected?.title}</h2><Button onClick={close}>Close</Button></div>{selected && <div className="detail-stack"><div className="status-row"><StatusBadge value={selected.stage.label} /><StatusBadge value={`Relevance ${selected.relevance.score}/100`} /></div><p>{selected.stage.explanation}</p><p>{selected.relevance.calibration_label}</p>{assessment?.recommended_route && <Notice title={assessment.recommended_route.label}>{assessment.recommended_route.why}<br /><strong>Next:</strong> {assessment.recommended_route.governed_action}</Notice>}
     <div className="meta-grid"><span>Agency<strong>{selected.agency ?? 'Unavailable'}</strong></span><span>Response date<strong>{displayDate(selected.response_deadline)}</strong></span><span>NAICS<strong>{selected.naics ?? 'Unavailable'}</strong></span><span>PSC<strong>{selected.psc ?? 'Unavailable'}</strong></span><span>NSN<strong>{assessment?.technical.nsn ?? 'Unavailable'}</strong></span><span>Part number<strong>{assessment?.technical.part_number ?? 'Unavailable'}</strong></span></div>
-    {assessment && <><Panel title="Commercial routes">{assessment.routes.map(route => <article className="federal-route" key={`${route.route_type}-${route.account_id ?? 'btx'}`}><div><strong>{route.label}</strong><StatusBadge value={`${route.score}/100`} /></div><p>{route.why}</p><small>{route.unknowns.join(' · ')}</small></article>)}</Panel><Panel title="Program durability"><strong>{assessment.durability.label}</strong><p>{assessment.durability.explanation}</p></Panel></>}
+    {assessment && <><Panel title="Commercial routes">{assessment.routes.map(item => <article className="federal-route" key={`${item.route_type}-${item.account_id ?? 'btx'}`}><div><strong>{item.label}</strong><StatusBadge value={`${item.score}/100`} /></div><p>{item.why}</p><small>{item.unknowns.join(' · ')}</small><Button variant={route?.route_type === item.route_type ? 'primary' : 'ghost'} onClick={() => { setRouteType(item.route_type); const next = federalSelection(selected, item); if (next) onSelectContext(next) }}>{route?.route_type === item.route_type ? 'Selected route' : 'Compare this route'}</Button></article>)}</Panel>{route && selection && <section className="federal-route-actions" aria-label="Selected route actions"><h3>Work with this route</h3>{route.account_id && route.route_type !== 'STRATEGIC_PARTNER' && <Button onClick={() => onAccount(route.account_id!, selection)}>Open organization profile</Button>}{route.account_id && route.route_type === 'STRATEGIC_PARTNER' && <Button onClick={() => onPartnership(route.account_id!, selection)}>Open Strategic Partnership profile</Button>}{route.account_id && <Button onClick={() => onRelationship(route.account_id!, selection)}>Explore relationship route</Button>}<Button onClick={() => onAskOmni(selection)}>Ask Omni about this opportunity</Button>{route.account_id && <Button variant="primary" onClick={() => onCreateAction(selected, route)}>Create or review Action proposal</Button>}</section>}<Panel title="Program durability"><strong>{assessment.durability.label}</strong><p>{assessment.durability.explanation}</p></Panel></>}
     <GovernedExplanationDisclosure title="Why this opportunity is relevant" explanation={selected.governed_explanation} />
     <SupportingEvidence count={assessment?.supporting_evidence_count ?? 1} investigationKey={`federal:${selected.opportunity_id}:${assessment?.assessment_version ?? 0}`}><section><h3>Official source facts</h3><p>{selected.description || 'The saved source did not include a synopsis.'}</p><a href={selected.official_source_url} target="_blank" rel="noreferrer">Open official SAM.gov record →</a></section>{assessment && <><section><h3>Technical and qualification gaps</h3><ul>{assessment.technical.remaining_unknowns.map(item => <li key={item}>{item}</li>)}</ul></section><section><h3>Route evidence and unknowns</h3>{assessment.routes.map(route => <div key={`${route.route_type}-evidence`}><strong>{route.label}</strong><p>{route.evidence_state.replaceAll('_',' ').toLowerCase()}: {route.why}</p></div>)}</section><section><h3>Score details</h3>{selected.relevance.factors.map(factor => <div className="line" key={factor.name}><span>{factor.name}: {factor.state}</span><strong>{factor.points}/{factor.weight}</strong></div>)}</section></>}</SupportingEvidence></div>}</Drawer>
 }

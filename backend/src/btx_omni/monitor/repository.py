@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from threading import RLock
 
 from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, update
 
@@ -253,6 +254,7 @@ class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
         self.research = MonitorResearchJournal(engine)
+        self._federal_assessment_lock = RLock()
 
     @contextmanager
     def operational_lock(self):
@@ -369,13 +371,35 @@ class MonitorRepository:
                 for row in rows
             )
 
+    def federal_assessment_by_id(
+        self, assessment_id: str, *, version: int | None = None
+    ) -> dict | None:
+        """Read one persisted assessment without reconstructing its projection."""
+        with self.engine.connect() as connection:
+            query = select(federal_opportunity_assessments).where(
+                federal_opportunity_assessments.c.id == assessment_id
+            )
+            if version is not None:
+                query = query.where(federal_opportunity_assessments.c.version == version)
+            row = connection.execute(query).mappings().one_or_none()
+            return (
+                {**dict(row), "projection": json.loads(row["projection"])}
+                if row
+                else None
+            )
+
     def persist_federal_assessment(
         self, projection: dict, *, now: datetime
     ) -> dict:
         opportunity_id = projection["opportunity_id"]
         source_revision = projection["source_revision"]
         input_revision = projection["input_revision"]
-        with self.engine.begin() as connection:
+        with self._federal_assessment_lock, self.engine.begin() as connection:
+            if connection.dialect.name == "postgresql":
+                connection.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtext(:key))"),
+                    {"key": f"federal-assessment:{opportunity_id}"},
+                )
             current = connection.execute(
                 select(federal_opportunity_assessments).where(
                     federal_opportunity_assessments.c.opportunity_id == opportunity_id,

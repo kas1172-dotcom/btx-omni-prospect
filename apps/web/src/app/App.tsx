@@ -6,7 +6,7 @@ import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { Today, type TodayFilters } from '../features/today/Today'
 import { workspaceHash, workspaceLocation, type Surface } from './navigation'
-import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalOpportunity, FederalRoute, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
@@ -18,7 +18,7 @@ const Communications = deferredSurface(() => import('../features/communications/
 const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
 const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Monitor', 'Monitor')
 const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
-type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
+type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
 const nav: Array<[Surface, string]> = [
   ['today', 'Today'],
   ['accounts', 'Customers & Prospects'],
@@ -86,7 +86,7 @@ export default function App() {
   const clearSelectedAction = useCallback(() => { setSelectedActionId(undefined); setActionSourceAlertId(undefined) }, [])
   const clearViewContext = useCallback(() => setViewContext({}), [])
   const selectMapFacility = useCallback((facilityId?: string, accountId?: string) => { setSelectedMapFacilityId(facilityId); setSelectedMapAccountId(accountId) }, [])
-  const select = useCallback(async (id: string, recordHistory = true, assessment?: OmniAssessmentSelection) => {
+  const select = useCallback(async (id: string, recordHistory = true, assessment?: OmniAssessmentSelection, federal?: OmniFederalSelection) => {
     accountRequest.current?.abort()
     const controller = new AbortController(); accountRequest.current = controller
     setAccountOpening(id)
@@ -98,7 +98,8 @@ export default function App() {
       else clearSelectedEvent()
       clearMapSelection()
       clearSelectedAction()
-      if (assessment) setViewContext({ selected_event_id: assessment.event_id, selected_assessment: assessment })
+      if (federal) setViewContext({ selected_federal_opportunity: federal })
+      else if (assessment) setViewContext({ selected_event_id: assessment.event_id, selected_assessment: assessment })
       else clearViewContext()
       setDetail(result)
       setSurface('accounts')
@@ -145,6 +146,36 @@ export default function App() {
       setError(err instanceof Error ? err.message : 'The action proposal could not be created.')
     }
   }, [navigate])
+  const createFederalAction = useCallback(async (opportunity: FederalOpportunity, route: FederalRoute) => {
+    const assessment = opportunity.assessment
+    if (!assessment || !route.account_id) {
+      setError('This route does not establish an organization for a governed Action proposal.')
+      return
+    }
+    const referents: Array<[string, string]> = [
+      ['federal_opportunity', opportunity.opportunity_id],
+      ['federal_assessment', assessment.assessment_id],
+      ['federal_assessment_version', String(assessment.assessment_version)],
+      ['federal_route_type', route.route_type],
+    ]
+    if (route.route_type === 'STRATEGIC_PARTNER') referents.push(['strategic_partnership', route.account_id])
+    try {
+      const created = await api.createAction({
+        account_id: route.account_id,
+        title: route.governed_action,
+        description: `${opportunity.title}. ${route.why} Unknowns: ${route.unknowns.join('; ') || 'No additional route gaps recorded.'}`,
+        priority: opportunity.stage.code === 'SOLICITATION' ? 'HIGH' : 'MEDIUM',
+        evidence_ids: [assessment.assessment_id, ...(assessment.evidence_references ?? [])],
+        context_referents: referents,
+        approval_required: false,
+        idempotency_key: `federal-${assessment.assessment_id.slice(0, 40)}-${route.route_type.toLowerCase()}`,
+      })
+      setItems(current => current.some(item => item.id === created.id) ? current : [created, ...current])
+      setActionWarning('Federal opportunity validation proposal restored from its canonical assessment. No external write was performed.')
+      navigate('actions')
+      setSelectedActionId(created.id)
+    } catch (err) { setError(err instanceof Error ? err.message : 'The federal Action proposal could not be created.') }
+  }, [navigate])
   useEffect(() => {
     if (authState !== 'authenticated') return
     const restore = () => { const location = workspaceLocation(window.location.hash); if (location.accountId) void select(location.accountId, false); else navigate(location.surface, false) }
@@ -187,9 +218,9 @@ export default function App() {
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
   const content =
     surface === 'accounts' ? (
-      <Accounts accounts={accounts} detail={detail} initialAssessment={viewContext.selected_assessment} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
+      <Accounts accounts={accounts} detail={detail} initialAssessment={viewContext.selected_assessment} initialFederal={viewContext.selected_federal_opportunity} initialSnapshot={portfolioSnapshot} onSnapshot={setPortfolioSnapshot} onSelect={(id) => void select(id)} onBack={() => navigate('accounts')} onOmniContext={setViewContext} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onOmniContext={setViewContext} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal) => void select(id, true, undefined, federal)} onFederalPartnership={(id, federal) => void select(id, true, undefined, federal)} onFederalRelationship={(id, federal) => void select(id, true, undefined, federal)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} />
     ) : surface === 'map' ? (
       <Map
         records={records}
@@ -211,7 +242,7 @@ export default function App() {
         onOmniContext={setViewContext}
       />
     ) : surface === 'actions' ? (
-      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} />
+      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={selectedActionId} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} />
     ) : surface === 'communications' ? (
       <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
@@ -277,6 +308,7 @@ export default function App() {
     selected_account_id: selectedAccountId,
     selected_event_id: surface === 'intelligence' || surface === 'today' || surface === 'map' || (surface === 'accounts' && detail) ? (viewContext.selected_assessment?.event_id ?? selectedEventId ?? viewContext.selected_event_id) : undefined,
     selected_assessment: viewContext.selected_assessment,
+    selected_federal_opportunity: viewContext.selected_federal_opportunity,
     selected_program_id: surface === 'today' ? viewContext.selected_program_id : undefined,
     selected_facility_id: surface === 'map' ? selectedMapFacilityId : undefined,
     selected_action_id: surface === 'actions' ? selectedActionId : undefined,

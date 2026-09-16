@@ -209,8 +209,18 @@ def build_assessment(opportunity: dict[str, Any], *, environment: Any, awards: l
     opportunity["technical"] = technical_decomposition(opportunity.get("source_payload", {}))
     opportunity["durability"] = durability_assessment(opportunity, awards)
     routes = route_opportunity(opportunity, environment=environment, partnerships=partnerships)
+    source = {
+        "canonical_source_id": opportunity.get("canonical_source_id"),
+        "title": opportunity.get("title"),
+        "official_source_url": opportunity.get("official_source_url"),
+        "agency": opportunity.get("agency"),
+        "office": opportunity.get("office"),
+        "posted_date": opportunity.get("posted_date"),
+        "response_deadline": opportunity.get("response_deadline"),
+    }
     input_revision = hashlib.sha256(json.dumps({
         "source": source_revision,
+        "source_context": source,
         "technical": opportunity["technical"],
         "routes": routes,
         "durability": opportunity["durability"],
@@ -227,4 +237,6 @@ def build_assessment(opportunity: dict[str, Any], *, environment: Any, awards: l
         "supporting_evidence_count": 1 + len(routes),
         "assessed_at": now.isoformat(),
         "policy_version": "BTX_FEDERAL_ROUTING_POC_1",
+        "source": source,
+        "evidence_references": [value for value in (source["canonical_source_id"],) if value],
     }

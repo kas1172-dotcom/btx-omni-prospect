@@ -285,6 +285,23 @@ test('External Intelligence preserves governed priority, source modes, Radar, an
   assert.doesNotMatch(intelligence, /Confidence Fit|For BU 1 Sales Leadership|momentum percentage/i)
 })
 
+test('Federal opportunities preserve one governed context across seller workflows', () => {
+  assert.match(federal, /Open organization profile/)
+  assert.match(federal, /Open Strategic Partnership profile/)
+  assert.match(federal, /Explore relationship route/)
+  assert.match(federal, /Ask Omni about this opportunity/)
+  assert.match(federal, /Create or review Action proposal/)
+  assert.match(federal, /selected_federal_opportunity/)
+  assert.match(accounts, /Potential joint pursuits/)
+  assert.match(accounts, /Federal opportunity starting context/)
+  assert.match(accounts, /graph shows only recorded canonical connections/i)
+  assert.match(actions, /Federal opportunity context/)
+  assert.match(app, /\['federal_assessment', assessment\.assessment_id\]/)
+  assert.match(app, /assessment_version/)
+  assert.match(app, /federal_route_type/)
+  assert.match(client, /federalAssessment/)
+})
+
 test('Intelligence sends canonical selected event context to the shared Omni request and clears it on navigation', () => {
   const drawer = readFileSync(new URL('../src/components/OmniDrawer.tsx', import.meta.url), 'utf8')
   assert.match(intelligence, /onEventSelect/)
