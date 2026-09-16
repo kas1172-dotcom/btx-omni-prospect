@@ -206,6 +206,10 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         if isinstance(latest_run, dict)
         else getattr(latest_run, "failures", ())
     )
+    blocking_failures = tuple(
+        item for item in latest_failures
+        if not str(item).startswith("AWAITING_CONTINUATION:")
+    )
     if not worker_ready:
         worker_runtime_state = "WORKER_RUNTIME_NOT_CONFIGURED"
         scheduler_state = "SCHEDULE_NOT_CONFIRMED"
@@ -215,7 +219,7 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     elif latest_run is None:
         worker_runtime_state = "WORKER_READY_FOR_INVOCATION"
         scheduler_state = "SCHEDULE_CONFIGURED_AWAITING_RUN"
-    elif latest_failures:
+    elif blocking_failures:
         worker_runtime_state = "WORKER_READY_FOR_INVOCATION"
         scheduler_state = "LATEST_SCHEDULED_RUN_FAILED"
     elif latest_completed and datetime.now(UTC) - latest_completed > timedelta(hours=runtime.settings.monitor_stale_after_hours):
@@ -301,6 +305,10 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             "more_available": len(persisted_window) > SELLER_BRIEF_WINDOW_LIMIT,
             "selection": "evidence and display eligibility, commercial relevance, then deterministic rank before limit",
         },
+        "federal_procurement_coverage": (
+            runtime.monitor.repository.procurement_coverage(None)
+            if runtime.monitor.repository else ()
+        ),
     }
 
 
@@ -330,7 +338,15 @@ def operational_collect(
     if source_id not in REGISTRY:
         raise HTTPException(404, "Unknown Monitor source.")
     run = runtime.monitor.collect(source_id)
-    return {"run": run, "data_mode": "LIVE_PUBLIC" if not run.failures else "FAILED"}
+    blocking = tuple(
+        item for item in run.failures
+        if not str(item).startswith("AWAITING_CONTINUATION:")
+    )
+    return {
+        "run": run,
+        "data_mode": "FAILED" if blocking else "LIVE_PUBLIC",
+        "coverage_state": "PARTIAL" if run.failures and not blocking else "COMPLETE" if not run.failures else "FAILED",
+    }
 
 
 @router.post("/internal/collect", include_in_schema=False)

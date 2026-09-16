@@ -306,6 +306,50 @@ monitor_source_health = Table(
     Column("detail", Text),
     Column("updated_at", DateTime(timezone=True), nullable=False),
 )
+federal_collection_checkpoints = Table(
+    "federal_collection_checkpoints",
+    metadata,
+    Column("source_id", String(100), primary_key=True),
+    Column("query_key", String(160), primary_key=True),
+    Column("query_value", String(160), nullable=False),
+    Column("window_start", DateTime(timezone=True), nullable=False),
+    Column("window_end", DateTime(timezone=True), nullable=False),
+    Column("offset", Integer, nullable=False),
+    Column("page_size", Integer, nullable=False),
+    Column("total_records", Integer),
+    Column("coverage_state", String(32), nullable=False),
+    Column("last_attempt_at", DateTime(timezone=True)),
+    Column("last_success_at", DateTime(timezone=True)),
+    Column("last_complete_at", DateTime(timezone=True)),
+    Column("next_retry_at", DateTime(timezone=True)),
+    Column("source_modified_at", DateTime(timezone=True)),
+    Column("records_collected", Integer, nullable=False),
+    Column("records_created", Integer, nullable=False),
+    Column("records_updated", Integer, nullable=False),
+    Column("records_unchanged", Integer, nullable=False),
+    Column("records_rejected", Integer, nullable=False),
+    Column("failure_count", Integer, nullable=False),
+    Column("last_error", String(240)),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+federal_opportunity_assessments = Table(
+    "federal_opportunity_assessments",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("opportunity_id", String(300), nullable=False),
+    Column("source_revision", String(64), nullable=False),
+    Column("input_revision", String(64), nullable=False),
+    Column("version", Integer, nullable=False),
+    Column("is_current", Boolean, nullable=False),
+    Column("projection", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint(
+        "opportunity_id", "version", name="uq_federal_opportunity_version"
+    ),
+    Index(
+        "ix_federal_opportunity_current", "opportunity_id", "is_current"
+    ),
+)
 monitor_event_clusters = Table(
     "monitor_event_clusters",
     metadata,

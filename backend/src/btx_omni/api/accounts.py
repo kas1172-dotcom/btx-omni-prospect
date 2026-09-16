@@ -9,6 +9,7 @@ from btx_omni.modules.accounts.customer_360 import (
 )
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.commercial.briefing import commercial_briefing
+from btx_omni.modules.federal_procurement import federal_assessments_for_account
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     customer_attractiveness_subject_key,
     persisted_seller_explanation,
@@ -238,6 +239,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "organization_360": organization_360_projection(
             account=account, commercial=commercial, signals=signals
         ),
+        "federal_opportunities": federal_assessments_for_account(runtime, account_id),
         "provenance": account.provenance,
         "missingness": list(projection.missingness)
         + (

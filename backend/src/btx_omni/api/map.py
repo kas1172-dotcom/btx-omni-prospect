@@ -15,6 +15,7 @@ from btx_omni.domain.markets import PRIMARY_MARKET_ORDER, primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.commercial.briefing import commercial_briefing
 from btx_omni.modules.commercial.map_context import map_commercial_context
+from btx_omni.modules.federal_procurement import federal_assessments_for_account
 from btx_omni.modules.scoring.account_attractiveness import (
     seller_attractiveness_projection,
 )
@@ -183,6 +184,10 @@ def map_data(
         if not industry or industry in account.industries
     )
     selected_ids = {account.id for account in selected_accounts}
+    federal_by_account = {
+        account_id: federal_assessments_for_account(runtime, account_id)[:5]
+        for account_id in selected_ids
+    }
     commercial_accounts = {item.account_id for item in sample.commercial_contexts}
     commercial_alerts = CommercialAlertEngine().evaluate(
         sample.commercial_contexts,
@@ -349,6 +354,9 @@ def map_data(
                     "upcoming_signal_briefs": upcoming_briefs_by_account.get(
                         account.id, ()
                     ),
+                    # Account-scoped only. A federal route never supplies facility
+                    # attribution unless the source has canonical facility evidence.
+                    "federal_opportunities": federal_by_account.get(account.id, ()),
                     "governed_next_step": account_alerts[0].recommended_action
                     if account_alerts
                     else None,

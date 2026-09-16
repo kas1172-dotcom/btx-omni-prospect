@@ -8,6 +8,7 @@ from btx_omni.api.monitor import monitor_health
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.command_center import build_command_center
+from btx_omni.modules.federal_procurement import federal_today_candidates
 
 router = APIRouter(prefix="/today", tags=["today"])
 
@@ -51,4 +52,5 @@ def today(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             for item in alerts
         ],
         "command_center": command_center,
+        "federal_opportunities": federal_today_candidates(runtime),
     }
