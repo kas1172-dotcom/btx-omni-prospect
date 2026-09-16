@@ -661,8 +661,12 @@ class GeminiProvider:
             prompt,
             types.GenerateContentConfig(
                 temperature=0,
-                max_output_tokens=3200,
+                # Gemini 3 counts thinking against this output budget. The prior
+                # 3,200-token cap exhausted during bounded Javelin decomposition
+                # before a complete JSON document was returned.
+                max_output_tokens=6000,
                 response_mime_type="application/json",
+                thinking_config=self._read_thinking(),
             ),
         )
         return self._technical_result(content, request)

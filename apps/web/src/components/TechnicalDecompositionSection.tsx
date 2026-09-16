@@ -51,13 +51,13 @@ export function TechnicalDecompositionSection({ technical, compact = false }: { 
     childrenByParent.set(key, [...(childrenByParent.get(key) ?? []), component])
   }
   const roots = childrenByParent.get('') ?? components.filter(item => !components.some(parent => parent.name === item.parent_component))
-  const citations = Array.from(new Map((technical.citations ?? []).map(item => [`${item.url ?? ''}|${item.title}`, item])).values())
+  const citations = technical.citations ?? []
   return <section className="technical-decomposition" aria-labelledby="technical-decomposition-heading">
     <div><span className="eyebrow">Evidence-governed research</span><h2 id="technical-decomposition-heading">Components and BTX fit</h2></div>
     <p>{technical.event_summary}</p>
     <div className="technical-layer-key" aria-label="Evidence layer key"><State value="Confirmed in this announcement" /><State value="Supported program architecture" /><State value="Possible BTX fit — validation required" /></div>
     <ul className="technical-component-tree">{roots.map(component => <Branch key={component.component_id ?? component.name} component={component} childrenByParent={childrenByParent} hypotheses={hypotheses} />)}</ul>
     {!!technical.uncertainties.length && <div><strong>What remains unknown</strong><ul>{technical.uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
-    {!!citations.length && <div className="technical-citations"><strong>Supporting public sources</strong>{citations.map(item => <EvidenceSource key={`${item.url ?? ''}:${item.title}`} title={item.title} source={item.provenance?.split('|')[0] ?? 'Public source'} date={citationDate(item.provenance)} evidenceState="CITED" url={item.url ?? undefined} detail="High-level public architecture only; no supplier relationship is implied." />)}</div>}
+    {!!citations.length && <div className="technical-citations"><strong>Supporting public sources</strong>{citations.map(item => <EvidenceSource key={`${item.source_url ?? item.url ?? ''}:${item.source_revision ?? item.evidence_id}`} title={item.title} source={item.publisher ?? item.provenance?.split('|')[0] ?? 'Public source'} date={item.publication_date ?? citationDate(item.provenance)} evidenceState="CITED" url={item.source_url ?? item.url ?? undefined} detail="High-level public architecture only; no supplier relationship is implied." />)}</div>}
   </section>
 }

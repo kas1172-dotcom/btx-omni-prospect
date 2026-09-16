@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from btx_omni.modules.scoring.commercial_decisions import customer_decisions
 from btx_omni.monitor.briefs import SignalBrief
-from btx_omni.monitor.documents import document_evidence
+from btx_omni.monitor.documents import canonical_public_evidence, document_evidence
 from btx_omni.monitor.policy import analysis_eligibility
 
 RISK_TYPES = frozenset(
@@ -289,15 +289,7 @@ def assemble_evidence_package(
                 "truth_class": "PUBLIC_SOURCE",
             }
         )
-    deduplicated_public = {}
-    for item in (*public, *technical_citations):
-        key = item.get("source_url") or item.get("evidence_id") or item.get("title")
-        previous = deduplicated_public.get(key)
-        if previous is None or (
-            not previous.get("publication_date") and item.get("publication_date")
-        ):
-            deduplicated_public[key] = item
-    public = list(deduplicated_public.values())
+    public = canonical_public_evidence([*public, *technical_citations])
     fits = []
     for item in technical.get("matches", ())[:8]:
         units = item.get("business_units", ()) or (
@@ -660,11 +652,20 @@ def persist_assessment(
 def apply_persisted_assessment(
     brief: SignalBrief, persisted: dict | None
 ) -> SignalBrief:
-    if not persisted or persisted.get("input_revision") != brief.input_revision:
+    if not persisted or (
+        brief.input_revision is not None
+        and persisted.get("input_revision") != brief.input_revision
+    ):
         return brief
     projection = persisted.get("projection") or {}
+    package = projection.get("evidence_package") or brief.evidence_package
+    scores = package.get("deterministic_scores", {}) if package else {}
+    facility = package.get("facility") if package else None
     return replace(
         brief,
+        context_id=f"{brief.id}:{persisted.get('account_id')}"
+        if persisted.get("account_id")
+        else brief.id,
         headline=str(projection.get("headline") or brief.headline),
         what_happened=str(projection.get("what_happened") or brief.what_happened),
         why_it_may_matter=str(
@@ -674,6 +675,41 @@ def apply_persisted_assessment(
         action_rationale=projection.get("action_rationale"),
         material_uncertainties=tuple(
             projection.get("material_uncertainties", brief.material_uncertainties)
+        ),
+        references=tuple(projection.get("references", brief.references)),
+        evidence_ids=tuple(projection.get("evidence_ids", brief.evidence_ids)),
+        technical_opportunity=projection.get("technical_opportunity")
+        or (package or {}).get("technical_decomposition")
+        or brief.technical_opportunity,
+        signal_confidence=scores.get("signal_confidence") or brief.signal_confidence,
+        risk_severity=scores.get("public_risk_severity") or brief.risk_severity,
+        analysis_status=str(
+            projection.get("analysis_status") or brief.analysis_status
+        ),
+        commercial_relevance_state=str(
+            projection.get("commercial_relevance_state")
+            or brief.commercial_relevance_state
+        ),
+        priority_eligible=bool(
+            projection.get("priority_eligible", brief.priority_eligible)
+        ),
+        evidence_package=package,
+        input_revision=str(persisted.get("input_revision") or brief.input_revision),
+        canonical_facility_id=(facility or {}).get("id")
+        if facility
+        else brief.canonical_facility_id,
+        geographic_scope="FACILITY" if facility else "ACCOUNT",
+        event_timing=(
+            "OBSERVED"
+            if brief.event_timing == "UNKNOWN" and brief.publication_timestamp
+            else brief.event_timing
+        ),
+        resolution_state=str(
+            persisted.get("event_resolution_state") or brief.resolution_state
+        ),
+        seller_promotion_state=str(
+            persisted.get("event_seller_relevance_state")
+            or brief.seller_promotion_state
         ),
         seller_summary=str(projection.get("seller_summary") or brief.seller_summary),
         summary_mode=str(projection.get("summary_mode") or brief.summary_mode),

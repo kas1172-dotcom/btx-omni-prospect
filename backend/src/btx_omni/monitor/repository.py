@@ -1152,10 +1152,7 @@ class MonitorRepository:
             )
         if not row:
             return None
-        value = dict(row)
-        value["projection"] = json.loads(value["projection"])
-        value["created_at"] = _database_timestamp(value["created_at"])
-        return value
+        return self._assessment_row(dict(row))
 
     def intelligence_assessment_history(
         self,
@@ -1179,14 +1176,7 @@ class MonitorRepository:
                 .mappings()
                 .all()
             )
-        return tuple(
-            {
-                **dict(row),
-                "projection": json.loads(row["projection"]),
-                "created_at": _database_timestamp(row["created_at"]),
-            }
-            for row in rows
-        )
+        return tuple(self._assessment_row(dict(row)) for row in rows)
 
     def intelligence_assessment_by_id(self, assessment_id: str) -> dict | None:
         with self.engine.connect() as connection:
@@ -1201,16 +1191,62 @@ class MonitorRepository:
             )
         if not row:
             return None
+        return self._assessment_row(dict(row))
+
+    @staticmethod
+    def _assessment_projection(projection: str | dict, source_revision: str | None) -> dict:
+        """Return the canonical seller projection with normalized public evidence."""
+        from btx_omni.monitor.documents import canonical_public_evidence
+
+        value = json.loads(projection) if isinstance(projection, str) else dict(projection)
+        package = dict(value.get("evidence_package") or {})
+        public = canonical_public_evidence(
+            list(package.get("public_evidence") or ()),
+            default_revision=source_revision,
+        )
+        if public:
+            package["public_evidence"] = public
+            value["evidence_package"] = package
+            value["references"] = [
+                {
+                    "evidence_id": item.get("evidence_id"),
+                    "title": item.get("title"),
+                    "url": item.get("source_url") or item.get("url"),
+                    "publication_date": item.get("publication_date"),
+                    "source_revision": item.get("source_revision"),
+                }
+                for item in public
+            ]
+        technical = dict(
+            value.get("technical_opportunity")
+            or package.get("technical_decomposition")
+            or {}
+        )
+        if technical.get("citations"):
+            technical["citations"] = canonical_public_evidence(
+                list(technical["citations"]),
+                default_revision=source_revision,
+            )
+            value["technical_opportunity"] = technical
+            if package:
+                package["technical_decomposition"] = technical
+                value["evidence_package"] = package
+        return value
+
+    @classmethod
+    def _assessment_row(cls, row: dict) -> dict:
         return {
             **dict(row),
-            "projection": json.loads(row["projection"]),
+            "projection": cls._assessment_projection(
+                row["projection"], row.get("source_revision")
+            ),
             "created_at": _database_timestamp(row["created_at"]),
         }
 
     def current_intelligence_assessments(
         self, *, limit: int = 1000
     ) -> tuple[dict, ...]:
-        """Return a bounded newest-first index for seller read-window selection."""
+        """Return current assessment rows for history and operational callers."""
         with self.engine.connect() as connection:
             rows = (
                 connection.execute(
@@ -1220,19 +1256,92 @@ class MonitorRepository:
                         monitor_intelligence_assessments.c.created_at.desc(),
                         monitor_intelligence_assessments.c.id,
                     )
-                    .limit(limit)
+                    .limit(max(0, limit))
                 )
                 .mappings()
                 .all()
             )
-        return tuple(
-            {
-                **dict(row),
-                "projection": json.loads(row["projection"]),
-                "created_at": _database_timestamp(row["created_at"]),
-            }
-            for row in rows
+        return tuple(self._assessment_row(dict(row)) for row in rows)
+
+    def current_display_assessments(
+        self,
+        *,
+        limit: int = 1000,
+        account_ids: frozenset[str] | None = None,
+        priority_only: bool = False,
+    ) -> tuple[dict, ...]:
+        """Select the canonical current seller assessments before bounding results.
+
+        Operational event windows do not participate in this product read. The
+        account-wide assessment is the cross-surface owner; BU projections remain
+        available by direct context lookup without duplicating portfolio results.
+        """
+        with self.engine.connect() as connection:
+            rows = (
+                connection.execute(
+                    select(
+                        monitor_intelligence_assessments,
+                        monitor_events.c.resolution_state.label("event_resolution_state"),
+                        monitor_events.c.seller_relevance_state.label("event_seller_relevance_state"),
+                    )
+                    .join(
+                        monitor_events,
+                        monitor_events.c.id
+                        == monitor_intelligence_assessments.c.event_id,
+                    )
+                    .where(
+                        monitor_intelligence_assessments.c.is_current.is_(True),
+                        monitor_intelligence_assessments.c.business_unit_id.is_(None),
+                        monitor_events.c.resolution_state == "RESOLVED",
+                        monitor_events.c.seller_relevance_state.in_(
+                            ("RESOLVED_ELIGIBLE", "RESOLVED_NEEDS_REVIEW")
+                        ),
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        assessments = []
+        for raw in rows:
+            row = self._assessment_row(dict(raw))
+            projection = row["projection"]
+            package = projection.get("evidence_package") or {}
+            has_evidence = bool(
+                projection.get("references") or package.get("public_evidence")
+            )
+            if (
+                projection.get("analysis_status") != "READY"
+                or projection.get("commercial_relevance_state")
+                in {None, "UNASSESSED", "INCOMPLETE"}
+                or not has_evidence
+                or (account_ids and row.get("account_id") not in account_ids)
+                or (priority_only and not projection.get("priority_eligible"))
+            ):
+                continue
+            assessments.append(row)
+        relevance_order = {
+            "ESTABLISHED_COMMERCIAL_RELEVANCE": 0,
+            "ESTABLISHED_ACCOUNT_REVIEW": 1,
+            "REVIEW_REQUIRED": 2,
+            "PLAUSIBLE_FIT_REQUIRES_VALIDATION": 2,
+            "INFORMATIONAL": 3,
+        }
+        assessments.sort(
+            key=lambda item: (
+                0 if item["projection"].get("priority_eligible") else 1,
+                relevance_order.get(
+                    item["projection"].get("commercial_relevance_state"), 9
+                ),
+                0
+                if item.get("event_seller_relevance_state") == "RESOLVED_ELIGIBLE"
+                else 1,
+                -item["created_at"].timestamp(),
+                item["event_id"],
+                item.get("account_id") or "",
+                item["id"],
+            )
         )
+        return tuple(assessments[: max(0, limit)])
 
     def save_intelligence_assessment(
         self,

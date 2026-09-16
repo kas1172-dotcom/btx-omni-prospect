@@ -5,11 +5,120 @@ import hashlib
 import json
 from dataclasses import replace
 from datetime import UTC, datetime
+from urllib.parse import urlsplit, urlunsplit
 
 from btx_omni.ai.contracts import PublicEvidenceRecord
 from btx_omni.monitor.contracts import SourceObservation
 from btx_omni.providers.research.documents import extract_document
 from btx_omni.providers.research.http import PublicFetchError, public_target
+
+
+def _canonical_source_url(value: str | None) -> str | None:
+    """Normalize a public locator for evidence identity, never for fetching."""
+    if not value:
+        return None
+    try:
+        parsed = urlsplit(value.strip())
+    except ValueError:
+        return value.strip()
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return value.strip()
+    path = parsed.path.rstrip("/") or "/"
+    return urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, parsed.query, ""))
+
+
+def _evidence_metadata(item: dict, default_revision: str | None) -> dict:
+    provenance = item.get("provenance")
+    metadata: dict = {}
+    if isinstance(provenance, str) and provenance.startswith("{"):
+        try:
+            parsed = json.loads(provenance)
+            if isinstance(parsed, dict):
+                metadata = parsed
+        except json.JSONDecodeError:
+            pass
+    elif isinstance(provenance, str):
+        parts = provenance.split("|")
+        if parts:
+            metadata["publisher"] = parts[0] or None
+        if len(parts) > 1 and parts[1] != "date unavailable":
+            metadata["publication_date"] = parts[1]
+    lineage = metadata.get("research_lineage") or {}
+    revision = item.get("source_revision") or lineage.get("source_revision")
+    return {
+        "canonical_url": _canonical_source_url(
+            item.get("source_url") or item.get("url")
+        ),
+        "source_revision": revision or default_revision,
+        "publication_date": item.get("publication_date")
+        or metadata.get("publication_date"),
+        "retrieved_at": item.get("retrieved_at") or metadata.get("retrieved_at"),
+        "publisher": item.get("publisher") or metadata.get("publisher"),
+    }
+
+
+def canonical_public_evidence(
+    records: tuple[dict, ...] | list[dict], *, default_revision: str | None = None
+) -> list[dict]:
+    """Merge duplicate source representations without merging distinct revisions.
+
+    Passage-level evidence remains available through ``passage_references`` while
+    seller-facing citations have one best-metadata row per canonical source
+    revision. A revisionless reviewed citation joins the one known revision for
+    the same URL; it does not collapse two independently versioned sources.
+    """
+    prepared = [(dict(item), _evidence_metadata(item, default_revision)) for item in records]
+    revisions_by_url: dict[str, set[str]] = {}
+    for _item, metadata in prepared:
+        if metadata["canonical_url"] and metadata["source_revision"]:
+            revisions_by_url.setdefault(metadata["canonical_url"], set()).add(
+                metadata["source_revision"]
+            )
+    grouped: dict[tuple[str, str | None], dict] = {}
+    for item, metadata in prepared:
+        identity = metadata["canonical_url"] or str(
+            item.get("evidence_id") or item.get("title") or "unknown-source"
+        )
+        revision = metadata["source_revision"]
+        known = revisions_by_url.get(identity, set())
+        if not revision and len(known) == 1:
+            revision = next(iter(known))
+        key = (identity, revision)
+        candidate = {
+            **item,
+            "source_url": metadata["canonical_url"] or item.get("source_url"),
+            "url": metadata["canonical_url"] or item.get("url"),
+            "source_revision": revision,
+            "publication_date": metadata["publication_date"],
+            "retrieved_at": metadata["retrieved_at"],
+            "publisher": metadata["publisher"],
+        }
+        passage = {
+            key: candidate.get(key)
+            for key in ("evidence_id", "extract", "retrieved_at")
+            if candidate.get(key) is not None
+        }
+        previous = grouped.get(key)
+        if previous is None:
+            candidate["passage_references"] = [passage] if passage else []
+            grouped[key] = candidate
+            continue
+        for field in (
+            "source_url",
+            "url",
+            "title",
+            "publication_date",
+            "retrieved_at",
+            "evidence_id",
+            "publisher",
+            "provenance",
+            "extract",
+        ):
+            if not previous.get(field) and candidate.get(field):
+                previous[field] = candidate[field]
+        if passage and passage not in previous["passage_references"]:
+            previous["passage_references"].append(passage)
+    return list(grouped.values())
 
 
 def enrich_feed_documents(observations: list[SourceObservation], *, fetch, cap: int) -> list[SourceObservation]:

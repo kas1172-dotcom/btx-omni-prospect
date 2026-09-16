@@ -141,6 +141,14 @@ def test_map_signal_marker_eligibility_is_governed() -> None:
         )
     assert _map_brief_marker_mode(_brief(), account_id=None, coordinates=coordinates) is None
     assert _map_brief_marker_mode(_brief(), account_id="boeing", coordinates=None) is None
+    assert (
+        _map_brief_marker_mode(
+            _brief(seller_promotion_state="RESOLVED_NEEDS_REVIEW"),
+            account_id="boeing",
+            coordinates=coordinates,
+        )
+        == "CURRENT_COLLECTED"
+    )
 
 
 def test_canonical_public_market_classification_is_not_overridden_by_sample_context() -> None:

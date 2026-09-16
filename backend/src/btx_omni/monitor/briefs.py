@@ -535,8 +535,46 @@ def signal_briefs_for_monitor(
     """
     from btx_omni.monitor.service import current_event_contexts
 
+    repository = getattr(monitor, "repository", None)
+    selected_assessments: tuple[dict, ...] = ()
+    selected_by_context: dict[tuple[str, str | None], dict] = {}
+    assessment_rank: dict[tuple[str, str | None], int] = {}
+    persisted_display_mode = False
+    if repository and projection_limit is not None:
+        display_reader = getattr(repository, "current_display_assessments", None)
+        if callable(display_reader):
+            persisted_display_mode = bool(
+                repository.current_intelligence_assessments(limit=1)
+            )
+            selected_assessments = display_reader(
+                limit=projection_limit, account_ids=account_ids
+            )
+        else:
+            # Compatibility for non-durable test adapters; production repositories
+            # own selection in ``current_display_assessments``.
+            selected_assessments = repository.current_intelligence_assessments(
+                limit=max(1000, projection_limit * 20)
+            )
+            if account_ids:
+                selected_assessments = tuple(
+                    item
+                    for item in selected_assessments
+                    if item.get("account_id") in account_ids
+                )
+            selected_assessments = selected_assessments[:projection_limit]
+            persisted_display_mode = bool(selected_assessments)
+        selected_by_context = {
+            (item["event_id"], item.get("account_id")): item
+            for item in selected_assessments
+        }
+        assessment_rank = {
+            key: index for index, key in enumerate(selected_by_context)
+        }
+    selected_event_ids = {item["event_id"] for item in selected_assessments}
     candidates: list[SignalBrief] = []
     for event, observation in current_event_contexts(monitor):
+        if persisted_display_mode and event.id not in selected_event_ids:
+            continue
         source_id = event.provenance.source_system
         subject_ids = {
             item.canonical_account_id
@@ -567,21 +605,22 @@ def signal_briefs_for_monitor(
         candidates.extend(
             brief
             for brief in contextual
-            if not account_ids
-            or bool(account_ids.intersection(brief.canonical_account_ids))
+            if (
+                not account_ids
+                or bool(account_ids.intersection(brief.canonical_account_ids))
+            )
+            and (
+                projection_limit is None
+                or not persisted_display_mode
+                or (
+                    brief.id,
+                    brief.canonical_account_ids[0]
+                    if len(brief.canonical_account_ids) == 1
+                    else None,
+                )
+                in selected_by_context
+            )
         )
-
-    repository = getattr(monitor, "repository", None)
-    assessment_index: dict[tuple[str, str | None], dict] = {}
-    if repository and projection_limit is not None:
-        assessment_reader = getattr(
-            repository, "current_intelligence_assessments", None
-        )
-        if callable(assessment_reader):
-            assessment_index = {
-                (item["event_id"], item.get("account_id")): item
-                for item in assessment_reader(limit=max(1000, projection_limit * 20))
-            }
 
     def seller_window_key(brief: SignalBrief) -> tuple:
         account_id = (
@@ -589,7 +628,7 @@ def signal_briefs_for_monitor(
             if len(brief.canonical_account_ids) == 1
             else None
         )
-        assessment = assessment_index.get((brief.id, account_id))
+        assessment = selected_by_context.get((brief.id, account_id))
         projection = assessment.get("projection", {}) if assessment else {}
         relevance_order = {
             "ESTABLISHED_COMMERCIAL_RELEVANCE": 0,
@@ -599,6 +638,7 @@ def signal_briefs_for_monitor(
             "INCOMPLETE": 4,
         }
         return (
+            assessment_rank.get((brief.id, account_id), 10**9),
             0 if assessment else 1,
             0 if projection.get("priority_eligible") else 1,
             relevance_order.get(projection.get("commercial_relevance_state"), 5),
@@ -652,29 +692,32 @@ def signal_briefs_for_monitor(
                 apply_persisted_assessment,
                 assemble_evidence_package,
             )
-
-            brief = apply_evidence_package(
-                brief,
-                assemble_evidence_package(
-                    brief,
-                    environment=environment,
-                    repository=repository,
-                    now=now,
-                ),
-            )
             account_id = (
                 brief.canonical_account_ids[0]
                 if len(brief.canonical_account_ids) == 1
                 else None
             )
-            brief = apply_persisted_assessment(
-                brief,
-                repository.intelligence_assessment(
-                    brief.id,
-                    account_id=account_id,
-                    input_revision=brief.input_revision,
-                ),
-            )
+            persisted = selected_by_context.get((brief.id, account_id))
+            if persisted is not None:
+                brief = apply_persisted_assessment(brief, persisted)
+            elif not persisted_display_mode:
+                brief = apply_evidence_package(
+                    brief,
+                    assemble_evidence_package(
+                        brief,
+                        environment=environment,
+                        repository=repository,
+                        now=now,
+                    ),
+                )
+                brief = apply_persisted_assessment(
+                    brief,
+                    repository.intelligence_assessment(
+                        brief.id,
+                        account_id=account_id,
+                        input_revision=brief.input_revision,
+                    ),
+                )
         projected.append(brief)
     return tuple(projected)
 
