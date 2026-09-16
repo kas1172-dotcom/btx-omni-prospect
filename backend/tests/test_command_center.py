@@ -284,3 +284,79 @@ def test_priority_projection_is_ordered_and_self_describing() -> None:
             "last_success_at": None,
         },
     )
+
+
+def test_public_outcome_lanes_preserve_governed_assessments() -> None:
+    action = replace(
+        brief("action", event_at=NOW - timedelta(hours=1)),
+        analysis_status="READY",
+        commercial_relevance_state="ESTABLISHED_COMMERCIAL_RELEVANCE",
+        priority_eligible=True,
+        context_id="action|acct-1|ALL_BUSINESS_UNITS",
+        assessment_id="assessment-action",
+        assessment_version=3,
+    )
+    validation = replace(
+        brief(
+            "javelin",
+            event_at=NOW - timedelta(days=10),
+            freshness="STALE",
+        ),
+        headline="Lockheed Martin Javelin co-production agreement",
+        seller_promotion_state="RESOLVED_NEEDS_REVIEW",
+        analysis_status="READY",
+        commercial_relevance_state="ESTABLISHED_ACCOUNT_REVIEW",
+        priority_eligible=False,
+        recommended_action="Verify internal Lockheed and RTX records for Javelin activity.",
+        context_id="javelin|acct-1|ALL_BUSINESS_UNITS",
+        assessment_id="assessment-javelin",
+        assessment_version=4,
+        signal_confidence={"score": 84.71, "configuration_version": "SIGNAL_1"},
+        technical_opportunity={
+            "matches": (
+                {
+                    "status": "POSSIBLE_MATCH_REVIEW_REQUIRED",
+                    "business_units": ({"id": "BU-GENELMEC"},),
+                },
+            ),
+            "fit_hypotheses": tuple({"component_name": f"Fit {i}"} for i in range(8)),
+        },
+        references=(
+            {
+                "evidence_id": "lockheed-release",
+                "publication_date": "2026-08-30",
+            },
+        ),
+    )
+    informational = replace(
+        brief("informational", event_at=NOW - timedelta(hours=2)),
+        analysis_status="READY",
+        commercial_relevance_state="INFORMATIONAL",
+        priority_eligible=False,
+        recommended_action=None,
+    )
+
+    result = projection(informational, validation, action)
+
+    assert [item["event_id"] for item in result["action_priorities"]] == ["action"]
+    assert [item["event_id"] for item in result["needs_validation_assessments"]] == [
+        "javelin"
+    ]
+    assert result["public_intelligence_counts"] == {
+        "action_priorities": 1,
+        "needs_validation": 1,
+    }
+    review = result["needs_validation_assessments"][0]
+    assert review["outcome_lane"] == "NEEDS_VALIDATION"
+    assert review["business_unit_ids"] == ("BU-GENELMEC",)
+    assert review["signal_brief"]["priority_eligible"] is False
+    assert review["signal_brief"]["seller_promotion_state"] == "RESOLVED_NEEDS_REVIEW"
+    assert review["signal_brief"]["assessment_version"] == 4
+    assert review["signal_brief"]["signal_confidence"]["score"] == 84.71
+    assert len(review["signal_brief"]["technical_opportunity"]["fit_hypotheses"]) == 8
+    assert review["recommended_action"] == validation.recommended_action
+    displayed = {
+        item["event_id"]
+        for item in (*result["action_priorities"], *result["needs_validation_assessments"])
+    }
+    assert "informational" not in displayed

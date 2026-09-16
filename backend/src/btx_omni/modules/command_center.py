@@ -11,10 +11,52 @@ from btx_omni.monitor.briefs import SignalBrief
 
 _SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
 SAVED_INTELLIGENCE_WINDOW_DAYS = 60
+_VALIDATION_RELEVANCE_STATES = {
+    "REVIEW_REQUIRED",
+    "ESTABLISHED_ACCOUNT_REVIEW",
+    "ESTABLISHED_COMMERCIAL_RELEVANCE",
+    "PLAUSIBLE_FIT_REQUIRES_VALIDATION",
+}
 
 
 def _brief_dict(brief: SignalBrief) -> dict[str, Any]:
     return asdict(brief)
+
+
+def _public_item(brief: SignalBrief, *, outcome_lane: str) -> dict[str, Any]:
+    """Project one governed assessment without rebuilding its explanation."""
+    return {
+        "id": brief.context_id or brief.id,
+        "event_id": brief.id,
+        "kind": "PUBLIC_SIGNAL",
+        "outcome_lane": outcome_lane,
+        "account_id": brief.canonical_account_ids[0]
+        if brief.canonical_account_ids
+        else None,
+        "reason": brief.why_it_may_matter,
+        "recommended_action": brief.recommended_action,
+        "evidence_ids": brief.evidence_ids,
+        "observed_at": brief.publication_timestamp,
+        "data_mode": brief.data_mode,
+        "watchlist_eligible": brief.watchlist_eligible,
+        "priority_reasons": tuple(asdict(reason) for reason in brief.priority_reasons),
+        "signal_brief": _brief_dict(brief),
+        "business_unit_ids": tuple(
+            sorted(
+                {
+                    unit["id"]
+                    for match in (brief.technical_opportunity or {}).get("matches", ())
+                    if match.get("status")
+                    in {"MATCHED", "POSSIBLE_MATCH_REVIEW_REQUIRED"}
+                    for unit in match.get("business_units", ())
+                    if unit.get("id")
+                }
+            )
+        ),
+        "lifecycle_state": "CURRENT"
+        if brief.freshness == "CURRENT"
+        else "SAVED_RECENT",
+    }
 
 
 def build_command_center(
@@ -120,30 +162,46 @@ def build_command_center(
             item["id"],
         )
     )
+    action_briefs = tuple(
+        brief for brief in (*current, *recent_saved) if brief.priority_eligible
+    )
     signal_items = [
-        {
-            "id": brief.context_id or brief.id,
-            "event_id": brief.id,
-            "kind": "PUBLIC_SIGNAL",
-            "account_id": brief.canonical_account_ids[0]
-            if brief.canonical_account_ids
-            else None,
-            "reason": brief.why_it_may_matter,
-            "recommended_action": brief.recommended_action,
-            "evidence_ids": brief.evidence_ids,
-            "observed_at": brief.publication_timestamp,
-            "data_mode": brief.data_mode,
-            "watchlist_eligible": brief.watchlist_eligible,
-            "priority_reasons": tuple(asdict(reason) for reason in brief.priority_reasons),
-            "signal_brief": _brief_dict(brief),
-            "business_unit_ids": tuple(sorted({unit['id']
-                for match in (brief.technical_opportunity or {}).get('matches', ())
-                if match.get('status') in {'MATCHED', 'POSSIBLE_MATCH_REVIEW_REQUIRED'}
-                for unit in match.get('business_units', ()) if unit.get('id')})),
-            "lifecycle_state": "CURRENT" if brief.freshness == "CURRENT" else "SAVED_RECENT",
-        }
-        for brief in (*current, *recent_saved)
-        if brief.priority_eligible
+        _public_item(brief, outcome_lane="ACTION_PRIORITIES")
+        for brief in action_briefs
+    ]
+    review_briefs = tuple(
+        sorted(
+            (
+                brief
+                for brief in briefs
+                if brief.resolution_state == "RESOLVED"
+                and brief.seller_promotion_state == "RESOLVED_NEEDS_REVIEW"
+                and brief.analysis_status == "READY"
+                and brief.commercial_relevance_state
+                in _VALIDATION_RELEVANCE_STATES
+                and not brief.priority_eligible
+                and brief.event_timing == "OBSERVED"
+                and (
+                    brief.freshness == "CURRENT"
+                    or (
+                        brief.freshness == "STALE"
+                        and brief.publication_timestamp is not None
+                        and public_clock - timedelta(days=SAVED_INTELLIGENCE_WINDOW_DAYS)
+                        <= brief.publication_timestamp
+                        <= public_clock
+                    )
+                )
+            ),
+            key=lambda item: (
+                0 if item.watchlist_eligible else 1,
+                -(item.publication_timestamp.timestamp() if item.publication_timestamp else 0),
+                item.context_id or item.id,
+            ),
+        )
+    )
+    validation_items = [
+        _public_item(brief, outcome_lane="NEEDS_VALIDATION")
+        for brief in review_briefs
     ]
 
     watch_targets = {
@@ -273,6 +331,12 @@ def build_command_center(
             "worker_runtime_state": monitor_snapshot.get("worker_runtime_state"),
             "live_intelligence_available": bool(current),
         },
+        "public_intelligence_counts": {
+            "action_priorities": len(signal_items),
+            "needs_validation": len(validation_items),
+        },
+        "action_priorities": tuple(signal_items),
+        "needs_validation_assessments": tuple(validation_items),
         # Filter consumers need the whole governed sequence, not eight alerts
         # selected before customer/BU scope. Cards are a projection of this list.
         "priority_briefing": (*alert_items, *signal_items),

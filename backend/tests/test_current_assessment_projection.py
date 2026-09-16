@@ -96,7 +96,7 @@ def _projection(
         "priority_eligible": priority,
         "recommended_action": (
             "Verify internal Lockheed and RTX records for Javelin activity."
-            if priority
+            if priority or relevance == "ESTABLISHED_ACCOUNT_REVIEW"
             else None
         ),
         "evidence_package": {
@@ -178,7 +178,7 @@ def test_current_display_assessments_filter_and_rank_before_bound(tmp_path):
             event_id="javelin",
             created_at=NOW - timedelta(days=10),
             projection=_projection(
-                priority=True, relevance="ESTABLISHED_ACCOUNT_REVIEW"
+                priority=False, relevance="ESTABLISHED_ACCOUNT_REVIEW"
             ),
             seller_state="RESOLVED_NEEDS_REVIEW",
             version=4,
@@ -224,7 +224,7 @@ def test_current_display_assessments_filter_and_rank_before_bound(tmp_path):
     )
     assert repository.current_display_assessments(
         limit=1, account_ids=frozenset({"lockheed-martin"}), priority_only=True
-    )[0]["event_id"] == "javelin"
+    ) == ()
     engine.dispose()
 
 
@@ -303,7 +303,7 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
                     )
                 )
         projection = _projection(
-            priority=is_javelin,
+            priority=False,
             relevance="ESTABLISHED_ACCOUNT_REVIEW" if is_javelin else "INFORMATIONAL",
             facility=(
                 {"id": "lockheed-orlando", "name": "Lockheed Martin Orlando"}
@@ -380,7 +380,7 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
     today_projection = today(runtime)
     today_brief = next(
         item["signal_brief"]
-        for item in today_projection["command_center"]["priority_briefing"]
+        for item in today_projection["command_center"]["needs_validation_assessments"]
         if item.get("event_id") == javelin_event
     )
 
@@ -393,6 +393,7 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
     assert assessment["signal_confidence"]["score"] == 84.71
     assert len(assessment["technical_opportunity"]["fit_hypotheses"]) == 8
     assert assessment["seller_promotion_state"] == "RESOLVED_NEEDS_REVIEW"
+    assert assessment["priority_eligible"] is False
     assert assessment["recommended_action"].startswith("Verify internal Lockheed")
     assert not any(item["event_id"] == javelin_event for item in map_projection["intelligence"])
     assert len(assessment["references"]) == 1
