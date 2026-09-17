@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test'
 for (const width of [320, 390, 1440]) {
   test(`Monitor keeps long source diagnostics readable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
+    await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
     await page.route('**/api/monitor/health', async route => {
       const response = await route.fetch()
       const health = await response.json()
@@ -18,7 +19,7 @@ for (const width of [320, 390, 1440]) {
     await page.goto('/#/monitor')
     const source = page.locator('.monitor-source-list .line').first()
     await expect(source).toContainText('BTX_MONITOR_STATE_SOURCE_REGISTRY')
-    await expect(source).toContainText('NOT CONFIGURED')
+    await expect(source).toContainText('Unavailable')
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
     const panel = await source.locator('xpath=ancestor::*[contains(@class,"panel")][1]').boundingBox()
     const row = await source.boundingBox()

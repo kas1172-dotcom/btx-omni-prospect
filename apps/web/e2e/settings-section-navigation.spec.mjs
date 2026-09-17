@@ -1,19 +1,20 @@
 import { expect, test } from '@playwright/test'
 
 test('Settings section links preserve the workspace route, keyboard focus and browser navigation', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
   await page.goto('/#/settings')
   const navigation = page.getByRole('navigation', { name: 'Settings sections' })
   await navigation.getByRole('link', { name: 'Personal', exact: true }).click()
-  await expect(page).toHaveURL(/#\/settings\/personal$/)
+  await expect(page).toHaveURL(/#\/settings\?view=personal$/)
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeAttached()
   await expect(page.locator('#personal')).toBeFocused()
   await navigation.getByRole('link', { name: 'Integrations', exact: true }).click()
   await expect(page.locator('#integrations')).toBeFocused()
   await page.reload()
-  await expect(page).toHaveURL(/#\/settings\/integrations$/)
+  await expect(page).toHaveURL(/#\/settings\?view=integrations$/)
   await expect(page.locator('#integrations')).toBeFocused()
   await page.goBack()
-  await expect(page).toHaveURL(/#\/settings\/personal$/)
+  await expect(page).toHaveURL(/#\/settings\?view=personal$/)
   await expect(page.locator('#personal')).toBeFocused()
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(0)
 })

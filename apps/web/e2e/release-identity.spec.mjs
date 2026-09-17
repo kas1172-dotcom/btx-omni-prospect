@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 for (const width of [390, 1440]) {
   test(`release diagnostics cross actual API and expose unverified builds at ${width}`, async ({ page }, testInfo) => {
+    await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
@@ -24,6 +25,7 @@ for (const width of [390, 1440]) {
 }
 
 test('a mismatched backend declaration is visibly rejected, not rendered as release success', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
   // Deliberate negative payload only; the two preceding tests use actual API data.
   await page.route('**/api/settings', async route => {
     const response = await route.fetch()

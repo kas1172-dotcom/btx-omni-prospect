@@ -60,15 +60,6 @@ const technicalBrief = () => ({
   },
 })
 
-async function addTechnicalExplanationFixture(page) {
-  await page.route('**/api/monitor/health', async route => {
-    const response = await route.fetch()
-    const payload = await response.json()
-    payload.signal_briefs = [technicalBrief()]
-    await route.fulfill({ response, json: payload })
-  })
-}
-
 async function addRelationshipExplanationFixture(page) {
   await page.route('**/api/accounts/lockheed-martin/relationships?depth=2', async route => {
     const response = await route.fetch()
@@ -104,12 +95,13 @@ async function openLockheedMobile(page) {
 }
 
 test('Signal Brief Technical Fit retains deterministic context while disclosing its governed explanation', async ({ page }, testInfo) => {
-  await addTechnicalExplanationFixture(page)
+  await addTodayTechnicalExplanationFixture(page)
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Monitor' }).click()
+  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   const brief = page.locator('.seller-signal-brief').filter({ hasText: 'Fixture public contract award' })
   await expect(brief).toBeVisible()
-  await brief.getByRole('button', { name: 'Potential BTX Technical Fit' }).click()
+  await brief.getByRole('button', { name: 'View supporting evidence (1)' }).click()
+  await brief.getByRole('button', { name: 'Program, components and possible BTX fit' }).click()
   await expect(brief).toContainText('Source stated')
   await expect(brief).toContainText('Model inferred')
   await expect(brief).toContainText('Controlled BTX match: Actuator housing')
@@ -132,7 +124,8 @@ test('Technical Fit disclosure remains contained at 390px and 320px', async ({ p
     await page.goto('/')
     await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
     const brief = page.locator('.seller-signal-brief').filter({ hasText: 'Fixture public contract award' })
-    await brief.getByRole('button', { name: 'Potential BTX Technical Fit' }).click()
+    await brief.getByRole('button', { name: 'View supporting evidence (1)' }).click()
+    await brief.getByRole('button', { name: 'Program, components and possible BTX fit' }).click()
     await brief.getByRole('button', { name: 'Why this technical fit may matter' }).click()
     await expect(brief).toContainText('Controlled BTX match: Actuator housing')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

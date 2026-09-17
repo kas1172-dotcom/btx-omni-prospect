@@ -722,14 +722,15 @@ def test_monitor_registry_endpoint_is_internal_observability(
     monkeypatch.setenv("BTX_MONITOR_OPERATOR_TOKEN", "")
     get_settings.cache_clear()
     client = TestClient(create_app())
-    response = client.get("/api/monitor/sources")
+    manager = {"X-BTX-Principal-Token": "development-manager"}
+    response = client.get("/api/monitor/sources", headers=manager)
     assert response.status_code == 200
     assert {item["source_id"] for item in response.json()} >= {
         "sam_gov",
         "fda_openfda",
         "sec_edgar",
     }
-    health = client.get("/api/monitor/health")
+    health = client.get("/api/monitor/health", headers=manager)
     assert health.status_code == 200 and {
         "sources",
         "last_runs",

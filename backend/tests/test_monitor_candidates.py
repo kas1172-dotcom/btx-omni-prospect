@@ -88,7 +88,7 @@ def test_net_new_organization_and_explicit_program_are_durable_review_candidates
 
     app = create_app()
     app.dependency_overrides[get_runtime] = lambda: restarted
-    response = TestClient(app).get("/api/monitor/candidates")
+    response = TestClient(app).get("/api/monitor/candidates", headers={"X-BTX-Principal-Token": "development-manager"})
     assert response.status_code == 200
     assert response.json()["organization_candidates"][0]["id"] == organization.id
     assert response.json()["program_candidates"][0]["organization_candidate_id"] == organization.id

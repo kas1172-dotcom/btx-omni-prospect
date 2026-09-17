@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const app = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8')
+const destinations = readFileSync(new URL('../src/app/destinations.ts', import.meta.url), 'utf8')
 const mobileStyles = readFileSync(new URL('../src/design/mobile.css', import.meta.url), 'utf8')
 const omniStyles = readFileSync(new URL('../src/components/omni-drawer.css', import.meta.url), 'utf8')
 const ui = readFileSync(new URL('../src/components/UI.tsx', import.meta.url), 'utf8')
@@ -85,7 +86,8 @@ test('live Monitor observations use the canonical intelligence and map surfaces'
   assert.match(app, /setMapSignals\(value\.intelligence\)/)
   assert.match(map, /public-intelligence geography/)
   assert.match(map, /Intelligence/)
-  for (const key of ['accounts', 'today', 'intelligence', 'actions', 'communications', 'settings', 'monitor']) assert.ok(app.includes(`load('${key}', api.${key}(signal)`))
+  for (const key of ['accounts', 'today', 'intelligence', 'actions', 'communications', 'settings']) assert.ok(app.includes(`load('${key}', api.${key}(signal)`))
+  assert.match(app, /workspaceSettings\?\.capabilities\.view_source_health[\s\S]*api\.monitor\(controller\.signal\)/)
   assert.match(app, /load\('map', api\.map\(undefined, signal\)/)
   assert.doesNotMatch(app, /Promise\.allSettled/)
   assert.match(app, /return \(\) => controller\.abort\(\)/)
@@ -311,7 +313,7 @@ test('Intelligence sends canonical selected event context to the shared Omni req
   assert.match(intelligence, /account_id: selectedBrief\.canonical_account_ids\[0\]/)
   assert.match(app, /selectedEventId/)
   assert.match(app, /surface === ['"]intelligence['"] \|\| surface === ['"]today['"]/)
-  assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
+  assert.match(app, /onClick=\{\(\) => navigate\(destination\.surface\)\}/)
   assert.match(drawer, /\{ \.\.\.currentContext, relationship_selection: activeAccount \? currentContext\.relationship_selection : undefined, session_account_id/)
   assert.match(drawer, /conversationReferent/)
   assert.match(drawer, /conversation_referent: conversationReferent/)
@@ -345,7 +347,7 @@ test('Map selection sends canonical Customer and facility context without invent
   assert.match(app, /selectedMapAccountId/)
   assert.match(app, /selectedMapFacilityId/)
   assert.match(app, /selected_facility_id:\s*surface === ['"]map['"] \? selectedMapFacilityId : surface === ['"]accounts['"] \? location\.facilityId : undefined/)
-  assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
+  assert.match(app, /onClick=\{\(\) => navigate\(destination\.surface\)\}/)
 })
 
 test('Map test renderer accepts legacy and facility-scoped canonical account marker IDs', () => {
@@ -360,7 +362,7 @@ test('Actions sends the selected canonical work-item ID without leaking other pa
   assert.match(actions, /setSelectedId\(item\.id\)/)
   assert.match(app, /selectedActionId/)
   assert.match(app, /selected_action_id:\s*surface === ['"]actions['"] \? selectedActionId : undefined/)
-  assert.match(app, /onClick=\{\(\) => navigate\(id\)\}/)
+  assert.match(app, /onClick=\{\(\) => navigate\(destination\.surface\)\}/)
 })
 
 test('list surfaces publish only their current filters and bounded canonical visible IDs to Omni', () => {
@@ -392,18 +394,18 @@ test('curated public evidence is never labeled as synthetic demo', () => {
   assert.doesNotMatch(map, /CURATED_POC_PUBLIC|INDUSTRY_UPDATE|CONTRACT_AWARD/)
 })
 
-test('Monitor keeps inactive collection separate from curated public preview signals', () => {
+test('Source Health leads with administrator decisions and keeps operational truth disclosed', () => {
   assert.match(monitor, /schedulerLabel\(health\.scheduler_state\)/)
-  assert.match(monitor, /Stored public signal preview/)
-  assert.match(monitor, /Stored public reference/)
-  assert.doesNotMatch(monitor, /Curated POC|NOT LIVE INGESTION/)
-  assert.match(monitor, /No active scheduler is verified/)
-  assert.match(monitor, /Open Customer 360/)
-  assert.match(monitor, /Source freshness/)
+  assert.match(monitor, /Administrator operations/)
+  assert.match(monitor, /Operator decision/)
+  assert.match(monitor, /Last-good content/)
+  assert.match(monitor, /not a claim about the total addressable market/)
+  assert.match(monitor, /Run history and exact diagnostics/)
+  assert.match(monitor, /Retained operational evidence/)
+  assert.doesNotMatch(monitor, /SignalBriefCard|Stored public signal preview/)
+  assert.match(monitor, /Source freshness and coverage/)
   assert.match(monitor, /Last successful check/)
-  assert.match(monitor, /signal_briefs\?\.filter/)
-  assert.match(monitor, /brief\.freshness === ["']CURRENT["']/)
-  assert.match(monitor, /No resolved, evidence-backed current signal brief is\s+seller-visible/)
+  assert.match(monitor, /Awaiting continuation/)
 })
 
 test('Seller Command Center reuses governed Signal Briefs with market, Radar, and watch truth', () => {
@@ -437,7 +439,7 @@ test('Seller Command Center reuses governed Signal Briefs with market, Radar, an
   assert.match(today, /SignalBriefCard/)
   assert.match(intelligence, /Why it matters/)
   assert.match(intelligence, /Evidence, freshness, and context/)
-  assert.match(monitor, /SignalBriefCard/)
+  assert.doesNotMatch(monitor, /SignalBriefCard/)
   assert.match(signalBrief, /What Omni recommends/)
   assert.match(signalBrief, /View supporting evidence|SupportingEvidence/)
   assert.match(relatedBtxActivity, /Why Omni selected it/)
@@ -457,6 +459,7 @@ test('target interaction primitives expose governed semantic and accessibility c
 })
 
 test('Communications keeps drafting, review, and delivery explicitly governed', () => {
+  assert.match(communications, /loadedHistory\?\.version === historyVersion/)
   assert.match(communications, /Trigger → Draft → Human review → Approved send/)
   assert.match(communications, /Gemini can assist\s+with words, never authorization or delivery/)
   assert.match(communications, /Gemini proposes words only/)
@@ -473,10 +476,12 @@ test('Communications keeps drafting, review, and delivery explicitly governed', 
   assert.doesNotMatch(communications, /autonomous send/i)
 })
 
-test('Settings presents backend-managed role and truthful integration state', () => {
+test('Settings presents backend-managed role and gates administrator diagnostics', () => {
   assert.match(settings, /Personal/)
   assert.match(settings, /Role & Access/)
   assert.match(settings, /Integrations/)
+  assert.match(settings, /canInspectOperations/)
+  assert.match(settings, /view_integration_diagnostics/)
   assert.match(settings, /cannot change or self-promote/)
   assert.match(settings, /Credentials and tokens are never returned/)
   assert.match(settings, /state === 'loading'/)
@@ -488,7 +493,9 @@ test('Settings presents backend-managed role and truthful integration state', ()
   assert.match(client, /credentials: 'include'/)
   assert.match(client, /X-CSRF-Token/)
   assert.match(client, /import\.meta\.env\.DEV/)
-  assert.match(app, /mobileNav = nav\.filter\(\(\[id\]\) =>[\s\S]*\[['"]today['"], ['"]accounts['"], ['"]intelligence['"], ['"]map['"], ['"]actions['"]\]/)
+  assert.match(app, /authorizedDestinations\(navigationAuthority\)/)
+  assert.match(destinations, /requiredCapability: 'source_health'/)
+  assert.match(destinations, /desktop: 'primary', mobile: 'secondary'/)
 })
 
 test('target primitive CSS encodes focus, touch, responsive rows, and safe-area sheets', () => {

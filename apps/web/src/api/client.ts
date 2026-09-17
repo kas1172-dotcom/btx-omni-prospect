@@ -85,7 +85,7 @@ export const api = {
   createMemory: (body: OmniMemoryInput & { idempotency_key: string }) => actionRequest<OmniMemory>('/omni/memories', { method: 'POST', body: JSON.stringify(body) }),
   editMemory: (id: string, body: OmniMemoryInput & { expected_version: number }) => actionRequest<OmniMemory>(`/omni/memories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteMemory: (id: string, expected_version: number) => actionRequest<{ deleted: boolean }>(`/omni/memories/${encodeURIComponent(id)}/delete`, { method: 'POST', body: JSON.stringify({ expected_version }) }),
-  monitor: (signal?: AbortSignal) => request<MonitorHealth>('/monitor/health', { signal }),
+  monitor: (signal?: AbortSignal) => actionRequest<MonitorHealth>('/monitor/health', { signal }),
 }
 
 export async function resolveFederalAssessment(selection: OmniFederalSelection, signal?: AbortSignal): Promise<FederalAssessment | undefined> {

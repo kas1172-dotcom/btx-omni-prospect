@@ -1,269 +1,113 @@
-import type { MonitorHealth, MonitorPreviewSignal } from "../../types/api";
-import { SignalBriefCard } from "../../components/SignalBriefCard";
-import { Empty, Panel, State } from "../../components/UI";
-import { CanonicalRecord } from "../../components/CanonicalRecord";
-import { EvidencePassages } from "../../components/EvidencePassages";
-import { presentationLabel } from "../../components/presentation";
-import "./monitor.css";
+import type { MonitorHealth, WorkspaceSettings } from '../../types/api'
+import { Button, Disclosure, Empty, Panel, StatusBadge } from '../../components/UI'
+import { CanonicalRecord } from '../../components/CanonicalRecord'
+import { EvidencePassages } from '../../components/EvidencePassages'
+import { presentationLabel } from '../../components/presentation'
+import './monitor.css'
 
-const validation = (state: string) =>
-  ({
-    BROWSER_VERIFIED: "Browser verified",
-    AUTOMATION_BLOCKED: "Automated validation blocked",
-    REPLACED_WITH_EQUIVALENT_OFFICIAL_SOURCE: "Equivalent official source",
-    NEEDS_RESEARCH: "Source validation needs research",
-  })[state] ?? "Source validation unavailable";
+const utcDateTime = (value?: string) => value
+  ? new Date(value).toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }) + ' UTC'
+  : 'Unavailable'
 
-const utcDate = (value: string) =>
-  new Date(value).toLocaleDateString("en-US", { timeZone: "UTC" });
+const schedulerLabel = (state: string) => ({
+  SCHEDULE_NOT_CONFIRMED: 'Schedule not confirmed',
+  SCHEDULE_CONFIGURED_AWAITING_RUN: 'Awaiting first scheduled run',
+  LATEST_SCHEDULED_RUN_FAILED: 'Latest scheduled run failed',
+  COLLECTION_OBSERVED_STALE: 'Collection is stale',
+  COLLECTION_OBSERVED_CURRENT: 'Collection is current',
+})[state] ?? 'Schedule state unavailable'
 
-const schedulerLabel = (state: string) =>
-  ({
-    SCHEDULE_NOT_CONFIRMED: "Schedule not confirmed",
-    SCHEDULE_CONFIGURED_AWAITING_RUN: "Awaiting first run",
-    LATEST_SCHEDULED_RUN_FAILED: "Latest run failed",
-    COLLECTION_OBSERVED_STALE: "Collection stale",
-    COLLECTION_OBSERVED_CURRENT: "Collection current",
-  })[state] ?? "Schedule unavailable";
+const sourceState = (state?: string) => ({
+  HEALTHY: 'Connected',
+  CONNECTED: 'Connected',
+  CURRENT: 'Connected',
+  PARTIAL: 'Partial coverage',
+  STALE: 'Stale',
+  UNAVAILABLE: 'Unavailable',
+  NOT_CONFIGURED: 'Unavailable',
+  NEVER_ATTEMPTED: 'Awaiting first check',
+  PERMISSION_LIMITED: 'Permission limited',
+  FAILED: 'Action required',
+  RATE_LIMITED: 'Partial coverage',
+  WORKER_RUNTIME_NOT_CONFIGURED: 'Worker not configured',
+  WORKER_READY_FOR_INVOCATION: 'Worker ready for scheduled invocation',
+})[state ?? ''] ?? presentationLabel(state ?? 'UNAVAILABLE', 'provider')
 
-function PreviewCard({
-  signal,
-  onAccount,
-  onIntelligence,
-}: {
-  signal: MonitorPreviewSignal;
-  onAccount: (id: string) => void;
-  onIntelligence: () => void;
-}) {
-  return (
-    <article className="card monitor-preview-card">
-      <div className="monitor-preview-head">
-        <div>
-          <span className="eyebrow">
-            {presentationLabel(signal.event_type, "assessment")}
-          </span>
-          <h3>{signal.company}</h3>
-          <small>
-            {utcDate(signal.event_date)} UTC · {signal.industry}
-          </small>
-        </div>
-        <div className="monitor-states">
-          <State value="Stored public reference" />
-          <State value={signal.evidence_state} />
-        </div>
-      </div>
-      <p>
-        <strong>What happened:</strong> {signal.title}
-      </p>
-      <div className="monitor-preview-meta">
-        <span>
-          <strong>Validation</strong>
-          {validation(signal.source_validation_state)}
-        </span>
-        <span>
-          <strong>Monitor state</strong>Stored source review
-        </span>
-      </div>
-      <div className="card-actions">
-        <a href={signal.source_url} target="_blank" rel="noreferrer">
-          Open source ↗
-        </a>
-        <button onClick={() => onAccount(signal.account_id)}>
-          Open Customer 360
-        </button>
-        <button onClick={onIntelligence}>Open Intelligence</button>
-      </div>
-    </article>
-  );
-}
+const integrationNames: Record<string, string> = { google_maps: 'Google Maps', gemini: 'Gemini', hubspot: 'CRM', communications: 'Communication delivery', prism: 'Commercial data boundary', sam_gov: 'SAM.gov', usaspending: 'USAspending' }
 
-export function Monitor({
-  health,
-  onAccount,
-  onIntelligence,
-}: {
-  health?: MonitorHealth;
-  onAccount: (id: string) => void;
-  onIntelligence: () => void;
-}) {
-  const collected =
-    health?.events?.filter((event) => event.data_mode === "LIVE_PUBLIC" && event.is_current_source_version !== false) ?? [];
-  const live =
-    health?.signal_briefs?.filter(
-      (brief) =>
-        brief.resolution_state === "RESOLVED" &&
-        brief.seller_promotion_state === "RESOLVED_ELIGIBLE" &&
-        brief.freshness === "CURRENT",
-    ) ?? [];
-  return (
-    <div className="surface monitor-surface">
-      <div className="page-title monitor-title">
-        <span className="eyebrow">Intelligence inbox</span>
-        <h1>Monitor</h1>
-        <p>
-          Public-source monitoring is governed separately from seller workflow
-          and is never started from this UI.
-        </p>
-      </div>
-      {!health ? (
-        <Empty>Monitor status is unavailable.</Empty>
-      ) : (
-        <>
-          <p className="truth-note">
-            {health.seller_message}{" "}
-            {health.durable_run_state
-              ? ""
-              : "Run history is not persisted for this environment."}
-          </p>
-          <div className="monitor-summary-grid" aria-label="Monitor summary">
-            <article>
-              <span>Collection state</span>
-              <strong>{schedulerLabel(health.scheduler_state)}</strong>
-              <small>{health.last_runs.length} recorded runs</small>
-            </article>
-            <article>
-              <span>Live public events</span>
-              <strong>{collected.length}</strong>
-              <small>{live.length} current seller briefs</small>
-            </article>
-            <article>
-              <span>Curated preview</span>
-              <strong>{health.curated_preview.length}</strong>
-              <small>Stored public reference events</small>
-            </article>
-          </div>
-          <div className="monitor-status-grid">
-            <Panel
-              title="Collection status"
-              action={
-                <State value={schedulerLabel(health.scheduler_state)} />
-              }
-            >
-              <p>
-                {health.last_runs.length
-                  ? `${health.last_runs.length} run records available.`
-                  : "No collection runs have been recorded."}
-              </p>
-              <small>
-                Only a successful recent collection may be labeled live public
-                evidence. This UI cannot start, schedule, or alter collection.
-              </small>
-              {health.last_runs.map((run, index) => <details key={run.id ?? `${run.source_id}:${run.completed_at}:${index}`} className="monitor-run-funnel"><summary>{run.source_id} · {run.completed_at ? utcDate(run.completed_at) : 'Run unfinished'} · collection diagnostics</summary><p>Run {run.id ?? 'identifier unavailable'}. Collection eligibility does not prove publication or execution.</p>{run.funnel ? <CanonicalRecord value={run.funnel} /> : <p>No stage-level diagnostics were recorded for this historical run.</p>}</details>)}
-            </Panel>
-            <Panel
-              title="Source freshness"
-              action={
-                <span className="panel-kicker">
-                  {health.sources.length} sources
-                </span>
-              }
-            >
-              <div className="card-list monitor-source-list">
-                {health.sources.length ? (
-                  health.sources.map((source) => (
-                    <div className="line" key={source.source_id}>
-                      <span>
-                        <strong>
-                          {source.source_name ?? source.source_id}
-                        </strong>
-                        <small>
-                          Last successful check:{" "}
-                          {source.last_success_at
-                            ? `${utcDate(source.last_success_at)} UTC`
-                            : "Unavailable"}
-                        </small>
-                        <small>
-                          {source.failure_summary ??
-                            (source.state === "NEVER_ATTEMPTED"
-                              ? "No collection attempt recorded."
-                              : "No current source failure.")}
-                        </small>
-                      </span>
-                      <State
-                        value={(source.state ?? "NEVER_ATTEMPTED").replaceAll(
-                          "_",
-                          " ",
-                        )}
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <Empty>No sources are configured.</Empty>
-                )}
-              </div>
-            </Panel>
-          </div>
-          <Panel
-            title="Live public results"
-            action={
-              <span className="panel-kicker">
-                {collected.length} collected · {live.length} current briefs
-              </span>
-            }
-          >
-            <p className="monitor-intro">
-              Only resolved, evidence-backed events with a current publication
-              date are eligible for seller Intelligence. Unresolved or stale
-              output remains operational evidence, not a seller recommendation.
-            </p>
-            {health.signal_brief_window?.more_available ? (
-              <p className="muted" role="status">
-                Showing the {health.signal_brief_window.returned} most relevant
-                recent assessments. Additional retained events remain available
-                in operational evidence and account-specific views.
-              </p>
-            ) : null}
-            {live.length ? (
-              <div className="card-list monitor-live-list">
-                {live.map((brief) => <SignalBriefCard key={brief.id} brief={brief} onAccount={onAccount} />)}
-              </div>
-            ) : (
-              <Empty>
-                No resolved, evidence-backed current signal brief is
-                seller-visible from the latest durable collection state.
-              </Empty>
-            )}
-          </Panel>
-          {collected.length > 0 && <Panel title="Collected operational evidence"><p>These source records may be unresolved or rejected. Inspecting them does not make them seller recommendations.</p>{collected.map(event => <details key={event.id} className="monitor-collected-record"><summary>{event.source_id} · {event.id} · {event.resolution_state.replaceAll('_', ' ')}</summary><p>Relevance: {event.seller_relevance_state?.replaceAll('_', ' ') ?? 'not evaluated'}</p><EvidencePassages eventId={event.id} /></details>)}</Panel>}
-          <Panel
-            title="Stored public signal preview"
-            action={
-              <span className="panel-kicker">
-                {health.curated_preview.length} stored public events
-              </span>
-            }
-          >
-            <p className="monitor-intro">
-              These are stored, sourced public scenarios used to demonstrate
-              Monitor output. They are saved public-source references, not a
-              claim that collection just occurred. {health.scheduler_state === "COLLECTION_OBSERVED_CURRENT"
-                ? "Scheduled collection evidence is reported separately above."
-                : "No active scheduler is verified."}
-            </p>
-            <p className="muted">
-              Production monitoring needs an approved source registry,
-              collection credentials where required, durable run history, entity
-              resolution, and alert policy.
-            </p>
-            {health.curated_preview.length ? (
-              <div className="monitor-preview-grid">
-                {health.curated_preview.map((signal) => (
-                  <PreviewCard
-                    key={signal.id}
-                    signal={signal}
-                    onAccount={onAccount}
-                    onIntelligence={onIntelligence}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Empty>
-                No stored public events are available for this preview.
-              </Empty>
-            )}
-          </Panel>
-        </>
-      )}
+const blockingFailures = (failures?: string[]) => (failures ?? []).filter(item => !item.startsWith('AWAITING_CONTINUATION:'))
+
+export function Monitor({ health, settings, onIntelligence }: { health?: MonitorHealth; settings?: WorkspaceSettings; onIntelligence: () => void }) {
+  if (!health) return <div className="surface monitor-surface"><header className="page-title monitor-title"><span className="eyebrow">Administrator operations</span><h1>Source Health</h1></header><Empty>Source Health is unavailable. No provider success is implied.</Empty></div>
+
+  const latestRun = health.last_runs[0]
+  const lastSuccessfulRun = health.last_runs.find(run => run.completed_at && blockingFailures(run.failures).length === 0)
+  const coverage = health.federal_procurement_coverage ?? []
+  const pendingCoverage = coverage.filter(item => item.pending_continuation)
+  const completeCoverage = coverage.filter(item => !item.pending_continuation && item.coverage_state === 'COMPLETE')
+  const currentEvents = (health.events ?? []).filter(event => event.is_current_source_version !== false)
+  const accepted = currentEvents.filter(event => event.seller_relevance_state === 'RESOLVED_ELIGIBLE').length
+  const reviewRequired = currentEvents.filter(event => event.resolution_state.includes('NEEDS_REVIEW') || event.seller_relevance_state?.includes('REVIEW')).length
+  const persisted = health.persisted_assessments
+  const operatorAction = blockingFailures(latestRun?.failures).length
+    ? 'Review the failed source detail, correct the reported condition, and retry through the authorized worker.'
+    : pendingCoverage.length
+      ? 'Allow the configured worker to continue from its saved checkpoints; partial coverage is not a total market count.'
+      : health.scheduler_state === 'COLLECTION_OBSERVED_STALE'
+        ? 'Confirm the scheduler is invoking the current backend image and inspect the next run result.'
+        : health.scheduler_state === 'COLLECTION_OBSERVED_CURRENT'
+          ? 'No immediate operator action is required. Continue monitoring source freshness and coverage.'
+          : 'Confirm scheduler configuration and complete the first authorized collection.'
+
+  return <div className="surface monitor-surface">
+    <header className="page-title monitor-title"><span className="eyebrow">Administrator operations</span><h1>Source Health</h1><p>Collection, provider, scheduler, and resumable coverage status. Seller-facing decisions remain in Intelligence.</p></header>
+    <div className="monitor-summary-grid" aria-label="Source Health summary">
+      <article><span>Overall collection</span><strong>{schedulerLabel(health.scheduler_state)}</strong><small>{sourceState(health.worker_runtime_state)}</small></article>
+      <article><span>Last successful execution</span><strong className="monitor-summary-date">{utcDateTime(lastSuccessfulRun?.completed_at)}</strong><small>{lastSuccessfulRun ? 'Recorded without a blocking collection failure' : 'No successful scheduled execution is recorded'}</small></article>
+      <article><span>Next expected execution</span><strong className="monitor-summary-date">{health.scheduler_state === 'SCHEDULE_NOT_CONFIRMED' ? 'Not scheduled' : 'Managed by scheduler'}</strong><small>An exact next-run time is not reported by this runtime.</small></article>
+      <article><span>Last-good content</span><strong>{persisted?.available ? 'Available' : 'Unavailable'}</strong><small>{persisted?.available ? `${persisted.returned}${persisted.more_available ? '+' : ''} current assessments in this bounded operational view` : 'No current persisted assessment is reported'}</small></article>
     </div>
-  );
+
+    <Panel title="Operator decision" action={<StatusBadge value={health.scheduler_state} kind="source" label={schedulerLabel(health.scheduler_state)} />}>
+      <p className="monitor-operator-action"><strong>What to do next:</strong> {operatorAction}</p>
+      <dl className="monitor-decision-counts" aria-label="Latest governed collection counts">
+        <div><dt>Accepted for seller review</dt><dd>{accepted}</dd></div>
+        <div><dt>Requires review</dt><dd>{reviewRequired}</dd></div>
+        <div><dt>Rejected in latest run</dt><dd>{latestRun?.records_rejected ?? 0}</dd></div>
+        <div><dt>Awaiting continuation</dt><dd>{pendingCoverage.length}</dd></div>
+      </dl>
+      <p className="muted">These are bounded operational records, not a claim about the total addressable market.</p>
+      <Button onClick={onIntelligence}>Open seller Intelligence</Button>
+    </Panel>
+
+    <div className="monitor-status-grid">
+      <Panel title="Source freshness and coverage" action={<span className="panel-kicker">{health.sources.length} governed sources</span>}>
+        <div className="card-list monitor-source-list">
+          {health.sources.length ? health.sources.map(source => {
+            const sourceCoverage = coverage.filter(item => item.query_key.startsWith(`${source.source_id}:`) || item.query_key === source.source_id)
+            const pending = sourceCoverage.filter(item => item.pending_continuation).length
+            return <article className="line" key={source.source_id}>
+              <span><strong>{source.source_name ?? 'Configured source'}</strong><small>Last successful check: {utcDateTime(source.last_success_at)}</small><small>{source.failure_summary ?? (pending ? `${pending} governed queries will continue from saved checkpoints.` : 'No current source failure is reported.')}</small></span>
+              <StatusBadge value={source.state ?? 'UNAVAILABLE'} kind="source" label={sourceState(source.state)} />
+            </article>
+          }) : <Empty>No governed sources are configured.</Empty>}
+        </div>
+      </Panel>
+      <Panel title="Resumable procurement coverage" action={<span className="panel-kicker">{completeCoverage.length} complete · {pendingCoverage.length} continuing</span>}>
+        {coverage.length ? <><p>Each governed query retains its own window and continuation state. Incomplete windows continue on later worker runs.</p><div className="monitor-coverage-list">{coverage.map(item => <article key={item.query_key}><span><strong>{item.query_value || 'Governed query'}</strong><small>{item.window_start} to {item.window_end}</small></span><StatusBadge value={item.coverage_state} kind="source" label={item.pending_continuation ? 'Awaiting continuation' : presentationLabel(item.coverage_state, 'provider')} /></article>)}</div></> : <Empty>No resumable procurement coverage checkpoint is available.</Empty>}
+      </Panel>
+    </div>
+
+    <Disclosure title={`Run history and exact diagnostics (${health.last_runs.length})`} className="monitor-admin-disclosure">
+      <p>Exact run identifiers, stage counts, failures, and provider receipts are administrator evidence. A run record does not by itself prove successful collection.</p>
+      {health.last_runs.length ? health.last_runs.map((run, index) => <details key={run.id ?? `${run.source_id}:${run.completed_at}:${index}`} className="monitor-run-funnel"><summary>{run.source_id} · {run.completed_at ? utcDateTime(run.completed_at) : 'Run unfinished'} · {blockingFailures(run.failures).length ? 'Action required' : 'No blocking failure recorded'}</summary><p>Run {run.id ?? 'identifier unavailable'}.</p>{run.failures?.length ? <ul>{run.failures.map(item => <li key={item}>{item}</li>)}</ul> : <p>No run failure was recorded.</p>}{run.funnel ? <CanonicalRecord value={run.funnel} /> : <p>No stage-level diagnostics were recorded.</p>}</details>) : <Empty>No run history is available.</Empty>}
+    </Disclosure>
+
+    <Disclosure title={`Retained operational evidence (${currentEvents.length})`} className="monitor-admin-disclosure">
+      <p>These retained records may be unresolved, rejected, or informational. Their presence does not make them seller recommendations.</p>
+      {currentEvents.length ? currentEvents.map(event => <details key={event.id} className="monitor-collected-record"><summary>{event.source_id} · {presentationLabel(event.resolution_state, 'assessment')} · {utcDateTime(event.collected_at)}</summary><p>Operational record: {event.id}</p><p>Seller relevance: {presentationLabel(event.seller_relevance_state ?? 'UNASSESSED', 'assessment')}</p><EvidencePassages eventId={event.id} /></details>) : <Empty>No retained operational evidence is available.</Empty>}
+    </Disclosure>
+
+    {settings?.capabilities.view_integration_diagnostics && <Disclosure title="Provider and integration details" className="monitor-admin-disclosure"><p>Configuration is deployment managed. Secret values and credentials are never returned.</p><div className="integration-list">{Object.entries(settings.integrations).map(([id, integration]) => <article className="integration-row" key={id}><div><strong>{integrationNames[id] ?? 'Configured integration'}</strong><span>{integration.detail}</span></div><StatusBadge value={integration.state} kind="integration" /></article>)}</div><p><strong>Research synthesis:</strong> {presentationLabel(health.brief_synthesis_status, 'provider')}</p><p><strong>Durable run state:</strong> {health.durable_run_state ? 'Available' : 'Unavailable'}</p></Disclosure>}
+  </div>
 }

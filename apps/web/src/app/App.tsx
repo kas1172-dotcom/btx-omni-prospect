@@ -7,6 +7,7 @@ import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
 import { Today, type TodayFilters } from '../features/today/Today'
 import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
+import { authorizedDestinations, canOpenDestination, type NavigationAuthority } from './destinations'
 import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
 import '../design/app.css'
@@ -17,19 +18,9 @@ const Map = deferredSurface(() => import('../features/map/Map').then(module => m
 const Actions = deferredSurface(() => import('../features/actions/Actions').then(module => module.Actions), 'Actions', 'Actions')
 const Communications = deferredSurface(() => import('../features/communications/Communications').then(module => module.Communications), 'Communications', 'Communications')
 const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
-const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Monitor', 'Monitor')
+const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Source Health', 'Source Health')
 const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
 type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
-const nav: Array<[Surface, string]> = [
-  ['today', 'Today'],
-  ['accounts', 'Customers & Prospects'],
-  ['intelligence', 'Intelligence'],
-  ['map', 'Map'],
-  ['actions', 'Actions'],
-  ['communications', 'Communications'],
-  ['monitor', 'Monitor'],
-]
-const mobileNav = nav.filter(([id]) => ['today', 'accounts', 'intelligence', 'map', 'actions'].includes(id))
 const surfaceLabels: Record<Surface, string> = {
   today: 'Today',
   accounts: 'Customers & Prospects',
@@ -38,7 +29,7 @@ const surfaceLabels: Record<Surface, string> = {
   actions: 'Actions',
   communications: 'Communications',
   settings: 'Settings',
-  monitor: 'Monitor',
+  monitor: 'Source Health',
 }
 const portfolioSnapshotFromLocation = (location: WorkspaceLocation): PortfolioSnapshot | undefined => {
   if (location.surface !== 'accounts' || location.accountId) return undefined
@@ -89,6 +80,12 @@ export default function App() {
   const [actionPrincipal, setActionPrincipal] = useState<Principal>()
   const [actionWarning, setActionWarning] = useState('Actions use durable governed storage.')
   const [monitor, setMonitor] = useState<MonitorHealth>()
+  const navigationAuthority: NavigationAuthority = { authenticated: authState === 'authenticated', sourceHealth: workspaceSettings?.capabilities.view_source_health === true }
+  const destinations = authorizedDestinations(navigationAuthority)
+  const desktopPrimaryDestinations = destinations.filter(destination => destination.desktop === 'primary')
+  const desktopSecondaryDestinations = destinations.filter(destination => destination.desktop === 'secondary')
+  const mobilePrimaryDestinations = destinations.filter(destination => destination.mobile === 'primary')
+  const mobileSecondaryDestinations = destinations.filter(destination => destination.mobile === 'secondary')
   const [error, setError] = useState('')
   const [resourceState, setResourceState] = useState<Partial<Record<Surface, 'loading' | 'loaded' | 'error'>>>({})
   const [resourceReady, setResourceReady] = useState<Partial<Record<Surface, boolean>>>({})
@@ -110,6 +107,11 @@ export default function App() {
     else if (update.method === 'replace') window.history.replaceState({ btxOmniNavigation: true }, '', update.hash)
     setLocation(next)
     setLinkRecovery('')
+  }, [])
+  const applyWorkspaceSettings = useCallback((value: WorkspaceSettings) => {
+    setWorkspaceSettings(value)
+    setActionPrincipal(value.principal)
+    setSettingsState('loaded')
   }, [])
   const clearSelectedEvent = useCallback(() => setSelectedEventId(undefined), [])
   const clearMapSelection = useCallback(() => {
@@ -170,6 +172,12 @@ export default function App() {
     } finally { if (accountRequest.current === controller) setAccountOpening(undefined) }
   }, [clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
   const navigate = useCallback((id: Surface, recordHistory = true) => {
+    const authority: NavigationAuthority = { authenticated: authState === 'authenticated', sourceHealth: workspaceSettings?.capabilities.view_source_health === true }
+    if (!canOpenDestination(id, authority)) {
+      commitLocation({ surface: 'today' }, 'replace')
+      setLinkRecovery('This workspace is unavailable for your current access. No operational details were disclosed.')
+      return
+    }
     accountRequest.current?.abort(); setAccountOpening(undefined)
     setWorkspaceMenuOpen(false)
     if (id !== surface || (id === 'accounts' && detail)) {
@@ -180,7 +188,7 @@ export default function App() {
       setDetail(undefined)
     }
     commitLocation({ surface: id }, recordHistory ? 'push' : 'none')
-  }, [surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
+  }, [authState, workspaceSettings?.capabilities.view_source_health, surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
   const createIntelligenceAction = useCallback(async (brief: import('../types/api').MonitorSignalBrief) => {
     const accountId = brief.canonical_account_ids[0]
     if (!accountId || !brief.assessment_id || !brief.recommended_action) {
@@ -293,10 +301,33 @@ export default function App() {
     load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers) })
     load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
     load('communications', api.communications(signal), value => setCommunications(value.items))
-    load('settings', api.settings(signal), value => { setWorkspaceSettings(value); setSettingsState('loaded') }, () => setSettingsState('error'))
-    load('monitor', api.monitor(signal), setMonitor)
+    load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
     return () => controller.abort()
-  }, [authState, refreshVersion])
+  }, [applyWorkspaceSettings, authState, refreshVersion])
+  useEffect(() => {
+    if (authState !== 'authenticated' || !workspaceSettings?.capabilities.view_source_health) return
+    const controller = new AbortController()
+    void api.monitor(controller.signal).then(value => {
+      if (controller.signal.aborted) return
+      setMonitor(value)
+      setResourceReady(previous => ({ ...previous, monitor: true }))
+      setResourceState(previous => ({ ...previous, monitor: 'loaded' }))
+    }).catch(() => {
+      if (!controller.signal.aborted) setResourceState(previous => ({ ...previous, monitor: 'error' }))
+    })
+    return () => controller.abort()
+  }, [authState, workspaceSettings?.capabilities.view_source_health, refreshVersion])
+  useEffect(() => {
+    if (settingsState !== 'loaded') return
+    const sourceHealthDenied = location.surface === 'monitor' && !navigationAuthority.sourceHealth
+    const integrationDetailDenied = location.surface === 'settings' && location.subview === 'integrations' && workspaceSettings?.capabilities.view_integration_diagnostics !== true
+    if (!sourceHealthDenied && !integrationDetailDenied) return
+    const timer = window.setTimeout(() => {
+      commitLocation(integrationDetailDenied ? { surface: 'settings', subview: 'access' } : { surface: 'today' }, 'replace')
+      setLinkRecovery('This workspace is unavailable for your current access. No operational details were disclosed.')
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [commitLocation, location.subview, location.surface, navigationAuthority.sourceHealth, settingsState, workspaceSettings?.capabilities.view_integration_diagnostics])
   useEffect(() => () => accountRequest.current?.abort(), [])
   if (authState === 'checking') return <main className="app-shell app-shell-loading"><div className="loading-stage"><span className="eyebrow">Secure workspace</span><h1>Checking hosted session</h1><p>Validating the server-held POC session without exposing role credentials.</p></div></main>
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
@@ -306,7 +337,7 @@ export default function App() {
     surface === 'accounts' ? (
       <Accounts accounts={accounts} detail={detail} initialAssessment={locationAssessment} initialFederal={locationFederal} initialSnapshot={portfolioSnapshot} onSnapshot={(snapshot) => { setPortfolioSnapshot(snapshot); if (!location.accountId) commitLocation({ surface: 'accounts', filters: { ...(snapshot.query ? { query: snapshot.query } : {}), ...(snapshot.scope === 'RICH' ? { coverage: snapshot.scope } : {}), ...(snapshot.industry !== 'ALL' ? { industry: snapshot.industry } : {}), ...(snapshot.entity !== 'ALL' ? { classification: snapshot.entity } : {}), ...(snapshot.top100 ? { top100: 'true' } : {}), ...(snapshot.partnershipScope && snapshot.partnershipScope !== 'ALL' ? { partnership: snapshot.partnershipScope } : {}), ...(snapshot.shortlistOnly ? { shortlist: 'true' } : {}), ...(snapshot.page && snapshot.page > 1 ? { page: String(snapshot.page) } : {}), ...(snapshot.sortDirection === 'descending' ? { sort_direction: snapshot.sortDirection } : {}) }, sort: snapshot.sortKey }, 'replace') }} onSelect={(id) => void select(id)} onBack={() => location.returnTo ? commitLocation(location.returnTo, 'push') : navigate('accounts')} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'intelligence' ? (
-      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} monitor={monitor} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'overview', federalAssessment)} onFederalPartnership={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'partnership', federalAssessment)} onFederalRelationship={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'relationships', federalAssessment)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); commitLocation({ ...location, federal: { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } }, 'replace'); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
+      <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'overview', federalAssessment)} onFederalPartnership={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'partnership', federalAssessment)} onFederalRelationship={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'relationships', federalAssessment)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); commitLocation({ ...location, federal: { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } }, 'replace'); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'map' ? (
       <Map
         records={records}
@@ -331,11 +362,11 @@ export default function App() {
     ) : surface === 'communications' ? (
       <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
-      <Settings accounts={accounts} location={location} settings={workspaceSettings} state={settingsState} onSettings={setWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { setWorkspaceSettings(value); setSettingsState('loaded'); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => { Object.keys(sessionStorage).filter(key => key.startsWith('btx-private-')).forEach(key => sessionStorage.removeItem(key)); window.location.reload() })} />
+      <Settings accounts={accounts} location={location} settings={workspaceSettings} state={settingsState} onSettings={applyWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { applyWorkspaceSettings(value); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => { Object.keys(sessionStorage).filter(key => key.startsWith('btx-private-')).forEach(key => sessionStorage.removeItem(key)); window.location.reload() })} />
     ) : surface === 'monitor' ? (
-      <Monitor
+      navigationAuthority.sourceHealth ? <Monitor
         health={monitor}
-        onAccount={(id) => void select(id)}
+        settings={workspaceSettings}
         onIntelligence={() => {
           clearSelectedEvent()
           clearMapSelection()
@@ -343,7 +374,7 @@ export default function App() {
           clearViewContext()
           navigate('intelligence')
         }}
-      />
+      /> : <section className="surface" role="status">Checking workspace access…</section>
     ) : (
       <Today
         filters={todayFilters}
@@ -355,7 +386,7 @@ export default function App() {
         accounts={accounts}
         onAccount={(id, assessment) => void select(id, true, assessment)}
         onIntelligence={() => navigate('intelligence')}
-        onMonitor={() => navigate('monitor')}
+        onSourceHealth={navigationAuthority.sourceHealth ? () => navigate('monitor') : undefined}
         onEventSelect={setSelectedEventId}
         onAction={(alert) => {
           clearSelectedEvent()
@@ -416,16 +447,14 @@ export default function App() {
           <small>Commercial intelligence</small>
         </button>
         <nav className="sidebar-nav" aria-label="Primary navigation">
-          {nav.map(([id, label]) => (
-            <button key={id} className={surface === id ? 'active' : ''} aria-current={surface === id ? 'page' : undefined} onClick={() => navigate(id)}>
-              {label}
+          {desktopPrimaryDestinations.map(destination => (
+            <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-current={surface === destination.surface ? 'page' : undefined} title={destination.job} onClick={() => navigate(destination.surface)}>
+              {destination.label}
             </button>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <button className={surface === 'settings' ? 'active' : ''} onClick={() => navigate('settings')}>
-            Settings
-          </button>
+          {desktopSecondaryDestinations.map(destination => <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-current={surface === destination.surface ? 'page' : undefined} title={destination.job} onClick={() => navigate(destination.surface)}>{destination.label}</button>)}
           <span className="eyebrow">{actionPrincipal?.display_name ?? 'Governed seller workspace'}</span>
           <small>{actionPrincipal?.role ?? 'Public evidence + SAMPLE context'}</small>
         </div>
@@ -440,8 +469,7 @@ export default function App() {
           {actionPrincipal && <div className="signed-in-user" aria-label="Signed-in user"><span aria-hidden="true">{actionPrincipal.display_name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span><strong>{actionPrincipal.display_name}</strong></div>}
           <Disclosure className="mode" title="Workspace menu" open={workspaceMenuOpen} onOpenChange={setWorkspaceMenuOpen}>
             <div className="mobile-secondary-links">
-              <button onClick={() => navigate('communications')}>Communications</button>
-              <button onClick={() => navigate('settings')}>Settings</button>
+              {mobileSecondaryDestinations.map(destination => <button key={destination.surface} aria-current={surface === destination.surface ? 'page' : undefined} onClick={() => navigate(destination.surface)}>{destination.label}</button>)}
             </div>
             <p>Public evidence and SAMPLE commercial context remain explicitly separated.</p>
             {actionPrincipal && <p className="mobile-user-identity">Signed in as {actionPrincipal.display_name}</p>}
@@ -456,9 +484,9 @@ export default function App() {
         {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface" role="status">Loading {surfaceLabels[surface]}… Other workspace sections remain available.</section> : resourceReady[surface] ? content : null}
       </section>
       <nav className="mobile-primary-nav" aria-label="Mobile primary navigation">
-        {mobileNav.map(([id, label]) => (
-          <button key={id} className={surface === id ? 'active' : ''} aria-current={surface === id ? 'page' : undefined} onClick={() => navigate(id)}>
-            {label}
+        {mobilePrimaryDestinations.map(destination => (
+          <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-current={surface === destination.surface ? 'page' : undefined} onClick={() => navigate(destination.surface)}>
+            {destination.label}
           </button>
         ))}
       </nav>

@@ -190,7 +190,7 @@ def test_credentialed_cors_allows_only_canonical_origin(monkeypatch) -> None:
 
 def test_release_diagnostics_are_safe_and_exclude_server_credentials(monkeypatch) -> None:
     client = _production_app(monkeypatch)
-    session = _sign_in(client, "hosted-seller-access")
+    session = _sign_in(client, "hosted-manager-access")
     response = client.get("/api/settings")
     assert response.status_code == 200
     diagnostics = response.json()["release_diagnostics"]
@@ -214,5 +214,5 @@ def test_public_build_identity_is_same_runtime_but_never_exposes_private_readine
     assert public.json()['repository'] == 'kas1172-dotcom/btx-omni-prospect'
     assert 'database' not in public.text and 'hosted-seller-access' not in public.text
     assert client.get('/api/settings').status_code == 401
-    _sign_in(client, 'hosted-seller-access')
+    _sign_in(client, 'hosted-manager-access')
     assert client.get('/api/settings').json()['release_diagnostics']['build'] == public.json()

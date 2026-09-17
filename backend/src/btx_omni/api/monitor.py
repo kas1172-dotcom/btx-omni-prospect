@@ -11,7 +11,9 @@ from btx_omni.ai.contracts import ProviderStatus
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
+from btx_omni.api.session import principal
 from btx_omni.domain.markets import primary_market_label
+from btx_omni.domain.work import Principal, PrincipalRole
 from btx_omni.monitor.briefs import (
     apply_cached_synthesis,
     brief_cache_id,
@@ -28,6 +30,12 @@ from btx_omni.monitor.sources import REGISTRY
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 SELLER_BRIEF_WINDOW_LIMIT = 50
+
+
+def source_health_principal(current: Principal = Depends(principal)) -> Principal:
+    if current.role is not PrincipalRole.MANAGER:
+        raise HTTPException(403, "This administrator workspace is unavailable.")
+    return current
 
 
 class CandidatePromotionRequest(BaseModel):
@@ -57,7 +65,10 @@ def operator_runtime(
 
 
 @router.get("/candidates")
-def monitor_candidates(runtime: PocRuntime = Depends(get_runtime)) -> dict:
+def monitor_candidates(
+    runtime: PocRuntime = Depends(get_runtime),
+    _current: Principal = Depends(source_health_principal),
+) -> dict:
     """Read-only review contract for non-canonical Monitor identities."""
     if not runtime.monitor.repository:
         raise HTTPException(
@@ -114,7 +125,10 @@ def promote_program_candidate(
 
 
 @router.get("/sources")
-def sources(runtime: PocRuntime = Depends(get_runtime)) -> list[dict]:
+def sources(
+    runtime: PocRuntime = Depends(get_runtime),
+    _current: Principal = Depends(source_health_principal),
+) -> list[dict]:
     return [
         {
             "source_id": item.definition.source_id,
@@ -134,7 +148,6 @@ def sources(runtime: PocRuntime = Depends(get_runtime)) -> list[dict]:
     ]
 
 
-@router.get("/health")
 def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     accounts = {item.id: item for item in runtime.environment().accounts}
     curated_preview = [
@@ -310,6 +323,14 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             if runtime.monitor.repository else ()
         ),
     }
+
+
+@router.get("/health")
+def source_health(
+    runtime: PocRuntime = Depends(get_runtime),
+    _current: Principal = Depends(source_health_principal),
+) -> dict:
+    return monitor_health(runtime)
 
 
 @router.post("/collect/{source_id}")

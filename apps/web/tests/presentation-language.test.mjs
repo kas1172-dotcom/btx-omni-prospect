@@ -35,9 +35,9 @@ test('primary communication and relationship labels do not expose actor or edge 
 })
 
 test('environment copy is singular and provenance details remain available', () => {
-  assert.match(monitor, /Stored public signal preview/)
+  assert.match(monitor, /Administrator operations/)
   assert.doesNotMatch(monitor, /Curated POC|NOT LIVE INGESTION/)
-  assert.match(monitor, /Collected operational evidence/)
+  assert.match(monitor, /Retained operational evidence/)
 })
 
 test('muted text token exceeds the audited failing value', () => {

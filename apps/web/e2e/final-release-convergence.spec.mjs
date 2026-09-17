@@ -11,7 +11,7 @@ test('release surfaces remain free of React/runtime errors and restore drawer fo
 
   await page.goto('/')
   const navigation = page.getByRole('navigation', { name: 'Primary navigation' })
-  for (const label of [...primary, 'Communications', 'Monitor']) {
+  for (const label of [...primary, 'Communications']) {
     await navigation.getByRole('button', { name: label, exact: true }).click()
     await expect(page.locator('.page-title h1')).toBeVisible()
     expect(await documentFitsViewport(page)).toBe(true)

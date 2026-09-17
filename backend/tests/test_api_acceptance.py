@@ -597,7 +597,7 @@ async def test_today_health_openapi_and_connected_mode_boundary(monkeypatch) -> 
         today = await client.get("/api/today")
         health = await client.get("/api/health")
         schema = await client.get("/openapi.json")
-        monitor = await client.get("/api/monitor/health")
+        monitor = await client.get("/api/monitor/health", headers={"X-BTX-Principal-Token": "development-manager"})
     assert today.status_code == health.status_code == schema.status_code == 200
     assert (
         "/api/omni" in schema.json()["paths"] and "recommended_actions" in today.json()

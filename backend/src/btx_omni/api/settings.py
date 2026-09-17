@@ -40,6 +40,7 @@ def _integration(state: str, detail: str) -> dict[str, str]:
 
 @router.get("")
 def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)) -> dict:
+    is_administrator = current.role is PrincipalRole.MANAGER
     configured_gemini = bool(runtime.settings.gemini_api_key or (runtime.settings.gemini_mode == "vertex" and runtime.settings.google_cloud_project))
     database = database_compatibility(runtime.work.repository.engine)
     identity = build_identity(runtime.settings)
@@ -48,9 +49,11 @@ def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
         "preferences": runtime.communication_repository.preferences(current.user_id),
         "capabilities": {
             "create_communications": True,
-            "review_communications": current.role is PrincipalRole.MANAGER,
-            "manage_assignments": current.role is PrincipalRole.MANAGER,
+            "review_communications": is_administrator,
+            "manage_assignments": is_administrator,
             "configure_integrations": False,
+            "view_source_health": is_administrator,
+            "view_integration_diagnostics": is_administrator,
         },
         "integrations": {
             "google_maps": _integration("ADMIN_MANAGED", "Browser map configuration is deployment managed."),
@@ -61,7 +64,7 @@ def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
             "sam_gov": _integration("NOT_CONFIGURED" if not runtime.settings.sam_api_key else "CONFIGURED", "Procurement source configuration is server managed."),
             "usaspending": _integration("CONNECTED" if runtime.settings.monitor_mode == "live" else "UNAVAILABLE", "Public procurement source availability follows the governed Monitor runtime."),
         },
-        "release_diagnostics": {
+        "release_diagnostics": ({
             "configuration_mode": runtime.settings.environment.upper(),
             "validation_state": "SCHEMA_COMPATIBLE_BUILD_DECLARED" if database['state'] == 'CURRENT' and identity['identity_state'] == 'DECLARED_CLEAN_BUILD' else "UNVERIFIED",
             "validation_scope": "Schema and build declaration only; not browser, provider or release acceptance.",
@@ -94,7 +97,7 @@ def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
             },
             "google_maps": {"state": "CLIENT_CONFIGURATION_ADMIN_MANAGED"},
             "connected_integrations": {"state": "NOT_CONFIGURED"},
-        },
+        } if is_administrator else None),
     }
 
 

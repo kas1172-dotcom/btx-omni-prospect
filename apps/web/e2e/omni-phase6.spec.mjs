@@ -199,9 +199,10 @@ test('Omni replaces prompt starters with a readable current exchange', async ({ 
 })
 
 test('Monitor sends its truthful typed surface without scoping global Omni queries', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
   await page.goto('/')
   await waitForApp(page)
-  await navigate(page, 'Monitor')
+  await navigate(page, 'Source Health')
   await openOmni(page)
   const monitor = await ask(page, 'What am I looking at?')
   expect(monitor.request.context.surface).toBe('MONITOR')

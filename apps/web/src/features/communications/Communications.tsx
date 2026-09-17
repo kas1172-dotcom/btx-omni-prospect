@@ -75,7 +75,7 @@ export function Communications({
   const selected = items.find((item) => item.id === selectedId) ?? visible[0];
   const historyId = selected?.id;
   const historyVersion = selected?.version;
-  const currentHistory = loadedHistory?.id === historyId && loadedHistory.version === historyVersion ? loadedHistory : undefined;
+  const currentHistory = loadedHistory?.id === historyId && loadedHistory?.version === historyVersion ? loadedHistory : undefined;
   useEffect(() => {
     if (!historyOpen || !historyId || historyVersion === undefined) return;
     const controller = new AbortController();

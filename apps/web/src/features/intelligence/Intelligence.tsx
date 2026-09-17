@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account,
   CommandCenter,
-  MonitorHealth,
   MonitorSignalBrief,
   OmniAssessmentSelection,
   OmniContext,
@@ -208,7 +207,6 @@ export function Intelligence({
   signals,
   accounts,
   commandCenter,
-  monitor,
   settings,
   onAccount,
   onEventSelect,
@@ -225,7 +223,6 @@ export function Intelligence({
   signals: Signal[];
   accounts: Account[];
   commandCenter?: CommandCenter;
-  monitor?: MonitorHealth;
   settings?: WorkspaceSettings;
   onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onEventSelect: (id?: string) => void;
@@ -730,20 +727,6 @@ export function Intelligence({
           </Empty>
         )}
       </Panel>
-      <Disclosure
-        title={`Source health · ${monitor?.sources.length ?? 0} configured source records`}
-        className="intelligence-source-health"
-      >
-        <div>
-          {monitor?.sources.map((source) => (
-            <p key={source.source_id}>
-              <b>{source.source_name ?? source.source_id}</b> ·{" "}
-              {label(source.state ?? "UNAVAILABLE")} · last collection{" "}
-              {date(source.last_success_at)}
-            </p>
-          )) ?? <p>Monitor health is unavailable.</p>}
-        </div>
-      </Disclosure>
     </div>
   );
 }
