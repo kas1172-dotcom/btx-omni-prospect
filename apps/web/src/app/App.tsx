@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, resolveFederalAssessment } from '../api/client'
 import { OmniDrawer } from '../components/OmniDrawer'
-import { Disclosure } from '../components/UI'
+import { Button, Disclosure, StatusMessage } from '../components/UI'
 import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
@@ -48,7 +48,7 @@ const mapSnapshotFromLocation = (location: WorkspaceLocation): MapViewSnapshot |
   }
   return { filters }
 }
-const todayFiltersFromLocation = (location: WorkspaceLocation): TodayFilters => ({ kind: ['PUBLIC_SIGNAL', 'COMMERCIAL_REVIEW'].includes(String(location.filters?.kind)) ? String(location.filters?.kind) as TodayFilters['kind'] : 'ALL', accountId: String(location.filters?.account ?? ''), businessUnit: String(location.filters?.business_unit ?? '') })
+const todayFiltersFromLocation = (location: WorkspaceLocation): TodayFilters => ({ kind: ['PUBLIC_SIGNAL', 'COMMERCIAL_REVIEW'].includes(String(location.filters?.kind)) ? String(location.filters?.kind) as TodayFilters['kind'] : 'ALL', accountId: String(location.filters?.account ?? ''), businessUnit: String(location.filters?.business_unit ?? ''), query: String(location.filters?.query ?? ''), sort: ['RECENT', 'OLDEST', 'CUSTOMER_ASC', 'CUSTOMER_DESC'].includes(location.sort ?? '') ? location.sort as TodayFilters['sort'] : 'RANKED', page: Number(location.filters?.page ?? 1) || 1, validationPage: Number(location.filters?.validation_page ?? 1) || 1 })
 export default function App() {
   const initialLocation = decodeWorkspaceLocation(window.location.hash)
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'required'>(import.meta.env.DEV ? 'authenticated' : 'checking')
@@ -89,7 +89,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [resourceState, setResourceState] = useState<Partial<Record<Surface, 'loading' | 'loaded' | 'error'>>>({})
   const [resourceReady, setResourceReady] = useState<Partial<Record<Surface, boolean>>>({})
-  const [refreshVersion, setRefreshVersion] = useState(0)
+  const [resourceRefresh, setResourceRefresh] = useState<{ key: Surface; version: number }>()
   const [accountOpening, setAccountOpening] = useState<string>()
   const accountRequest = useRef<AbortController | undefined>(undefined)
   const [selectedEventId, setSelectedEventId] = useState<string>()
@@ -252,6 +252,7 @@ export default function App() {
       if (window.location.hash !== decoded.canonicalHash) window.history.replaceState({ btxOmniNavigation: true }, '', decoded.canonicalHash)
       if (!decoded.location.accountId) { setDetail(undefined); clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext() }
       setLocation(decoded.location)
+      if (decoded.location.surface === 'today') setTodayFilters(todayFiltersFromLocation(decoded.location))
     }
     restore()
     window.addEventListener('hashchange', restore)
@@ -295,17 +296,19 @@ export default function App() {
     const load = <T,>(key: Surface, promise: Promise<T>, publish: (value: T) => void, failed?: () => void) => {
       void promise.then(value => { if (!signal.aborted) { publish(value); setResourceReady(old => ({ ...old, [key]: true })); setResourceState(old => ({ ...old, [key]: 'loaded' })) } }).catch(() => { if (!signal.aborted) { failed?.(); setResourceState(old => ({ ...old, [key]: 'error' })) } })
     }
-    load('accounts', api.accounts(signal), value => setAccounts(value.accounts))
-    load('today', api.today(signal), value => { setAlerts(value.commercial_alerts); setCommandCenter(value.command_center); setTodayState('loaded') }, () => setTodayState('unavailable'))
-    load('intelligence', api.intelligence(signal), value => setSignals(value.signals))
-    load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers) })
-    load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
-    load('communications', api.communications(signal), value => setCommunications(value.items))
-    load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
+    const requested = resourceRefresh?.key
+    if (!requested || requested === 'accounts') load('accounts', api.accounts(signal), value => setAccounts(value.accounts))
+    if (!requested || requested === 'today') load('today', api.today(signal), value => { setAlerts(value.commercial_alerts); setCommandCenter(value.command_center); setTodayState('loaded') }, () => setTodayState(previous => previous === 'loaded' ? previous : 'unavailable'))
+    if (!requested || requested === 'intelligence') load('intelligence', api.intelligence(signal), value => setSignals(value.signals))
+    if (!requested || requested === 'map') load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers) })
+    if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
+    if (!requested || requested === 'communications') load('communications', api.communications(signal), value => setCommunications(value.items))
+    if (!requested || requested === 'settings') load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
     return () => controller.abort()
-  }, [applyWorkspaceSettings, authState, refreshVersion])
+  }, [applyWorkspaceSettings, authState, resourceRefresh])
   useEffect(() => {
     if (authState !== 'authenticated' || !workspaceSettings?.capabilities.view_source_health) return
+    if (resourceRefresh && resourceRefresh.key !== 'monitor') return
     const controller = new AbortController()
     void api.monitor(controller.signal).then(value => {
       if (controller.signal.aborted) return
@@ -316,7 +319,7 @@ export default function App() {
       if (!controller.signal.aborted) setResourceState(previous => ({ ...previous, monitor: 'error' }))
     })
     return () => controller.abort()
-  }, [authState, workspaceSettings?.capabilities.view_source_health, refreshVersion])
+  }, [authState, workspaceSettings?.capabilities.view_source_health, resourceRefresh])
   useEffect(() => {
     if (settingsState !== 'loaded') return
     const sourceHealthDenied = location.surface === 'monitor' && !navigationAuthority.sourceHealth
@@ -480,8 +483,8 @@ export default function App() {
         {linkRecovery && <div className="api-notice" role="alert">{linkRecovery} <button type="button" onClick={() => navigate(surface)}>Return to {surfaceLabels[surface]}</button></div>}
         {error && <div className="api-notice">{error}</div>}
         {accountOpening && <div className="api-notice" role="status">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'account'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></div>}
-        {surface !== 'settings' && resourceState[surface] === 'error' && <div className="api-notice" role="alert">{surfaceLabels[surface]} could not refresh. Previously loaded content is retained, if available. <button type="button" onClick={() => setRefreshVersion(version => version + 1)}>Retry workspace reads</button></div>}
-        {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface" role="status">Loading {surfaceLabels[surface]}… Other workspace sections remain available.</section> : resourceReady[surface] ? content : null}
+        {surface !== 'settings' && resourceState[surface] === 'error' && <StatusMessage state="error" title={`${surfaceLabels[surface]} could not refresh`} action={<Button onClick={() => setResourceRefresh(previous => ({ key: surface, version: (previous?.version ?? 0) + 1 }))}>Retry {surfaceLabels[surface]}</Button>}>{resourceReady[surface] ? 'Last-good content remains visible and is not labeled as freshly collected.' : 'This resource is unavailable. Other permitted workspace sections remain available.'}</StatusMessage>}
+        {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
       </section>
       <nav className="mobile-primary-nav" aria-label="Mobile primary navigation">
         {mobilePrimaryDestinations.map(destination => (
