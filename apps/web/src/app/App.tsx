@@ -126,6 +126,11 @@ export default function App() {
     setMapViewSnapshot(snapshot)
     commitLocation({ ...locationRef.current, filters: { ...(snapshot.filters.query ? { query: snapshot.filters.query } : {}), ...(snapshot.filters.coverage !== 'ALL' ? { coverage: snapshot.filters.coverage } : {}), ...(snapshot.filters.top100 ? { top100: 'true' } : {}), ...(snapshot.filters.industries.length ? { industries: snapshot.filters.industries } : {}), ...(snapshot.filters.relationships.length ? { relationships: snapshot.filters.relationships } : {}), ...(snapshot.filters.layers.length ? { layers: snapshot.filters.layers } : {}), ...(snapshot.filters.signalTiming.length ? { signal_timing: snapshot.filters.signalTiming } : {}), ...(snapshot.filters.naicsCodes?.length ? { naics: snapshot.filters.naicsCodes } : {}), ...(snapshot.filters.businessUnitIds?.length ? { business_units: snapshot.filters.businessUnitIds } : {}), ...(snapshot.filters.capabilityIds?.length ? { capabilities: snapshot.filters.capabilityIds } : {}), ...(snapshot.filters.fulfillmentStates?.length ? { fulfillment: snapshot.filters.fulfillmentStates } : {}), ...(snapshot.filters.radiusMiles ? { radius: String(snapshot.filters.radiusMiles) } : {}), ...(snapshot.filters.strategicPartnership && snapshot.filters.strategicPartnership !== 'ALL' ? { partnership: snapshot.filters.strategicPartnership } : {}), ...(snapshot.filters.shortlistOnly ? { shortlist: 'true' } : {}) }, accountId: snapshot.selected?.accountId, facilityId: snapshot.selected?.facilityId, eventId: snapshot.selected?.eventId, scope: snapshot.selected?.facilityId ? 'FACILITY' : snapshot.selected?.accountId ? 'ACCOUNT' : undefined }, mode)
   }, [commitLocation])
+  const updatePortfolioSnapshot = useCallback((snapshot: PortfolioSnapshot) => {
+    setPortfolioSnapshot(snapshot)
+    if (locationRef.current.accountId) return
+    commitLocation({ surface: 'accounts', filters: { ...(snapshot.query ? { query: snapshot.query } : {}), ...(snapshot.scope === 'RICH' ? { coverage: snapshot.scope } : {}), ...(snapshot.industry !== 'ALL' ? { industry: snapshot.industry } : {}), ...(snapshot.entity !== 'ALL' ? { classification: snapshot.entity } : {}), ...(snapshot.top100 ? { top100: 'true' } : {}), ...(snapshot.partnershipScope && snapshot.partnershipScope !== 'ALL' ? { partnership: snapshot.partnershipScope } : {}), ...(snapshot.shortlistOnly ? { shortlist: 'true' } : {}), ...(snapshot.page && snapshot.page > 1 ? { page: String(snapshot.page) } : {}), ...(snapshot.sortDirection === 'descending' ? { sort_direction: snapshot.sortDirection } : {}) }, sort: snapshot.sortKey }, 'replace')
+  }, [commitLocation])
   const updateMapAccount = useCallback((id?: string) => {
     setSelectedMapAccountId(id); setSelectedMapFacilityId(undefined)
     commitLocation({ ...locationRef.current, accountId: id, facilityId: undefined, scope: id ? 'ACCOUNT' : undefined }, 'replace')
@@ -190,6 +195,16 @@ export default function App() {
     }
     commitLocation({ surface: id }, recordHistory ? 'push' : 'none')
   }, [authState, workspaceSettings?.capabilities.view_source_health, surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
+  const backFromAccount = useCallback(() => {
+    accountRequest.current?.abort()
+    setAccountOpening(undefined)
+    setDetail(undefined)
+    clearSelectedEvent()
+    clearMapSelection()
+    clearSelectedAction()
+    clearViewContext()
+    commitLocation(locationRef.current.returnTo ?? { surface: 'accounts' }, 'push')
+  }, [clearMapSelection, clearSelectedAction, clearSelectedEvent, clearViewContext, commitLocation])
   const createIntelligenceAction = useCallback(async (brief: import('../types/api').MonitorSignalBrief) => {
     const accountId = brief.canonical_account_ids[0]
     if (!accountId || !brief.assessment_id || !brief.recommended_action) {
@@ -344,7 +359,7 @@ export default function App() {
   const locationFederal: OmniFederalSelection | undefined = location.federal ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined
   const content =
     surface === 'accounts' ? (
-      <Accounts accounts={accounts} detail={detail} initialAssessment={locationAssessment} initialFederal={locationFederal} initialSnapshot={portfolioSnapshot} onSnapshot={(snapshot) => { setPortfolioSnapshot(snapshot); if (!location.accountId) commitLocation({ surface: 'accounts', filters: { ...(snapshot.query ? { query: snapshot.query } : {}), ...(snapshot.scope === 'RICH' ? { coverage: snapshot.scope } : {}), ...(snapshot.industry !== 'ALL' ? { industry: snapshot.industry } : {}), ...(snapshot.entity !== 'ALL' ? { classification: snapshot.entity } : {}), ...(snapshot.top100 ? { top100: 'true' } : {}), ...(snapshot.partnershipScope && snapshot.partnershipScope !== 'ALL' ? { partnership: snapshot.partnershipScope } : {}), ...(snapshot.shortlistOnly ? { shortlist: 'true' } : {}), ...(snapshot.page && snapshot.page > 1 ? { page: String(snapshot.page) } : {}), ...(snapshot.sortDirection === 'descending' ? { sort_direction: snapshot.sortDirection } : {}) }, sort: snapshot.sortKey }, 'replace') }} onSelect={(id) => void select(id)} onBack={() => location.returnTo ? commitLocation(location.returnTo, 'push') : navigate('accounts')} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
+      <Accounts accounts={accounts} detail={detail} initialAssessment={locationAssessment} initialFederal={locationFederal} initialSnapshot={portfolioSnapshot} onSnapshot={updatePortfolioSnapshot} onSelect={(id) => void select(id)} onBack={backFromAccount} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'intelligence' ? (
       <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'overview', federalAssessment)} onFederalPartnership={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'partnership', federalAssessment)} onFederalRelationship={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'relationships', federalAssessment)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); commitLocation({ ...location, federal: { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } }, 'replace'); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'map' ? (
