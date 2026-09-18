@@ -88,6 +88,18 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
         for brief in record["current_signal_briefs"]
     )
     assert all(record["selection_missingness"] is not None for record in records)
+    assert all(record["city"] and record["region"] and record["country"] for record in records)
+    assert all("account_attractiveness" in record for record in records)
+    assert all("candidate_capabilities" in record for record in records)
+    assert all(
+        capability["name"] != capability["id"]
+        and not capability["name"].startswith("cap-")
+        for record in records
+        for capability in record["candidate_capabilities"]
+    )
+    filter_options = response.json()["filter_options"]
+    assert all(item["id"] and item["name"] for item in filter_options["business_units"])
+    assert all(identifier and name for identifier, name in filter_options["capabilities"])
     public_market = [
         record
         for record in records

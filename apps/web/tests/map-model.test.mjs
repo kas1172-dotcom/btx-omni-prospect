@@ -35,6 +35,17 @@ test('fulfillment filters require canonical states and retain unlocated matching
   assert.deepEqual(filterMapRecords([row, unknown], { ...filters, fulfillmentStates: [] }), [row, unknown])
 })
 
+test('search and capability filters apply to the full canonical result set without changing coordinates', () => {
+  const records = [
+    { name: 'KLA Corporation', location_name: 'KLA Milpitas', city: 'Milpitas', region: 'CA', primary_markets: ['Semiconductor'], account_segment: 'CURRENT_CLIENT', candidate_capabilities: [{ id: 'precision', name: 'Precision machining' }] },
+    { name: 'Textron', location_name: 'Wichita', city: 'Wichita', region: 'KS', primary_markets: ['Aerospace'], account_segment: 'CURRENT_CLIENT', candidate_capabilities: [{ id: 'forming', name: 'Metal forming' }] },
+  ]
+  const base = { query: '', coverage: 'ALL', top100: false, industries: [], relationships: [] }
+  assert.deepEqual(filterMapRecords(records, { ...base, query: 'milpitas' }), [records[0]])
+  assert.deepEqual(filterMapRecords(records, { ...base, capabilityIds: ['forming'] }), [records[1]])
+  assert.deepEqual(filterMapRecords(records, { ...base, query: 'missing' }), [])
+})
+
 test('zoom-aware clustering preserves every member and is insertion-order stable', () => {
   const input = [marker('b', 38.01, -98), marker('a', 38, -98), marker('c', 40, -80), marker('btx', 38, -98, 'btx-facility')]
   const low = markersForZoom(input, 4)

@@ -347,9 +347,9 @@ export function Intelligence({
     [filters, query],
   );
   useEffect(() => {
-    if (location.surface !== 'intelligence') return
+    if (location.surface !== 'intelligence' || workspace !== 'monitor') return
     onLocationChange({ ...location, filters: { ...(query ? { query } : {}), ...(filters.customer ? { customer: filters.customer } : {}), ...(filters.market ? { market: filters.market } : {}), ...(filters.source ? { source: filters.source } : {}), ...(filters.timing ? { timing: filters.timing } : {}) }, sort }, 'replace')
-  }, [filters, location, onLocationChange, query, sort]);
+  }, [filters, location, onLocationChange, query, sort, workspace]);
   const sources = unique(base.map((item) => item.source_system));
   const tracked = commandCenter?.watched_accounts ?? [];
   useEffect(() => () => onEventSelect(undefined), [onEventSelect]);

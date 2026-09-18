@@ -8,7 +8,7 @@ import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapsho
 import { Today, type TodayFilters } from '../features/today/Today'
 import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
 import { authorizedDestinations, canOpenDestination, type NavigationAuthority } from './destinations'
-import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapFilterOptions, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
@@ -41,10 +41,10 @@ const mapSnapshotFromLocation = (location: WorkspaceLocation): MapViewSnapshot |
   if (location.surface !== 'map') return undefined
   const source = location.filters ?? {}; const radius = Number(source.radius)
   const filters: MapFilters = {
-    coverage: source.coverage === 'RICH' ? 'RICH' : 'ALL', top100: source.top100 === 'true', industries: values(source.industries),
+    query: String(source.query ?? ''), coverage: source.coverage === 'RICH' ? 'RICH' : 'ALL', top100: source.top100 === 'true', industries: values(source.industries),
     relationships: values(source.relationships) as MapAccountSegment[], layers: (values(source.layers).length ? values(source.layers) : DEFAULT_MAP_LAYERS) as MapLayer[], signalTiming: (values(source.signal_timing).length ? values(source.signal_timing) : ['CURRENT', 'UPCOMING']) as Array<'CURRENT' | 'UPCOMING'>,
     strategicPartnership: ['EXCLUDE', 'ONLY'].includes(String(source.partnership)) ? String(source.partnership) as 'EXCLUDE' | 'ONLY' : 'ALL', shortlistOnly: source.shortlist === 'true', radiusMiles: [30, 50, 100].includes(radius) ? radius as 30 | 50 | 100 : undefined,
-    naicsCodes: values(source.naics), businessUnitIds: values(source.business_units), fulfillmentStates: values(source.fulfillment),
+    naicsCodes: values(source.naics), businessUnitIds: values(source.business_units), capabilityIds: values(source.capabilities), fulfillmentStates: values(source.fulfillment),
   }
   return { filters }
 }
@@ -71,6 +71,7 @@ export default function App() {
   const [btxFacilities, setBtxFacilities] = useState<BtxMapFacility[]>([])
   const [mapSignals, setMapSignals] = useState<MapIntelligence[]>([])
   const [layers, setLayers] = useState<string[]>([])
+  const [mapFilterOptions, setMapFilterOptions] = useState<MapFilterOptions>({ business_units: [], capabilities: [] })
   const [detail, setDetail] = useState<Account360>()
   const [items, setItems] = useState<WorkItem[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -121,9 +122,9 @@ export default function App() {
   const clearSelectedAction = useCallback(() => { setSelectedActionId(undefined); setActionSourceAlertId(undefined) }, [])
   const clearViewContext = useCallback(() => setViewContext({}), [])
   const selectMapFacility = useCallback((facilityId?: string, accountId?: string) => { setSelectedMapFacilityId(facilityId); setSelectedMapAccountId(accountId) }, [])
-  const updateMapSnapshot = useCallback((snapshot: MapViewSnapshot) => {
+  const updateMapSnapshot = useCallback((snapshot: MapViewSnapshot, mode: NavigationMode = 'replace') => {
     setMapViewSnapshot(snapshot)
-    commitLocation({ ...locationRef.current, filters: { ...(snapshot.filters.coverage !== 'ALL' ? { coverage: snapshot.filters.coverage } : {}), ...(snapshot.filters.top100 ? { top100: 'true' } : {}), ...(snapshot.filters.industries.length ? { industries: snapshot.filters.industries } : {}), ...(snapshot.filters.relationships.length ? { relationships: snapshot.filters.relationships } : {}), ...(snapshot.filters.layers.length ? { layers: snapshot.filters.layers } : {}), ...(snapshot.filters.signalTiming.length ? { signal_timing: snapshot.filters.signalTiming } : {}), ...(snapshot.filters.naicsCodes?.length ? { naics: snapshot.filters.naicsCodes } : {}), ...(snapshot.filters.businessUnitIds?.length ? { business_units: snapshot.filters.businessUnitIds } : {}), ...(snapshot.filters.fulfillmentStates?.length ? { fulfillment: snapshot.filters.fulfillmentStates } : {}), ...(snapshot.filters.radiusMiles ? { radius: String(snapshot.filters.radiusMiles) } : {}), ...(snapshot.filters.strategicPartnership && snapshot.filters.strategicPartnership !== 'ALL' ? { partnership: snapshot.filters.strategicPartnership } : {}), ...(snapshot.filters.shortlistOnly ? { shortlist: 'true' } : {}) }, accountId: snapshot.selected?.accountId, facilityId: snapshot.selected?.facilityId, eventId: snapshot.selected?.eventId, scope: snapshot.selected?.facilityId ? 'FACILITY' : snapshot.selected?.accountId ? 'ACCOUNT' : undefined }, 'replace')
+    commitLocation({ ...locationRef.current, filters: { ...(snapshot.filters.query ? { query: snapshot.filters.query } : {}), ...(snapshot.filters.coverage !== 'ALL' ? { coverage: snapshot.filters.coverage } : {}), ...(snapshot.filters.top100 ? { top100: 'true' } : {}), ...(snapshot.filters.industries.length ? { industries: snapshot.filters.industries } : {}), ...(snapshot.filters.relationships.length ? { relationships: snapshot.filters.relationships } : {}), ...(snapshot.filters.layers.length ? { layers: snapshot.filters.layers } : {}), ...(snapshot.filters.signalTiming.length ? { signal_timing: snapshot.filters.signalTiming } : {}), ...(snapshot.filters.naicsCodes?.length ? { naics: snapshot.filters.naicsCodes } : {}), ...(snapshot.filters.businessUnitIds?.length ? { business_units: snapshot.filters.businessUnitIds } : {}), ...(snapshot.filters.capabilityIds?.length ? { capabilities: snapshot.filters.capabilityIds } : {}), ...(snapshot.filters.fulfillmentStates?.length ? { fulfillment: snapshot.filters.fulfillmentStates } : {}), ...(snapshot.filters.radiusMiles ? { radius: String(snapshot.filters.radiusMiles) } : {}), ...(snapshot.filters.strategicPartnership && snapshot.filters.strategicPartnership !== 'ALL' ? { partnership: snapshot.filters.strategicPartnership } : {}), ...(snapshot.filters.shortlistOnly ? { shortlist: 'true' } : {}) }, accountId: snapshot.selected?.accountId, facilityId: snapshot.selected?.facilityId, eventId: snapshot.selected?.eventId, scope: snapshot.selected?.facilityId ? 'FACILITY' : snapshot.selected?.accountId ? 'ACCOUNT' : undefined }, mode)
   }, [commitLocation])
   const updateMapAccount = useCallback((id?: string) => {
     setSelectedMapAccountId(id); setSelectedMapFacilityId(undefined)
@@ -253,6 +254,11 @@ export default function App() {
       if (!decoded.location.accountId) { setDetail(undefined); clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext() }
       setLocation(decoded.location)
       if (decoded.location.surface === 'today') setTodayFilters(todayFiltersFromLocation(decoded.location))
+      if (decoded.location.surface === 'map') {
+        const snapshot = mapSnapshotFromLocation(decoded.location)
+        setMapViewSnapshot(snapshot)
+        window.dispatchEvent(new CustomEvent('btx:map-restore', { detail: snapshot }))
+      }
     }
     restore()
     window.addEventListener('hashchange', restore)
@@ -300,7 +306,7 @@ export default function App() {
     if (!requested || requested === 'accounts') load('accounts', api.accounts(signal), value => setAccounts(value.accounts))
     if (!requested || requested === 'today') load('today', api.today(signal), value => { setAlerts(value.commercial_alerts); setCommandCenter(value.command_center); setTodayState('loaded') }, () => setTodayState(previous => previous === 'loaded' ? previous : 'unavailable'))
     if (!requested || requested === 'intelligence') load('intelligence', api.intelligence(signal), value => setSignals(value.signals))
-    if (!requested || requested === 'map') load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers) })
+    if (!requested || requested === 'map') load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers); setMapFilterOptions(value.filter_options ?? { business_units: [], capabilities: [] }) })
     if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
     if (!requested || requested === 'communications') load('communications', api.communications(signal), value => setCommunications(value.items))
     if (!requested || requested === 'settings') load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
@@ -352,9 +358,10 @@ export default function App() {
         publicLocations={publicLocations}
         btxFacilities={btxFacilities}
         layers={layers}
+        filterOptions={mapFilterOptions}
         signals={mapSignals}
         onAccount={(id, assessment) => void select(id, true, assessment)}
-        onRelationships={(id) => void select(id)}
+        onRelationships={(id) => void select(id, true, undefined, undefined, 'relationships')}
         onMapAccountSelect={updateMapAccount}
         onMapFacilitySelect={updateMapFacility}
         onMapEventSelect={updateMapEvent}

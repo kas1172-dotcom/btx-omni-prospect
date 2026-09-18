@@ -3,8 +3,8 @@ import type { BtxMapFacility, Coordinates, MapAccountSegment, MapIntelligence, M
 export type MapMarkerKind = 'customer' | 'prospect' | 'public-facility' | 'btx-facility' | 'intelligence' | 'upcoming-intelligence' | 'cluster'
 export type MapLayer = 'customers' | 'prospects' | 'public-facilities' | 'btx-facilities' | 'intelligence'
 export type MapSelection = { markerId: string; kind: MapMarkerKind; accountId?: string; facilityId?: string; eventId?: string }
-export type MapMarker = { id: string; kind: MapMarkerKind; label: string; accessibleLabel: string; latitude: number; longitude: number; accountId?: string; facilityId?: string; eventId?: string; memberIds?: string[]; bounds?: { north: number; south: number; east: number; west: number } }
-export type MapFilters = { coverage: 'RICH' | 'ALL'; top100: boolean; industries: string[]; relationships: MapAccountSegment[]; layers: MapLayer[]; signalTiming: Array<'CURRENT' | 'UPCOMING'>; strategicPartnership?: 'ALL' | 'EXCLUDE' | 'ONLY'; shortlistOnly?: boolean; radiusMiles?: 30 | 50 | 100; naicsCodes?: string[]; businessUnitIds?: string[]; fulfillmentStates?: string[] }
+export type MapMarker = { id: string; kind: MapMarkerKind; label: string; accessibleLabel: string; latitude: number; longitude: number; organizationName?: string; siteName?: string; address?: string; accountId?: string; facilityId?: string; eventId?: string; memberIds?: string[]; bounds?: { north: number; south: number; east: number; west: number } }
+export type MapFilters = { query: string; coverage: 'RICH' | 'ALL'; top100: boolean; industries: string[]; relationships: MapAccountSegment[]; layers: MapLayer[]; signalTiming: Array<'CURRENT' | 'UPCOMING'>; strategicPartnership?: 'ALL' | 'EXCLUDE' | 'ONLY'; shortlistOnly?: boolean; radiusMiles?: 30 | 50 | 100; naicsCodes?: string[]; businessUnitIds?: string[]; capabilityIds?: string[]; fulfillmentStates?: string[] }
 export const FULFILLMENT_LABELS: Record<string, string> = { MISSED_COMMITMENT: 'Missed delivery commitment', ACCEPTANCE_PENDING: 'Acceptance pending', OPEN_SHIPMENT: 'Open shipment balance', NO_OPEN_FULFILLMENT_EXCEPTION: 'No open fulfillment exception' }
 export type MapViewSnapshot = { filters: MapFilters; selected?: MapMarker }
 export const ALL_MAP_LAYERS: MapLayer[] = ['customers', 'prospects', 'public-facilities', 'btx-facilities', 'intelligence']
@@ -14,20 +14,23 @@ export const DEFAULT_MAP_LAYERS: MapLayer[] = ['customers', 'prospects', 'btx-fa
 const numericCoordinate = (value: unknown): boolean => (typeof value === 'number' || (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value))) && Number.isFinite(Number(value))
 export const validCoordinates = (value: Coordinates | null | undefined): value is Coordinates => Boolean(value && numericCoordinate(value.latitude) && numericCoordinate(value.longitude) && Math.abs(Number(value.latitude)) <= 90 && Math.abs(Number(value.longitude)) <= 180)
 export const relationshipKind = (record: MapRecord): 'customer' | 'prospect' => record.account_segment === 'PROSPECT' ? 'prospect' : 'customer'
-export function filterMapRecords<T extends Pick<MapRecord, 'is_rich_scenario' | 'btx_top_100' | 'primary_markets' | 'account_segment' | 'naics_assignments' | 'commercial_business_unit_ids' | 'fulfillment_attention'>>(records: T[], filters: MapFilters): T[] {
-  return records.filter(record => (filters.coverage === 'ALL' || record.is_rich_scenario)
+export function filterMapRecords<T extends Pick<MapRecord, 'name' | 'location_name' | 'city' | 'region' | 'is_rich_scenario' | 'btx_top_100' | 'primary_markets' | 'account_segment' | 'naics_assignments' | 'commercial_business_unit_ids' | 'candidate_capabilities' | 'fulfillment_attention'>>(records: T[], filters: MapFilters): T[] {
+  const query = (filters.query ?? '').trim().toLocaleLowerCase()
+  return records.filter(record => (!query || `${record.name} ${record.location_name ?? ''} ${record.city ?? ''} ${record.region ?? ''} ${record.primary_markets.join(' ')}`.toLocaleLowerCase().includes(query))
+    && (filters.coverage === 'ALL' || record.is_rich_scenario)
     && (!filters.top100 || record.btx_top_100)
     && (!filters.industries.length || filters.industries.some(industry => record.primary_markets.includes(industry)))
     && (!filters.relationships.length || filters.relationships.includes(record.account_segment))
     && (!filters.naicsCodes?.length || record.naics_assignments?.some(item => filters.naicsCodes?.includes(item.code)))
     && (!filters.businessUnitIds?.length || record.commercial_business_unit_ids?.some(id => filters.businessUnitIds?.includes(id)))
+    && (!filters.capabilityIds?.length || record.candidate_capabilities?.some(item => filters.capabilityIds?.includes(item.id)))
     && (!filters.fulfillmentStates?.length || record.fulfillment_attention?.states.some(state => filters.fulfillmentStates?.includes(state))))
 }
 export function buildMapMarkers(records: MapRecord[], publicLocations: PublicLocation[], btxFacilities: BtxMapFacility[], signals: MapIntelligence[], layers: MapLayer[]): MapMarker[] {
   const enabled = new Set(layers); const markers: MapMarker[] = []
   const publicFacilitySeen = new Set<string>()
   const btxFacilitySeen = new Set<string>()
-  for (const record of records) { if (!validCoordinates(record.coordinates)) continue; const kind = relationshipKind(record); if (!enabled.has(kind === 'customer' ? 'customers' : 'prospects')) continue; const label = record.location_name && record.location_name !== record.name ? `${record.name} · ${record.location_name}` : record.name; markers.push({ id: record.id, kind, label, accessibleLabel: `${kind === 'customer' ? 'Customer' : 'Prospect'} marker: ${label}`, latitude: Number(record.coordinates.latitude), longitude: Number(record.coordinates.longitude), accountId: record.account_id, facilityId: record.facility_id }) }
+  for (const record of records) { if (!validCoordinates(record.coordinates)) continue; const kind = relationshipKind(record); if (!enabled.has(kind === 'customer' ? 'customers' : 'prospects')) continue; const siteName = record.location_name || record.name; const label = siteName !== record.name ? `${record.name} · ${siteName}` : record.name; const address = [record.city, record.region, record.country].filter(Boolean).join(', '); markers.push({ id: record.id, kind, label, accessibleLabel: `${kind === 'customer' ? 'Customer' : 'Prospect'} marker: ${label}`, latitude: Number(record.coordinates.latitude), longitude: Number(record.coordinates.longitude), organizationName: record.name, siteName, address, accountId: record.account_id, facilityId: record.facility_id }) }
   if (enabled.has('public-facilities')) for (const facility of publicLocations) {
     if (!validCoordinates(facility.coordinates)) continue
     if (publicFacilitySeen.has(facility.facility_id)) continue

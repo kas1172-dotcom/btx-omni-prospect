@@ -91,7 +91,7 @@ test('Intelligence briefing to Organization 360 refresh restores the exact asses
 test('Map facility scope survives Organization 360 and is supplied when Omni opens', async ({ page }) => {
   await page.goto('/#/map?account_id=lockheed-martin&facility=public-hq-lockheed-martin&scope=facility')
   await expect(page.getByRole('heading', { name: 'Lockheed Martin' }).first()).toBeVisible()
-  await page.getByRole('button', { name: 'View Customer 360' }).click()
+  await page.getByRole('button', { name: 'Open Organization 360' }).click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   expect(page.url()).toContain('facility=public-hq-lockheed-martin'); expect(page.url()).toContain('scope=facility')
   await page.getByLabel('Open Omni assistant').click()

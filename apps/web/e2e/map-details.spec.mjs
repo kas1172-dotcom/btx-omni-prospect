@@ -1,22 +1,36 @@
 import { test, expect } from '@playwright/test'
 
 test('persisted NAICS and BU facets filter the same canonical map and list scope', async ({ page }) => {
+  let mapReads = 0
+  page.on('request', request => { if (new URL(request.url()).pathname === '/api/map') mapReads += 1 })
   const response = await page.request.get('/api/map')
   const data = await response.json()
   const expected = data.accounts.filter(item => item.naics_assignments?.some(n => n.code === '334516') && item.commercial_business_unit_ids?.includes('gen-el-mec'))
   expect(expected.length).toBeGreaterThan(0)
   await page.goto('/#/map')
+  await expect(page.getByRole('heading', { name: 'Tactical Map', exact: true })).toBeVisible()
+  const initialMapReads = mapReads
   await page.getByRole('button', { name: 'Layers & filters', exact: true }).click()
-  await page.getByRole('group', { name: 'NAICS account classification', exact: true }).getByRole('button', { name: '334516', exact: true }).click()
-  await page.getByRole('group', { name: 'BTX BU commercial context', exact: true }).getByRole('button', { name: 'gen el mec', exact: true }).click()
+  const buName = data.filter_options.business_units.find(item => item.id === 'gen-el-mec').name
+  await page.getByRole('combobox', { name: 'Add NAICS classification', exact: true }).fill('334516')
+  await page.getByRole('option', { name: /NAICS 334516/ }).click()
+  await page.getByRole('combobox', { name: 'Add business unit', exact: true }).fill(buName)
+  await page.getByRole('option', { name: new RegExp(buName) }).click()
   await page.getByRole('button', { name: 'Apply to map', exact: true }).click()
+  await expect(page).toHaveURL(/f\.business_units=gen-el-mec/)
+  await expect(page).toHaveURL(/f\.naics=334516/)
   const list = page.getByRole('region', { name: 'Map results', exact: true })
   for (const record of expected) await expect(list.getByRole('button').filter({ hasText: `${record.name} · ${record.location_name}` })).toBeVisible()
   await expect(list.getByRole('button').filter({ hasText: /^Boeing/ })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Remove NAICS 334516 filter', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Remove NAICS 334516 filter', exact: true }).click()
-  await page.getByRole('button', { name: 'Remove BU gen el mec filter', exact: true }).click()
+  await page.goBack()
   await expect(list.getByRole('button').filter({ hasText: /^Boeing/ }).first()).toBeVisible()
+  await page.goForward()
+  await expect(list.getByRole('button').filter({ hasText: /^Boeing/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Remove NAICS 334516 filter', exact: true }).click()
+  await page.getByRole('button', { name: `Remove ${buName} filter`, exact: true }).click()
+  await expect(list.getByRole('button').filter({ hasText: /^Boeing/ }).first()).toBeVisible()
+  expect(mapReads).toBe(initialMapReads)
 })
 
 test('fulfillment attention filters use persisted obligations and clear without stale account context', async ({ page }) => {
@@ -58,13 +72,18 @@ test('selected site shares canonical briefing and exposes evidence without a sec
 })
 
 test('itinerary persists ordered canonical sites and retains explicit meeting state', async ({ page }) => {
+  let mapReads = 0
+  page.on('request', request => { if (new URL(request.url()).pathname === '/api/map') mapReads += 1 })
   await page.goto('/#/map')
   const results = page.getByRole('region', { name: 'Map results', exact: true })
+  await expect(results).toBeVisible()
+  const initialMapReads = mapReads
   await results.getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   await page.getByRole('complementary', { name: 'Selected map location', exact: true }).getByRole('button', { name: 'Add to itinerary', exact: true }).click()
   const itinerary = page.getByRole('dialog', { name: 'Itinerary', exact: true })
   await expect(itinerary).toContainText('1 selected')
-  await itinerary.getByRole('textbox', { name: 'Origin', exact: true }).fill('BTX Minneapolis')
+  await itinerary.locator('#itinerary-origin').fill('BTX Minneapolis')
+  await itinerary.getByRole('button', { name: 'Route-provider details', exact: true }).click()
   await itinerary.getByRole('textbox', { name: 'Origin latitude', exact: true }).fill('44.9778')
   await itinerary.getByRole('textbox', { name: 'Origin longitude', exact: true }).fill('-93.2650')
   await itinerary.getByRole('textbox', { name: 'Visit purpose', exact: true }).fill('Technical fit review')
@@ -75,7 +94,46 @@ test('itinerary persists ordered canonical sites and retains explicit meeting st
   await page.getByRole('button', { name: 'Itinerary', exact: true }).click()
   await expect(itinerary.getByRole('textbox', { name: 'Visit purpose', exact: true })).toHaveValue('Technical fit review')
   await expect(itinerary.getByRole('combobox', { name: 'Meeting status', exact: true })).toHaveValue('PROPOSED')
-  await expect(itinerary).toContainText('Road travel estimate not requested')
+  await expect(itinerary).toContainText('Route timing unavailable')
+  await expect(itinerary).not.toContainText('kla ·')
+  expect(mapReads).toBe(initialMapReads)
+})
+
+test('multi-stop itinerary supports non-drag reorder, removal and refresh persistence', async ({ page }) => {
+  await page.goto('/#/map')
+  await page.getByRole('button', { name: 'Itinerary', exact: true }).click()
+  let itinerary = page.getByRole('dialog', { name: 'Itinerary', exact: true })
+  const removeButtons = itinerary.getByRole('button', { name: /^Remove / })
+  while (await removeButtons.count()) await removeButtons.first().click()
+  if (await itinerary.getByRole('button', { name: 'Save itinerary', exact: true }).isEnabled()) await itinerary.getByRole('button', { name: 'Save itinerary', exact: true }).click()
+  await itinerary.getByRole('button', { name: 'Close', exact: true }).click()
+
+  const results = page.getByRole('region', { name: 'Map results', exact: true })
+  for (const organization of ['KLA Corporation', 'Boeing']) {
+    await results.getByRole('button').filter({ hasText: new RegExp(`^${organization}`) }).first().click()
+    await page.getByRole('complementary', { name: 'Selected map location', exact: true }).getByRole('button', { name: 'Add to itinerary', exact: true }).click()
+    itinerary = page.getByRole('dialog', { name: 'Itinerary', exact: true })
+    await itinerary.getByRole('button', { name: 'Close', exact: true }).click()
+  }
+  await page.getByRole('button', { name: 'Itinerary', exact: true }).click()
+  itinerary = page.getByRole('dialog', { name: 'Itinerary', exact: true })
+  await expect(itinerary).toContainText('2 selected')
+  await itinerary.getByRole('button', { name: /Move Boeing headquarters earlier/ }).click()
+  await itinerary.getByRole('button', { name: 'Save itinerary', exact: true }).click()
+  await expect(itinerary).toContainText(/Saved version \d+/)
+  await itinerary.getByRole('button', { name: 'Close', exact: true }).click()
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Itinerary', exact: true }).click()
+  itinerary = page.getByRole('dialog', { name: 'Itinerary', exact: true })
+  await expect(itinerary.locator('.itinerary-stops > li').first()).toContainText('Boeing')
+  await itinerary.getByRole('button', { name: /Remove Boeing headquarters/ }).click()
+  await itinerary.getByRole('button', { name: 'Save itinerary', exact: true }).click()
+  await itinerary.getByRole('button', { name: 'Close', exact: true }).click()
+  await page.reload()
+  await page.getByRole('button', { name: 'Itinerary', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Itinerary', exact: true })).toContainText('1 selected')
+  await expect(page.getByRole('dialog', { name: 'Itinerary', exact: true })).not.toContainText('Boeing')
 })
 
 test('mobile list switch keeps the selected site when returning to the map', async ({ page }) => {
@@ -96,6 +154,7 @@ test('zero score and zero distance are readable values (projection edge-case fix
     const data = await response.json()
     for (const item of data.accounts.filter(item => item.account_id === 'kla')) {
       item.attractiveness_score = '0'
+      item.account_attractiveness.score = '0'
       item.nearest_btx_facility = { id: 'fixture-coincident', name: 'Coincident test facility', distance_miles: '0', distance_method: 'HAVERSINE_STRAIGHT_LINE' }
     }
     await route.fulfill({ response, json: data })
@@ -103,6 +162,6 @@ test('zero score and zero distance are readable values (projection edge-case fix
   await page.goto('/#/map')
   await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
-  await expect(panel).toContainText('Opportunity Priority: 0')
+  await expect(panel.getByLabel('Customer Attractiveness score summary')).toContainText('0')
   await expect(panel).toContainText('Coincident test facility · 0 miles straight-line')
 })
