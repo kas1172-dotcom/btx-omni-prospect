@@ -43,7 +43,7 @@ for (const width of [390, 1440]) {
     await parity(expected)
     await page.locator('[data-priority-id]').first().getByRole('button', { name: 'Evidence and governed action' }).click()
     await page.locator('[data-priority-id]').first().getByRole('button', { name: 'Create action', exact: true }).click()
-    await expect(page).toHaveURL(/#\/actions$/)
+    await expect(page).toHaveURL(/#\/actions\?view=suggestions/)
     await expect(page.getByLabel('Selected Today priority')).toBeVisible()
     const actions = await (await page.request.get('/api/actions')).json()
     const recommendation = actions.suggestions.find(suggestion => suggestion.source_alert_id === expected[0].id)

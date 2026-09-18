@@ -149,10 +149,12 @@ test('Actions state, copied links, malformed links and permission denial recover
   await expect(page.getByText(/malformed or no longer supported/i)).toBeVisible()
   expect(page.url()).not.toContain('assessment=partial')
 
-  await page.route('**/api/accounts/restricted-account', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ detail: 'Top secret account name' }) }))
-  await page.goto('/#/accounts/restricted-account')
-  await expect(page.getByText(/unavailable or you do not have access/i)).toBeVisible()
-  await expect(page.getByText('Top secret account name')).toHaveCount(0)
+  const restricted = await context.newPage()
+  await restricted.route('**/api/accounts/restricted-account', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ detail: 'Top secret account name' }) }))
+  await restricted.goto('/#/accounts/restricted-account')
+  await expect(restricted.getByText(/unavailable or you do not have access/i)).toBeVisible()
+  await expect(restricted.getByText('Top secret account name')).toHaveCount(0)
+  await restricted.close()
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(deepLink)
