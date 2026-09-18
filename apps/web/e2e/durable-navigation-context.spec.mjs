@@ -104,13 +104,18 @@ test('Map facility scope survives Organization 360 and is supplied when Omni ope
 })
 
 test('federal route, Relationship Intelligence, governed Action, Omni and Back share one version', async ({ page }) => {
-  const action = { id: 'action-federal-navigation', account_id: 'eaton', title: 'Validate the organization’s role and review related internal records before outreach.', description: 'Governed federal navigation fixture.', priority: 'MEDIUM', status: 'OPEN', approval_status: 'NOT_REQUIRED', evidence_ids: [], context_referents: [['federal_opportunity', 'SAM-1'], ['federal_assessment', '6242762714327ccf7ea993a8c8fc13a04de6ae726452b690c5633521c77dcd2b'], ['federal_assessment_version', '1'], ['federal_route_type', 'CUSTOMER_EXPANSION']], version: 1, created_by: 'seller-1', created_at: '2026-09-16T12:00:00Z', updated_at: '2026-09-16T12:00:00Z' }
+  let action
   await page.route(/\/api\/actions(?:\?.*)?$/, async route => {
-    if (route.request().method() === 'POST') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(action) })
-    const response = await route.fetch(); const body = await response.json(); body.items = [action, ...body.items.filter(item => item.id !== action.id)]
+    if (route.request().method() === 'POST') {
+      const input = route.request().postDataJSON()
+      action = { ...input, id: 'action-federal-navigation', status: 'OPEN', approval_status: 'NOT_REQUIRED', version: 1, created_by: 'seller-1', created_at: '2026-09-16T12:00:00Z', updated_at: '2026-09-16T12:00:00Z' }
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(action) })
+    }
+    const response = await route.fetch(); const body = await response.json()
+    if (action) body.items = [action, ...body.items.filter(item => item.id !== action.id)]
     await route.fulfill({ response, json: body })
   })
-  await page.route(`**/api/actions/${action.id}/history`, route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ events: [] }) }))
+  await page.route('**/api/actions/action-federal-navigation/history', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ events: [] }) }))
   await page.goto('/#/intelligence?view=federal')
   await page.getByRole('button', { name: 'Aerospace precision component sources sought' }).click()
   const opportunityUrl = page.url()

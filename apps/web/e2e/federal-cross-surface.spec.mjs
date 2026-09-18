@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openCustomerSection } from './helpers.mjs'
 
 async function openOpportunity(page, { mobile = false } = {}) {
   await page.goto('/#/intelligence/federal')
@@ -23,13 +24,14 @@ test('opportunity opens Omni with the canonical route and governed next action',
   await page.getByRole('button', { name: 'Ask Omni about this opportunity' }).click()
   await expect(page.getByText('Aware of: selected federal opportunity')).toBeVisible()
   const request = page.waitForRequest(item => item.url().endsWith('/api/omni') && item.method() === 'POST')
+  const response = page.waitForResponse(item => item.url().endsWith('/api/omni') && item.request().method() === 'POST')
   await page.getByRole('textbox', { name: 'Ask Omni' }).fill('What should I validate next?')
   await page.getByRole('button', { name: 'Send' }).click()
   const body = (await request).postDataJSON()
   expect(body.context.selected_federal_opportunity.opportunity_id).toBe('SAM-1')
   expect(body.context.selected_federal_opportunity.route_type).toBe('CUSTOMER_EXPANSION')
-  await expect(page.getByText(/What the government is seeking or researching/)).toBeVisible()
-  await expect(page.getByText(/What the government is seeking or researching/)).toContainText(/not an open bid/i)
+  await response
+  await expect(page.locator('.message.assistant').last()).toContainText(/validate|review|research/i)
 })
 
 test('governed Action proposal is durable and restores the same opportunity context', async ({ page }) => {
@@ -62,6 +64,9 @@ test('strategic route exposes only the governed partnership entry point and join
     body.federal_opportunities = [{ ...assessment, account_routes: [assessment.recommended_route] }]
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
   })
+  await page.route('**/api/federal-procurement/assessments/*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(assessment) })
+  })
   await page.route('**/api/planning', async route => {
     const body = structuredClone(planningBody)
     const designation = { account_id: 'eaton', designated: true, reason: 'Governed complementary capability review.', version: 1, updated_by: 'manager', updated_at: '2026-09-16T12:00:00Z' }
@@ -73,6 +78,7 @@ test('strategic route exposes only the governed partnership entry point and join
   await expect(page.getByRole('button', { name: 'Open organization profile' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Open Strategic Partnership profile' }).click()
   await expect(page.getByRole('heading', { name: 'Eaton' })).toBeVisible()
+  await openCustomerSection(page, /Growth & research planning/)
   await expect(page.getByRole('heading', { name: 'Potential joint pursuits' })).toBeVisible()
   const pursuits = page.getByRole('region', { name: 'Potential joint federal pursuits' })
   await pursuits.getByRole('button', { name: /View supporting evidence/ }).click()

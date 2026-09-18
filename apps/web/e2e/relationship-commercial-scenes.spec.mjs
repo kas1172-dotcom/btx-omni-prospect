@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openRelationshipWorkspace } from './helpers.mjs'
 
 const viewports = [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }]
 
@@ -12,8 +13,7 @@ for (const viewport of viewports) {
       const errors = []
       page.on('pageerror', error => errors.push(error.message))
       await page.goto(`/#/accounts/${account}`)
-      if (viewport.width < 760) await page.getByRole('button', { name: /Relationship Intelligence/ }).click()
-      const section = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
+      const section = await openRelationshipWorkspace(page)
       if (scene !== 'D1') await section.getByRole('combobox', { name: 'Objective', exact: true }).selectOption('commercial_fit')
       await expect(section).toHaveAttribute('aria-busy', 'false')
       const response = page.waitForResponse(r => r.url().endsWith('/api/relationships/query') && r.request().postDataJSON()?.source_component_id === component)
@@ -56,7 +56,7 @@ for (const viewport of viewports) {
       await expect(section).toHaveAttribute('aria-busy', 'false')
       if (scene === 'D3') await expect(section.getByText(/146 units remain against/).first()).toBeVisible()
       await section.getByText('Why this route · factors and evidence', { exact: true }).click()
-      await expect(section).toContainText(`utility ${Number(route.utility).toFixed(1)}, not a probability`)
+      await expect(section).toContainText(`Route strength ${Number(route.utility).toFixed(1)} out of 100; it is not a probability`)
       if (viewport.width < 760) await section.getByRole('button', { name: 'Explore network', exact: true }).click()
       await section.getByRole('button', { name: 'Fit selected route', exact: true }).click()
       await expect(section).toHaveAttribute('aria-busy', 'false')
@@ -87,8 +87,7 @@ for (const viewport of viewports) {
 test('Omni waits for an in-flight selected relationship before answering', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/#/accounts/kla')
-  const section = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
-  await expect(section).toHaveAttribute('aria-busy', 'false')
+  const section = await openRelationshipWorkspace(page)
   const componentResponse = page.waitForResponse(response => response.url().endsWith('/api/relationships/query') && response.request().postDataJSON()?.source_component_id === 'C2-KLA-01')
   await section.getByRole('combobox', { name: 'Component scope', exact: true }).selectOption('C2-KLA-01')
   await componentResponse

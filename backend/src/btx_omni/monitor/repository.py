@@ -8,9 +8,10 @@ from contextlib import contextmanager
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from threading import RLock
+from threading import Event, RLock, Thread
 
 from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, update
+from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -257,21 +258,49 @@ class MonitorRepository:
         self._federal_assessment_lock = RLock()
 
     @contextmanager
-    def operational_lock(self):
-        """Hold one cross-process PostgreSQL lock for a collection cycle."""
+    def operational_lock(self, *, heartbeat_interval_seconds: float = 30.0):
+        """Hold and keep alive one cross-process lock for a collection cycle."""
         if self.engine.dialect.name != "postgresql":
             yield True
             return
-        with self.engine.connect() as connection:
+        with self.engine.connect().execution_options(
+            isolation_level="AUTOCOMMIT"
+        ) as connection:
             acquired = bool(
                 connection.execute(
                     text("SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))")
                 ).scalar_one()
             )
+            stop_heartbeat = Event()
+            heartbeat_failed = Event()
+
+            def keep_lock_connection_alive() -> None:
+                while not stop_heartbeat.wait(heartbeat_interval_seconds):
+                    try:
+                        connection.execute(text("SELECT 1"))
+                    except SQLAlchemyError:
+                        heartbeat_failed.set()
+                        return
+
+            heartbeat = None
+            if acquired:
+                heartbeat = Thread(
+                    target=keep_lock_connection_alive,
+                    name="monitor-operational-lock-heartbeat",
+                    daemon=True,
+                )
+                heartbeat.start()
             try:
                 yield acquired
             finally:
+                stop_heartbeat.set()
+                if heartbeat:
+                    heartbeat.join()
                 if acquired:
+                    if heartbeat_failed.is_set():
+                        raise RuntimeError(
+                            "Monitor operational lock connection was lost during collection."
+                        )
                     connection.execute(
                         text(
                             "SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))"

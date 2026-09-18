@@ -17,7 +17,7 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
   await expect(attention).toContainText('BTX commercial record')
   await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   await expect(page.getByRole('heading', { name: 'Public intelligence', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'View Intelligence' }).click()
+  await page.getByRole('button', { name: 'View Intelligence' }).first().click()
   await expect(page.getByRole('heading', { name: 'Intelligence', level: 1 })).toBeVisible()
 
   await navigate(page, 'Today')
@@ -32,19 +32,21 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
   await page.goto('/')
   const payload = await page.evaluate(async () => (await fetch('/api/today')).json())
   const projectedPriority = payload.command_center.priority_briefing.map(item => item.id)
-  await expect(page.locator('[data-priority-id]')).toHaveCount(projectedPriority.length)
-  expect(await page.locator('[data-priority-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-priority-id')))).toEqual(projectedPriority)
+  const displayedPriority = projectedPriority.slice(0, 10)
+  await expect(page.locator('[data-priority-id]')).toHaveCount(displayedPriority.length)
+  expect(await page.locator('[data-priority-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-priority-id')))).toEqual(displayedPriority)
+  await expect(page.locator('.today-lane-summary')).toContainText(`${projectedPriority.length} total action priorities`)
 
   const commercial = payload.command_center.priority_briefing.filter(item => item.kind === 'COMMERCIAL_REVIEW')
   const publicSignals = payload.command_center.priority_briefing.filter(item => item.kind === 'PUBLIC_SIGNAL')
   expect(await page.locator('[data-summary-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-summary-id')))).toEqual(projectedPriority.slice(0, 3))
-  for (const item of commercial) {
+  for (const item of commercial.filter(item => displayedPriority.includes(item.id))) {
     const card = page.locator(`[data-priority-id="${item.id}"]`)
     await card.getByRole('button', { name: 'Evidence and governed action' }).click()
     await expect(card).toContainText('BTX commercial record')
     await expect(card.getByRole('button', { name: 'Create action' })).toBeVisible()
   }
-  for (const item of publicSignals) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)
+  for (const item of publicSignals.filter(item => displayedPriority.includes(item.id))) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   const defense = payload.command_center.market_hubs.find(hub => hub.market === 'Defense')
@@ -106,15 +108,15 @@ test('public briefing joins the selected signal to canonical account context wit
   await first.getByRole('button', { name: 'Open briefing' }).click()
 
   await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
-  await expect(page).toHaveURL(/#\/intelligence\/brief\//)
+  await expect(page).toHaveURL(/#\/intelligence\?view=brief&event=/)
   await expect(page.getByRole('heading', { name: 'Commercial relevance' })).toBeVisible()
   await page.getByRole('button', { name: /View supporting evidence/ }).click()
   await expect(page.getByRole('table', { name: 'Components and applicable business units' })).toBeVisible()
   await expect(page.getByText(/do not establish that this public event applies/)).toBeVisible()
   const next = page.getByRole('heading', { name: 'What should the seller do next?' }).locator('..')
-  await expect(next).toContainText('Review the governed public evidence')
+  await expect(next).toContainText('Complete the account-specific assessment before deciding whether action is warranted.')
   await expect(next).not.toContainText('remaining bracket quantity')
-  await expect(page.getByRole('complementary', { name: 'Briefing decisions and actions' })).toContainText('Signal confidence')
+  await expect(page.getByRole('complementary', { name: 'Briefing decisions and actions' })).toContainText('Signal Confidence')
 
   await page.reload()
   await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)

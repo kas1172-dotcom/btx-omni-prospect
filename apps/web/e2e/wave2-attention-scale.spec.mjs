@@ -69,11 +69,10 @@ test('bounded account selector preserves canonical scope and mobile containment'
 })
 
 test('memory refresh keeps last-good content visible when only that resource fails', async ({ page }) => {
-  let memoryReads = 0
+  let refreshShouldFail = false
   await page.route(/\/api\/omni\/memories(?:\?.*)?$/, async route => {
     if (route.request().method() !== 'GET') return route.continue()
-    memoryReads += 1
-    if (memoryReads > 1) {
+    if (refreshShouldFail) {
       await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'fixture outage' }) })
       return
     }
@@ -97,6 +96,7 @@ test('memory refresh keeps last-good content visible when only that resource fai
 
   await page.goto('/#/settings')
   await expect(page.getByText('Keep last-good preference visible')).toBeVisible()
+  refreshShouldFail = true
   await page.getByRole('button', { name: 'Refresh memories' }).click()
   await expect(page.getByText('Keep last-good preference visible')).toBeVisible()
   await expect(page.getByText(/Refresh failed/)).toBeVisible()

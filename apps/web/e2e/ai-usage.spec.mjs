@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('private usage loads independently and a failed refresh preserves prior values', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
   let calls = 0
   let fail = false
   await page.route('**/api/settings/ai-usage', async route => {

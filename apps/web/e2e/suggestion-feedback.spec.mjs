@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { selectSuggestion } from './helpers.mjs'
 
 test('stale recommendation feedback is rejected without losing the draft; refresh requires review', async ({ page }) => {
   let stale = true
@@ -13,8 +14,9 @@ test('stale recommendation feedback is rejected without losing the draft; refres
   const before = await (await page.request.get('/api/actions')).json()
   const suggestion = before.suggestions.find(item => !item.conversion_blocked)
   await page.getByRole('button', { name: 'Suggested', exact: true }).click()
-  await page.getByLabel('Suggestion visibility').selectOption('ALL')
-  const card = page.locator(`[data-suggestion-id="${suggestion.id}"]`)
+  await page.getByLabel('Visibility').selectOption('ALL')
+  await page.getByRole('searchbox', { name: 'Search suggestions' }).fill(suggestion.title)
+  const card = await selectSuggestion(page, suggestion.id)
   await card.getByRole('button', { name: /Give feedback|Edit my feedback/ }).click()
   await card.getByRole('combobox', { name: 'Feedback reason', exact: true }).selectOption('NOT_RELEVANT')
   const draft = `Retained stale review ${crypto.randomUUID()}`
@@ -26,7 +28,7 @@ test('stale recommendation feedback is rejected without losing the draft; refres
   expect(after.items).toEqual(before.items)
   expect(after.suggestions.find(item => item.id === suggestion.id).feedback).toEqual(suggestion.feedback)
   stale = false
-  await page.getByRole('button', { name: 'Refresh selected suggestion', exact: true }).click()
+  await page.getByRole('button', { name: 'Refresh suggestions', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Suggestions refreshed' })).toBeVisible()
   await expect(card.getByLabel('Correction or completion source / optional note')).toHaveValue(draft)
   // Refresh does not automatically submit the retained draft.
@@ -40,10 +42,11 @@ for (const width of [390, 1440]) {
     page.on('pageerror', error => errors.push(error.message))
     await page.goto('/#/actions')
     await page.getByRole('button', { name: 'Suggested', exact: true }).click()
-    await page.getByLabel('Suggestion visibility').selectOption('ALL')
-    const card = page.locator('.suggestion-card').filter({ hasText: 'Confirm fulfillment status and customer recovery plan.' }).first()
-    await expect(card).toBeVisible()
-    const id = await card.getAttribute('data-suggestion-id')
+    await page.getByLabel('Visibility').selectOption('ALL')
+    const row = page.locator('[data-suggestion-id]').filter({ hasText: 'Confirm fulfillment status and customer recovery plan.' }).first()
+    await expect(row).toBeVisible()
+    const id = await row.getAttribute('data-suggestion-id')
+    const card = await selectSuggestion(page, id)
     const note = `Review request ${testInfo.testId}: account attribution requires source review`
     const edit = card.getByRole('button', { name: /^(Give feedback|Edit my feedback)$/ })
     await edit.click()
@@ -56,16 +59,18 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('status').filter({ hasText: 'Saved for you only' })).toBeVisible()
     await page.reload()
     await page.getByRole('button', { name: 'Suggested', exact: true }).click()
-    await page.getByLabel('Suggestion visibility').selectOption('HIDDEN')
-    const persisted = page.locator(`[data-suggestion-id="${id}"]`)
+    await page.getByLabel('Visibility').selectOption('HIDDEN')
+    const persistedRow = page.locator(`[data-suggestion-id="${id}"]`)
+    const persisted = await selectSuggestion(page, id)
     await expect(persisted).toContainText(note)
-    await expect(persisted).toContainText('canonical account has not changed')
+    await expect(persisted).toContainText('My feedback: Wrong account')
     await persisted.screenshot({ path: testInfo.outputPath(`feedback-${width}.png`) })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await persisted.getByRole('button', { name: 'Undo my feedback' }).click()
-    await expect(persisted).toHaveCount(0)
-    await page.getByLabel('Suggestion visibility').selectOption('ACTIVE')
-    await expect(persisted).toContainText('My feedback: Restored')
+    await expect(persistedRow).toHaveCount(0)
+    await page.getByLabel('Visibility').selectOption('ACTIVE')
+    await selectSuggestion(page, id)
+    await expect(page.locator('.suggestion-detail')).toContainText('My feedback: Restored')
     expect(errors).toEqual([])
   })
 }

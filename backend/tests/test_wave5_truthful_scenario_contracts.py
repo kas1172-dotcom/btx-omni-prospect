@@ -9,7 +9,6 @@ from btx_omni.modules.federal_opportunity_routing import build_assessment
 from btx_omni.modules.federal_procurement import fixture
 from btx_omni.providers.sample.environment import build_sample_environment
 
-
 NOW = datetime(2026, 8, 31, tzinfo=UTC)
 
 

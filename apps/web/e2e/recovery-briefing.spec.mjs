@@ -22,9 +22,9 @@ test('Boeing recovery briefing renders the canonical reconciliation and opens it
   for (const evidenceId of canonical.commercial_briefing.evidence_ids) await expect(evidence.getByText(evidenceId, { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Create action proposal' }).click()
-  await expect(page).toHaveURL(/#\/actions$/)
+  await expect(page).toHaveURL(/#\/actions\?view=suggestions/)
   await expect(page.getByText('Showing the recommendation linked to your Today priority.')).toBeVisible()
-  await expect(page.getByText('Confirm fulfillment status and customer recovery plan.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Confirm fulfillment status and customer recovery plan.', { exact: true }).last()).toBeVisible()
 })
 
 test('recovery briefing preserves exact quantities and does not overflow on mobile', async ({ page }) => {

@@ -3,9 +3,12 @@ from datetime import date
 from decimal import Decimal
 
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
+from btx_omni.modules.relationships.presentation import (
+    seller_route_evidence_label,
+    seller_route_predicate_label,
+)
 from btx_omni.modules.relationships.routes import RouteQuery
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
-from btx_omni.modules.relationships.presentation import seller_route_predicate_label, seller_route_evidence_label
 
 
 def selected_relationship_context(environment, selection: dict, *, account_id: str | None) -> dict:

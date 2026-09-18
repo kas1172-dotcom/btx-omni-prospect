@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
+import { openCustomerSection, openRelationshipWorkspace } from './helpers.mjs'
 
-async function inspectCanonicalNetwork(section) {
-  const ranked = section.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
+async function inspectCanonicalNetwork(ranked) {
   await ranked.getByRole('combobox', { name: 'Objective', exact: true }).selectOption('commercial_fit')
   await expect(ranked).toHaveAttribute('aria-busy', 'false')
   const toggle = ranked.getByRole('button', { name: 'Explore network', exact: true })
@@ -12,7 +12,7 @@ async function inspectCanonicalNetwork(section) {
   await expect(ranked).toContainText('Focused entity:')
   await expect(ranked.getByRole('heading', { name: /Selected route/ })).toHaveText(selected)
   await expect(ranked).toContainText('Next action:')
-  await expect(section.locator('.relationship-graph-canvas')).toHaveCount(0)
+  await expect(ranked.locator('.relationship-graph-canvas')).toHaveCount(0)
 }
 
 async function openAccount(page, query, accountId) {
@@ -35,8 +35,8 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
   expect(lockheedRelationships.seller_direct_relationships.length).toBe(lockheedRelationships.direct_relationships.length)
 
   const relationshipPanel = page.locator('.account-workspace-relationship')
-  await expect(relationshipPanel.getByRole('heading', { name: 'Relationship Intelligence' })).toBeVisible()
-  await expect(relationshipPanel).toContainText('How this Customer is connected')
+  await openCustomerSection(page, /People and relationship paths/)
+  await expect(relationshipPanel).toContainText('How this organization is connected')
   await expect(relationshipPanel).toContainText('Public professional contact research remains separate')
   await expect(relationshipPanel).toContainText(lockheedRelationships.seller_direct_relationships[0].steps.at(-1).display_name)
   await expect(relationshipPanel.locator('.seller-relationship-card').first()).toContainText('Connection:')
@@ -52,22 +52,23 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
   await expect(relationshipPanel.locator('.seller-relationship-card').first().locator('.ui-evidence').first()).toBeVisible()
   await expect(relationshipPanel.locator('.seller-relationship-card').first().locator('.ui-evidence').first()).toContainText('Source reference:')
 
-  await relationshipPanel.getByRole('tab', { name: 'Connections to review' }).click()
-  await expect(relationshipPanel).toContainText('No connection requiring validation is currently available for this Customer.')
+  const ranked = await openRelationshipWorkspace(page)
+  await relationshipPanel.getByRole('tab', { name: 'Needs validation' }).click()
+  await expect(relationshipPanel).toContainText(/No route requiring validation|Needs validation/)
 
-  await inspectCanonicalNetwork(relationshipPanel)
+  await inspectCanonicalNetwork(ranked)
 
-  const switcher = page.getByLabel('Switch Customer')
+  const switcher = page.getByLabel('Switch organization')
   await switcher.fill('Symbotic')
   const symboticResponse = page.waitForResponse(response => response.url().endsWith('/api/accounts/symbotic/relationships?depth=2'))
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
   expect((await symboticResponse).status()).toBe(200)
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
-  await relationshipPanel.getByRole('tab', { name: 'Validated connections' }).click()
-  await expect(relationshipPanel).toContainText('No eligible validated connection is currently available for this Customer. This does not establish a real-world absence.')
-  await expect(relationshipPanel.locator('.seller-relationship-card')).toHaveCount(0)
-  await expect(relationshipPanel.locator('.ranked-route-steps')).toHaveCount(0)
-  await expect(relationshipPanel.locator('.relationship-graph-canvas')).toHaveCount(0)
+  const symboticPanel = page.locator('.account-workspace-relationship')
+  await expect(symboticPanel).toContainText('No eligible recorded route is currently available. This does not establish a real-world absence.')
+  await expect(symboticPanel.locator('.seller-relationship-card')).toHaveCount(0)
+  await expect(symboticPanel.locator('.ranked-route-steps')).toHaveCount(0)
+  await expect(symboticPanel.locator('.relationship-graph-canvas')).toHaveCount(0)
 })
 
 test('mobile Relationship Intelligence uses readable vertical paths and disclosure', async ({ page }) => {
@@ -76,10 +77,9 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
   await openAccount(page, 'Lockheed', 'lockheed-martin')
 
   const relationshipSection = page.locator('.account-workspace-relationship')
-  const sectionTrigger = relationshipSection.getByRole('button', { name: /Relationship Intelligence/ })
-  await sectionTrigger.click()
-  await expect(sectionTrigger).toHaveAttribute('aria-expanded', 'true')
-  await relationshipSection.getByRole('tab', { name: 'Validated connections' }).click()
+  await openCustomerSection(page, /People and relationship paths/)
+  await openRelationshipWorkspace(page)
+  await relationshipSection.getByRole('tab', { name: 'Recorded relationships' }).click()
 
   const firstPath = relationshipSection.locator('.seller-relationship-card').first()
   await expect(firstPath).toBeVisible()
@@ -92,10 +92,10 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
   await expect(page.getByRole('button', { name: 'Open Omni assistant' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 
-  await inspectCanonicalNetwork(relationshipSection)
+  await inspectCanonicalNetwork(page.getByRole('region', { name: 'Ranked canonical relationships', exact: true }))
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 
-  const switcher = page.getByLabel('Switch Customer')
+  const switcher = page.getByLabel('Switch organization')
   await switcher.fill('Symbotic')
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
@@ -108,9 +108,10 @@ test('Relationship Intelligence remains non-overflowing at 320px', async ({ page
   await page.goto('/')
   await openAccount(page, 'Lockheed', 'lockheed-martin')
   const relationshipSection = page.locator('.account-workspace-relationship')
-  await relationshipSection.getByRole('button', { name: /Relationship Intelligence/ }).click()
-  await relationshipSection.getByRole('tab', { name: 'Validated connections' }).click()
+  await openCustomerSection(page, /People and relationship paths/)
+  const ranked = await openRelationshipWorkspace(page)
+  await relationshipSection.getByRole('tab', { name: 'Recorded relationships' }).click()
   await expect(relationshipSection.locator('.seller-relationship-card').first()).toContainText('Connection:')
-  await inspectCanonicalNetwork(relationshipSection)
+  await inspectCanonicalNetwork(ranked)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })

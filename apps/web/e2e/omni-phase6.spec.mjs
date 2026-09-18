@@ -148,8 +148,9 @@ test('an immediately launched selected assessment reaches Omni before submission
   const priority = page.locator('.today-attention-item').filter({ hasText: assessment.headline })
   await priority.getByRole('button', { name: 'Evidence and governed action' }).click()
   await priority.getByRole('button', { name: /View supporting evidence/ }).click()
-  const scoreLabel = await priority.getByRole('button', { name: /Signal Confidence/i }).innerText()
-  const expectedScore = scoreLabel.match(/([0-9.]+)\/100/)?.[1]
+  const scoreSummary = priority.getByRole('article', { name: 'Signal Confidence score summary' })
+  await expect(scoreSummary).toContainText(String(assessment.signal_confidence.score))
+  const expectedScore = String(assessment.signal_confidence.score)
   const expectedAction = await priority.locator('.today-priority-meaning > p').filter({ hasText: 'Next:' }).innerText()
   await priority.getByRole('button', { name: 'Use in Omni', exact: true }).click()
   await openOmni(page)

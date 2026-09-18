@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openCustomerSection, openRelationshipWorkspace } from './helpers.mjs'
 
 const governedExplanation = {
   provider_status: 'AVAILABLE',
@@ -138,9 +139,10 @@ test('Relationship reference retains its governed path and evidence beside the c
   await page.goto('/')
   await openLockheed(page)
   const relationshipPanel = page.locator('.account-workspace-relationship')
+  await openCustomerSection(page, /People and relationship paths/)
   const detail = relationshipPanel.locator('.seller-relationship-card').first()
   await expect(detail).toContainText('Connection:')
-  await expect(relationshipPanel.getByRole('region', { name: 'Ranked canonical relationships', exact: true })).toBeVisible()
+  await openRelationshipWorkspace(page)
   await expect(relationshipPanel.locator('.relationship-graph-canvas')).toHaveCount(0)
   await expect(detail.getByRole('button', { name: /Evidence/ })).toBeVisible()
   await detail.getByRole('button', { name: 'Why this relationship path may be useful' }).click()
@@ -155,7 +157,7 @@ test('Relationship explanation remains contained at 390px and 320px', async ({ p
     await page.goto('/')
     await openLockheedMobile(page)
     const relationshipPanel = page.locator('.account-workspace-relationship')
-    await relationshipPanel.getByRole('button', { name: /Relationship Intelligence/ }).click()
+    await openCustomerSection(page, /People and relationship paths/)
     const detail = relationshipPanel.locator('.seller-relationship-card').first()
     await detail.getByRole('button', { name: 'Why this relationship path may be useful' }).click()
     await expect(detail).toContainText('The governed result is explained from its displayed deterministic inputs.')
