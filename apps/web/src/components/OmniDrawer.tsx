@@ -11,7 +11,7 @@ type SessionAccount = { id: string; name: string }
 type FullMode = 'conversation' | 'evidence' | 'customer'
 
 const starters = ['What should I review today?', 'Explain why this organization matters', 'Compare selected organizations', 'Show the supporting evidence']
-const surfaceLabels: Record<string, string> = { TODAY: 'Today', ACCOUNTS: 'Customers & Prospects', ACCOUNT_DETAIL: 'Organization 360', INTELLIGENCE: 'Intelligence', MAP: 'Map', ACTIONS: 'Actions', MONITOR: 'Monitor' }
+const surfaceLabels: Record<string, string> = { TODAY: 'Today', ACCOUNTS: 'Customers & Prospects', ACCOUNT_DETAIL: 'Organization 360', INTELLIGENCE: 'Intelligence', MAP: 'Map', ACTIONS: 'Actions', SETTINGS: 'Settings', COMMUNICATIONS: 'Communications', MONITOR: 'Monitor' }
 const selectedRelationshipQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:relationship\s+)?(?:route|path|connection|relationship)\b/i.test(question)
 const selectedAssessmentQuestion = (question: string) => /\b(?:selected|this|that)\s+(?:intelligence\s+)?assessment\b/i.test(question)
 
@@ -126,7 +126,7 @@ function ResponseDetails({ response }: { response: OmniResponse }) { return <div
     {response.structured_reads && <Disclosure title={`${response.structured_reads.steps.length} supporting record checks`}><p>{response.structured_reads.model_requested_stop ? 'Omni finished the requested checks; unresolved evidence remains identified in the answer.' : 'Some requested checks could not be completed. The records already found remain available.'}</p>
       {response.structured_reads.reads.map((read, index) => <Disclosure key={`${index}:${read.tool}`} title={`Supporting record ${index + 1}`}><div className="commercial-evidence-detail"><CanonicalRecord value={read.result} /></div></Disclosure>)}
       <Disclosure title="Technical receipt"><small>{response.structured_reads.configuration_version} · {response.structured_reads.elapsed_ms} ms · revision {response.structured_reads.revision}</small></Disclosure></Disclosure>}
-    <Disclosure title={`${response.citation_links?.length ?? 0} public sources · Inspect evidence`}><EvidencePanel response={response} /></Disclosure>{response.provider_status !== 'AVAILABLE' && <small>{response.context_used?.synthesis_validation ? 'Showing canonical records because the model wording did not pass evidence checks.' : fallbackLabels[response.provider_status]}</small>}</div> }
+    <Disclosure title={`${response.citation_links?.length ?? 0} public sources · Inspect evidence`}><EvidencePanel response={response} /></Disclosure>{response.provider_status !== 'AVAILABLE' && <Disclosure title="Answer delivery details"><small>{response.context_used?.synthesis_validation ? 'Showing canonical records because the model wording did not pass evidence checks.' : fallbackLabels[response.provider_status]}</small></Disclosure>}</div> }
 
 function EvidencePanel({ response }: { response?: OmniResponse }) {
   if (!response) return <p className="muted">Sources appear here when a response uses evidence.</p>

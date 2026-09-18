@@ -7,6 +7,8 @@ from btx_omni.domain.common import EvidenceState
 from btx_omni.modules.relationships.presentation import (
     SellerRelationshipPresentationService,
     seller_relationship_semantics,
+    seller_route_evidence_label,
+    seller_route_predicate_label,
 )
 from btx_omni.modules.relationships.service import (
     RelationshipIntelligenceService,
@@ -79,6 +81,9 @@ def test_seller_relationship_policy_is_deterministic_and_bounded() -> None:
     fallback = seller_relationship_semantics("UNRECOGNIZED_CANONICAL_TYPE")
     assert fallback[0] == "Recorded relationship"
     assert "Inspect the evidence" in fallback[2]
+    assert seller_route_predicate_label("CAPABILITY_MATCH") == "BTX capability alignment"
+    assert seller_route_evidence_label("INFERRED") == "Possible route to investigate"
+    assert seller_route_evidence_label("MISSING") == "Not currently actionable"
 
 
 def test_seller_projection_preserves_raw_paths_and_evidence_without_strength() -> None:

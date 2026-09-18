@@ -57,6 +57,22 @@ def seller_relationship_semantics(relationship_type: str) -> tuple[str, str, str
     )
 
 
+def seller_route_predicate_label(predicate: str) -> str:
+    """Use the same governed vocabulary for ranked routes and Omni citations."""
+    return seller_relationship_semantics(predicate)[0]
+
+
+def seller_route_evidence_label(truth_class: str) -> str:
+    state = truth_class.upper()
+    if state in {"CONFIRMED", "VERIFIED", "VALIDATED"}:
+        return "Recorded relationship"
+    if state in {"INFERRED", "HYPOTHESIS"}:
+        return "Possible route to investigate"
+    if state in {"MISSING", "CONFLICTING", "UNUSABLE"}:
+        return "Not currently actionable"
+    return "Needs validation"
+
+
 def _evidence(hops: tuple[RelationshipHop, ...]) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     seen: set[tuple[str | None, str | None]] = set()
@@ -113,9 +129,9 @@ class SellerRelationshipPresentationService:
         )
         state = path["presentation_state"]
         rationale = {
-            "validated": "Validated direct canonical connection" if len(hops) == 1 else f"Validated {len(hops)}-step canonical connection",
-            "needs_validation": "Requires validation because the governed path has unresolved evidence requirements.",
-            "unusable": "Excluded because the governed path has missing or conflicting evidence.",
+            "validated": "Recorded direct relationship" if len(hops) == 1 else f"Recorded relationship across {len(hops)} connections",
+            "needs_validation": "Needs validation because the governed route has unresolved evidence requirements.",
+            "unusable": "Not currently actionable because evidence is missing or conflicting.",
         }[state]
         return {
             "path_id": path["path_id"],
@@ -129,7 +145,7 @@ class SellerRelationshipPresentationService:
             "evidence_state": path["overall_evidence_state"],
             "presentation_state": path["presentation_state"],
             "seller_rationale": rationale,
-            "truth_label": "SAMPLE BTX commercial context" if is_sample else "Canonical relationship evidence",
+            "truth_label": "SAMPLE BTX commercial context" if is_sample else "Recorded relationship evidence",
             "evidence": evidence,
             "validation_requirements": _validation_requirements(hops, state),
         }

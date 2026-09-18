@@ -883,6 +883,22 @@ def test_omni_screen_summaries_respect_today_and_accounts_visible_scope() -> Non
     assert "current SAMPLE commercial dataset" in accounts.content
 
 
+def test_settings_focus_question_is_scope_safe_and_business_facing() -> None:
+    response = OmniOrchestrator().answer(
+        build_sample_environment(),
+        account_id=None,
+        question="What should I focus on today?",
+        observed_at=NOW,
+        context={"surface": "SETTINGS"},
+    )
+    assert "Open Today" in response.content
+    assert "choose an organization or assessment" in response.content
+    assert "DOM" not in response.content
+    assert "screenshot" not in response.content.lower()
+    assert "backend" not in response.content.lower()
+    assert response.context_used == {"surface": "SETTINGS"}
+
+
 def test_omni_screen_summaries_use_selected_and_visible_canonical_context() -> None:
     sample = build_sample_environment()
     event_records = OmniOrchestrator._sample_event_records(sample)

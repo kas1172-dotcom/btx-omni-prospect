@@ -3,20 +3,17 @@ import { api } from '../../api/client'
 import type { CommercialDecision, FollowupPreview } from '../../types/decisions'
 import { CommercialEvidence } from './CommercialEvidence'
 import { actorDisplayName, presentationLabel } from '../../components/presentation'
+import { ScoreSummary } from '../../components/ScoreSummary'
+import { commercialDecisionSummary } from '../../components/scoreSummaryModel'
 
 const words = (value: string) => presentationLabel(value, 'assessment')
 const index = (value: string | number | null) => value == null ? null : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value))
 
 function Decision({ decision, onEvidence }: { decision: CommercialDecision; onEvidence: (id: string) => void }) {
-  return <details className="commercial-decision"><summary>{words(decision.family)} · {index(decision.score) ?? words(decision.status)}</summary>
-    <p>{decision.interpretation}</p><p>Decision coverage: {decision.data_coverage.present}/{decision.data_coverage.applicable} required fields · as-of {decision.as_of}</p>
-    {decision.eligibility_reasons.map(reason => <p key={reason}>{reason}</p>)}
-    {decision.blocking_constraints.map(reason => <p key={reason}>{reason}</p>)}
-    <ul>{decision.factors.map(factor => <li key={factor.key}><strong>{words(factor.key)} · {index(factor.points) ?? 'Not scored'}</strong><p>{factor.reason}</p>
-      <details><summary>Evidence and required fields</summary><p>{factor.observed_fields.length}/{factor.required_fields.length} fields present. Required: {factor.required_fields.map(words).join(', ')}.</p>
-        <div className="decision-evidence-buttons">{factor.evidence_ids.map(id => <button key={id} type="button" onClick={() => onEvidence(id)}>{id}</button>)}</div></details></li>)}</ul>
-    <small>Provisional configuration {decision.configuration_version}. {decision.decision_id}</small>
-  </details>
+  const model = commercialDecisionSummary(decision, decision.subject_id)
+  return <div className="commercial-decision"><ScoreSummary model={{ ...model, limitingFactors: [...(model.limitingFactors ?? []), ...decision.blocking_constraints.map(reason => ({ label: 'Execution constraint', detail: reason }))] }} />
+    {decision.factors.some(factor => factor.evidence_ids.length) && <details><summary>Open a supporting record</summary><div className="decision-evidence-buttons">{[...new Set(decision.factors.flatMap(factor => factor.evidence_ids))].map(id => <button key={id} type="button" onClick={() => onEvidence(id)}>Supporting record</button>)}</div></details>}
+  </div>
 }
 
 function Followup({ accountId, actionId, onCreated }: { accountId: string; actionId: string; onCreated: () => void }) {

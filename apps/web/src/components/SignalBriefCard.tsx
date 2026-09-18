@@ -5,6 +5,8 @@ import { EvidencePassages } from './EvidencePassages'
 import { TechnicalDecompositionSection } from './TechnicalDecompositionSection'
 import { SupportingEvidence, WhyThis } from './SupportingEvidence'
 import { RelatedBtxActivity } from './RelatedBtxActivity'
+import { ScoreSummary } from './ScoreSummary'
+import { commercialDecisionSummary } from './scoreSummaryModel'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
@@ -27,23 +29,13 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
     </div>
     <p><strong>What happened:</strong> {brief.what_happened}</p>
     <p><strong>Why it may matter:</strong> {brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></p>
-    <p><strong>What Omni recommends:</strong> {brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p>
+    <p><strong>Governed next action:</strong> {brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p>
     {!!brief.material_uncertainties?.length && <p><strong>Material uncertainty:</strong> {brief.material_uncertainties[0]}</p>}
     {brief.analysis_status && brief.analysis_status !== 'READY' && <p className="notice">Analysis is incomplete. The source remains available, but no completed commercial recommendation is shown.</p>}
     {brief.commercial_relevance_state === 'INFORMATIONAL' && <small>Informational update · no established commercial priority</small>}
     <SupportingEvidence count={evidenceCount} investigationKey={`${brief.assessment_id ?? brief.id}:${brief.assessment_version ?? 0}`}>
       <section><h4>What we know: {knowledgeLabel}</h4><p>{coverage ? `${coverage.present} of ${coverage.applicable} applicable evidence fields are supported. Coverage describes completeness, not opportunity quality.` : 'Evidence completeness has not been calculated.'}</p></section>
-      {brief.signal_confidence && <Disclosure title={`Score details · Signal Confidence ${brief.signal_confidence.score == null ? 'needs more evidence' : `${brief.signal_confidence.score}/100`}`}>
-      <div className="seller-signal-details">
-        <p>Confidence describes this assertion, not its commercial value or risk severity.</p>
-        <p>{brief.signal_confidence.data_coverage.present} of {brief.signal_confidence.data_coverage.applicable} required fields are supported. Calibration is provisional pending BTX validation.</p>
-        <ul>{brief.signal_confidence.factors.map(factor => <li key={factor.key}>
-          <strong>{display(factor.key)}:</strong> {factor.points == null ? 'Unknown' : `${factor.points}/100`} · {factor.reason}
-          {factor.evidence_ids.length > 0 && <small> Evidence: {factor.evidence_ids.join(', ')}</small>}
-        </li>)}</ul>
-        <small>{brief.signal_confidence.decision_id} · {brief.signal_confidence.configuration_version} · {brief.signal_confidence.input_configuration_version}</small>
-      </div>
-      </Disclosure>}
+      {brief.signal_confidence && <ScoreSummary model={{ ...commercialDecisionSummary(brief.signal_confidence, brief.headline, 'Judge how strongly the collected evidence supports this signal'), family: 'Signal Confidence', interpretation: `${brief.signal_confidence.interpretation ? `${brief.signal_confidence.interpretation} ` : ''}Confidence describes evidence support, not commercial value, qualification or technical fit.`, version: `${brief.signal_confidence.configuration_version} · inputs ${brief.signal_confidence.input_configuration_version}` }} />}
     {brief.risk_severity && <Disclosure title={`Risk severity · ${brief.risk_severity.score == null ? 'More evidence needed' : `${brief.risk_severity.score}/100`}`}>
       <div className="signal-score-detail">
         <p><strong>{brief.risk_severity.disposition.replaceAll('_', ' ')}</strong> · severity remains separate from evidence confidence.</p>

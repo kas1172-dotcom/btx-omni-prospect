@@ -6,6 +6,8 @@ import { EvidencePassages } from "../../components/EvidencePassages";
 import { TechnicalDecompositionSection } from "../../components/TechnicalDecompositionSection";
 import { SupportingEvidence, WhyThis } from "../../components/SupportingEvidence";
 import { RelatedBtxActivity } from "../../components/RelatedBtxActivity";
+import { ScoreSummary } from "../../components/ScoreSummary";
+import { commercialDecisionSummary } from "../../components/scoreSummaryModel";
 
 const date = (value?: string) =>
   value
@@ -209,9 +211,7 @@ export function IntelligenceBriefing({
           </section>
           <section>
             <span className="eyebrow">Applicable decision</span>
-            <h2>Signal confidence</h2>
-            <strong className="intelligence-score">{confidence?.score == null ? "More evidence needed" : `${confidence.score}/100`}</strong>
-            <p>{confidence ? `${confidence.data_coverage.present} of ${confidence.data_coverage.applicable} applicable inputs supported.` : "No deterministic signal-confidence decision is available."}</p>
+            {confidence ? <ScoreSummary model={{ ...commercialDecisionSummary(confidence, brief.headline, "Judge how strongly the collected evidence supports this signal"), family: "Signal Confidence", interpretation: `${confidence.interpretation} Confidence is separate from technical fit and commercial value.` }} /> : <p>No deterministic Signal Confidence decision is available. It is not replaced with Technical Fit.</p>}
           </section>
           <section className="intelligence-briefing-actions">
             <span className="eyebrow">Pursuit actions</span>

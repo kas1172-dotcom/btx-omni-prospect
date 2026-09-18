@@ -83,6 +83,10 @@ def test_d2_longer_supported_route_beats_short_inference_after_real_import(tmp_p
                  "depth": 4, "path_id": longer["path_id"], "graph_revision": result["eligible_graph_revision"], "source_component_id": "c"}
     explanation = selected_relationship_context(sample, selection, account_id="honeywell")
     assert explanation["route"]["utility"] == longer["utility"]
+    assert "Route status:" in explanation["content"]
+    assert "Weakest or unresolved connection:" in explanation["content"]
+    assert "Next validation action:" in explanation["content"]
+    assert all("_" not in source["label"] for source in explanation["source_links"])
     assert "USD 4.00" in explanation["content"]
     assert "USD 4.00" in explanation["expanded_content"] and "2026-08-12" in explanation["expanded_content"]
     assert any(record['record'].get('revenue_minor') == 400 for record in explanation['evidence_records'])

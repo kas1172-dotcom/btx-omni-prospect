@@ -14,6 +14,7 @@ test('organization mode adapts without treating research or CRM presence as a cu
   await openOrganization(page, 'intel', 'Intel')
   await expect(page.locator('.account-workspace').getByText(/Prospect 360/i).first()).toBeVisible()
   await expect(page.getByText('No confirmed BTX commercial relationship').first()).toBeVisible()
+  await page.getByRole('button', { name: /Related BTX activity to review/ }).click()
   await expect(page.getByText('No confirmed BTX commercial history is available for this Prospect.')).toBeVisible()
 
   await openOrganization(page, 'rtx-collins-aerospace', 'RTX (Raytheon Technologies) / Collins Aerospace')
@@ -89,8 +90,10 @@ test('customer expansion pursuit reuses one assessment and ranked internal recor
 
   await openOrganization(page, 'lockheed-martin', 'Lockheed Martin')
   await expect(page.getByText('Expansion pursuit', { exact: true }).first()).toBeVisible()
+  await page.getByRole('button', { name: /Current intelligence assessment/ }).click()
   await expect(page.getByRole('heading', { name: briefing.headline }).first()).toBeVisible()
-  await expect(page.getByText('Why Omni selected it:')).toBeVisible()
+  await expect(page.getByText('Why it may matter:')).toBeVisible()
+  await page.locator('.organization-briefing').getByRole('button', { name: /View supporting evidence/ }).click()
   await page.getByRole('button', { name: 'Inspect source record' }).first().click()
   await expect(page.getByRole('region', { name: 'Expansion component quote source record' })).toContainText('Expansion component quote')
   await page.getByRole('button', { name: 'Use in Omni' }).first().click()
