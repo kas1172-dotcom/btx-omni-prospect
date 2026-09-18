@@ -19,6 +19,8 @@ class ItineraryStopInput(BaseModel):
     account_id: str = Field(min_length=1, max_length=100)
     facility_id: str = Field(min_length=1, max_length=120)
     site_name: str = Field(min_length=1, max_length=300)
+    organization_name: str = Field(default="", max_length=300)
+    address: str = Field(default="", max_length=500)
     latitude: str = Field(max_length=32)
     longitude: str = Field(max_length=32)
     purpose: str = Field(default="", max_length=500)

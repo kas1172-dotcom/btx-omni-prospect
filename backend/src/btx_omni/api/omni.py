@@ -40,6 +40,7 @@ class OmniConversationReferent(BaseModel):
     model_config = ConfigDict(extra="forbid")
     account_id: str | None = None
     event_id: str | None = None
+    opportunity_id: str | None = Field(default=None, max_length=300)
     assessment_id: str | None = None
     assessment_version: int | None = Field(default=None, ge=1)
     facility_id: str | None = None
@@ -72,6 +73,18 @@ class OmniAssessmentSelection(BaseModel):
     account_id: str = Field(min_length=1, max_length=64)
 
 
+class OmniFederalSelection(BaseModel):
+    """References one current server-owned federal assessment and route."""
+
+    model_config = ConfigDict(extra="forbid")
+    opportunity_id: str = Field(min_length=1, max_length=300)
+    assessment_id: str = Field(min_length=1, max_length=64)
+    assessment_version: int = Field(ge=1)
+    route_type: Literal["DIRECT_BTX", "CUSTOMER_EXPANSION", "STRATEGIC_PARTNER", "NEW_PROSPECT", "MARKET_WATCH"]
+    account_id: str | None = Field(default=None, max_length=64)
+    partnership_id: str | None = Field(default=None, max_length=64)
+
+
 class OmniContext(BaseModel):
     """Bounded passive product context; distinct from the user's explicit scope."""
 
@@ -82,6 +95,7 @@ class OmniContext(BaseModel):
     selected_account_id: str | None = None
     selected_event_id: str | None = None
     selected_assessment: OmniAssessmentSelection | None = None
+    selected_federal_opportunity: OmniFederalSelection | None = None
     selected_facility_id: str | None = None
     selected_program_id: str | None = None
     selected_action_id: str | None = None
@@ -140,6 +154,27 @@ def omni(
     except SQLAlchemyError:
         raise HTTPException(503, 'Omni run recording is unavailable. No model call was started; retry later.') from None
     try:
+        federal_context = None
+        if body.context and body.context.selected_federal_opportunity:
+            selection = body.context.selected_federal_opportunity
+            repository = runtime.monitor.repository
+            row = repository.federal_assessment_by_id(selection.assessment_id, version=selection.assessment_version) if repository else None
+            if not row or not row["is_current"] or row["opportunity_id"] != selection.opportunity_id:
+                raise ValueError("Selected federal assessment is stale or unavailable.")
+            projection = row["projection"]
+            route = next((item for item in projection.get("routes", ()) if item.get("route_type") == selection.route_type and item.get("account_id") == selection.account_id), None)
+            if route is None:
+                raise ValueError("Selected federal route is unavailable.")
+            if selection.partnership_id and (selection.partnership_id != selection.account_id or route.get("route_type") != "STRATEGIC_PARTNER"):
+                raise ValueError("Selected partnership route is unavailable.")
+            federal_context = {
+                **projection,
+                "assessment_id": row["id"],
+                "assessment_version": row["version"],
+                "selected_route": route,
+                "selected_account_id": selection.account_id,
+                "selected_partnership_id": selection.partnership_id,
+            }
         provider = get_ai_provider(AiConfig.from_settings(runtime.settings, actor_id=current.user_id, purpose="omni"))
         answer = OmniService(provider).answer(
             runtime.environment(),
@@ -153,6 +188,7 @@ def omni(
                                                                  account_id=account_id, for_context=True),
             public_evidence_reader=selected_public_evidence,
             market_reader=selected_market_read,
+            federal_context=federal_context,
         )
         answer = replace(answer, provider_usage=tuple(getattr(provider, "usage_log", ())), run_id=run_id)
         runtime.omni_runs.finish(run_id, actor_id=current.user_id,

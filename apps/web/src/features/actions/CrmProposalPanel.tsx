@@ -4,10 +4,11 @@ import { CanonicalRecord } from '../../components/CanonicalRecord'
 import { Button } from '../../components/UI'
 import type { Action, Principal } from '../../types/api'
 import type { CrmAttempt, CrmDecision, CrmHistory, CrmProposal } from '../../types/crm'
+import { presentationLabel } from '../../components/presentation'
 
 export function CrmProposalPanel({ action, principal }: { action: Action; principal?: Principal }) {
   const [activated, setActivated] = useState(false)
-  return <details className="crm-proposal-panel" onToggle={event => { if (event.currentTarget.open) setActivated(true) }}><summary>CRM proposal and local sample workflow</summary>{activated && <CrmWorkflow key={action.id} action={action} principal={principal} />}</details>
+  return <details className="crm-proposal-panel" onToggle={event => { if (event.currentTarget.open) setActivated(true) }}><summary>CRM proposal and approval workflow</summary>{activated && <CrmWorkflow key={action.id} action={action} principal={principal} />}</details>
 }
 
 function CrmWorkflow({ action, principal }: { action: Action; principal?: Principal }) {
@@ -67,7 +68,7 @@ function CrmWorkflow({ action, principal }: { action: Action; principal?: Princi
   })
 
   return <div aria-busy={busy}>
-    <p>Prepare and review exact follow-up fields. Destination: local HubSpot workflow demonstration. Live HubSpot writes are disabled.</p>
+    <p>Prepare and review exact follow-up fields. External CRM writes are disabled in this environment.</p>
     <div className="card-actions"><Button disabled={busy} onClick={() => void prepare()}>Prepare exact CRM proposal</Button><Button disabled={busy} onClick={() => setReload(value => value + 1)}>Refresh CRM history</Button></div>
     {notice && <p role="status">{notice}</p>}{error && <p role="alert">{error}</p>}
     {!history && !error && <p role="status">Loading saved CRM proposals…</p>}
@@ -78,9 +79,9 @@ function CrmWorkflow({ action, principal }: { action: Action; principal?: Princi
       {!current && <p role="status">This proposal is historical or the Action changed. Prepare and review a new proposal before approval or execution.</p>}
       <dl>{Object.entries(proposal.payload).map(([key, value]) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{Array.isArray(value) ? value.join(', ') || 'Not supplied' : value ?? 'Not supplied'}</dd></div>)}</dl>
       {proposal.blockers.length > 0 && <ul aria-label="CRM proposal blockers">{proposal.blockers.map(item => <li key={item}>{item}</li>)}</ul>}
-      <p>Proposal approval: {decision?.decision ?? 'Awaiting Manager review'}</p>
-      {manager ? <div className="card-actions"><Button disabled={busy || !current || proposal.blockers.length > 0 || decision?.decision === 'APPROVED'} onClick={() => void approve('APPROVED')}>Approve exact proposal</Button><Button disabled={busy || !current || proposal.blockers.length > 0 || decision?.decision === 'REJECTED'} onClick={() => void approve('REJECTED')}>Reject exact proposal</Button><Button disabled={busy || !current || proposal.blockers.length > 0 || decision?.decision !== 'APPROVED' || lastAttempt?.status === 'SAMPLE_COMPLETED'} onClick={() => void attempt()}>{lastAttempt?.status === 'SAMPLE_FAILED' ? 'Retry local sample attempt' : 'Run approved local sample'}</Button></div> : <p>A Manager must approve this exact proposal and confirm the local sample attempt.</p>}
-      {lastAttempt && <p>Latest receipt: {lastAttempt.status === 'SAMPLE_COMPLETED' ? 'Local sample completed — not a HubSpot write' : 'Local sample failed'} · {lastAttempt.detail}</p>}
+      <p>Proposal approval: {decision ? presentationLabel(decision.decision, 'workflow') : 'Awaiting manager review'}</p>
+      {manager ? <div className="card-actions"><Button disabled={busy || !current || proposal.blockers.length > 0 || decision?.decision === 'APPROVED'} onClick={() => void approve('APPROVED')}>Approve exact proposal</Button><Button disabled={busy || !current || proposal.blockers.length > 0 || decision?.decision === 'REJECTED'} onClick={() => void approve('REJECTED')}>Reject exact proposal</Button><Button disabled={busy || !current || proposal.blockers.length > 0 || decision?.decision !== 'APPROVED' || lastAttempt?.status === 'SAMPLE_COMPLETED'} onClick={() => void attempt()}>{lastAttempt?.status === 'SAMPLE_FAILED' ? 'Retry controlled attempt' : 'Run approved controlled attempt'}</Button></div> : <p>A Manager must approve this exact proposal and confirm the controlled attempt.</p>}
+      {lastAttempt && <p>Latest receipt: {lastAttempt.status === 'SAMPLE_COMPLETED' ? 'Controlled attempt completed — no external CRM write' : 'Controlled attempt failed'} · {lastAttempt.detail}</p>}
       <details><summary>Mapping, versions and immutable receipts</summary><CanonicalRecord value={{ proposal_id: proposal.proposal_id, action_version: proposal.action_version, commercial_revision: proposal.commercial_revision, mapping: proposal.mapping, mapping_revision: proposal.mapping_revision, decisions, attempts }} /></details>
       {Boolean(history?.earlier_event_count) && <p>{history?.earlier_event_count} earlier audit events are retained; this view shows the latest 100.</p>}
     </>}

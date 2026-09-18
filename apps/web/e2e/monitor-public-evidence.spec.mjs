@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test'
 
 test('durable real collection diagnostics and rejected public passages are inspectable without seller promotion', async ({ page }, testInfo) => {
-  const healthResponse = await page.request.get('/api/monitor/health')
+  await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
+  const healthResponse = await page.request.get('/api/monitor/health', { headers: { 'X-BTX-Principal-Token': 'development-manager' } })
   expect(healthResponse.ok()).toBeTruthy()
   const health = await healthResponse.json()
   expect(health.durable_run_state).toBe(true)

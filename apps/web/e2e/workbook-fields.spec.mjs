@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openOrganizationEvidence } from './helpers.mjs'
 
 for (const width of [390, 1440]) {
   test(`original workbook cells load privately and retain disclosure state at ${width}`, async ({ page }, testInfo) => {
@@ -7,6 +8,7 @@ for (const width of [390, 1440]) {
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
     await page.goto('/#/accounts/kla')
+    await openOrganizationEvidence(page)
     const disclosure = page.locator('.workbook-fields')
     await disclosure.locator(':scope > summary').click()
     const response = await page.request.get('/api/accounts/kla/workbook-fields')

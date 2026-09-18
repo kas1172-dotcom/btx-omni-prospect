@@ -126,6 +126,21 @@ def _selected_records(
         for row in ledger.get("quotes", ())
         if row.get("quote_id") in scoped_quote_ids
     }
+    programs = {str(row.get("program_id")): row for row in ledger.get("programs", ())}
+    components = {
+        str(row.get("component_id")): row for row in ledger.get("components", ())
+    }
+    collection_labels = {
+        "rfqs": "Request for quote",
+        "quotes": "Quote",
+        "orders": "Order",
+        "order_lines": "Order line",
+        "shipments": "Shipment",
+        "service_issues": "Service issue",
+        "service_events": "Service event",
+        "opportunities": "Opportunity",
+        "actions": "Action",
+    }
     for collection in RECORD_COLLECTIONS:
         for record in ledger.get(collection, ()):
             item = {
@@ -149,8 +164,7 @@ def _selected_records(
             ):
                 if record.get(key) is not None:
                     item[key] = record[key]
-            contextual.append(item)
-            if (
+            matches_program = bool(
                 program_id
                 and (
                     record.get("program_id") == program_id
@@ -159,7 +173,50 @@ def _selected_records(
                     or record.get("quote_id") in scoped_quote_ids
                     or record.get("rfq_id") in scoped_rfq_ids
                 )
-            ) or (component_ids and record.get("component_id") in component_ids):
+            )
+            matches_component = bool(
+                component_ids and record.get("component_id") in component_ids
+            )
+            program = programs.get(str(record.get("program_id")))
+            component = components.get(str(record.get("component_id")))
+            record_name = (
+                record.get("title")
+                or (component.get("name") if component else None)
+                or (program.get("name") if program else None)
+                or collection_labels.get(collection, collection.replace("_", " ").title())
+            )
+            match_reasons = []
+            if matches_program:
+                match_reasons.append("Shares the governed program scope")
+            if matches_component:
+                match_reasons.append("Shares a reviewed component family")
+            if record.get("business_unit_id"):
+                match_reasons.append("Provides the responsible BTX business-unit context")
+            if not match_reasons:
+                match_reasons.append("Provides same-account commercial context")
+            item.update(
+                {
+                    "display_name": str(record_name),
+                    "match_reasons": match_reasons,
+                    "match_strength": (
+                        "Strong scoped match"
+                        if matches_program
+                        else "Related technical context"
+                        if matches_component
+                        else "Account context only"
+                    ),
+                    "unknowns": (
+                        "Technical qualification and participation in the monitored development remain unconfirmed."
+                        if matches_program or matches_component
+                        else "This record is not yet linked to the monitored program or component family."
+                    ),
+                    "validation_action": (
+                        "Open the canonical record and confirm its program, component, facility and buyer scope before linking it to this signal."
+                    ),
+                }
+            )
+            contextual.append(item)
+            if matches_program or matches_component:
                 exact.append(item)
     selected = exact if exact else contextual
     selected.sort(

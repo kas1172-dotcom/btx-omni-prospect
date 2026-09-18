@@ -23,6 +23,8 @@ def _payload(name="Boeing headquarters"):
             "account_id": "boeing",
             "facility_id": "public-hq-boeing",
             "site_name": name,
+            "organization_name": "Boeing",
+            "address": "Arlington, VA, US",
             "latitude": "38.8816",
             "longitude": "-77.091",
             "purpose": "Review recovery plan",
@@ -82,7 +84,10 @@ def test_itinerary_api_validates_scope_coordinates_and_duplicate_stops(tmp_path)
     response = client.post("/api/itineraries/current", json=body)
     assert response.status_code == 200
     assert response.json()["version"] == 1
-    assert client.get("/api/itineraries/current").json()["itinerary"]["stops"][0]["account_id"] == "boeing"
+    saved_stop = client.get("/api/itineraries/current").json()["itinerary"]["stops"][0]
+    assert saved_stop["account_id"] == "boeing"
+    assert saved_stop["organization_name"] == "Boeing"
+    assert saved_stop["address"] == "Arlington, VA, US"
 
     invalid = {**body, "idempotency_key": "browser-save-two", "stops": [body["stops"][0], body["stops"][0]]}
     assert client.post("/api/itineraries/current", json=invalid).status_code == 422

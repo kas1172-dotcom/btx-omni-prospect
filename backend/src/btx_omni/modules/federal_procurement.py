@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
@@ -9,6 +10,10 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from btx_omni.ai.contracts import ExplanationType
+from btx_omni.modules.federal_opportunity_routing import (
+    build_assessment,
+    procurement_stage,
+)
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     federal_opportunity_subject_key,
     persisted_seller_explanation,
@@ -99,6 +104,7 @@ def opportunity(
     deadline = date(v(p, "responseDeadLine", "responseDeadline", "response_date"))
     n = v(p, "naicsCode", "naics", "naics_code")
     agency = v(p, "department", "fullParentPathName", "organizationName", "agency")
+    stage = procurement_stage(raw, active=v(p, "active", "status"))
     return {
         "canonical_source_id": obs.id,
         "source": "SAM",
@@ -112,9 +118,13 @@ def opportunity(
         "response_deadline": deadline.isoformat() if deadline else None,
         "notice_type": raw,
         "notice_category": cat,
+        "stage": stage,
         "sources_sought": sought,
         "set_aside": v(p, "typeOfSetAside", "setAside", "set_aside"),
         "naics": str(n) if n else None,
+        "psc": v(p, "classificationCode", "psc"),
+        "solicitation_number": v(p, "solicitationNumber", "solicitation_number"),
+        "place_of_performance": v(p, "placeOfPerformance", "place_of_performance"),
         "description": v(p, "description", "descriptionText", "synopsis"),
         "official_source_url": obs.raw_evidence.locator,
         "evidence": {
@@ -126,6 +136,8 @@ def opportunity(
             "first_seen_at": obs.source_version.first_seen_at.isoformat(),
             "last_seen_at": obs.source_version.last_seen_at.isoformat(),
         },
+        "source_revision": obs.source_version.content_hash,
+        "source_payload": p,
         "data_mode": "CONNECTED",
         "naics_targeting": "VERIFIED" if verified else "PENDING_CONFIRMATION",
         "market": market_for(str(n) if n else None, str(agency) if agency else None),
@@ -275,10 +287,18 @@ def fixture(now: datetime):
             "response_deadline": (now + timedelta(days=days)).isoformat(),
             "notice_type": kind,
             "notice_category": normalize_notice_type(kind)[0],
+            "stage": procurement_stage(kind),
             "sources_sought": normalize_notice_type(kind)[1],
             "set_aside": "Total Small Business",
             "naics": n,
             "description": "SAMPLE fixture synopsis.",
+            "source_payload": {
+                "title": title,
+                "type": kind,
+                "description": "SAMPLE fixture synopsis.",
+                "naicsCode": n,
+            },
+            "source_revision": f"sample-{i}-v1",
             "official_source_url": f"https://sam.gov/opp/{i}",
             "evidence": {"id": f"sample-{i}", "collected_at": now.isoformat()},
             "freshness": {"collected_at": now.isoformat()},
@@ -398,6 +418,54 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
             subject_key=federal_opportunity_subject_key(x),
             explanation_type=ExplanationType.FEDERAL_OPPORTUNITY_RELEVANCE,
         )
+    partnerships: set[str] = set()
+    try:
+        partnerships = {
+            item["account_id"]
+            for item in runtime.account_planning.view("federal-projection")[
+                "strategic_partnerships"
+            ]
+        }
+    except (AttributeError, KeyError):
+        pass
+    assessments: dict[str, dict] = {}
+    repository = getattr(getattr(runtime, "monitor", None), "repository", None)
+    persisted = {
+        row["opportunity_id"]: row
+        for row in (repository.current_federal_assessments() if repository else ())
+    }
+    environment = (
+        runtime.environment()
+        if callable(getattr(runtime, "environment", None))
+        else getattr(runtime, "sample", None)
+    )
+    if environment:
+        for item in opp:
+            assessment = build_assessment(
+                item, environment=environment, awards=aw,
+                partnerships=partnerships, now=now,
+            )
+            durable = persisted.get(item["opportunity_id"])
+            if repository and (
+                durable is None or durable["input_revision"] != assessment["input_revision"]
+            ):
+                durable = repository.persist_federal_assessment(assessment, now=now)
+            if durable:
+                assessment = {
+                    **durable["projection"],
+                    "assessment_id": durable["id"],
+                    "assessment_version": durable["version"],
+                }
+            else:
+                assessment = {
+                    **assessment,
+                    "assessment_id": hashlib.sha256(
+                        f"{assessment['opportunity_id']}|{assessment['input_revision']}".encode()
+                    ).hexdigest(),
+                    "assessment_version": 1,
+                }
+            assessments[item["opportunity_id"]] = assessment
+            item["assessment"] = assessment
 
     def ok(x):
         days = (
@@ -438,6 +506,8 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
             x
             for x in opp
             if ok(x)
+            and x.get("stage", {}).get("code")
+            not in {"AWARD", "INACTIVE"}
             and (not x.get("response_deadline") or date(x["response_deadline"]) >= now)
         ],
         key=lambda x: (
@@ -478,6 +548,16 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
             if verified
             or getattr(runtime.settings, "federal_procurement_fixture_mode", False)
             else "PENDING_CONFIRMATION",
+            "coverage": (
+                list(repository.procurement_coverage())
+                if repository else []
+            ),
+            "coverage_complete": (
+                bool(repository.procurement_coverage())
+                and all(not item["pending_continuation"] for item in repository.procurement_coverage())
+                if repository else False
+            ),
+            "coverage_note": "Collected counts describe saved governed windows, not the total federal market.",
         },
         "usaspending": {
             "state": "SAMPLE"
@@ -563,3 +643,56 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
             },
         },
     }
+
+
+def federal_assessments_for_account(runtime: Any, account_id: str) -> list[dict]:
+    """Return canonical persisted routes for one organization without rebuilding them."""
+    repository = getattr(getattr(runtime, "monitor", None), "repository", None)
+    if repository is None:
+        return []
+    result = []
+    for row in repository.current_federal_assessments():
+        assessment = row["projection"]
+        routes = [
+            route for route in assessment.get("routes", ())
+            if route.get("account_id") == account_id
+        ]
+        if routes:
+            result.append({
+                **assessment,
+                "assessment_id": row["id"],
+                "assessment_version": row["version"],
+                "account_routes": routes,
+            })
+    return sorted(
+        result,
+        key=lambda item: (
+            -max(route["score"] for route in item["account_routes"]),
+            item["opportunity_id"],
+        ),
+    )
+
+
+def federal_today_candidates(runtime: Any, *, limit: int = 5) -> list[dict]:
+    """Time-sensitive persisted routes only; collection counts never drive priority."""
+    repository = getattr(getattr(runtime, "monitor", None), "repository", None)
+    if repository is None:
+        return []
+    candidates = []
+    for row in repository.current_federal_assessments():
+        assessment = row["projection"]
+        route = assessment.get("recommended_route")
+        if not route or route.get("score", 0) < 55:
+            continue
+        stage = assessment.get("stage", {}).get("code")
+        if stage not in {"SOURCES_SOUGHT", "PRE_SOLICITATION", "SOLICITATION"}:
+            continue
+        candidates.append({
+            "assessment_id": row["id"],
+            "assessment_version": row["version"],
+            "opportunity_id": row["opportunity_id"],
+            "stage": assessment["stage"],
+            "route": route,
+            "durability": assessment.get("durability"),
+        })
+    return sorted(candidates, key=lambda item: (-item["route"]["score"], item["opportunity_id"]))[:limit]

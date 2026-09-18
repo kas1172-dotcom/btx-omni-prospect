@@ -10,7 +10,7 @@ test('seller creates a durable governed draft without recipient or autonomous de
   const subject = `E2E governed communication ${Date.now()}`
   await openDesktop(page, 'Communications')
   await expect(page.getByRole('heading', { name: 'Communications', exact: true })).toBeVisible()
-  await expect(page.getByText('NOT CONFIGURED', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('Not configured', { exact: true }).first()).toBeVisible()
   await page.getByRole('button', { name: 'Create draft' }).click()
   const editor = page.getByRole('dialog', { name: 'Create communication' })
   await editor.getByLabel('Subject').fill(subject)
@@ -52,10 +52,10 @@ test('manager can review but approval does not bypass recipient and confirmation
   await manager.getByRole('button', { name: 'Approve' }).click()
   await approvalResponse
   await expect(manager.getByText(/approved by human review.*No message was sent/i)).toBeVisible()
-  await expect(manager.getByText('READY', { exact: true }).last()).toBeVisible()
+  await expect(manager.getByText('Ready for delivery confirmation', { exact: true }).last()).toBeVisible()
   await expect(manager.getByRole('button', { name: 'Confirm send' })).toBeDisabled()
   await manager.getByRole('button', { name: 'Audit history' }).click()
-  await expect(manager.getByText('Approved', { exact: true }).last()).toBeVisible()
+  await expect(manager.getByText('Approved by reviewer', { exact: true }).last()).toBeVisible()
   await context.close()
 })
 
@@ -68,8 +68,9 @@ test('Settings and secondary mobile navigation are role-aware, safe, and non-ove
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
   await expect(page.getByText('Role & Access', { exact: true }).last()).toBeVisible()
   await expect(page.getByText(/cannot change or self-promote/)).toBeVisible()
-  await expect(page.getByText('Communication delivery')).toBeVisible()
-  await expect(page.getByText('Not configured', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Integrations' })).toHaveCount(0)
+  await expect(page.getByText('Communication delivery')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Source Health', exact: true })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(5)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   await page.setViewportSize({ width: 320, height: 700 })

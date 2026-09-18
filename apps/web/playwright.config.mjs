@@ -28,7 +28,7 @@ export default defineConfig({
         BTX_DATA_MODE: 'SAMPLE',
         BTX_GEMINI_MODEL: '',
         BTX_COMMERCIAL_DURABLE_STATE_ENABLED: 'true',
-        BTX_MONITOR_DURABLE_STATE_ENABLED: 'false',
+        BTX_MONITOR_DURABLE_STATE_ENABLED: 'true',
         BTX_MARKET_REFRESH_ENABLED: 'false',
         BTX_MONITOR_OPERATOR_TOKEN: '',
         BTX_FEDERAL_PROCUREMENT_FIXTURE_MODE: 'true',

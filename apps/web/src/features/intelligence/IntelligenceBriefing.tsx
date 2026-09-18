@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
-import type { Account360, MonitorSignalBrief } from "../../types/api";
-import {
-  Button,
-  Disclosure,
-  Empty,
-  EvidenceSource,
-  Notice,
-  State,
-} from "../../components/UI";
+import type { Account360, MonitorSignalBrief, OmniAssessmentSelection } from "../../types/api";
+import { Button, Empty, EvidenceSource, Notice, State } from "../../components/UI";
 import { EvidencePassages } from "../../components/EvidencePassages";
 import { TechnicalDecompositionSection } from "../../components/TechnicalDecompositionSection";
+import { SupportingEvidence, WhyThis } from "../../components/SupportingEvidence";
+import { RelatedBtxActivity } from "../../components/RelatedBtxActivity";
+import { ScoreSummary } from "../../components/ScoreSummary";
+import { commercialDecisionSummary } from "../../components/scoreSummaryModel";
 
 const date = (value?: string) =>
   value
@@ -22,18 +19,6 @@ const label = (value: string) =>
     .replaceAll("_", " ")
     .toLowerCase()
     .replace(/^./, (character) => character.toUpperCase());
-
-const money = (value?: number | null, currency = "USD") =>
-  value == null
-    ? "Unavailable"
-    : currency !== "USD"
-      ? `${value} ${currency} minor units`
-      : new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(value / 100);
 
 function BriefingLoading({ onBack }: { onBack: () => void }) {
   return (
@@ -58,7 +43,7 @@ export function IntelligenceBriefing({
 }: {
   brief: MonitorSignalBrief;
   onBack: () => void;
-  onAccount: (id: string) => void;
+  onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onCreateAction: (brief: MonitorSignalBrief) => void;
   onUseInOmni: (brief: MonitorSignalBrief) => void;
 }) {
@@ -103,10 +88,7 @@ export function IntelligenceBriefing({
     <div className="intelligence-briefing">
       <div className="intelligence-briefing-toolbar">
         <Button variant="ghost" onClick={onBack}>← Back to Intelligence</Button>
-        <div>
-          <State value={label(brief.data_mode)} />
-          <State value={label(brief.freshness)} />
-        </div>
+        <span className="muted">Public intelligence assessment</span>
       </div>
       {failure && (
         <Notice title="Customer context could not be loaded" tone="warning">
@@ -135,10 +117,10 @@ export function IntelligenceBriefing({
           <section>
             <span className="eyebrow">Why this matters</span>
             <h2>Commercial relevance</h2>
-            <p>{brief.why_it_may_matter}</p>
-            {brief.seller_summary !== brief.why_it_may_matter && <p>{brief.seller_summary}</p>}
+            <p>{brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></p>
+            {!!brief.material_uncertainties?.length && <p><strong>Material uncertainty:</strong> {brief.material_uncertainties[0]}</p>}
           </section>
-
+          <SupportingEvidence count={new Set([...brief.evidence_ids, ...(brief.references ?? []).map(item => item.evidence_id), ...eventRecords.map(item => item.record_id)]).size} investigationKey={`intelligence:${brief.assessment_id ?? brief.id}:${brief.assessment_version ?? 0}`}>
           <section>
             <div className="section-heading">
               <div>
@@ -176,23 +158,13 @@ export function IntelligenceBriefing({
             )}
           </section>
 
-          {!isProspect && (
-            <section>
+          <section>
               <span className="eyebrow">Existing commercial context</span>
-              <h2>BTX account context</h2>
-              {eventRecords.length ? (
-                <div className="intelligence-commercial-grid">
-                  {eventRecords.map((record) => (
-                    <article key={`${record.collection}:${record.record_id}`}>
-                      <strong>{label(record.collection)}</strong>
-                      <span>{record.title ?? record.status ?? "Recorded context"}</span>
-                      <span>{record.amount_minor != null ? money(record.amount_minor, record.currency) : record.total_minor != null ? money(record.total_minor, record.currency) : record.line_total_minor != null ? money(record.line_total_minor, record.currency) : record.value_minor != null ? money(record.value_minor, record.currency) : record.date ?? "Value unavailable"}</span>
-                    </article>
-                  ))}
-                </div>
-              ) : <Empty>No linked commercial records are available.</Empty>}
-            </section>
-          )}
+              <h2>Related BTX activity to review</h2>
+              {accountId && !isProspect ? <RelatedBtxActivity accountId={accountId} records={eventRecords} /> : <Empty>{isProspect ? "No confirmed BTX commercial history is available for this Prospect." : "No linked commercial records are available."}</Empty>}
+          </section>
+          <section className="intelligence-evidence"><h2>Sources</h2><EvidenceSource title={brief.headline} source={brief.source_system} date={brief.publication_timestamp} evidenceState="Source reviewed" url={brief.source_url} detail="Primary public source for this assessment" />{brief.data_mode === "LIVE_PUBLIC" && <EvidencePassages eventId={brief.id} />}</section>
+          </SupportingEvidence>
 
           <section className="intelligence-next-conversation">
             <span className="eyebrow">Next conversation</span>
@@ -222,7 +194,7 @@ export function IntelligenceBriefing({
             <h2>{account?.name ?? account?.legal_name ?? "Canonical identity pending"}</h2>
             <p>{account ? label(account.relationship) : "This public subject is not linked to a canonical account."}</p>
             {facility && <p>{facility.name} · {facility.city}, {facility.region}</p>}
-            {account && <Button variant="secondary" onClick={() => onAccount(account.id)}>Open full profile</Button>}
+            {account && <Button variant="secondary" onClick={() => onAccount(account.id, brief.assessment_id && brief.assessment_version ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: account.id } : undefined)}>Open full profile</Button>}
           </section>
           <section>
             <span className="eyebrow">Relevant contact evidence</span>
@@ -239,9 +211,7 @@ export function IntelligenceBriefing({
           </section>
           <section>
             <span className="eyebrow">Applicable decision</span>
-            <h2>Signal confidence</h2>
-            <strong className="intelligence-score">{confidence?.score == null ? "More evidence needed" : `${confidence.score}/100`}</strong>
-            <p>{confidence ? `${confidence.data_coverage.present} of ${confidence.data_coverage.applicable} applicable inputs supported.` : "No deterministic signal-confidence decision is available."}</p>
+            {confidence ? <ScoreSummary model={{ ...commercialDecisionSummary(confidence, brief.headline, "Judge how strongly the collected evidence supports this signal"), family: "Signal Confidence", interpretation: `${confidence.interpretation} Confidence is separate from technical fit and commercial value.` }} /> : <p>No deterministic Signal Confidence decision is available. It is not replaced with Technical Fit.</p>}
           </section>
           <section className="intelligence-briefing-actions">
             <span className="eyebrow">Pursuit actions</span>
@@ -253,15 +223,6 @@ export function IntelligenceBriefing({
         </aside>
       </div>
 
-      <Disclosure title="Evidence and operational details">
-        <div className="intelligence-evidence">
-          <p><b>Watch next:</b> {brief.what_to_watch}</p>
-          {!!brief.material_uncertainties?.length && <div><b>Material uncertainties</b><ul>{brief.material_uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
-          <p><b>Collected:</b> {date(brief.collection_timestamp)} · <b>Resolution:</b> {label(brief.resolution_state)} · <b>Publication:</b> {label(brief.seller_promotion_state)}</p>
-          <EvidenceSource title={brief.headline} source={brief.source_system} date={brief.publication_timestamp} evidenceState={brief.resolution_state} validationState={brief.seller_promotion_state} url={brief.source_url} detail={`Evidence IDs: ${brief.evidence_ids.length ? brief.evidence_ids.join(", ") : "Unavailable"}`} />
-          {brief.data_mode === "LIVE_PUBLIC" && <EvidencePassages eventId={brief.id} />}
-        </div>
-      </Disclosure>
     </div>
   );
 }

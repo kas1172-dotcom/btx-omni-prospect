@@ -3,9 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from btx_omni.ai.contracts import ExplanationType
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
-from btx_omni.modules.accounts.customer_360 import customer_360_projection
+from btx_omni.modules.accounts.customer_360 import (
+    customer_360_projection,
+    organization_360_projection,
+)
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.commercial.briefing import commercial_briefing
+from btx_omni.modules.federal_procurement import federal_assessments_for_account
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     customer_attractiveness_subject_key,
     persisted_seller_explanation,
@@ -232,6 +236,10 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "customer_360": customer_360_projection(
             account_id=account_id, sample=sample, commercial=commercial, signals=signals
         ),
+        "organization_360": organization_360_projection(
+            account=account, commercial=commercial, signals=signals
+        ),
+        "federal_opportunities": federal_assessments_for_account(runtime, account_id),
         "provenance": account.provenance,
         "missingness": list(projection.missingness)
         + (

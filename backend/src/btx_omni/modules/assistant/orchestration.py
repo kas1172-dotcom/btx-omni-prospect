@@ -3296,6 +3296,8 @@ class OmniOrchestrator:
             return self._actions_screen_summary(
                 environment, context, work_items, visible_ids
             )
+        if surface == "SETTINGS":
+            return self._settings_screen_summary(context)
         if surface == "MONITOR":
             return self._empty_screen_summary(
                 "Monitor exposes status and provenance, but no bounded seller-visible records for a summary",
@@ -3303,6 +3305,20 @@ class OmniOrchestrator:
             )
         return self._empty_screen_summary(
             f"the current surface '{surface}' is not supported", context
+        )
+
+    def _settings_screen_summary(self, context: Mapping[str, object]) -> OmniResponse:
+        """Keep weak Settings context useful without inventing seller priorities."""
+        return OmniResponse(
+            "Settings contains preferences and governed access controls, not a ranked seller work queue. Open Today to review the current governed priorities, or choose an organization or assessment so I can explain its supported decision, uncertainty, and next action.",
+            "Open Today or select an organization or assessment.",
+            (),
+            (AssistantProvenance.DETERMINISTIC_DERIVATION,),
+            ("No organization, assessment, opportunity, or relationship route is selected in Settings.",),
+            None,
+            (),
+            None,
+            context_used=self._summary_context(context),
         )
 
     def _empty_screen_summary(

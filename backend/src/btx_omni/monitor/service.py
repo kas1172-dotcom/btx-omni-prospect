@@ -169,14 +169,27 @@ class MonitorService:
                 previous_health.last_success_at if previous_health else None
             )
         try:
-            observations = self._collect_with_deadline(
-                adapter,
-                run_id=run_id,
-                settings=self.settings,
-                limit=limit,
-                collected_at=started,
-                deadline_monotonic=deadline_monotonic,
-            )
+            procurement_result = None
+            if self.repository and hasattr(adapter, "collect_resumable"):
+                procurement_result = bounded_public_read(
+                    lambda: adapter.collect_resumable(
+                        run_id=run_id,
+                        settings=self.settings,
+                        checkpoints=self.repository.procurement_checkpoints(source_id),
+                        collected_at=started,
+                    ),
+                    deadline_monotonic,
+                )
+                observations = list(procurement_result.observations)
+            else:
+                observations = self._collect_with_deadline(
+                    adapter,
+                    run_id=run_id,
+                    settings=self.settings,
+                    limit=limit,
+                    collected_at=started,
+                    deadline_monotonic=deadline_monotonic,
+                )
             retained_observations = []
             for observation in observations:
                 key = (
@@ -198,6 +211,7 @@ class MonitorService:
                 )
             observations = retained_observations
             created = changed = new = rejected_count = 0
+            procurement_counts: dict[str, dict[str, int]] = {}
             persisted_events: list[IntelligenceEvent] = []
             organization_candidates = []
             program_candidates = []
@@ -292,14 +306,35 @@ class MonitorService:
                     if previous is None and self.repository
                     else None
                 )
-                changed += int(
-                    observation_changed(previous, observation)
+                record_changed = observation_changed(previous, observation)
+                is_changed = (
+                    record_changed
                     or (
                         persisted_hash is not None
                         and persisted_hash != observation.source_version.content_hash
                     )
                 )
-                new += int(previous is None and persisted_hash is None)
+                is_new = previous is None and persisted_hash is None
+                changed += int(is_changed)
+                new += int(is_new)
+                query_key = next(
+                    (
+                        value for key, value
+                        in observation.source_identity.source_native_ids
+                        if key == "governed_query"
+                    ),
+                    None,
+                )
+                if query_key:
+                    counts = procurement_counts.setdefault(
+                        query_key, {"created": 0, "updated": 0, "unchanged": 0}
+                    )
+                    if is_new:
+                        counts["created"] += 1
+                    elif is_changed:
+                        counts["updated"] += 1
+                    else:
+                        counts["unchanged"] += 1
                 self.source_versions[version_key] = observation
                 cluster_id = cluster_key(candidate.event)
                 existing_cluster = self.clusters.get(cluster_id) or (
@@ -309,11 +344,36 @@ class MonitorService:
                 self.clusters[cluster_id] = decision.cluster
                 created += int(decision.created)
             completed = self.clock()
+            if procurement_result:
+                procurement_result = replace(
+                    procurement_result,
+                    checkpoints=tuple(
+                        replace(
+                            item,
+                            records_created=item.records_created + procurement_counts.get(item.query_key, {}).get("created", 0),
+                            records_updated=item.records_updated + procurement_counts.get(item.query_key, {}).get("updated", 0),
+                            records_unchanged=item.records_unchanged + procurement_counts.get(item.query_key, {}).get("unchanged", 0),
+                        )
+                        for item in procurement_result.checkpoints
+                    ),
+                )
+            pending_queries = (
+                sum(item.pending for item in procurement_result.checkpoints)
+                if procurement_result else 0
+            )
             cursor = CollectionCursor(
-                source_id, token=completed.isoformat(), page=1, updated_at=completed
+                source_id,
+                token=(f"pending:{pending_queries}" if pending_queries else completed.isoformat()),
+                page=max((item.offset for item in procurement_result.checkpoints), default=1)
+                if procurement_result else 1,
+                updated_at=completed,
             )
             warning_reader = getattr(adapter, "collection_warnings", None)
-            warnings = tuple(warning_reader()) if callable(warning_reader) else ()
+            warnings = (
+                procurement_result.warnings
+                if procurement_result
+                else tuple(warning_reader()) if callable(warning_reader) else ()
+            )
             run = CollectionRun(
                 run_id,
                 source_id,
@@ -402,6 +462,10 @@ class MonitorService:
                 if "program_candidates" in locals()
                 else (),
             )
+            if "procurement_result" in locals() and procurement_result:
+                self.repository.persist_procurement_checkpoints(
+                    procurement_result.checkpoints
+                )
         return run
 
     def collect_all(

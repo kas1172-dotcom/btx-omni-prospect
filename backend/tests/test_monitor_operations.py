@@ -530,6 +530,47 @@ def test_worker_fails_closed_when_another_worker_holds_the_lock(monkeypatch) -> 
     assert code == 3 and report["status"] == "OVERLAP_SKIPPED"
 
 
+def test_postgresql_operational_lock_keeps_its_session_alive() -> None:
+    from types import SimpleNamespace
+
+    class Result:
+        def scalar_one(self):
+            return True
+
+    class Connection:
+        def __init__(self):
+            self.statements = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def execution_options(self, **options):
+            assert options == {"isolation_level": "AUTOCOMMIT"}
+            return self
+
+        def execute(self, statement):
+            self.statements.append(str(statement))
+            return Result()
+
+    connection = Connection()
+    repository = MonitorRepository.__new__(MonitorRepository)
+    repository.engine = SimpleNamespace(
+        dialect=SimpleNamespace(name="postgresql"),
+        connect=lambda: connection,
+    )
+
+    with repository.operational_lock(heartbeat_interval_seconds=0.001) as acquired:
+        assert acquired
+        time.sleep(0.01)
+
+    assert connection.statements[0].startswith("SELECT pg_try_advisory_lock")
+    assert "SELECT 1" in connection.statements
+    assert connection.statements[-1].startswith("SELECT pg_advisory_unlock")
+
+
 def test_worker_does_not_start_optional_model_calls_without_remaining_timeout_budget(monkeypatch):
     from contextlib import nullcontext
     from types import SimpleNamespace

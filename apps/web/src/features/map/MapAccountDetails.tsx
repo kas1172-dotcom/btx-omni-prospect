@@ -5,6 +5,12 @@ import { Button, Empty, EvidenceSource, StatusBadge } from "../../components/UI"
 import type { Account360, MapRecord } from "../../types/api";
 import { WorkbookFields } from "../accounts/WorkbookFields";
 import { FULFILLMENT_LABELS } from "./mapModel";
+import { SupportingEvidence, WhyThis } from "../../components/SupportingEvidence";
+import { RelatedBtxActivity } from "../../components/RelatedBtxActivity";
+import { TechnicalDecompositionSection } from "../../components/TechnicalDecompositionSection";
+import { ScoreSummary } from "../../components/ScoreSummary";
+import { attractivenessSummary, prospectFitSummary } from "../../components/scoreSummaryModel";
+import { presentationLabel } from "../../components/presentation";
 
 type Tab = "OVERVIEW" | "COMMERCIAL" | "CONTACTS" | "SOURCES";
 const tabs: Array<[Tab, string]> = [["OVERVIEW", "Overview"], ["COMMERCIAL", "Commercial"], ["CONTACTS", "Contacts"], ["SOURCES", "Sources"]];
@@ -26,23 +32,27 @@ export function MapAccountDetails({ record }: { record: MapRecord }) {
   const currentFailure = failure?.accountId === record.account_id ? failure : undefined;
 
   const nearest = record.nearest_btx_facility;
-  const prospectRange = record.prospect_fit?.applicable && record.prospect_fit.score_low != null && record.prospect_fit.score_high != null
-    ? (record.prospect_fit.score != null ? record.prospect_fit.score : `${record.prospect_fit.score_low}–${record.prospect_fit.score_high}`)
-    : undefined;
-  const segmentLabel = { PROSPECT: "Prospect", CURRENT_CLIENT: "Customer", DORMANT_CUSTOMER: "Dormant customer", UNKNOWN: "Other researched" }[record.account_segment];
+  const segmentLabel = { PROSPECT: "Prospect", CURRENT_CLIENT: "Customer", DORMANT_CUSTOMER: "Dormant customer", UNKNOWN: "Relationship needs review" }[record.account_segment];
+  const score = record.account_segment === "PROSPECT" && record.prospect_fit?.applicable ? prospectFitSummary(record.prospect_fit, record.name) : record.account_attractiveness ? attractivenessSummary(record.account_attractiveness, record.name) : undefined;
+  const verifiedLocation = [record.city, record.region, record.country].filter(Boolean).join(", ");
   return <div className="map-site-detail">
     <div className="map-site-tabs" role="tablist" aria-label="Selected site details">{tabs.map(([value, text]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{text}</button>)}</div>
     {currentFailure && <div className="map-site-error" role="alert"><span>Canonical site context could not be loaded.</span><Button variant="ghost" onClick={() => { setFailure(undefined); setAttempt((value) => value + 1); }}>Retry</Button></div>}
     {tab === "OVERVIEW" && <section role="tabpanel" aria-label="Overview">
-      <WorkbookFields key={record.account_id} accountId={record.account_id} />
       <div className="map-badges"><StatusBadge value={segmentLabel} kind="entity" />{record.btx_top_100 && <StatusBadge value="BTX Top 100 · membership only" />}{record.primary_markets.map((market) => <StatusBadge key={market} value={market} />)}</div>
-      <p><strong>Site:</strong> {record.location_name ?? "Canonical facility"}</p>
-      <p><strong>Role / location state:</strong> {(record.location_type ?? record.location_truth_state).replaceAll("_", " ")}</p>
+      <p><strong>Organization:</strong> {record.name}</p>
+      <p><strong>Facility:</strong> {record.location_name ?? "Canonical facility"}</p>
+      <p><strong>Site role:</strong> {presentationLabel(record.location_type ?? "Role unavailable")}</p>
+      <p><strong>Verified location:</strong> {verifiedLocation || "Location details unavailable"} · {presentationLabel(record.location_truth_state)}</p>
+      <p><strong>Market and industry:</strong> {record.primary_markets.join(" · ") || record.industry || "Unavailable"}</p>
       {Boolean(record.naics_assignments?.length) && <p><strong>Account NAICS:</strong> {record.naics_assignments?.map((item) => `${item.code} (${item.taxonomy_version})`).join(" · ")} · POC classification</p>}
-      {record.account_segment === "PROSPECT" ? (prospectRange ? <p><strong>Prospect Fit:</strong> {prospectRange} · {Number(record.prospect_fit!.coverage) * 100}% input coverage{record.prospect_fit!.score == null ? " · bounded range" : ""}</p> : <p>Prospect Fit requires scoped research.</p>) : (record.attractiveness_score != null ? <p><strong>Opportunity Priority:</strong> {record.attractiveness_score} · {Number(record.attractiveness_coverage) * 100}% input coverage</p> : <p>Opportunity Priority is unavailable until a specific pursuit has sufficient inputs.</p>)}
+      {record.candidate_capabilities?.length ? <p><strong>Candidate BTX capability fit:</strong> {record.candidate_capabilities.map(item => item.name).join(" · ")}. Derived from account-level business-unit context and requires site qualification.</p> : <p><strong>Candidate BTX capability fit:</strong> No governed account-level match is available.</p>}
+      {score && <ScoreSummary model={score} />}
       {nearest?.distance_miles != null ? <p><strong>Nearest BTX facility:</strong> {nearest.name} · {nearest.distance_miles} miles straight-line</p> : <p>Nearest BTX facility not yet established.</p>}
       {record.governed_next_step && <p><strong>Next:</strong> {record.governed_next_step}</p>}
-      {record.current_signal_briefs?.slice(0, 2).map((brief) => <article key={brief.id} className="map-commercial-summary"><strong>{brief.headline}</strong><span>{brief.why_it_may_matter}</span><small>{brief.geographic_scope === "FACILITY" ? brief.canonical_facility_id === record.facility_id ? "Verified site scope" : "Other verified facility context; not attributed to this site" : "Account-wide context; not attributed to this site"}</small></article>)}
+      {record.federal_opportunities?.slice(0, 2).map((item) => <article className="map-commercial-summary" key={item.assessment_id}><strong>{item.technical.requirement}</strong><span><b>{item.stage.label}:</b> {item.stage.explanation}</span><span><b>Account connection:</b> {item.account_routes?.[0]?.why}</span><span><b>Next:</b> {item.account_routes?.[0]?.governed_action}</span><small>Account-level federal context; not attributed to this site.</small><SupportingEvidence count={item.supporting_evidence_count} investigationKey={`map-federal:${record.account_id}:${item.assessment_id}:${item.assessment_version}`}><p>{item.durability.explanation}</p><ul>{item.technical.remaining_unknowns.map(gap => <li key={gap}>{gap}</li>)}</ul></SupportingEvidence></article>)}
+      {record.current_signal_briefs?.slice(0, 2).map((brief) => <article key={brief.context_id ?? brief.id} className="map-commercial-summary"><strong>{brief.headline}</strong><span><b>What happened:</b> {brief.what_happened}</span><span><b>Why it may matter:</b> {brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></span><span><b>Next:</b> {brief.recommended_action ?? "No seller action is supported yet."}</span>{brief.material_uncertainties?.[0] && <span><b>Material uncertainty:</b> {brief.material_uncertainties[0]}</span>}<small>{brief.geographic_scope === "FACILITY" ? brief.canonical_facility_id === record.facility_id ? "Verified site scope" : "Other verified facility context; not attributed to this site" : "Account-wide context; not attributed to this site"}</small><SupportingEvidence count={new Set([...brief.evidence_ids, ...(brief.references ?? []).map(item => item.evidence_id), ...(brief.evidence_package?.commercial_records ?? []).map(item => item.record_id)]).size} investigationKey={`map:${record.facility_id}:${brief.assessment_id ?? brief.id}:${brief.assessment_version ?? 0}`}><section><h4>Program and component evidence</h4><TechnicalDecompositionSection technical={brief.technical_opportunity} /></section><section><h4>Related BTX records</h4><RelatedBtxActivity accountId={record.account_id} records={brief.evidence_package?.commercial_records ?? []} /></section><section><h4>Sources</h4>{brief.references?.map(source => <EvidenceSource key={source.evidence_id} title={source.title} source="Public source" date={source.publication_date ?? undefined} evidenceState="Source reviewed" url={source.url} />)}</section></SupportingEvidence></article>)}
+      <SupportingEvidence count={1} investigationKey={`map-workbook:${record.account_id}:${record.facility_id}`}><WorkbookFields key={record.account_id} accountId={record.account_id} /></SupportingEvidence>
     </section>}
     {tab === "COMMERCIAL" && <section role="tabpanel" aria-label="Commercial">
       {record.commercial_briefing ? <><h3>{record.commercial_briefing.summary}</h3><p>{record.commercial_briefing.explanation}</p>{record.commercial_briefing.fulfillment && <div className="map-commercial-summary"><span>Ordered <strong>{record.commercial_briefing.fulfillment.ordered_quantity}</strong></span><span>Shipped <strong>{record.commercial_briefing.fulfillment.shipped_quantity}</strong></span><span>Remaining <strong>{record.commercial_briefing.fulfillment.remaining_quantity}</strong></span><span>Shipped value <strong>{money(record.commercial_briefing.fulfillment.shipped_value_minor, record.commercial_briefing.fulfillment.currency)}</strong></span></div>}<p><strong>Next:</strong> {record.commercial_briefing.next_action}</p></> : <Empty>No linked commercial briefing is available.</Empty>}

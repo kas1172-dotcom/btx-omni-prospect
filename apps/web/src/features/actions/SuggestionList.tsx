@@ -1,113 +1,50 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { api } from '../../api/client'
-import { Button, Disclosure, Empty, Panel, SelectInput, StatusBadge, Textarea } from '../../components/UI'
+import { Button, Disclosure, Empty, Panel, SearchInput, SelectInput, StatusBadge, Textarea } from '../../components/UI'
+import { WorklistPagination } from '../../components/WorklistPagination'
+import { clampPage, pageSlice } from '../../components/worklistModel'
 import type { Suggestion, SuggestionFeedbackInput, SuggestionFeedbackReason } from '../../types/api'
 import { FeedbackHistory } from './FeedbackHistory'
 
-const reasons: Record<SuggestionFeedbackReason, string> = {
-  WRONG_ACCOUNT: 'Wrong account — request review', SNOOZE: 'Snooze', ALREADY_DONE: 'Already done — personal report',
-  NOT_RELEVANT: 'Not relevant to me', UNDO: 'Restored',
-}
+const reasons: Record<SuggestionFeedbackReason, string> = { WRONG_ACCOUNT: 'Wrong account — request review', SNOOZE: 'Snooze', ALREADY_DONE: 'Already done — personal report', NOT_RELEVANT: 'Not relevant to me', UNDO: 'Restored' }
+const priorityRank: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+const PAGE_SIZE = 12
 type Draft = { reason: Exclude<SuggestionFeedbackReason, 'UNDO'>; note: string; days: string }
 const emptyDraft: Draft = { reason: 'NOT_RELEVANT', note: '', days: '7' }
 
-export function SuggestionList({ suggestions, name, onConvert, onFeedback, onRefreshed }: {
-  suggestions: Suggestion[]; name: (id: string) => string; onConvert: (item: Suggestion) => Promise<void>
-  onFeedback: (id: string, patch: Partial<Suggestion>) => void
-  onRefreshed: (items: Suggestion[]) => void
+export function SuggestionList({ suggestions, name, onConvert, onFeedback, onRefreshed, query, onQuery, priority, onPriority, sort, onSort, view, onView, page, onPage, selectedId, onSelected }: {
+  suggestions: Suggestion[]; name: (id: string) => string; onConvert: (item: Suggestion) => Promise<void>; onFeedback: (id: string, patch: Partial<Suggestion>) => void; onRefreshed: (items: Suggestion[]) => void
+  query: string; onQuery: (value: string) => void; priority: string; onPriority: (value: string) => void; sort: string; onSort: (value: string) => void; view: string; onView: (value: string) => void; page: number; onPage: (page: number) => void; selectedId?: string; onSelected: (id?: string) => void
 }) {
-  const [view, setView] = useState('ACTIVE')
-  const [editing, setEditing] = useState<string>()
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({})
-  const [busy, setBusy] = useState<string>()
-  const [notice, setNotice] = useState('')
-  const [error, setError] = useState('')
-  const inFlight = useRef(false)
-  // Preserve the exact request (including snooze timestamp) across uncertain retries.
-  const retry = useRef<{ signature: string; payload: SuggestionFeedbackInput } | null>(null)
-  const visible = suggestions.filter(item => view === 'ALL' || (view === 'HIDDEN' ? item.dismissed : !item.dismissed))
+  const [editing, setEditing] = useState<string>(); const [drafts, setDrafts] = useState<Record<string, Draft>>({}); const [busy, setBusy] = useState<string>(); const [notice, setNotice] = useState(''); const [error, setError] = useState('')
+  const inFlight = useRef(false); const retry = useRef<{ signature: string; payload: SuggestionFeedbackInput } | null>(null)
+  const filtered = useMemo(() => suggestions.filter(item => {
+    const visibility = view === 'ALL' || (view === 'HIDDEN' ? item.dismissed : !item.dismissed)
+    return visibility && (priority === 'ALL' || item.priority === priority) && `${name(item.account_id)} ${item.title} ${item.rationale}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+  }).sort((left, right) => { const stable = left.id.localeCompare(right.id); if (sort === 'CUSTOMER') return name(left.account_id).localeCompare(name(right.account_id)) || stable; if (sort === 'RECENT') return (right.observed_at || '').localeCompare(left.observed_at || '') || stable; return priorityRank[left.priority] - priorityRank[right.priority] || name(left.account_id).localeCompare(name(right.account_id)) || stable }), [suggestions, view, priority, query, sort, name])
+  const currentPage = clampPage(page, filtered.length, PAGE_SIZE); const displayed = useMemo(() => pageSlice(filtered, currentPage, PAGE_SIZE), [filtered, currentPage]); const selected = filtered.find(item => item.id === selectedId) ?? displayed[0]
+  const familyCount = selected ? filtered.filter(item => item.account_id === selected.account_id && item.title === selected.title).length : 0
   const changeDraft = (id: string, patch: Partial<Draft>) => setDrafts(previous => ({ ...previous, [id]: { ...(previous[id] ?? emptyDraft), ...patch } }))
-
   const save = async (item: Suggestion, undo = false) => {
     if (inFlight.current) return
-    const draft = drafts[item.id] ?? emptyDraft
-    const reason = undo ? 'UNDO' : draft.reason
-    if (!undo && ['WRONG_ACCOUNT', 'ALREADY_DONE'].includes(reason) && !draft.note.trim()) {
-      setError('Add the correction or completion source so your report can be reviewed.'); return
-    }
+    const draft = drafts[item.id] ?? emptyDraft; const reason = undo ? 'UNDO' : draft.reason
+    if (!undo && ['WRONG_ACCOUNT', 'ALREADY_DONE'].includes(reason) && !draft.note.trim()) { setError('Add the correction or completion source so your report can be reviewed.'); return }
     const signature = JSON.stringify([item.id, item.revision, item.feedback?.id ?? null, reason, undo ? '' : draft.note, draft.days])
-    if (retry.current?.signature !== signature) retry.current = { signature, payload: {
-      reason, note: undo ? '' : draft.note, expected_feedback_id: item.feedback?.id ?? null, expected_revision: item.revision,
-      idempotency_key: crypto.randomUUID(),
-      ...(reason === 'SNOOZE' ? { snooze_until: new Date(Date.now() + Number(draft.days) * 86400000).toISOString() } : {}),
-    } }
+    if (retry.current?.signature !== signature) retry.current = { signature, payload: { reason, note: undo ? '' : draft.note, expected_feedback_id: item.feedback?.id ?? null, expected_revision: item.revision, idempotency_key: crypto.randomUUID(), ...(reason === 'SNOOZE' ? { snooze_until: new Date(Date.now() + Number(draft.days) * 86400000).toISOString() } : {}) } }
     inFlight.current = true; setBusy(item.id); setError(''); setNotice('')
-    try {
-      const result = await api.suggestionFeedback(item.id, retry.current.payload)
-      onFeedback(item.id, { feedback: result.current, dismissed: result.current.hidden })
-      retry.current = null; setEditing(undefined)
-      setNotice(result.current.source_changed ? 'Your earlier feedback receipt is preserved. The recommendation changed and is visible again for review; no new feedback was applied.' : result.current.hidden ? 'Saved for you only. Review hidden suggestions to edit or undo. Account facts, scores and Action status are unchanged.' : 'Suggestion restored for you. Account facts, scores and Action status are unchanged.')
-    } catch (caught) {
-      setError(`${caught instanceof Error ? caught.message : 'Feedback could not be confirmed.'} Retry keeps the same request. Refresh suggestions if another update changed this record.`)
-    } finally { inFlight.current = false; setBusy(undefined) }
+    try { const result = await api.suggestionFeedback(item.id, retry.current.payload); onFeedback(item.id, { feedback: result.current, dismissed: result.current.hidden }); retry.current = null; setEditing(undefined); setNotice(result.current.source_changed ? 'Earlier feedback remains in history, but the recommendation changed. Review current evidence before applying feedback.' : result.current.hidden ? 'Saved for you only. Account facts, scores and Action status are unchanged.' : 'Suggestion restored for you. Account facts, scores and Action status are unchanged.') }
+    catch (caught) { setError(`${caught instanceof Error ? caught.message : 'Feedback could not be confirmed.'} Retry keeps the same request.`) } finally { inFlight.current = false; setBusy(undefined) }
   }
-
-  const refresh = async () => {
-    if (inFlight.current) return
-    inFlight.current = true; setBusy('refresh'); setError('')
-    try {
-      const response = await api.actions()
-      onRefreshed(response.suggestions)
-      setNotice('Suggestions refreshed. Your draft is retained.')
-    } catch { setError('Could not refresh the selected suggestion. Your draft is retained.') }
-    finally { inFlight.current = false; setBusy(undefined) }
-  }
-
-  const convert = async (item: Suggestion) => {
-    if (inFlight.current) return
-    inFlight.current = true; setBusy(item.id)
-    try { await onConvert(item) } finally { inFlight.current = false; setBusy(undefined) }
-  }
+  const refresh = async () => { if (inFlight.current) return; inFlight.current = true; setBusy('refresh'); setError(''); try { const response = await api.actions(); onRefreshed(response.suggestions); setNotice('Suggestions refreshed. Last-good work remained visible while this resource refreshed.') } catch { setError('Suggestions could not refresh. Last-good suggestions remain visible; retry only this resource.') } finally { inFlight.current = false; setBusy(undefined) } }
+  const convert = async (item: Suggestion) => { if (inFlight.current) return; inFlight.current = true; setBusy(item.id); try { await onConvert(item) } finally { inFlight.current = false; setBusy(undefined) } }
+  const draft = selected ? drafts[selected.id] ?? emptyDraft : emptyDraft
 
   return <Panel title="Suggested work" action={<span className="panel-kicker">Recommendations are not Actions</span>}>
-    <div className="suggestion-feedback-toolbar"><SelectInput label="Suggestion visibility" value={view} disabled={Boolean(busy)} onChange={event => setView(event.target.value)}>
-      <option value="ACTIVE">Active suggestions</option><option value="HIDDEN">Hidden and snoozed for me</option><option value="ALL">All suggestions and my feedback</option>
-    </SelectInput><Button disabled={Boolean(busy)} onClick={() => void refresh()}>Refresh suggestions</Button><p>Feedback changes only your suggestion visibility. Reports are not verified corrections or completed Actions.</p></div>
-    {notice ? <p role="status" className="notice">{notice}</p> : null}
-    {error ? <div role="alert"><p>{error}</p><Button disabled={Boolean(busy) || !editing} onClick={() => void refresh()}>Refresh selected suggestion</Button></div> : null}
-    <FeedbackHistory name={name} onChanged={refresh} />
-    <div className="suggestion-list">{visible.length ? visible.map(item => {
-      const draft = drafts[item.id] ?? emptyDraft
-      return <article className="suggestion-card" key={item.id} data-suggestion-id={item.id}>
-        <div><span className="eyebrow">{name(item.account_id)}</span><h3>{item.title}</h3><p>{item.rationale}</p></div>
-        <StatusBadge value={item.priority} kind="priority" />
-        <Disclosure title="Evidence references"><p>{item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p></Disclosure>
-        {item.feedback ? <div className="suggestion-feedback-receipt"><strong>My feedback: {reasons[item.feedback.reason]}</strong>
-          {item.feedback.source_changed ? <p>The underlying recommendation changed or its earlier version was not recorded. This feedback is retained in history but no longer hides it. Review the current evidence before applying new feedback.</p> : null}
-          {item.feedback.note ? <p>{item.feedback.note}</p> : null}
-          <small>Saved {new Date(item.feedback.created_at).toLocaleString()} · version {item.feedback.version}</small>
-          {item.feedback.snooze_until ? <p>{item.feedback.hidden ? 'Snoozed until' : 'Snooze ended'} {new Date(item.feedback.snooze_until).toLocaleString()}</p> : null}
-          {item.feedback.reason === 'WRONG_ACCOUNT' ? <p>Unverified attribution report retained for review; the canonical account has not changed.</p> : null}
-        </div> : null}
-        <div className="card-actions">
-          {item.converted_action_id ? <StatusBadge value="CONVERTED" kind="action" /> : item.conversion_blocked ? <p>Existing work needs authorized review before another Action is created.</p> : !item.dismissed ? <Button variant="primary" disabled={Boolean(busy)} onClick={() => void convert(item)}>Create Action</Button> : null}
-          <Button disabled={Boolean(busy)} onClick={() => {
-            if (!drafts[item.id] && item.feedback) changeDraft(item.id, { reason: item.feedback.reason === 'UNDO' ? 'NOT_RELEVANT' : item.feedback.reason, note: item.feedback.note })
-            setEditing(item.id); setError('')
-          }}>{item.feedback ? 'Edit my feedback' : 'Give feedback'}</Button>
-          {(item.feedback && item.feedback.reason !== 'UNDO') || (item.dismissed && !item.feedback) ? <Button disabled={Boolean(busy)} onClick={() => { setEditing(item.id); void save(item, true) }}>Undo my feedback</Button> : null}
-        </div>
-        {editing === item.id ? <form className="suggestion-feedback-form" onSubmit={event => { event.preventDefault(); void save(item) }}>
-          <SelectInput label="Feedback reason" disabled={Boolean(busy)} value={draft.reason} onChange={event => changeDraft(item.id, { reason: event.target.value as Draft['reason'] })}>
-            {Object.entries(reasons).filter(([reason]) => reason !== 'UNDO').map(([reason, text]) => <option key={reason} value={reason}>{text}</option>)}
-          </SelectInput>
-          <Textarea label="Correction or completion source / optional note" maxLength={500} required={['WRONG_ACCOUNT', 'ALREADY_DONE'].includes(draft.reason)} disabled={Boolean(busy)} value={draft.note} onChange={event => changeDraft(item.id, { note: event.target.value })} />
-          {draft.reason === 'SNOOZE' ? <SelectInput label="Snooze duration" disabled={Boolean(busy)} value={draft.days} onChange={event => changeDraft(item.id, { days: event.target.value })}>
-            <option value="1">1 day</option><option value="7">7 days</option><option value="30">30 days</option>
-          </SelectInput> : null}
-          <div className="card-actions"><Button type="submit" variant="primary" disabled={Boolean(busy)}>{busy === item.id ? 'Saving…' : 'Save my feedback'}</Button><Button type="button" disabled={Boolean(busy)} onClick={() => setEditing(undefined)}>Close feedback</Button></div>
-        </form> : null}
-      </article>
-    }) : <Empty>No suggestions in this view. Choose all suggestions to inspect your feedback.</Empty>}</div>
+    <div className="suggestion-toolbar"><SearchInput aria-label="Search suggestions" placeholder="Search suggestions or customers" value={query} onChange={event => onQuery(event.target.value)} /><SelectInput label="Visibility" value={view} disabled={Boolean(busy)} onChange={event => onView(event.target.value)}><option value="ACTIVE">Active suggestions</option><option value="HIDDEN">Hidden and snoozed for me</option><option value="ALL">All suggestions and my feedback</option></SelectInput><SelectInput label="Priority" value={priority} onChange={event => onPriority(event.target.value)}><option value="ALL">All priorities</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></SelectInput><SelectInput label="Order" value={sort} onChange={event => onSort(event.target.value)}><option value="PRIORITY">Priority</option><option value="RECENT">Most recent</option><option value="CUSTOMER">Customer</option></SelectInput><Button disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === 'refresh' ? 'Refreshing…' : 'Refresh suggestions'}</Button></div>
+    <p className="worklist-counts" role="status">{suggestions.length} total Suggestions · {filtered.length} filtered · {displayed.length} displayed</p><p>Feedback changes only your suggestion visibility. Reports are not verified corrections or completed Actions.</p>
+    {notice && <p role="status" className="notice">{notice}</p>}{error && <div role="alert"><p>{error}</p><Button disabled={Boolean(busy)} onClick={() => void refresh()}>Retry Suggestions refresh</Button></div>}<FeedbackHistory name={name} onChanged={refresh} />
+    <div className="suggestion-workbench"><div><div className="suggestion-compact-list" role="listbox" aria-label="Suggested worklist">{displayed.length ? displayed.map(item => { const related = filtered.filter(candidate => candidate.account_id === item.account_id && candidate.title === item.title).length; return <button type="button" role="option" aria-selected={selected?.id === item.id} className={selected?.id === item.id ? 'selected' : ''} key={item.id} data-suggestion-id={item.id} onClick={() => onSelected(item.id)}><span><strong>{name(item.account_id)}</strong><small>{item.title}</small></span><StatusBadge value={item.priority} kind="priority" /><small>{related > 1 ? `${related} related` : 'Single recommendation'}</small></button> }) : <Empty>{suggestions.length ? 'No Suggestions match this filter. The complete recommendation set is unchanged.' : 'No governed Suggestions exist in your permitted scope.'}</Empty>}</div><WorklistPagination page={currentPage} pageSize={PAGE_SIZE} total={filtered.length} onPage={onPage} /></div>
+      <aside className="suggestion-detail">{selected ? <Panel title="Suggestion detail" action={<StatusBadge value={selected.priority} kind="priority" />}><div className="suggestion-detail-stack"><div><span className="eyebrow">{name(selected.account_id)}</span><h3>{selected.title}</h3><p>{selected.rationale}</p>{familyCount > 1 && <small>{familyCount} recommendations share this governed customer/action family. Each canonical suggestion remains separate because its identity, evidence or revision may differ.</small>}</div><Disclosure title="Evidence references"><p>{selected.evidence_ids.length ? selected.evidence_ids.join(', ') : 'Unavailable'}</p></Disclosure>{selected.feedback && <div className="suggestion-feedback-receipt"><strong>My feedback: {reasons[selected.feedback.reason]}</strong>{selected.feedback.source_changed && <p>The underlying recommendation changed. Earlier feedback remains history only.</p>}{selected.feedback.note && <p>{selected.feedback.note}</p>}</div>}<div className="card-actions">{selected.converted_action_id ? <StatusBadge value="CONVERTED" kind="action" /> : selected.conversion_blocked ? <p>Existing work needs authorized review before another Action is created.</p> : !selected.dismissed ? <Button variant="primary" disabled={Boolean(busy)} onClick={() => void convert(selected)}>Create Action</Button> : null}<Button disabled={Boolean(busy)} onClick={() => { if (!drafts[selected.id] && selected.feedback) changeDraft(selected.id, { reason: selected.feedback.reason === 'UNDO' ? 'NOT_RELEVANT' : selected.feedback.reason, note: selected.feedback.note }); setEditing(selected.id); setError('') }}>{selected.feedback ? 'Edit my feedback' : 'Give feedback'}</Button>{((selected.feedback && selected.feedback.reason !== 'UNDO') || (selected.dismissed && !selected.feedback)) && <Button disabled={Boolean(busy)} onClick={() => { setEditing(selected.id); void save(selected, true) }}>Undo my feedback</Button>}</div>{editing === selected.id && <form className="suggestion-feedback-form" onSubmit={event => { event.preventDefault(); void save(selected) }}><SelectInput label="Feedback reason" disabled={Boolean(busy)} value={draft.reason} onChange={event => changeDraft(selected.id, { reason: event.target.value as Draft['reason'] })}>{Object.entries(reasons).filter(([reason]) => reason !== 'UNDO').map(([reason, text]) => <option key={reason} value={reason}>{text}</option>)}</SelectInput><Textarea label="Correction or completion source / optional note" maxLength={500} disabled={Boolean(busy)} value={draft.note} onChange={event => changeDraft(selected.id, { note: event.target.value })} /><div className="card-actions"><Button type="submit" variant="primary" disabled={Boolean(busy)}>Save my feedback</Button><Button type="button" disabled={Boolean(busy)} onClick={() => setEditing(undefined)}>Close feedback</Button></div></form>}</div></Panel> : <Panel title="Suggestion detail"><Empty>Select a Suggestion to inspect its evidence and available personal controls.</Empty></Panel>}</aside>
+    </div>
   </Panel>
 }

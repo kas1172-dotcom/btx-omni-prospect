@@ -47,6 +47,12 @@ command from the same release image and secret environment as the API. The
 `BTX_MONITOR_WORKER_SOURCES`, `BTX_MONITOR_SOURCE_RECORD_LIMIT`,
 `BTX_MONITOR_SOURCE_TARGET_LIMIT`, `BTX_MONITOR_WORKER_MAX_SECONDS`, and
 `BTX_MONITOR_SOURCE_MIN_START_SECONDS` settings bound source collection. The
+SAM/USAspending page sizes and request budgets bound each invocation without
+discarding remaining work: per-query durable checkpoints continue unfinished
+pages on the next scheduled run. SAM uses a posted-date overlap because its
+public search API does not expose a documented modified-date filter. Set
+`BTX_MONITOR_SAM_COLLECTION_MODE=backfill` for a controlled 365-day backfill;
+return it to `incremental` after the backfill windows complete. The
 deadline interrupts only the adapter/network phase; transactional persistence
 finishes cleanly before exit. Source-version and event identities make repeat runs
 idempotent, and a failed source does not erase successful source state.

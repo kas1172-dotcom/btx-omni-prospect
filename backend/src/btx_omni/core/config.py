@@ -29,6 +29,13 @@ class Settings(BaseSettings):
         "sam_gov,usaspending,federal_register,sec_edgar,nasa,fda_openfda"
     )
     monitor_source_record_limit: int = Field(default=25, ge=1, le=100)
+    monitor_sam_request_budget: int = Field(default=8, ge=1, le=100)
+    monitor_sam_page_size: int = Field(default=100, ge=1, le=1000)
+    monitor_sam_overlap_days: int = Field(default=3, ge=1, le=30)
+    monitor_sam_backfill_days: int = Field(default=365, ge=1, le=365)
+    monitor_sam_collection_mode: str = "incremental"
+    monitor_usaspending_request_budget: int = Field(default=4, ge=1, le=50)
+    monitor_usaspending_page_size: int = Field(default=25, ge=1, le=100)
     monitor_public_lookback_days: int = Field(default=14, ge=1, le=60)
     monitor_document_fetch_cap: int = Field(default=2, ge=0, le=5)
     monitor_research_cap: int = Field(default=2, ge=0, le=3)

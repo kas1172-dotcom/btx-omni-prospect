@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test'
+import { openCustomerSection, openOrganizationEvidence } from './helpers.mjs'
 
 test('retained reference fields and paginated lifecycle records use canonical API identity', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
+  await openOrganizationEvidence(page)
   await page.getByText('Full commercial records & retained input fields', { exact: true }).click()
   const disclosure = page.locator('.commercial-records')
   await expect(disclosure.getByText('naics assignments', { exact: true })).toBeVisible()
@@ -33,10 +35,11 @@ test('customer risk view keeps public severity separate and preserves missingnes
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Boeing', exact: true }).click()
-  await page.getByText('Commercial decisions & follow-ups', { exact: true }).click()
+  await openCustomerSection(page, /Commercial decisions & follow-ups/)
   const decision = page.locator('.commercial-decision').filter({ hasText: /^overall customer risk/ })
-  await expect(decision.locator('summary')).toContainText('insufficient evidence')
+  await expect(decision.locator('summary')).toContainText('Status available in supporting details')
   await decision.locator('summary').click()
+  await expect(decision).toContainText('Unknown coverage cannot create an overall score')
   await expect(decision).toContainText('Internal commercial risk and public event severity remain separately inspectable.')
   await expect(decision).toContainText('Missing public risk evidence is not a zero-risk observation.')
 

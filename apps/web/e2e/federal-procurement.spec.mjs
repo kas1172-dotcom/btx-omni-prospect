@@ -1,17 +1,22 @@
 import { expect, test } from '@playwright/test'
 
-test('Federal Procurement shows ranked SAMPLE opportunities, filters, detail, and evidence', async ({ page }) => {
+test('Federal Procurement shows staged sortable opportunities, routes, and collapsed evidence', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Intelligence', exact: true }).click()
   await page.getByRole('button', { name: 'Federal Procurement' }).click()
   await expect(page.getByRole('heading', { name: 'Federal Procurement' })).toBeVisible()
-  await expect(page.getByText(/SAM.gov: SAMPLE/)).toBeVisible()
+  await expect(page.getByText('SAM.gov collection')).toBeVisible()
+  await expect(page.getByRole('table')).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: /Requirement/ })).toHaveAttribute('aria-sort', 'none')
   await expect(page.getByText(/Aerospace precision component/)).toBeVisible()
   await page.getByLabel('Filter federal opportunities by notice type').selectOption('Sources Sought')
-  await expect(page.getByRole('button', { name: 'View relevance & evidence' })).toHaveCount(1)
-  await page.getByRole('button', { name: 'View relevance & evidence' }).click()
-  await expect(page.getByText('Why it matters to BTX')).toBeVisible()
-  await expect(page.getByRole('link', { name: /official SAM.gov evidence/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Aerospace precision component sources sought' })).toHaveCount(1)
+  await expect(page.getByText('Not an open bid')).toBeVisible()
+  await page.getByRole('button', { name: 'Aerospace precision component sources sought' }).click()
+  await expect(page.getByText('Commercial routes')).toBeVisible()
+  await page.getByRole('button', { name: /View supporting evidence/ }).last().click()
+  await expect(page.getByRole('link', { name: /official SAM.gov record/ })).toBeVisible()
+  await expect(page.getByText(/Draft relevance model/)).toBeVisible()
 })
 
 test('Federal Procurement awarded dollars has FY and scope disclosures', async ({ page }) => {
@@ -19,7 +24,7 @@ test('Federal Procurement awarded dollars has FY and scope disclosures', async (
   await page.getByRole('button', { name: 'Intelligence', exact: true }).click()
   await page.getByRole('button', { name: 'Federal Procurement' }).click()
   await page.getByRole('tab', { name: 'Awarded Dollars' }).click()
-  await expect(page.getByText(/USAspending: SAMPLE/)).toBeVisible()
+  await expect(page.getByText('USAspending collection')).toBeVisible()
   await page.getByLabel('Select fiscal year').selectOption('2025')
   await expect(page.getByText('Top prime recipients')).toBeVisible()
   await expect(page.getByText('Supply-chain lag')).toBeVisible()

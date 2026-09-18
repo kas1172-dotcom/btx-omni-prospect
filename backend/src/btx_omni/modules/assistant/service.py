@@ -56,6 +56,7 @@ class OmniService:
         ]
         | None = None,
         market_reader: Callable[[dict], dict] | None = None,
+        federal_context: Mapping[str, object] | None = None,
     ) -> OmniResponse:
         intelligence_events = tuple(intelligence_events)
         operational_contract = self._operational_contract(question)
@@ -95,6 +96,8 @@ class OmniService:
             (ToolCall("resolve_governed_context", {"question": question}),)
         )[0]
         assert isinstance(deterministic, OmniResponse)
+        if federal_context is not None:
+            return self._federal_opportunity_answer(deterministic, federal_context)
         selected_assessment = self._selected_assessment_contract(
             intelligence_events, deterministic
         )
@@ -598,6 +601,61 @@ class OmniService:
             ):
                 return business
         return None
+
+    @staticmethod
+    def _federal_opportunity_answer(
+        response: OmniResponse, assessment: Mapping[str, object]
+    ) -> OmniResponse:
+        route = assessment.get("selected_route")
+        stage = assessment.get("stage")
+        technical = assessment.get("technical")
+        durability = assessment.get("durability")
+        source = assessment.get("source")
+        if not all(isinstance(item, Mapping) for item in (route, stage, technical, durability, source)):
+            raise ValueError("Federal assessment contract is incomplete.")
+        unknowns = tuple(dict.fromkeys((
+            *(str(item) for item in technical.get("remaining_unknowns", ()) if item),
+            *(str(item) for item in route.get("unknowns", ()) if item),
+        )))
+        requirement = str(technical.get("requirement") or source.get("title") or "Federal requirement")
+        content = "\n\n".join((
+            f"What the government is seeking or researching: {requirement}.",
+            f"Procurement stage: {stage.get('label')}. {stage.get('explanation')}",
+            f"Why it may matter to BTX: {route.get('why')}",
+            f"Supported commercial route: {route.get('label')}. This remains {str(route.get('evidence_state', 'under review')).replace('_', ' ').lower()}.",
+            f"Durability: {durability.get('explanation')}",
+            "What remains unknown: " + ("; ".join(unknowns) if unknowns else "No additional route gaps are recorded."),
+            f"Validate next: {route.get('governed_action')}",
+        ))
+        url = source.get("official_source_url")
+        citations = tuple(str(value) for value in assessment.get("evidence_references", ()) if value)
+        account_id = assessment.get("selected_account_id")
+        return replace(
+            response,
+            content=content,
+            account_id=str(account_id or response.account_id or ""),
+            citations=citations,
+            citation_links=(OmniCitation("Official federal opportunity", str(url)),) if url else (),
+            provenance=(AssistantProvenance.STORED_INTELLIGENCE, AssistantProvenance.DETERMINISTIC_DERIVATION),
+            missingness=unknowns,
+            recommended_action=str(route.get("governed_action")),
+            context_used={
+                **response.context_used,
+                "federal_opportunity_id": assessment.get("opportunity_id"),
+                "federal_assessment_id": assessment.get("assessment_id"),
+                "federal_assessment_version": assessment.get("assessment_version"),
+                "federal_route_type": route.get("route_type"),
+            },
+            conversation_referent={
+                "account_id": account_id,
+                "opportunity_id": assessment.get("opportunity_id"),
+                "assessment_id": assessment.get("assessment_id"),
+                "assessment_version": assessment.get("assessment_version"),
+                "route": route.get("route_type"),
+            },
+            language_provider="deterministic",
+            provider_status="NOT_CONFIGURED",
+        )
 
     @staticmethod
     def _assessment_grounding(assessment: Mapping[str, object]) -> str:

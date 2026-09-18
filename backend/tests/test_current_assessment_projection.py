@@ -243,7 +243,15 @@ def test_current_display_assessments_filter_and_rank_before_bound(tmp_path):
     engine.dispose()
 
 
-def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path):
+def test_persisted_assessment_is_identical_across_bounded_product_reads(
+    tmp_path, monkeypatch
+):
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW if tz is not None else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr("btx_omni.monitor.briefs.datetime", FrozenDateTime)
     database_url = f"sqlite:///{tmp_path / 'cross-surface.db'}"
     setup_engine = create_engine(database_url)
     metadata.create_all(setup_engine)
@@ -372,7 +380,10 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(tmp_path
         for item in selected
     )
     briefs = signal_briefs_for_monitor(
-        runtime.monitor, environment=runtime.environment(), projection_limit=50
+        runtime.monitor,
+        now=NOW,
+        environment=runtime.environment(),
+        projection_limit=50,
     )
     assert javelin_event in {item.id for item in briefs}
     action_brief = next(item for item in briefs if item.id == action_event)

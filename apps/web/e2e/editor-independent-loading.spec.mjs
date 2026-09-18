@@ -32,8 +32,13 @@ for (const kind of ['communication', 'action']) {
     else { await save.click(); await expect(editor).toContainText('Choose an available Customer') }
     expect(posts).toBe(0)
     release()
-    await expect(editor.getByRole('combobox', { name: 'Customer', exact: true }).locator('option[value="boeing"]')).toHaveCount(1)
-    await editor.getByRole('combobox', { name: 'Customer', exact: true }).selectOption('boeing')
+    const customer = editor.getByRole('combobox', { name: 'Customer', exact: true })
+    if (kind === 'communication') await customer.selectOption('boeing')
+    else {
+      await customer.fill('Boeing')
+      await editor.getByRole('option', { name: /Boeing/ }).click()
+      await expect(customer).toHaveValue('Boeing')
+    }
     await save.click()
     await expect(editor).toContainText(/Failed to fetch|Load failed|fetch/i)
     await expect(editor.getByLabel(kind === 'communication' ? 'Subject' : 'Title', { exact: true })).toHaveValue(title)

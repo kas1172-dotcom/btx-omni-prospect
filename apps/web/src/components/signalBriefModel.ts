@@ -1,6 +1,6 @@
 import type { Account, MonitorSignalBrief, Signal } from '../types/api'
 
-export const curatedSignalBrief = (signal: Signal, account?: Account): MonitorSignalBrief => ({
+export const curatedSignalBrief = (signal: Signal, account?: Account): MonitorSignalBrief => signal.business_briefing ?? ({
   id: signal.id,
   headline: signal.title,
   what_happened: signal.title,
@@ -16,11 +16,14 @@ export const curatedSignalBrief = (signal: Signal, account?: Account): MonitorSi
   data_mode: signal.data_mode ?? 'CURATED_PUBLIC',
   resolution_state: signal.resolution_state ?? signal.evidence_state,
   seller_promotion_state: signal.evidence_state,
-  what_to_watch: 'Review the governed public evidence and explicit Customer context.',
+  what_to_watch: 'Complete the account-specific assessment before deciding whether action is warranted.',
   missing_fields: signal.observed_at ? [] : ['publication date'],
-  seller_summary: signal.relevance_explanation,
+  seller_summary: 'Account-specific analysis is not complete. Review the source while the commercial implication is assessed.',
   summary_mode: 'DETERMINISTIC',
   event_timing: signal.observed_at ? 'OBSERVED' : 'UNKNOWN',
   watchlist_eligible: false,
   priority_reasons: [],
+  analysis_status: 'PENDING_ANALYSIS',
+  commercial_relevance_state: 'UNASSESSED',
+  priority_eligible: false,
 })

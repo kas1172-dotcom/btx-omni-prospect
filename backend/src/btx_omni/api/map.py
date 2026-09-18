@@ -8,13 +8,14 @@ from math import asin, cos, radians, sin, sqrt
 
 from fastapi import APIRouter, Depends
 
-from btx_omni.api.accounts import get_runtime
+from btx_omni.api.accounts import _seller_attractiveness, get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.alerts import CommercialAlertKind
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER, primary_market_label
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.commercial.briefing import commercial_briefing
 from btx_omni.modules.commercial.map_context import map_commercial_context
+from btx_omni.modules.federal_procurement import federal_assessments_for_account
 from btx_omni.modules.scoring.account_attractiveness import (
     seller_attractiveness_projection,
 )
@@ -183,6 +184,10 @@ def map_data(
         if not industry or industry in account.industries
     )
     selected_ids = {account.id for account in selected_accounts}
+    federal_by_account = {
+        account_id: federal_assessments_for_account(runtime, account_id)[:5]
+        for account_id in selected_ids
+    }
     commercial_accounts = {item.account_id for item in sample.commercial_contexts}
     commercial_alerts = CommercialAlertEngine().evaluate(
         sample.commercial_contexts,
@@ -321,6 +326,9 @@ def map_data(
                     "location_truth_state": location.verification_state,
                     "location_name": location.name,
                     "location_type": location.facility_type,
+                    "city": location.city,
+                    "region": location.region,
+                    "country": location.country,
                     "location_provenance": location.provenance,
                     "commercial_state": "SIMULATED_BTX_CONTEXT"
                     if account.id in commercial_accounts
@@ -329,6 +337,7 @@ def map_data(
                     "attractiveness_coverage": score.coverage,
                     "score_status": score.status,
                     "score_missingness": score.missingness,
+                    "account_attractiveness": _seller_attractiveness(score),
                     "prospect_fit": prospect_fit_payload(
                         prospect_fit_projection(
                             account, applicable=segment == "PROSPECT"
@@ -349,6 +358,9 @@ def map_data(
                     "upcoming_signal_briefs": upcoming_briefs_by_account.get(
                         account.id, ()
                     ),
+                    # Account-scoped only. A federal route never supplies facility
+                    # attribution unless the source has canonical facility evidence.
+                    "federal_opportunities": federal_by_account.get(account.id, ()),
                     "governed_next_step": account_alerts[0].recommended_action
                     if account_alerts
                     else None,
@@ -467,8 +479,24 @@ def map_data(
             point["account_id"] for point in [*account_points, *pending_accounts]
         }
     }
+    business_unit_names = {unit.id: unit.name for unit in sample.business_units}
     for point in [*account_points, *pending_accounts]:
         point.update(commercial_facets[point["account_id"]])
+        business_unit_ids = set(point["commercial_business_unit_ids"])
+        point["candidate_capabilities"] = [
+            {
+                "id": capability.id,
+                "name": (
+                    f"{business_unit_names[capability.business_units[0]]} capabilities"
+                    if len(capability.business_units) == 1
+                    and capability.name == capability.business_units[0]
+                    and capability.business_units[0] in business_unit_names
+                    else capability.name
+                ),
+            }
+            for capability in sorted(sample.capabilities, key=lambda item: (item.name, item.id))
+            if business_unit_ids.intersection(capability.business_units)
+        ]
         brief = commercial_briefs.get(point["account_id"])
         if brief:
             point["governed_next_step"] = brief["next_action"]
@@ -489,4 +517,18 @@ def map_data(
         "public_locations": facility_points,
         "intelligence_signals": intelligence_points,
         "proximity_note": "Seller planning input only; never an attractiveness input.",
+        "filter_options": {
+            "business_units": [
+                {"id": unit.id, "name": unit.name}
+                for unit in sorted(sample.business_units, key=lambda item: (item.name, item.id))
+                if any(unit.id in point.get("commercial_business_unit_ids", ()) for point in [*account_points, *pending_accounts])
+            ],
+            "capabilities": sorted(
+                {
+                    (capability["id"], capability["name"])
+                    for point in [*account_points, *pending_accounts]
+                    for capability in point.get("candidate_capabilities", ())
+                }
+            ),
+        },
     }

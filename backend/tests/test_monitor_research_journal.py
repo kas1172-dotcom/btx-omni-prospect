@@ -23,7 +23,7 @@ def journal(tmp_path, request):
     if request.param == 'postgresql':
         url = make_url(os.environ['BTX_DATABASE_URL'])
         assert url.host in {'127.0.0.1', 'localhost'}
-        assert url.database in {'btx_omni', 'btx_omni_e2e_20260908', 'omni_v33_e2e_20260908'}
+        assert url.database == 'btx_omni' or url.database.startswith('btx_omni_e2e')
         base = create_engine(url)
         schema = 'test_research_' + uuid4().hex
         with base.begin() as connection:

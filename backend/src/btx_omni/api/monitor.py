@@ -11,7 +11,9 @@ from btx_omni.ai.contracts import ProviderStatus
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
+from btx_omni.api.session import principal
 from btx_omni.domain.markets import primary_market_label
+from btx_omni.domain.work import Principal, PrincipalRole
 from btx_omni.monitor.briefs import (
     apply_cached_synthesis,
     brief_cache_id,
@@ -28,6 +30,12 @@ from btx_omni.monitor.sources import REGISTRY
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 SELLER_BRIEF_WINDOW_LIMIT = 50
+
+
+def source_health_principal(current: Principal = Depends(principal)) -> Principal:
+    if current.role is not PrincipalRole.MANAGER:
+        raise HTTPException(403, "This administrator workspace is unavailable.")
+    return current
 
 
 class CandidatePromotionRequest(BaseModel):
@@ -57,7 +65,10 @@ def operator_runtime(
 
 
 @router.get("/candidates")
-def monitor_candidates(runtime: PocRuntime = Depends(get_runtime)) -> dict:
+def monitor_candidates(
+    runtime: PocRuntime = Depends(get_runtime),
+    _current: Principal = Depends(source_health_principal),
+) -> dict:
     """Read-only review contract for non-canonical Monitor identities."""
     if not runtime.monitor.repository:
         raise HTTPException(
@@ -114,7 +125,10 @@ def promote_program_candidate(
 
 
 @router.get("/sources")
-def sources(runtime: PocRuntime = Depends(get_runtime)) -> list[dict]:
+def sources(
+    runtime: PocRuntime = Depends(get_runtime),
+    _current: Principal = Depends(source_health_principal),
+) -> list[dict]:
     return [
         {
             "source_id": item.definition.source_id,
@@ -134,7 +148,6 @@ def sources(runtime: PocRuntime = Depends(get_runtime)) -> list[dict]:
     ]
 
 
-@router.get("/health")
 def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     accounts = {item.id: item for item in runtime.environment().accounts}
     curated_preview = [
@@ -206,6 +219,10 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         if isinstance(latest_run, dict)
         else getattr(latest_run, "failures", ())
     )
+    blocking_failures = tuple(
+        item for item in latest_failures
+        if not str(item).startswith("AWAITING_CONTINUATION:")
+    )
     if not worker_ready:
         worker_runtime_state = "WORKER_RUNTIME_NOT_CONFIGURED"
         scheduler_state = "SCHEDULE_NOT_CONFIRMED"
@@ -215,7 +232,7 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     elif latest_run is None:
         worker_runtime_state = "WORKER_READY_FOR_INVOCATION"
         scheduler_state = "SCHEDULE_CONFIGURED_AWAITING_RUN"
-    elif latest_failures:
+    elif blocking_failures:
         worker_runtime_state = "WORKER_READY_FOR_INVOCATION"
         scheduler_state = "LATEST_SCHEDULED_RUN_FAILED"
     elif latest_completed and datetime.now(UTC) - latest_completed > timedelta(hours=runtime.settings.monitor_stale_after_hours):
@@ -301,7 +318,19 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
             "more_available": len(persisted_window) > SELLER_BRIEF_WINDOW_LIMIT,
             "selection": "evidence and display eligibility, commercial relevance, then deterministic rank before limit",
         },
+        "federal_procurement_coverage": (
+            runtime.monitor.repository.procurement_coverage(None)
+            if runtime.monitor.repository else ()
+        ),
     }
+
+
+@router.get("/health")
+def source_health(
+    runtime: PocRuntime = Depends(get_runtime),
+    _current: Principal = Depends(source_health_principal),
+) -> dict:
+    return monitor_health(runtime)
 
 
 @router.post("/collect/{source_id}")
@@ -330,7 +359,15 @@ def operational_collect(
     if source_id not in REGISTRY:
         raise HTTPException(404, "Unknown Monitor source.")
     run = runtime.monitor.collect(source_id)
-    return {"run": run, "data_mode": "LIVE_PUBLIC" if not run.failures else "FAILED"}
+    blocking = tuple(
+        item for item in run.failures
+        if not str(item).startswith("AWAITING_CONTINUATION:")
+    )
+    return {
+        "run": run,
+        "data_mode": "FAILED" if blocking else "LIVE_PUBLIC",
+        "coverage_state": "PARTIAL" if run.failures and not blocking else "COMPLETE" if not run.failures else "FAILED",
+    }
 
 
 @router.post("/internal/collect", include_in_schema=False)

@@ -1,15 +1,17 @@
 .market-intelligence { min-width: 0; }
 .market-intelligence p, .market-intelligence dd { overflow-wrap: anywhere; }
 .market-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-top: 20px; }
-.market-controls label { display: grid; gap: 6px; max-width: 100%; }
-.market-controls select { min-height: 44px; max-width: 100%; border: 1px solid #bbb; border-radius: 8px; padding: 8px; background: white; color: #171717; }
+.market-controls label { display: grid; flex: 1 1 180px; gap: 6px; min-width: 0; max-width: 100%; }
+.market-controls select { width: 100%; min-width: 0; min-height: 44px; max-width: 100%; border: 1px solid var(--border-default); border-radius: var(--radius-panel); padding: 8px; background: var(--surface-base); color: var(--text-primary); }
 .market-controls input { width: 24px; height: 24px; }
 .market-scorecard { display: grid; gap: 8px; padding: 20px; background: #f3f3f3; border-radius: 12px; }
 .market-scorecard strong { font-size: 2rem; }
+.market-decision{display:grid;grid-template-columns:minmax(260px,1.25fr) minmax(260px,1fr);gap:12px;margin:20px 0}.market-decision>div,.market-decision>article,.market-decision>dl{margin:0;padding:16px;background:var(--surface-base);border:1px solid var(--border-default);border-radius:var(--radius-panel)}.market-decision>div:first-child{border-top:3px solid var(--semantic-public)}.market-decision>div:first-child strong{display:block;margin:8px 0;font-size:2rem}.market-decision h2,.market-decision h3,.market-decision p{margin:0}.market-decision h3{margin-bottom:6px;font-size:14px}.market-decision dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-decision dt{color:var(--text-tertiary);font-size:10px;font-weight:700;text-transform:uppercase}.market-decision dd{margin:2px 0 0;overflow-wrap:anywhere;font-size:12px;font-weight:650}.market-decision>article:last-child{grid-column:1/-1}
 .market-trend { margin: 24px 0; }
 .market-trend svg { width: 100%; max-height: 280px; }
 .market-trend line { stroke: #222; stroke-width: 2; }
 .market-trend circle { fill: #111; }
+.market-trend line.primary{stroke:var(--text-primary)}.market-trend circle.primary{fill:var(--text-primary)}.market-trend line.comparison{stroke:var(--semantic-public);stroke-dasharray:7 5}.market-trend circle.comparison{fill:var(--surface-base);stroke:var(--semantic-public);stroke-width:2}.market-trend figcaption{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--text-secondary);font-size:12px}.market-trend figcaption span{display:flex;align-items:center;gap:7px}.market-trend figcaption p{flex-basis:100%;margin:0}.market-trend figcaption i{display:inline-block;width:24px;border-top:3px solid var(--text-primary)}.market-trend figcaption .market-line-comparison{border-top-color:var(--semantic-public);border-top-style:dashed}
 .market-trend text { fill: #444; font-size: 12px; }
 .market-table-scroll { width: 100%; overflow-x: auto; margin: 16px 0; border: 1px solid #ccc; border-radius: 8px; }
 .market-table-scroll table { border-collapse: collapse; min-width: max-content; font-variant-numeric: tabular-nums; }
@@ -21,5 +23,6 @@
 .market-table-scroll th button[aria-pressed=true] { font-weight: 800; text-decoration: underline; }
 .market-table-scroll td.high { background: #343434; color: white; }
 .market-table-scroll td.low { background: #e7e7e7; color: #151515; }
+.market-comparison-table{max-width:760px;margin:16px 0;overflow:auto;border:1px solid var(--border-default);border-radius:var(--radius-panel)}.market-comparison-table table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.market-comparison-table caption{text-align:left;padding:12px;font-weight:700}.market-comparison-table th,.market-comparison-table td{padding:9px 12px;border-top:1px solid var(--border-subtle);text-align:right}.market-comparison-table th:first-child{text-align:left}.market-source-summary{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
 .market-intelligence li { margin-block: 8px; }
-@media (max-width: 600px) { .market-controls { display: grid; grid-template-columns: minmax(0, 1fr); } .market-intelligence { padding-inline: 14px; } .market-table-scroll th:first-child { max-width: 115px; white-space: normal; } }
+@media (max-width: 900px) { .market-controls { display: grid; grid-template-columns: minmax(0, 1fr); } .market-intelligence { padding-inline: 14px; } .market-decision{grid-template-columns:1fr}.market-decision>article:last-child{grid-column:auto}.market-table-scroll th:first-child { max-width: 115px; white-space: normal; } }

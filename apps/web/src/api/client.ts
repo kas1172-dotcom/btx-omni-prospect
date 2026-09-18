@@ -1,4 +1,4 @@
-import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalProcurement, HostedSession, Itinerary, ItineraryStop, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniResponse, Principal, PublicLocation, ShortlistItem, Signal, StrategicPartnershipDesignation, Suggestion, WorkspaceSettings } from '../types/api'
+import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionHistoryEvent, ActionPriority, ActionStatus, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, CommunicationHistoryEvent, FederalAssessment, FederalProcurement, HostedSession, Itinerary, ItineraryStop, MapFilterOptions, MapIntelligence, MapRecord, MonitorHealth, OmniContext, OmniFederalSelection, OmniResponse, Principal, PublicLocation, ShortlistItem, Signal, StrategicPartnershipDesignation, Suggestion, WorkspaceSettings } from '../types/api'
 import type { RankedRelationships, RelationshipQuery } from '../types/relationships'
 import type { OmniMemory, OmniMemoryInput } from '../types/memory'
 import type { PendingMapAccount } from '../types/api'
@@ -38,6 +38,7 @@ export const api = {
   commercialEvidence: (accountId: string, recordId: string, signal?: AbortSignal) => actionRequest<{ account_id: string; revision: string; as_of: string; kind: string; truth_class: string; record: Record<string, unknown> }>(`/accounts/${encodeURIComponent(accountId)}/commercial/evidence?record_id=${encodeURIComponent(recordId)}`, { signal }),
   commercialDecisions: (accountId: string, signal?: AbortSignal) => actionRequest<CommercialDecisions>(`/accounts/${encodeURIComponent(accountId)}/commercial/decisions`, { signal }),
   commercialRecords: (accountId: string, collection: string, offset: number, signal?: AbortSignal) => actionRequest<{ account_id: string; revision: string; as_of?: string; reference?: Record<string, unknown>; records?: Record<string, unknown>[]; record_key?: string; total?: number; next_offset?: number | null }>(`/accounts/${encodeURIComponent(accountId)}/commercial/${encodeURIComponent(collection)}?offset=${offset}&limit=10`, { signal }),
+  commercialRecord: (accountId: string, collection: string, recordId: string, signal?: AbortSignal) => actionRequest<{ account_id: string; revision: string; as_of?: string; records: Record<string, unknown>[] }>(`/accounts/${encodeURIComponent(accountId)}/commercial/${encodeURIComponent(collection)}?record_id=${encodeURIComponent(recordId)}&limit=1`, { signal }),
   followupPreview: (accountId: string, actionId: string, signal?: AbortSignal) => actionRequest<FollowupPreview>(`/accounts/${encodeURIComponent(accountId)}/commercial/follow-ups/${encodeURIComponent(actionId)}/preview`, { method: 'POST', signal }),
   confirmFollowup: (accountId: string, actionId: string, previewToken: string) => actionRequest<Action>(`/accounts/${encodeURIComponent(accountId)}/commercial/follow-ups/${encodeURIComponent(actionId)}/confirm`, { method: 'POST', body: JSON.stringify({ preview_token: previewToken }) }),
   today: (signal?: AbortSignal) => request<{ priority_intelligence: Signal[]; commercial_alerts: Alert[]; recommended_actions: Array<{ account_id: string; action: string; evidence_ids: string[] }>; command_center: CommandCenter }>('/today', { signal }),
@@ -46,7 +47,8 @@ export const api = {
   marketSeries: (id: string, kind: MarketTransformation, average: boolean, signal?: AbortSignal) => actionRequest<MarketDetail>(`/markets/${encodeURIComponent(id)}?kind=${kind}&moving_average=${average}`, { signal }),
   intelligenceEvidence: (eventId: string, signal?: AbortSignal) => request<PublicSourceEvidence>(`/intelligence/${encodeURIComponent(eventId)}/evidence`, { signal }),
   federalProcurement: (params = '', signal?: AbortSignal) => request<FederalProcurement>(`/federal-procurement${params}`, { signal }),
-  map: (industry?: string, signal?: AbortSignal) => request<{ layers: string[]; accounts: MapRecord[]; pending_accounts?: PendingMapAccount[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[] }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : ''), { signal }),
+  federalAssessment: (id: string, signal?: AbortSignal) => actionRequest<FederalAssessment>(`/federal-procurement/assessments/${encodeURIComponent(id)}`, { signal }),
+  map: (industry?: string, signal?: AbortSignal) => request<{ layers: string[]; accounts: MapRecord[]; pending_accounts?: PendingMapAccount[]; facilities: PublicLocation[]; btx_facilities: BtxMapFacility[]; intelligence: MapIntelligence[]; filter_options: MapFilterOptions }>('/map' + (industry ? `?industry=${encodeURIComponent(industry)}` : ''), { signal }),
   currentItinerary: (signal?: AbortSignal) => actionRequest<{ itinerary: Itinerary | null }>('/itineraries/current', { signal }),
   saveItinerary: (body: { title: string; origin_label: string; origin_latitude: string | null; origin_longitude: string | null; stops: ItineraryStop[]; expected_version: number | null; idempotency_key: string }) => actionRequest<Itinerary>('/itineraries/current', { method: 'POST', body: JSON.stringify(body) }),
   accountPlanning: (signal?: AbortSignal) => actionRequest<AccountPlanning>('/planning', { signal }),
@@ -83,6 +85,14 @@ export const api = {
   createMemory: (body: OmniMemoryInput & { idempotency_key: string }) => actionRequest<OmniMemory>('/omni/memories', { method: 'POST', body: JSON.stringify(body) }),
   editMemory: (id: string, body: OmniMemoryInput & { expected_version: number }) => actionRequest<OmniMemory>(`/omni/memories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteMemory: (id: string, expected_version: number) => actionRequest<{ deleted: boolean }>(`/omni/memories/${encodeURIComponent(id)}/delete`, { method: 'POST', body: JSON.stringify({ expected_version }) }),
-  monitor: (signal?: AbortSignal) => request<MonitorHealth>('/monitor/health', { signal }),
+  monitor: (signal?: AbortSignal) => actionRequest<MonitorHealth>('/monitor/health', { signal }),
+}
+
+export async function resolveFederalAssessment(selection: OmniFederalSelection, signal?: AbortSignal): Promise<FederalAssessment | undefined> {
+  try { return await api.federalAssessment(selection.assessment_id, signal) }
+  catch {
+    const projection = await api.federalProcurement('', signal)
+    return projection.active.opportunities.map(item => item.assessment).find(item => item?.assessment_id === selection.assessment_id && item.assessment_version === selection.assessment_version && item.opportunity_id === selection.opportunity_id)
+  }
 }
 import type { CommercialDecisions, FollowupPreview } from '../types/decisions'

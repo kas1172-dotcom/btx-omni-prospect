@@ -25,7 +25,6 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
   await navigate(page, 'Map')
   await page.getByRole('button', { name: 'Layers & filters' }).click()
   const sheet = page.getByRole('dialog', { name: 'Layers & filters' })
-  await sheet.getByRole('button', { name: 'All researched' }).click()
   await sheet.getByRole('button', { name: 'Defense', exact: true }).click()
   await sheet.getByRole('button', { name: 'Commercial Aerospace', exact: true }).click()
   await sheet.getByRole('button', { name: 'Apply to map' }).click()

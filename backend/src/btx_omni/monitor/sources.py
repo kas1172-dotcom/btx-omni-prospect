@@ -22,6 +22,14 @@ from btx_omni.monitor.contracts import (
     SourceVersion,
 )
 from btx_omni.monitor.ontology import EventType
+from btx_omni.monitor.procurement import (
+    CoverageState,
+    ProcurementCheckpoint,
+    ProcurementCollectionResult,
+    initial_checkpoint,
+    next_incremental_window,
+    retry_at,
+)
 from btx_omni.providers.research.http import public_request
 
 
@@ -520,6 +528,177 @@ class SamAdapter(LiveSourceAdapter):
                 break
         return observations[:limit]
 
+    def collect_resumable(
+        self,
+        *,
+        run_id: str,
+        settings: Any,
+        checkpoints: tuple[ProcurementCheckpoint, ...],
+        collected_at: datetime,
+    ) -> ProcurementCollectionResult:
+        """Collect a fair, bounded set of SAM pages without losing continuation.
+
+        The public SAM API exposes posted-date windows plus offset pagination,
+        but no documented modified-date filter. Completed windows therefore
+        restart with a small posted-date overlap so amendments to active notices
+        are reconciled by stable notice ID and content hash.
+        """
+        allowed, reason = self.available(settings)
+        if not allowed:
+            raise PermissionError(reason or "SAM.gov is not configured")
+        verified = (
+            tuple(sorted({value.strip() for value in settings.monitor_sam_naics.split(",") if value.strip()}))
+            if settings.monitor_sam_naics_verification_state == "VERIFIED"
+            else ()
+        )
+        query_values = verified or ("ALL",)
+        page_size = settings.monitor_sam_page_size
+        lookback = (
+            settings.monitor_sam_backfill_days
+            if settings.monitor_sam_collection_mode.casefold() == "backfill"
+            else min(60, max(1, settings.monitor_public_lookback_days))
+        )
+        existing = {item.query_key: item for item in checkpoints}
+        work: list[ProcurementCheckpoint] = []
+        for value in query_values:
+            key = f"naics:{value}" if value != "ALL" else "all"
+            checkpoint = existing.get(key) or initial_checkpoint(
+                source_id="sam_gov", query_key=key, query_value=value,
+                now=collected_at, lookback_days=lookback, page_size=page_size,
+            )
+            checkpoint = replace(checkpoint, page_size=page_size)
+            work.append(checkpoint)
+        # Do not roll completed queries forward while sibling NAICS queries are
+        # still finishing the same governed window. Otherwise a small request
+        # budget could create an endless state where coverage is never complete.
+        if work and all(
+            item.query_key in existing
+            and item.coverage_state is CoverageState.COMPLETE
+            for item in work
+        ):
+            work = [
+                next_incremental_window(
+                    item,
+                    now=collected_at,
+                    overlap_days=settings.monitor_sam_overlap_days,
+                )
+                for item in work
+            ]
+        # Unfinished and least-recently-attempted queries go first. Stable query
+        # keys make fairness independent of configuration insertion order.
+        work.sort(key=lambda item: (
+            item.coverage_state is CoverageState.COMPLETE,
+            item.next_retry_at is not None and item.next_retry_at > collected_at,
+            item.last_attempt_at or datetime.min.replace(tzinfo=UTC),
+            item.query_key,
+        ))
+        budget = settings.monitor_sam_request_budget
+        observations: list[SourceObservation] = []
+        warnings: list[str] = []
+        updated: dict[str, ProcurementCheckpoint] = {item.query_key: item for item in work}
+        for checkpoint in work:
+            if budget <= 0:
+                break
+            if checkpoint.next_retry_at and checkpoint.next_retry_at > collected_at:
+                continue
+            query: dict[str, object] = {
+                "limit": checkpoint.page_size,
+                "offset": checkpoint.offset,
+                "api_key": settings.sam_api_key,
+                "postedFrom": checkpoint.window_start.strftime("%m/%d/%Y"),
+                "postedTo": checkpoint.window_end.strftime("%m/%d/%Y"),
+            }
+            if checkpoint.query_value != "ALL":
+                query["ncode"] = checkpoint.query_value
+            budget -= 1
+            try:
+                status, payload, _headers = self.get(
+                    f"{self.definition.api_base}?{urlencode(query)}",
+                    self.headers(settings),
+                )
+                if status == 429:
+                    failure_count = checkpoint.failure_count + 1
+                    updated[checkpoint.query_key] = replace(
+                        checkpoint,
+                        coverage_state=CoverageState.RATE_LIMITED,
+                        last_attempt_at=collected_at,
+                        next_retry_at=retry_at(collected_at, failure_count),
+                        failure_count=failure_count,
+                        last_error="RATE_LIMITED",
+                    )
+                    warnings.append(f"{checkpoint.query_key}:RATE_LIMITED")
+                    break
+                if status >= 400:
+                    raise RuntimeError(f"HTTP_{status}")
+                decoded = json.loads(payload)
+                rows = self.items(decoded)
+                total = int(decoded.get("totalRecords", len(rows)))
+                modified_values = []
+                for row in rows:
+                    raw_modified = row.get("lastModifiedDate") or row.get("modifiedDate")
+                    if raw_modified:
+                        try:
+                            parsed_modified = datetime.fromisoformat(str(raw_modified))
+                            modified_values.append(parsed_modified if parsed_modified.tzinfo else parsed_modified.replace(tzinfo=UTC))
+                        except ValueError:
+                            pass
+                    observation = self._observation(row, run_id, collected_at=collected_at)
+                    observation = replace(
+                        observation,
+                        source_identity=replace(
+                            observation.source_identity,
+                            source_native_ids=(
+                                *observation.source_identity.source_native_ids,
+                                ("governed_query", checkpoint.query_key),
+                            ),
+                        ),
+                    )
+                    observations.append(observation)
+                next_offset = checkpoint.offset + len(rows)
+                complete = not rows or next_offset >= total
+                updated[checkpoint.query_key] = replace(
+                    checkpoint,
+                    offset=next_offset,
+                    total_records=total,
+                    coverage_state=(
+                        CoverageState.COMPLETE
+                        if complete else CoverageState.AWAITING_CONTINUATION
+                    ),
+                    last_attempt_at=collected_at,
+                    last_success_at=collected_at,
+                    last_complete_at=collected_at if complete else checkpoint.last_complete_at,
+                    source_modified_at=max(modified_values) if modified_values else checkpoint.source_modified_at,
+                    next_retry_at=None,
+                    records_collected=checkpoint.records_collected + len(rows),
+                    failure_count=0,
+                    last_error=None,
+                )
+            except (json.JSONDecodeError, RuntimeError) as exc:
+                code = "MALFORMED_SOURCE_RESPONSE" if isinstance(exc, json.JSONDecodeError) else str(exc)[:80]
+                failure_count = checkpoint.failure_count + 1
+                updated[checkpoint.query_key] = replace(
+                    checkpoint,
+                    coverage_state=CoverageState.FAILED,
+                    last_attempt_at=collected_at,
+                    next_retry_at=retry_at(collected_at, failure_count),
+                    failure_count=failure_count,
+                    last_error=code,
+                )
+                warnings.append(f"{checkpoint.query_key}:{code}")
+        # A budget stop is normal continuation, not a source failure.
+        pending = sum(item.pending for item in updated.values())
+        if pending:
+            warnings.append(f"AWAITING_CONTINUATION:{pending}")
+        # The same notice may occur under multiple governed NAICS searches.
+        deduped = {
+            item.source_identity.source_record_id: item for item in observations
+        }
+        return ProcurementCollectionResult(
+            tuple(deduped.values()),
+            tuple(updated[key] for key in sorted(updated)),
+            tuple(dict.fromkeys(warnings)),
+        )
+
     def items(self, decoded: Any) -> list[dict[str, Any]]:
         return decoded.get("opportunitiesData", [])
 
@@ -661,6 +840,127 @@ class UsaSpendingAdapter(LiveSourceAdapter):
         # `limit` is apportioned per targeted recipient. Do not silently omit a
         # researched target merely because the roster is larger than one page.
         return observations
+
+    def collect_resumable(
+        self,
+        *,
+        run_id: str,
+        settings: Any,
+        checkpoints: tuple[ProcurementCheckpoint, ...],
+        collected_at: datetime,
+    ) -> ProcurementCollectionResult:
+        """Resume governed recipient award history independently per recipient."""
+        if not self.recipient_names:
+            raise PermissionError("USASPENDING_TARGET_RECIPIENTS_REQUIRED")
+        existing = {item.query_key: item for item in checkpoints}
+        work = []
+        for recipient in sorted(self.recipient_names):
+            key = "recipient:" + hashlib.sha256(recipient.casefold().encode()).hexdigest()[:16]
+            item = existing.get(key) or initial_checkpoint(
+                source_id="usaspending", query_key=key, query_value=recipient,
+                now=collected_at, lookback_days=90,
+                page_size=settings.monitor_usaspending_page_size,
+            )
+            work.append(replace(item, page_size=settings.monitor_usaspending_page_size))
+        if work and all(
+            item.query_key in existing
+            and item.coverage_state is CoverageState.COMPLETE
+            for item in work
+        ):
+            work = [
+                next_incremental_window(item, now=collected_at, overlap_days=7)
+                for item in work
+            ]
+        work.sort(key=lambda item: (
+            item.coverage_state is CoverageState.COMPLETE,
+            item.next_retry_at is not None and item.next_retry_at > collected_at,
+            item.last_attempt_at or datetime.min.replace(tzinfo=UTC), item.query_key,
+        ))
+        budget = settings.monitor_usaspending_request_budget
+        updated = {item.query_key: item for item in work}
+        observations = []
+        warnings = []
+        for item in work:
+            if budget <= 0:
+                break
+            if item.next_retry_at and item.next_retry_at > collected_at:
+                continue
+            page = max(1, item.offset)
+            body = json.dumps({
+                "filters": {
+                    "time_period": [{"start_date": item.window_start.date().isoformat(), "end_date": item.window_end.date().isoformat()}],
+                    "award_type_codes": ["A", "B", "C", "D"],
+                    "recipient_search_text": [item.query_value],
+                },
+                "fields": ["Award ID", "Description", "Award Amount", "Recipient Name", "Awarding Agency", "Awarding Sub Agency", "Award Type"],
+                "limit": item.page_size, "page": page, "subawards": False,
+            }).encode()
+            budget -= 1
+            try:
+                status, payload, _headers = self.post(
+                    self.definition.api_base, body,
+                    {"content-type": "application/json", **self.headers(settings)},
+                )
+                if status == 429:
+                    failure_count = item.failure_count + 1
+                    updated[item.query_key] = replace(
+                        item, coverage_state=CoverageState.RATE_LIMITED,
+                        last_attempt_at=collected_at,
+                        next_retry_at=retry_at(collected_at, failure_count),
+                        failure_count=failure_count, last_error="RATE_LIMITED",
+                    )
+                    warnings.append(f"{item.query_key}:RATE_LIMITED")
+                    break
+                if status >= 400:
+                    raise RuntimeError(f"HTTP_{status}")
+                decoded = json.loads(payload)
+                rows = self.items(decoded)
+                for award_row in rows:
+                    combined = self._combine_award_and_transaction(
+                        award_row,
+                        self._latest_transaction(
+                            award_row.get("generated_internal_id"), settings
+                        ),
+                    )
+                    observation = self._observation(combined, run_id, collected_at=collected_at)
+                    observations.append(replace(
+                        observation,
+                        source_identity=replace(
+                            observation.source_identity,
+                            source_native_ids=(("governed_query", item.query_key),),
+                        ),
+                    ))
+                metadata = decoded.get("page_metadata") or {}
+                has_next = metadata.get("hasNext")
+                complete = (not bool(has_next)) if has_next is not None else len(rows) < item.page_size
+                updated[item.query_key] = replace(
+                    item, offset=page + 1, total_records=metadata.get("total"),
+                    coverage_state=CoverageState.COMPLETE if complete else CoverageState.AWAITING_CONTINUATION,
+                    last_attempt_at=collected_at, last_success_at=collected_at,
+                    last_complete_at=collected_at if complete else item.last_complete_at,
+                    next_retry_at=None,
+                    records_collected=item.records_collected + len(rows),
+                    failure_count=0, last_error=None,
+                )
+            except (json.JSONDecodeError, RuntimeError) as exc:
+                code = "MALFORMED_SOURCE_RESPONSE" if isinstance(exc, json.JSONDecodeError) else str(exc)[:80]
+                failure_count = item.failure_count + 1
+                updated[item.query_key] = replace(
+                    item, coverage_state=CoverageState.FAILED,
+                    last_attempt_at=collected_at,
+                    next_retry_at=retry_at(collected_at, failure_count),
+                    failure_count=failure_count, last_error=code,
+                )
+                warnings.append(f"{item.query_key}:{code}")
+        pending = sum(item.pending for item in updated.values())
+        if pending:
+            warnings.append(f"AWAITING_CONTINUATION:{pending}")
+        deduped = {item.source_identity.source_record_id: item for item in observations}
+        return ProcurementCollectionResult(
+            tuple(deduped.values()),
+            tuple(updated[key] for key in sorted(updated)),
+            tuple(dict.fromkeys(warnings)),
+        )
 
     def _latest_transaction(
         self, generated_id: object, settings: Any

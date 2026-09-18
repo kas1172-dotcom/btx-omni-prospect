@@ -209,6 +209,28 @@ def create(
         supported = set(assessment["projection"].get("evidence_ids", ())) | {assessment["id"]}
         if not set(body.evidence_ids) <= supported:
             raise HTTPException(422, "Action evidence must come from the selected current Intelligence assessment.")
+    federal_ids = [value for kind, value in body.context_referents if kind == "federal_assessment"]
+    if federal_ids:
+        if len(federal_ids) != 1 or not runtime.monitor.repository:
+            raise HTTPException(409, "Choose one current federal assessment for this proposal.")
+        federal = runtime.monitor.repository.federal_assessment_by_id(federal_ids[0])
+        refs = dict(body.context_referents)
+        if not federal or not federal["is_current"]:
+            raise HTTPException(409, "The federal assessment changed; refresh before creating the proposal.")
+        projection = federal["projection"]
+        if refs.get("federal_opportunity") != federal["opportunity_id"] or refs.get("federal_assessment_version") != str(federal["version"]):
+            raise HTTPException(409, "The federal opportunity context is incomplete or stale.")
+        route = next((item for item in projection.get("routes", ()) if item.get("route_type") == refs.get("federal_route_type") and item.get("account_id") == body.account_id), None)
+        if route is None:
+            raise HTTPException(422, "The selected federal route does not support this organization.")
+        partner = refs.get("strategic_partnership")
+        if partner and (route.get("route_type") != "STRATEGIC_PARTNER" or partner != body.account_id):
+            raise HTTPException(422, "The selected route does not support this strategic partnership.")
+        supported = {federal["id"], *projection.get("evidence_references", ())}
+        if not set(body.evidence_ids) <= supported:
+            raise HTTPException(422, "Action evidence must come from the selected current federal assessment.")
+        if body.title.strip() != route.get("governed_action"):
+            raise HTTPException(422, "The proposal must preserve the governed federal validation step.")
     try:
         return runtime.work.create(
             **body.model_dump(), principal=current, occurred_at=runtime.observed_at()

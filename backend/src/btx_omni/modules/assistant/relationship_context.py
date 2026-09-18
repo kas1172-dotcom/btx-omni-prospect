@@ -3,6 +3,10 @@ from datetime import date
 from decimal import Decimal
 
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
+from btx_omni.modules.relationships.presentation import (
+    seller_route_evidence_label,
+    seller_route_predicate_label,
+)
 from btx_omni.modules.relationships.routes import RouteQuery
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 
@@ -37,7 +41,9 @@ def selected_relationship_context(environment, selection: dict, *, account_id: s
     components = "; ".join(c['label'] for c in route["component_context"])
     reasons = " ".join(item["reason"] for item in route["factor_reasons"])
     constraints = " ".join(item["reason"] for item in route["constraints"])
-    content = f"Selected connection: {connection}. Component scope: {components or 'published role scope'}. Why useful: {reasons} Limiting fact: {constraints or 'Current qualification and spare capacity are not established by this route.'} Next action: {route['next_action']}"
+    weakest = min(route["factor_reasons"], key=lambda item: (item["B"], item["E"], item["F"])) if route["factor_reasons"] else None
+    route_state = seller_route_evidence_label(weakest["truth_class"] if weakest else "NEEDS_VALIDATION")
+    content = f"Selected connection: {connection}. Route status: {route_state}. Component scope: {components or 'recorded role scope'}. Why useful: {reasons} Weakest or unresolved connection: {weakest['reason'] if weakest else constraints or 'Current qualification and spare capacity are not established by this route.'} Limiting fact: {constraints or 'Current qualification and spare capacity are not established by this route.'} Next validation action: {route['next_action']}"
     financial_facts = []
     account_names = {item.id: item.legal_name for item in environment.accounts}
     for item in records:
@@ -56,7 +62,7 @@ def selected_relationship_context(environment, selection: dict, *, account_id: s
             from btx_omni.modules.commercial.money import model_money_projection
             expanded_content += f"\nAccount-wide trailing-12-month summary for {account_names.get(aid, 'the selected account')}, through {ledger['as_of']}: {model_money_projection(ledger['ttm_summary'], currency=ledger['currency'])}."
     source_links = tuple(
-        {"label": f"Supporting source for {assertion['predicate'].replace('_', ' ').lower()}", "url": assertion["source_url"]}
+        {"label": f"Supporting source for {seller_route_predicate_label(assertion['predicate'])}", "url": assertion["source_url"]}
         for assertion in route.get("assertions", ())
         if assertion.get("source_url")
     )

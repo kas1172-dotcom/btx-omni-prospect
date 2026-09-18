@@ -12,6 +12,89 @@ from btx_omni.modules.commercial.read import CommercialAccountSnapshot
 from btx_omni.providers.sample.environment import SampleEnvironment
 
 
+def organization_360_projection(*, account, commercial: CommercialAccountSnapshot, signals: list[dict[str, Any]]) -> dict[str, Any]:
+    """Project one governed organization mode without asking the UI or a model to classify it."""
+    relationship = account.relationship.value
+    has_commercial_history = bool(
+        commercial.commercial_context
+        or commercial.quotes
+        or commercial.orders
+    )
+    confirmed_customer = relationship in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}
+    contradictory = has_commercial_history and not confirmed_customer
+    if contradictory:
+        mode = "RELATIONSHIP_REVIEW"
+        title = "Relationship needs review"
+        rationale = "Canonical commercial records exist, but the governed organization classification does not confirm a customer relationship."
+    elif confirmed_customer:
+        mode = "CUSTOMER"
+        title = "Customer 360"
+        rationale = "The canonical account classification confirms a current or former BTX customer relationship."
+    elif relationship in {"PROSPECT", "TARGET", "PUBLIC_MARKET"}:
+        mode = "PROSPECT"
+        title = "Prospect 360"
+        rationale = "No confirmed BTX commercial relationship is present in the governed account classification."
+    else:
+        mode = "RELATIONSHIP_REVIEW"
+        title = "Relationship needs review"
+        rationale = "The governed relationship classification is unresolved."
+
+    assessments = [
+        item.get("business_briefing")
+        for item in signals
+        if isinstance(item.get("business_briefing"), dict)
+    ]
+    expansion = next(
+        (
+            item
+            for item in assessments
+            if confirmed_customer
+            and item.get("analysis_status") == "READY"
+            and item.get("commercial_relevance_state")
+            in {
+                "REVIEW_REQUIRED",
+                "ESTABLISHED_ACCOUNT_REVIEW",
+                "ESTABLISHED_COMMERCIAL_RELEVANCE",
+            }
+            and (
+                item.get("technical_opportunity")
+                or (item.get("evidence_package") or {}).get("technical_decomposition")
+            )
+        ),
+        None,
+    )
+    return {
+        "mode": mode,
+        "title": title,
+        "relationship_label": (
+            "Confirmed BTX customer"
+            if confirmed_customer
+            else "Relationship needs review"
+            if mode == "RELATIONSHIP_REVIEW"
+            else "No confirmed BTX commercial relationship"
+        ),
+        "classification_basis": rationale,
+        "classification_source": {
+            "owner": "canonical_account.relationship",
+            "source_system": getattr(account.provenance, "source_system", None),
+            "source_record_id": getattr(account.provenance, "source_record_id", None),
+        },
+        "has_commercial_history": has_commercial_history,
+        "expansion_pursuit": (
+            {
+                "assessment_id": expansion.get("assessment_id"),
+                "assessment_version": expansion.get("assessment_version"),
+                "event_id": expansion.get("id"),
+                "headline": expansion.get("headline"),
+                "program_id": expansion.get("canonical_program_id"),
+                "governed_action": expansion.get("recommended_action"),
+            }
+            if expansion
+            else None
+        ),
+    }
+
+
 def _provenance(item: object) -> dict[str, Any]:
     provenance = getattr(item, "provenance", None)
     if provenance is None:

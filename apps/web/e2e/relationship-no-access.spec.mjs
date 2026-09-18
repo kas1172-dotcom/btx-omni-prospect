@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { openRelationshipWorkspace } from './helpers.mjs'
 
 test('documented-access absence retains canonical query metadata and recovers to shared experience', async ({ page }, testInfo) => {
   await page.goto('/#/accounts/kla')
-  const section = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
+  const section = await openRelationshipWorkspace(page)
   await expect(section.getByRole('combobox', { name: 'Objective', exact: true })).toBeVisible()
   const response = page.waitForResponse(r => r.url().endsWith('/api/relationships/query') && r.request().postDataJSON()?.mode === 'documented_access')
   await section.getByRole('combobox', { name: 'Objective', exact: true }).selectOption('documented_access')

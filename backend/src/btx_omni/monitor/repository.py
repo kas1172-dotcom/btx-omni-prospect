@@ -8,8 +8,10 @@ from contextlib import contextmanager
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from threading import Event, RLock, Thread
 
 from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, update
+from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.classification import Classification, SensitivityTag
 from btx_omni.core.provenance import Provenance
@@ -37,8 +39,11 @@ from btx_omni.monitor.ontology import (
     ResolutionState,
     SellerRelevanceState,
 )
+from btx_omni.monitor.procurement import CoverageState, ProcurementCheckpoint
 from btx_omni.monitor.research_state import MonitorResearchJournal
 from btx_omni.persistence.models import (
+    federal_collection_checkpoints,
+    federal_opportunity_assessments,
     governed_explanations,
     monitor_brief_syntheses,
     monitor_candidate_promotion_audits,
@@ -250,28 +255,210 @@ class MonitorRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
         self.research = MonitorResearchJournal(engine)
+        self._federal_assessment_lock = RLock()
 
     @contextmanager
-    def operational_lock(self):
-        """Hold one cross-process PostgreSQL lock for a collection cycle."""
+    def operational_lock(self, *, heartbeat_interval_seconds: float = 30.0):
+        """Hold and keep alive one cross-process lock for a collection cycle."""
         if self.engine.dialect.name != "postgresql":
             yield True
             return
-        with self.engine.connect() as connection:
+        with self.engine.connect().execution_options(
+            isolation_level="AUTOCOMMIT"
+        ) as connection:
             acquired = bool(
                 connection.execute(
                     text("SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))")
                 ).scalar_one()
             )
+            stop_heartbeat = Event()
+            heartbeat_failed = Event()
+
+            def keep_lock_connection_alive() -> None:
+                while not stop_heartbeat.wait(heartbeat_interval_seconds):
+                    try:
+                        connection.execute(text("SELECT 1"))
+                    except SQLAlchemyError:
+                        heartbeat_failed.set()
+                        return
+
+            heartbeat = None
+            if acquired:
+                heartbeat = Thread(
+                    target=keep_lock_connection_alive,
+                    name="monitor-operational-lock-heartbeat",
+                    daemon=True,
+                )
+                heartbeat.start()
             try:
                 yield acquired
             finally:
+                stop_heartbeat.set()
+                if heartbeat:
+                    heartbeat.join()
                 if acquired:
+                    if heartbeat_failed.is_set():
+                        raise RuntimeError(
+                            "Monitor operational lock connection was lost during collection."
+                        )
                     connection.execute(
                         text(
                             "SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))"
                         )
                     )
+
+    def procurement_checkpoints(
+        self, source_id: str
+    ) -> tuple[ProcurementCheckpoint, ...]:
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(federal_collection_checkpoints)
+                .where(federal_collection_checkpoints.c.source_id == source_id)
+                .order_by(federal_collection_checkpoints.c.query_key)
+            ).mappings()
+            return tuple(
+                ProcurementCheckpoint(
+                    source_id=row["source_id"],
+                    query_key=row["query_key"],
+                    query_value=row["query_value"],
+                    window_start=_database_timestamp(row["window_start"]),
+                    window_end=_database_timestamp(row["window_end"]),
+                    offset=row["offset"],
+                    page_size=row["page_size"],
+                    total_records=row["total_records"],
+                    coverage_state=CoverageState(row["coverage_state"]),
+                    last_attempt_at=_database_timestamp(row["last_attempt_at"])
+                    if row["last_attempt_at"] else None,
+                    last_success_at=_database_timestamp(row["last_success_at"])
+                    if row["last_success_at"] else None,
+                    last_complete_at=_database_timestamp(row["last_complete_at"])
+                    if row["last_complete_at"] else None,
+                    next_retry_at=_database_timestamp(row["next_retry_at"])
+                    if row["next_retry_at"] else None,
+                    source_modified_at=_database_timestamp(row["source_modified_at"])
+                    if row["source_modified_at"] else None,
+                    records_collected=row["records_collected"],
+                    records_created=row["records_created"],
+                    records_updated=row["records_updated"],
+                    records_unchanged=row["records_unchanged"],
+                    records_rejected=row["records_rejected"],
+                    failure_count=row["failure_count"],
+                    last_error=row["last_error"],
+                )
+                for row in rows
+            )
+
+    def persist_procurement_checkpoints(
+        self, checkpoints: tuple[ProcurementCheckpoint, ...]
+    ) -> None:
+        with self.engine.begin() as connection:
+            for item in checkpoints:
+                connection.execute(
+                    delete(federal_collection_checkpoints).where(
+                        federal_collection_checkpoints.c.source_id == item.source_id,
+                        federal_collection_checkpoints.c.query_key == item.query_key,
+                    )
+                )
+                connection.execute(
+                    insert(federal_collection_checkpoints).values(
+                        **{
+                            **asdict(item),
+                            "coverage_state": item.coverage_state.value,
+                            "updated_at": item.last_attempt_at or item.window_end,
+                        }
+                    )
+                )
+
+    def procurement_coverage(self, source_id: str | None = "sam_gov") -> tuple[dict, ...]:
+        checkpoints = (
+            self.procurement_checkpoints(source_id)
+            if source_id
+            else tuple(
+                item
+                for owner in ("sam_gov", "usaspending")
+                for item in self.procurement_checkpoints(owner)
+            )
+        )
+        return tuple(
+            {
+                **asdict(item),
+                "coverage_state": item.coverage_state.value,
+                "pending_continuation": item.pending,
+            }
+            for item in checkpoints
+        )
+
+    def current_federal_assessments(self) -> tuple[dict, ...]:
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(federal_opportunity_assessments)
+                .where(federal_opportunity_assessments.c.is_current.is_(True))
+                .order_by(federal_opportunity_assessments.c.opportunity_id)
+            ).mappings()
+            return tuple(
+                {**dict(row), "projection": json.loads(row["projection"])}
+                for row in rows
+            )
+
+    def federal_assessment_by_id(
+        self, assessment_id: str, *, version: int | None = None
+    ) -> dict | None:
+        """Read one persisted assessment without reconstructing its projection."""
+        with self.engine.connect() as connection:
+            query = select(federal_opportunity_assessments).where(
+                federal_opportunity_assessments.c.id == assessment_id
+            )
+            if version is not None:
+                query = query.where(federal_opportunity_assessments.c.version == version)
+            row = connection.execute(query).mappings().one_or_none()
+            return (
+                {**dict(row), "projection": json.loads(row["projection"])}
+                if row
+                else None
+            )
+
+    def persist_federal_assessment(
+        self, projection: dict, *, now: datetime
+    ) -> dict:
+        opportunity_id = projection["opportunity_id"]
+        source_revision = projection["source_revision"]
+        input_revision = projection["input_revision"]
+        with self._federal_assessment_lock, self.engine.begin() as connection:
+            if connection.dialect.name == "postgresql":
+                connection.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtext(:key))"),
+                    {"key": f"federal-assessment:{opportunity_id}"},
+                )
+            current = connection.execute(
+                select(federal_opportunity_assessments).where(
+                    federal_opportunity_assessments.c.opportunity_id == opportunity_id,
+                    federal_opportunity_assessments.c.is_current.is_(True),
+                )
+            ).mappings().one_or_none()
+            if current and current["input_revision"] == input_revision:
+                return {**dict(current), "projection": json.loads(current["projection"])}
+            version = (current["version"] + 1) if current else 1
+            if current:
+                connection.execute(
+                    update(federal_opportunity_assessments)
+                    .where(federal_opportunity_assessments.c.id == current["id"])
+                    .values(is_current=False)
+                )
+            identifier = hashlib.sha256(
+                f"{opportunity_id}|{version}|{input_revision}".encode()
+            ).hexdigest()
+            values = {
+                "id": identifier,
+                "opportunity_id": opportunity_id,
+                "source_revision": source_revision,
+                "input_revision": input_revision,
+                "version": version,
+                "is_current": True,
+                "projection": json.dumps(projection, sort_keys=True),
+                "created_at": now,
+            }
+            connection.execute(insert(federal_opportunity_assessments).values(**values))
+            return {**values, "projection": projection}
 
     def persist_snapshot(
         self,

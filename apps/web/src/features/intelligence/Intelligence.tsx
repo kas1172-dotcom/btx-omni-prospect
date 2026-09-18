@@ -2,9 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account,
   CommandCenter,
-  MonitorHealth,
   MonitorSignalBrief,
+  OmniAssessmentSelection,
   OmniContext,
+  OmniFederalSelection,
+  FederalAssessment,
+  FederalOpportunity,
+  FederalRoute,
   Signal,
   WorkspaceSettings,
 } from "../../types/api";
@@ -23,6 +27,8 @@ import { curatedSignalBrief } from "../../components/signalBriefModel";
 import { FederalProcurementView } from "./FederalProcurement";
 import { MarketIntelligence } from "./MarketIntelligence";
 import { IntelligenceBriefing } from "./IntelligenceBriefing";
+import { presentationLabel } from "../../components/presentation";
+import type { WorkspaceLocation } from "../../app/navigation";
 import "./intelligence.css";
 
 type Filters = {
@@ -43,11 +49,7 @@ const markets = [
   "Robotics",
   "Energy",
 ];
-const label = (value: string) =>
-  value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/^./, (char) => char.toUpperCase());
+const label = (value: string) => presentationLabel(value);
 const date = (value?: string) =>
   value
     ? new Date(value).toLocaleDateString("en-US", { timeZone: "UTC" })
@@ -56,12 +58,6 @@ const when = (brief: MonitorSignalBrief) =>
   brief.relevant_event_timestamp ??
   brief.publication_timestamp ??
   brief.collection_timestamp;
-const mode = (value: string) =>
-  ({
-    LIVE_PUBLIC: "CONNECTED public",
-    CURATED_PUBLIC: "Curated public",
-    SAMPLE: "BTX commercial context",
-  })[value] ?? label(value);
 const unique = (values: string[]) =>
   [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -110,13 +106,15 @@ function Card({
   brief: MonitorSignalBrief;
   rank?: number;
   name: (id: string) => string;
-  onAccount: (id: string) => void;
+  onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onSelect: (brief: MonitorSignalBrief) => void;
   selected: boolean;
   onCreateAction: (brief: MonitorSignalBrief) => void;
   onOpenBriefing: (brief: MonitorSignalBrief) => void;
 }) {
   const accountId = brief.canonical_account_ids[0];
+  const complete = brief.analysis_status === "READY";
+  const uncertainty = brief.material_uncertainties?.[0] ?? (!complete ? brief.missing_fields[0] : undefined);
   return (
     <article
       className={`intelligence-card ${selected ? "selected" : ""}`}
@@ -132,26 +130,24 @@ function Card({
           </span>
           <span>{date(when(brief))}</span>
         </div>
-        <div className="intelligence-card-states">
-          <State value={mode(brief.data_mode)} />
-          <State value={label(brief.freshness)} />
-        </div>
+        <div className="intelligence-card-states"><State value={brief.analysis_status ?? "PENDING_ANALYSIS"} /><State value={brief.freshness} /></div>
       </header>
       <div className="intelligence-card-main">
         <button
           className="intelligence-customer-link"
           disabled={!accountId}
-          onClick={() => accountId && onAccount(accountId)}
+          onClick={() => accountId && onAccount(accountId, brief.assessment_id && brief.assessment_version ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined)}
         >
           {accountId ? name(accountId) : "Customer association unavailable"}
         </button>
         <h3>{brief.headline}</h3>
-        <p>{brief.seller_summary}</p>
+        <p>{complete ? brief.seller_summary : "Account-specific analysis is still in progress. The source remains available while the commercial implication is assessed."}</p>
       </div>
       <section className="intelligence-bottom-line">
         <span>Why it matters</span>
-        <strong>{brief.why_it_may_matter}</strong>
-        {brief.recommended_action && (
+        <strong>{complete ? brief.why_it_may_matter : "The commercial implication has not yet been established."}</strong>
+        {uncertainty && <p><b>Still uncertain:</b> {uncertainty}</p>}
+        {complete && brief.recommended_action && (
           <p>
             <b>Next:</b> {brief.recommended_action}
           </p>
@@ -211,51 +207,46 @@ export function Intelligence({
   signals,
   accounts,
   commandCenter,
-  monitor,
   settings,
   onAccount,
   onEventSelect,
   onCreateAction,
+  onFederalAccount,
+  onFederalPartnership,
+  onFederalRelationship,
+  onFederalOmni,
+  onFederalAction,
   onOmniContext,
+  location,
+  onLocationChange,
 }: {
   signals: Signal[];
   accounts: Account[];
   commandCenter?: CommandCenter;
-  monitor?: MonitorHealth;
   settings?: WorkspaceSettings;
-  onAccount: (id: string) => void;
+  onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onEventSelect: (id?: string) => void;
   onCreateAction: (brief: MonitorSignalBrief) => void;
+  onFederalAccount: (id: string, selection: OmniFederalSelection, assessment: FederalAssessment) => void;
+  onFederalPartnership: (id: string, selection: OmniFederalSelection, assessment: FederalAssessment) => void;
+  onFederalRelationship: (id: string, selection: OmniFederalSelection, assessment: FederalAssessment) => void;
+  onFederalOmni: (selection: OmniFederalSelection) => void;
+  onFederalAction: (opportunity: FederalOpportunity, route: FederalRoute) => void;
   onOmniContext: (
-    context: Pick<OmniContext, "selected_assessment" | "active_filters" | "visible_record_ids">,
+    context: Pick<OmniContext, "selected_assessment" | "selected_federal_opportunity" | "active_filters" | "visible_record_ids">,
   ) => void;
+  location: WorkspaceLocation;
+  onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void;
 }) {
-  const [workspace, setWorkspace] = useState<"monitor" | "federal" | "markets">(() => window.location.hash.startsWith('#/intelligence/markets') ? 'markets' : window.location.hash.startsWith('#/intelligence/federal') ? 'federal' : 'monitor');
-  useEffect(() => {
-    const changed = () => setWorkspace(window.location.hash.startsWith('#/intelligence/markets') ? 'markets' : window.location.hash.startsWith('#/intelligence/federal') ? 'federal' : 'monitor');
-    window.addEventListener('hashchange', changed);
-    return () => window.removeEventListener('hashchange', changed);
-  }, []);
+  const workspace: "monitor" | "federal" | "markets" = location.subview === 'markets' ? 'markets' : location.subview === 'federal' ? 'federal' : 'monitor';
   const selectWorkspace = (next: "monitor" | "federal" | "markets") => {
-    setWorkspace(next);
-    window.location.hash = `/intelligence${next === 'monitor' ? '' : `/${next}`}`;
+    onLocationChange({ surface: 'intelligence', subview: next === 'monitor' ? undefined : next }, 'push');
   };
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<Filters>(empty);
-  const [sort, setSort] = useState<Sort>("PRIORITY");
-  const [selected, setSelected] = useState<string>();
-  const [briefingId, setBriefingId] = useState<string>(() => {
-    const match = window.location.hash.match(/^#\/intelligence\/brief\/([^/]+)$/);
-    return match ? decodeURIComponent(match[1]) : "";
-  });
-  useEffect(() => {
-    const changed = () => {
-      const match = window.location.hash.match(/^#\/intelligence\/brief\/([^/]+)$/);
-      setBriefingId(match ? decodeURIComponent(match[1]) : "");
-    };
-    window.addEventListener("hashchange", changed);
-    return () => window.removeEventListener("hashchange", changed);
-  }, []);
+  const [query, setQuery] = useState(() => String(location.filters?.query ?? ""));
+  const [filters, setFilters] = useState<Filters>(() => ({ customer: String(location.filters?.customer ?? ''), market: String(location.filters?.market ?? ''), source: String(location.filters?.source ?? ''), timing: String(location.filters?.timing ?? '') }));
+  const [sort, setSort] = useState<Sort>(() => ['PRIORITY', 'MOST_RECENT', 'UPCOMING_EVENT', 'CUSTOMER'].includes(location.sort ?? '') ? location.sort as Sort : 'PRIORITY');
+  const [selected, setSelected] = useState<string | undefined>(location.recordId ?? location.assessment?.assessmentId);
+  const briefingId = location.subview === 'brief' ? location.recordId ?? '' : '';
   const byId = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
     [accounts],
@@ -285,7 +276,7 @@ export function Intelligence({
   );
   const base = useMemo(() => {
     const items = new Map<string, MonitorSignalBrief>();
-    [...priority, ...current, ...curated].forEach((item) =>
+    [...curated, ...current, ...priority].forEach((item) =>
       items.set(briefKey(item), item),
     );
     return [...items.values()];
@@ -355,12 +346,16 @@ export function Intelligence({
       ),
     [filters, query],
   );
+  useEffect(() => {
+    if (location.surface !== 'intelligence' || workspace !== 'monitor') return
+    onLocationChange({ ...location, filters: { ...(query ? { query } : {}), ...(filters.customer ? { customer: filters.customer } : {}), ...(filters.market ? { market: filters.market } : {}), ...(filters.source ? { source: filters.source } : {}), ...(filters.timing ? { timing: filters.timing } : {}) }, sort }, 'replace')
+  }, [filters, location, onLocationChange, query, sort, workspace]);
   const sources = unique(base.map((item) => item.source_system));
   const tracked = commandCenter?.watched_accounts ?? [];
   useEffect(() => () => onEventSelect(undefined), [onEventSelect]);
   useEffect(() => {
     if (workspace === 'markets') return;
-    const selectedBrief = base.find((item) => briefKey(item) === selected);
+    const selectedBrief = base.find((item) => briefKey(item) === selected || item.assessment_id === location.assessment?.assessmentId);
     onOmniContext({
       selected_assessment: selectedBrief?.assessment_id && selectedBrief.assessment_version && selectedBrief.canonical_account_ids[0] ? {
         assessment_id: selectedBrief.assessment_id,
@@ -376,8 +371,7 @@ export function Intelligence({
       },
       visible_record_ids: ordered.map((item) => item.id).slice(0, 50),
     });
-  }, [active, base, onOmniContext, ordered, selected, workspace]);
-  useEffect(() => () => onOmniContext({}), [onOmniContext]);
+  }, [active, base, location.assessment?.assessmentId, onOmniContext, ordered, selected, workspace]);
   const select = (brief: MonitorSignalBrief) => {
     const contextId = briefKey(brief);
     const next = selected === contextId ? undefined : contextId;
@@ -387,12 +381,11 @@ export function Intelligence({
   const openBriefing = (brief: MonitorSignalBrief) => {
     setSelected(briefKey(brief));
     onEventSelect(brief.id);
-    setBriefingId(briefKey(brief));
-    window.location.hash = `/intelligence/brief/${encodeURIComponent(briefKey(brief))}`;
+    const accountId = brief.canonical_account_ids[0]
+    onLocationChange({ ...location, subview: 'brief', recordId: briefKey(brief), eventId: brief.id, assessment: brief.assessment_id && brief.assessment_version && accountId ? { assessmentId: brief.assessment_id, assessmentVersion: brief.assessment_version, eventId: brief.id, accountId } : undefined, anchor: briefKey(brief) }, 'push');
   };
   const closeBriefing = () => {
-    setBriefingId("");
-    window.location.hash = "/intelligence";
+    onLocationChange({ ...location, subview: undefined, recordId: undefined }, 'push');
   };
   const tiles = [
     {
@@ -427,7 +420,7 @@ export function Intelligence({
       <Button onClick={() => selectWorkspace('federal')}>Federal Procurement</Button>
       <Button aria-current="page">Market Intelligence</Button>
     </nav>
-    <MarketIntelligence accounts={accounts} onAccount={onAccount} onOmniContext={onOmniContext} />
+    <MarketIntelligence accounts={accounts} onAccount={onAccount} onOmniContext={onOmniContext} location={location} onLocationChange={onLocationChange} />
   </>;
   if (workspace === "federal")
     return (
@@ -441,7 +434,7 @@ export function Intelligence({
             <Button onClick={() => selectWorkspace('markets')}>Market Intelligence</Button>
           </nav>
         </div>
-        <FederalProcurementView />
+        <FederalProcurementView location={location} onLocationChange={onLocationChange} onAccount={onFederalAccount} onPartnership={onFederalPartnership} onRelationship={onFederalRelationship} onAskOmni={onFederalOmni} onCreateAction={onFederalAction} onOmniContext={onOmniContext} />
       </>
     );
   const selectedBriefing = base.find((item) => briefKey(item) === briefingId)
@@ -518,7 +511,7 @@ export function Intelligence({
                   <span>{brief.what_happened}</span>
                 </div>
                 <small>
-                  {date(when(brief))} · {mode(brief.data_mode)}
+                  {date(when(brief))} · {presentationLabel(brief.analysis_status ?? "PENDING_ANALYSIS", "assessment")}
                 </small>
               </li>
             ))}
@@ -734,20 +727,6 @@ export function Intelligence({
           </Empty>
         )}
       </Panel>
-      <Disclosure
-        title={`Source health · ${monitor?.sources.length ?? 0} configured source records`}
-        className="intelligence-source-health"
-      >
-        <div>
-          {monitor?.sources.map((source) => (
-            <p key={source.source_id}>
-              <b>{source.source_name ?? source.source_id}</b> ·{" "}
-              {label(source.state ?? "UNAVAILABLE")} · last collection{" "}
-              {date(source.last_success_at)}
-            </p>
-          )) ?? <p>Monitor health is unavailable.</p>}
-        </div>
-      </Disclosure>
     </div>
   );
 }
