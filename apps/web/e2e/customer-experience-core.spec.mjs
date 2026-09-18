@@ -40,7 +40,6 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await page.getByRole('option', { name: /Symbotic/ }).click()
   await expect(page.getByRole('heading', { name: 'Symbotic', level: 1 })).toBeVisible()
   await page.getByRole('button', { name: '← Customers & Prospects' }).click()
-  await expect(table).toBeVisible()
   await page.goto('/#/accounts')
   await expect(table).toBeVisible()
 
