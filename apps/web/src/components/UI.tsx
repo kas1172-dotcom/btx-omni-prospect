@@ -8,13 +8,16 @@ type ButtonSize = 'compact' | 'touch' | 'icon'
 export function PrecisionLoader({ size = 'medium', className = '' }: { size?: 'compact' | 'medium' | 'large'; className?: string }) {
   return <span className={`ui-precision-loader ui-precision-loader-${size} ${className}`.trim()} aria-hidden="true">
     <svg viewBox="0 0 80 80" focusable="false">
-      <ellipse className="ui-precision-orbit" cx="20" cy="18" rx="15" ry="8" transform="rotate(-24 20 18)" />
-      <circle className="ui-precision-core" cx="20" cy="18" r="7" />
-      <circle className="ui-precision-glint" cx="17" cy="15" r="2" />
-      <path className="ui-precision-staff-metal" d="M27 25 66 65" />
-      <path className="ui-precision-staff-accent" d="M29 27 64 63" />
-      <path className="ui-precision-collar" d="m23 21 13 5-9 9Z" />
-      <circle className="ui-precision-tip" cx="67" cy="66" r="3" />
+      <circle className="ui-precision-chuck-ring" cx="40" cy="40" r="31" />
+      <circle className="ui-precision-chuck-guide" cx="40" cy="40" r="24" />
+      <g className="ui-precision-chuck-jaws">
+        <path d="M35 9h10l3 17-8 7-8-7Z" />
+        <path d="M35 9h10l3 17-8 7-8-7Z" transform="rotate(120 40 40)" />
+        <path d="M35 9h10l3 17-8 7-8-7Z" transform="rotate(240 40 40)" />
+      </g>
+      <circle className="ui-precision-workpiece" cx="40" cy="40" r="11" />
+      <circle className="ui-precision-bore" cx="40" cy="40" r="4" />
+      <circle className="ui-precision-index" cx="40" cy="40" r="34" />
     </svg>
   </span>
 }

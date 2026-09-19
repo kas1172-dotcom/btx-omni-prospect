@@ -60,20 +60,20 @@
   display: inline-grid;
   flex: none;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   transform-origin: center;
   animation: precision-orbit 1.15s cubic-bezier(.55,.12,.45,.88) infinite;
 }
 .ui-precision-loader-compact { width: 18px; height: 18px; }
-.ui-precision-loader-large { width: 82px; height: 82px; }
+.ui-precision-loader-large { width: 58px; height: 58px; }
 .ui-precision-loader svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.ui-precision-orbit { fill: none; stroke: var(--precision-loader-metal); stroke-width: 3.5; }
-.ui-precision-core { fill: var(--precision-loader-core); stroke: #fff; stroke-width: 2; }
-.ui-precision-glint { fill: #fff; }
-.ui-precision-staff-metal { fill: none; stroke: var(--precision-loader-metal); stroke-width: 8; stroke-linecap: round; }
-.ui-precision-staff-accent { fill: none; stroke: var(--precision-loader-accent); stroke-width: 3.5; stroke-linecap: round; }
-.ui-precision-collar,.ui-precision-tip { fill: var(--precision-loader-metal); stroke: #fff; stroke-width: 1; }
+.ui-precision-chuck-ring { fill: #f7f8fa; stroke: var(--precision-loader-core); stroke-width: 3; }
+.ui-precision-chuck-guide { fill: none; stroke: var(--precision-loader-metal); stroke-width: 1.5; stroke-dasharray: 2 4; }
+.ui-precision-chuck-jaws { fill: var(--precision-loader-metal); stroke: var(--precision-loader-core); stroke-width: 1.25; stroke-linejoin: round; }
+.ui-precision-workpiece { fill: var(--precision-loader-core); stroke: #fff; stroke-width: 2; }
+.ui-precision-bore { fill: #fff; stroke: var(--precision-loader-metal); stroke-width: 1.5; }
+.ui-precision-index { fill: none; stroke: var(--precision-loader-accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 18 196; }
 .ui-button-primary .ui-precision-loader { --precision-loader-accent: #fff; --precision-loader-metal: #d9dde2; }
 .ui-loading-status { display: flex; align-items: center; gap: 9px; margin: 8px 0; color: var(--text-secondary); }
 .ui-loading-status .ui-precision-loader { align-self: center; }
