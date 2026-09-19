@@ -46,6 +46,57 @@ from btx_omni.monitor.research import MonitorResearchCoordinator
 from btx_omni.providers.research.technical_programs import references_for_text
 
 
+def _select_technical_briefs(briefs, *, limit: int):
+    """Choose bounded technical work by commercial usefulness, not row order.
+
+    A previously analysed event must not permanently consume a scarce provider
+    slot while a current, account-resolved event is still waiting.  The final
+    identifier tie-break keeps the queue deterministic across insertion order.
+    """
+    if limit <= 0:
+        return ()
+    eligible_states = {
+        "RESOLVED_ELIGIBLE",
+        "RESOLVED_NEEDS_REVIEW",
+        "WITHHELD_STALE",
+    }
+    relevance_order = {
+        "ESTABLISHED_COMMERCIAL_RELEVANCE": 0,
+        "ESTABLISHED_ACCOUNT_REVIEW": 1,
+        "REVIEW_REQUIRED": 2,
+        "PLAUSIBLE_FIT_REQUIRES_VALIDATION": 2,
+        "INFORMATIONAL": 3,
+        "INCOMPLETE": 4,
+        "UNASSESSED": 5,
+    }
+
+    def priority(brief):
+        technical = brief.technical_opportunity or {}
+        already_available = technical.get("provider_status") == "AVAILABLE"
+        coverage = float((brief.signal_confidence or {}).get("coverage", 0) or 0)
+        published = (
+            brief.publication_timestamp.timestamp()
+            if brief.publication_timestamp is not None
+            else float("-inf")
+        )
+        return (
+            0 if brief.seller_promotion_state in eligible_states else 1,
+            0 if len(brief.canonical_account_ids) == 1 else 1,
+            0 if not already_available else 1,
+            relevance_order.get(brief.commercial_relevance_state, 6),
+            -coverage,
+            -published,
+            brief.id,
+        )
+
+    candidates = {
+        brief.id: brief
+        for brief in briefs
+        if requires_technical_investigation(brief.event_type)
+    }
+    return tuple(sorted(candidates.values(), key=priority)[:limit])
+
+
 def run_worker(
     settings: Settings,
     *,
@@ -194,13 +245,10 @@ def run_worker(
                 investigations.append(investigation)
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
             provider = get_ai_provider(AiConfig.from_settings(settings))
-            technical_briefs = tuple(
-                {
-                    brief.id: brief
-                    for brief in projected_briefs()
-                    if requires_technical_investigation(brief.event_type)
-                }.values()
-            )[: settings.monitor_technical_decomposition_cap]
+            technical_briefs = _select_technical_briefs(
+                projected_briefs(),
+                limit=settings.monitor_technical_decomposition_cap,
+            )
             for brief in technical_briefs:
                 if not can_start_optional("TECHNICAL_DECOMPOSITION"):
                     break

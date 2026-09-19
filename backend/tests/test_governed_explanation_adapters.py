@@ -97,9 +97,10 @@ def test_customer_adapter_preserves_deterministic_score_and_missingness() -> Non
     )
     assert request.explanation_type.value == "CUSTOMER_ATTRACTIVENESS"
     assert request.subject_display_name == "Boeing"
-    assert str(projection.score) in request.deterministic_result
+    assert projection.score is None
+    assert "unavailable" in request.deterministic_result
     assert projection.score_unit in request.deterministic_result
-    assert request.numeric_value == str(projection.score)
+    assert request.numeric_value is None
     assert request.score_unit == projection.score_unit
     assert request.configuration_version == projection.configuration_version
     assert projection.data_mode == request.data_mode

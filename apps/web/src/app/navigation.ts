@@ -1,6 +1,6 @@
 import type { FederalRoute } from '../types/api'
 
-export type Surface = 'today' | 'accounts' | 'intelligence' | 'map' | 'actions' | 'communications' | 'settings' | 'monitor'
+export type Surface = 'today' | 'opportunities' | 'accounts' | 'intelligence' | 'map' | 'actions' | 'communications' | 'settings' | 'monitor'
 export type LocationScope = 'ACCOUNT' | 'FACILITY'
 export type NavigationMode = 'push' | 'replace' | 'none'
 
@@ -27,10 +27,10 @@ export interface WorkspaceLocation {
 }
 export interface DecodedWorkspaceLocation { location: WorkspaceLocation; canonicalHash: string; recovery?: 'malformed' | 'unsupported' }
 
-const surfaces = new Set<Surface>(['today', 'accounts', 'intelligence', 'map', 'actions', 'communications', 'settings', 'monitor'])
+const surfaces = new Set<Surface>(['today', 'opportunities', 'accounts', 'intelligence', 'map', 'actions', 'communications', 'settings', 'monitor'])
 const routeTypes = new Set<FederalRoute['route_type']>(['DIRECT_BTX', 'CUSTOMER_EXPANSION', 'STRATEGIC_PARTNER', 'NEW_PROSPECT', 'MARKET_WATCH'])
 const allowedSubviews: Record<Surface, Set<string>> = {
-  today: new Set(['recovery']), accounts: new Set(['overview', 'partnership', 'relationships', 'record']),
+  opportunities: new Set(), today: new Set(['recovery']), accounts: new Set(['overview', 'partnership', 'relationships', 'record']),
   intelligence: new Set(['monitor', 'brief', 'federal', 'markets']), map: new Set(['map', 'list']),
   actions: new Set(['actions', 'suggestions', 'completed']), communications: new Set(),
   settings: new Set(['personal', 'access', 'integrations']), monitor: new Set(),

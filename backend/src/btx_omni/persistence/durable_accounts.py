@@ -112,6 +112,7 @@ def _account_payload(value: CanonicalAccount) -> str:
         "public_research_state": value.public_research_state, "research_account_id": value.research_account_id,
         "prospect_research_priority": value.prospect_research_priority, "prospect_rationale": value.prospect_rationale,
         "secondary_classifications": list(value.secondary_classifications),
+        "prospect_fit_evidence": value.prospect_fit_evidence,
         "public_identity": None if identity is None else {
             "verification_state": identity.verification_state.value,
             "legal_name": _field_payload(identity.legal_name), "display_name": _field_payload(identity.display_name),
@@ -148,6 +149,7 @@ def _account_from_payload(payload: str) -> CanonicalAccount:
         tuple(value["business_units"]), value.get("parent_account_id"), tuple(value["contact_role_families"]), provenance,
         value["public_research_state"], identity, value.get("research_account_id"), public_relationship,
         value.get("prospect_research_priority"), value.get("prospect_rationale"), (), tuple(value["secondary_classifications"]),
+        prospect_fit_evidence=value.get('prospect_fit_evidence', {}),
     )
 
 

@@ -21,7 +21,8 @@ export interface NavigationAuthority {
 
 export const NAVIGATION_DESTINATIONS: readonly NavigationDestination[] = [
   { surface: 'today', label: 'Today', route: '#/today', job: 'Review the next commercial decisions.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },
-  { surface: 'accounts', label: 'Customers & Prospects', route: '#/accounts', job: 'Investigate organizations and account work.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },
+  { surface: 'opportunities', label: 'Opportunities', route: '#/opportunities', job: 'Evaluate specific expansion and prospecting pursuits.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },
+  { surface: 'accounts', label: 'Profiles', route: '#/accounts', job: 'Investigate organizations and account work.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },
   { surface: 'intelligence', label: 'Intelligence', route: '#/intelligence', job: 'Review public developments, market shifts, and account implications.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },
   { surface: 'map', label: 'Map', route: '#/map', job: 'Explore organizations, facilities, and nearby opportunities.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },
   { surface: 'actions', label: 'Actions', route: '#/actions', job: 'Manage assigned follow-ups and approvals.', requiredCapability: 'authenticated', desktop: 'primary', mobile: 'primary', group: 'commercial' },

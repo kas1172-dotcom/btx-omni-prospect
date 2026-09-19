@@ -85,6 +85,13 @@ class OmniFederalSelection(BaseModel):
     partnership_id: str | None = Field(default=None, max_length=64)
 
 
+class OmniCommercialSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    account_id: str = Field(min_length=1, max_length=64)
+    opportunity_id: str = Field(min_length=1, max_length=220)
+    revision: str = Field(min_length=1, max_length=128)
+
+
 class OmniContext(BaseModel):
     """Bounded passive product context; distinct from the user's explicit scope."""
 
@@ -96,6 +103,7 @@ class OmniContext(BaseModel):
     selected_event_id: str | None = None
     selected_assessment: OmniAssessmentSelection | None = None
     selected_federal_opportunity: OmniFederalSelection | None = None
+    selected_commercial_opportunity: OmniCommercialSelection | None = None
     selected_facility_id: str | None = None
     selected_program_id: str | None = None
     selected_action_id: str | None = None

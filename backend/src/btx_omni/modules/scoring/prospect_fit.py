@@ -6,7 +6,8 @@ required by the approved rubric until every applicable factor is known.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER
 
@@ -46,7 +47,26 @@ _DEFINITIONS = (
 )
 
 
-def prospect_fit_projection(account, *, applicable: bool) -> ProspectFitProjection:
+def _points(key, raw):
+    bins = {
+        'target_cohort_match': {'PRIMARY': 100, 'ADJACENT': 75, 'EXPLORATORY': 50, 'EXCLUDED': 0},
+        'manufacturing_fit': {'TWO_MATCHING_SITES': 100, 'ONE_MATCHING_SITE': 75, 'PARENT_OVERLAP': 50, 'COMPONENT_ADJACENCY': 25, 'MISMATCH': 0},
+        'outsourcing_posture': {'ACTIVE_RELEVANT_SOURCING': 100, 'EXTERNAL_SUPPLIERS': 75, 'MIXED': 50, 'HISTORICAL': 25, 'CURRENT_CAPTIVE': 0},
+        'strategic_archetype': {'OEM_PRIME_BUYING_AUTHORITY': 100, 'TIER_ONE': 75, 'COMPONENT_MANUFACTURER': 50, 'INTERMEDIARY': 25, 'NO_BUYING_FUNCTION': 0},
+        'existing_btx_access': {'BUYER_TWO_WAY': 100, 'WILLING_INTRODUCER': 75, 'QUOTE_WITHIN_365_DAYS': 50, 'RELEVANT_NAMED_CONTACT': 25, 'RESEARCHED_NO_ACCESS': 0},
+    }
+    if key != 'scale':
+        return bins[key].get(raw.get('state'))
+    try:
+        revenue = Decimal(str(raw.get('organization_ttm_revenue_usd')))
+    except InvalidOperation:
+        return None
+    if not revenue.is_finite() or revenue < 0:
+        return None
+    return 100 if revenue >= 1_000_000_000 else 75 if revenue >= 100_000_000 else 50 if revenue >= 25_000_000 else 25 if revenue > 0 else 0
+
+
+def prospect_fit_projection(account, *, applicable: bool, as_of: date | None = None) -> ProspectFitProjection:
     if not applicable:
         return ProspectFitProjection(False, None, None, None, Decimal(), "NOT_APPLICABLE", CONFIGURATION_VERSION, (), ())
 
@@ -55,12 +75,24 @@ def prospect_fit_projection(account, *, applicable: bool) -> ProspectFitProjecti
     in_primary_cohort = bool(approved_markets.intersection(account.industries))
     factors: list[ProspectFitFactor] = []
     for key, label, weight in _DEFINITIONS:
-        if key == "target_cohort_match" and account.industries:
-            points = weight if in_primary_cohort else Decimal()
+        raw = account.prospect_fit_evidence.get(key, {})
+        clock = as_of or (account.provenance.observed_at.date() if account.provenance else None)
+        try:
+            age = (clock - date.fromisoformat(raw.get('reviewed_as_of', ''))).days if clock else None
+        except (ValueError, TypeError):
+            age = None
+        valid = (raw.get('account_id') == account.id and raw.get('evidence_ids') and raw.get('source_urls')
+                 and raw.get('review_state') == 'VERIFIED' and age is not None and 0 <= age <= (30 if key == 'existing_btx_access' else 180))
+        normalized = _points(key, raw) if valid else None
+        if normalized is not None:
+            factors.append(ProspectFitFactor(key, label, weight, Decimal(normalized) * weight / 100,
+                raw.get('reason') or f'{label} follows the documented organization evidence.', tuple(raw['evidence_ids'])))
+        elif key == "target_cohort_match" and account.industries and evidence and not raw:
+            points = weight if in_primary_cohort else None
             reason = (
                 "The canonical account classification includes an approved primary BTX market."
                 if in_primary_cohort
-                else "The canonical account classification is outside the approved primary BTX markets."
+                else "An adjacent, exploratory or excluded classification has not been reviewed."
             )
             factors.append(ProspectFitFactor(key, label, weight, points, reason, evidence))
         else:

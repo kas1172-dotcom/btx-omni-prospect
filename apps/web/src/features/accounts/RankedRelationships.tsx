@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { api } from '../../api/client'
-import type { CanonicalGraphEdge, CanonicalGraphNode, RankedRelationships as Result, RankedRoute, RelationshipMode } from '../../types/relationships'
+import type { RankedRelationships as Result, RelationshipMode } from '../../types/relationships'
 import './ranked-relationships.css'
 import { CommercialEvidence } from './CommercialEvidence'
 import type { OmniContext } from '../../types/api'
@@ -11,7 +11,7 @@ import { LoadingStatus } from '../../components/UI'
 
 const modes: Array<[RelationshipMode, string]> = [['cross_account_experience', 'Shared experience'], ['commercial_fit', 'Commercial fit'], ['contact_candidates', 'Contact candidates'], ['documented_access', 'Documented access']]
 const label = (value: string) => presentationLabel(value, 'relationship')
-type Point = { x: number; y: number }
+import { graphDepths, initialGraphPositions, type Point } from './relationshipLayout'
 type VisualRelation = 'commercial' | 'people' | 'technical' | 'facility' | 'risk' | 'context'
 
 const nodeSymbols: Record<string, string> = { account: 'CO', business_unit: 'BU', facility: 'FX', person: 'PR', role: 'RL', program: 'PG', component: 'CP', component_class: 'CP', capability: 'CA', certification: 'QC', public_event: 'IN', opportunity: 'OP' }
@@ -25,52 +25,6 @@ const relationClass = (predicate: string): VisualRelation => {
   return 'context'
 }
 const evidenceClass = (truthClass: string) => /hypothesis|unresolved/i.test(truthClass) ? 'hypothesis' : /infer|candidate|requires_validation/i.test(truthClass) ? 'inferred' : 'recorded'
-const stableNumber = (value: string) => [...value].reduce((total, character) => ((total * 31) + character.charCodeAt(0)) >>> 0, 2166136261)
-
-function graphDepths(nodes: CanonicalGraphNode[], edges: CanonicalGraphEdge[], selected?: RankedRoute) {
-  const depths = new Map<string, number>()
-  selected?.node_ids.forEach((id, index) => depths.set(id, index))
-  const origin = selected?.node_ids[0] ?? nodes[0]?.id
-  if (!origin) return depths
-  depths.set(origin, 0)
-  const adjacency = new Map<string, string[]>()
-  edges.forEach(edge => { adjacency.set(edge.source, [...(adjacency.get(edge.source) ?? []), edge.target]); adjacency.set(edge.target, [...(adjacency.get(edge.target) ?? []), edge.source]) })
-  const queue = [origin]
-  while (queue.length) {
-    const current = queue.shift() as string
-    const nextDepth = (depths.get(current) ?? 0) + 1
-    for (const adjacent of adjacency.get(current) ?? []) if (!depths.has(adjacent)) { depths.set(adjacent, nextDepth); queue.push(adjacent) }
-  }
-  return depths
-}
-
-function initialGraphPositions(result: Result, selected: RankedRoute | undefined, mobile: boolean, previous: Map<string, Point>) {
-  const positions = new Map(previous)
-  const depths = graphDepths(result.graph.nodes, result.graph.edges, selected)
-  if (mobile) {
-    selected?.node_ids.forEach((id, index) => { if (!positions.has(id)) positions.set(id, { x: 155, y: 95 + index * 172 }) })
-    result.graph.nodes.filter(node => !positions.has(node.id)).toSorted((a, b) => a.id.localeCompare(b.id)).forEach((node, index) => positions.set(node.id, { x: 155, y: 95 + ((selected?.node_ids.length ?? 0) + index) * 172 }))
-    return positions
-  }
-  const center = { x: 220, y: 390 }
-  selected?.node_ids.forEach((id, index) => {
-    if (positions.has(id)) return
-    if (index === 0) { positions.set(id, center); return }
-    const radius = Math.min(560, 60 + index * 160)
-    const angle = -.34 + index * .08
-    positions.set(id, { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius })
-  })
-  const contextByDepth = new Map<number, CanonicalGraphNode[]>()
-  result.graph.nodes.filter(node => !positions.has(node.id)).forEach(node => { const depth = Math.min(6, Math.max(1, depths.get(node.id) ?? 2)); contextByDepth.set(depth, [...(contextByDepth.get(depth) ?? []), node]) })
-  contextByDepth.forEach((nodesAtDepth, depth) => nodesAtDepth.toSorted((a, b) => a.id.localeCompare(b.id)).forEach((node, index) => {
-    const radius = Math.min(560, 60 + depth * 160)
-    let angle = -1.28 + (2.56 * (index + 1) / (nodesAtDepth.length + 1)) + ((stableNumber(node.id) % 12) / 100)
-    let point = { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
-    for (let attempts = 0; attempts < 16 && [...positions.values()].some(other => Math.hypot(other.x - point.x, other.y - point.y) < 205); attempts++) { angle = Math.min(1.42, angle + .17); point = { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius } }
-    positions.set(node.id, point)
-  }))
-  return positions
-}
 
 export function RankedRelationships({ accountId, initialMode, initialPathId, onSelection, onOmniContext }: { accountId: string; initialMode?: string; initialPathId?: string; onSelection?: (pathId: string | undefined, mode: RelationshipMode) => void; onOmniContext: (context: Pick<OmniContext, 'relationship_selection'>) => void }) {
   const [mode, setMode] = useState<RelationshipMode>(() => modes.some(([value]) => value === initialMode) ? initialMode as RelationshipMode : 'cross_account_experience')
@@ -125,8 +79,8 @@ export function RankedRelationships({ accountId, initialMode, initialPathId, onS
   useEffect(() => () => onOmniContext({ relationship_selection: undefined }), [onOmniContext])
   const layoutKey = JSON.stringify([accountId, result?.mode, result?.scope?.target_ids, result?.scope?.source_component_id, result?.scope?.target_component_id, mobile])
   const positions = new Map([...layout.positions].filter(([id]) => result?.graph.nodes.some(n => n.id === id) && (expanded || selected?.node_ids.includes(id))))
-  const stageHeight = mobile ? Math.max(520, ...[...positions.values()].map(p => p.y + 90)) : 780
-  const stageWidth = mobile ? 310 : 1200
+  const stageHeight = Math.max(mobile ? 520 : 600, ...[...positions.values()].map(p => p.y + 90))
+  const stageWidth = mobile ? 310 : Math.max(560, ...[...positions.values()].map(p => p.x + 110))
   const edge = result?.graph.edges.find(e => e.id === selectedEdge)
   const node = result?.graph.nodes.find(n => n.id === selectedNode)
   const visibleDepths = useMemo(() => result ? graphDepths(result.graph.nodes, result.graph.edges, selected) : new Map<string, number>(), [result, selected])
@@ -171,9 +125,9 @@ export function RankedRelationships({ accountId, initialMode, initialPathId, onS
         <p className="ranked-direction-legend">Color identifies relationship type; line weight reflects the selected route's recorded strength; pattern identifies evidence state. Arrowheads show the recorded direction.</p>
         {result?.graph.context_complete === false && <p role="status">Partial context: {label(result.graph.context_stop_reason ?? 'budget reached')}. Route-search completeness is reported separately.</p>}
         <div className="ranked-network-controls"><button disabled={pending || !!error || contextPage === 0} onClick={() => pageContext(contextPage - 1)}>Previous context page</button><span>Context page {contextPage + 1} of {result?.graph.page_count ?? 1}</span><button disabled={pending || !!error || contextPage + 1 >= (result?.graph.page_count ?? 1)} onClick={() => pageContext(contextPage + 1)}>Next context page</button><button disabled={!focusHistory.length} onClick={() => { setSelectedNode(focusHistory.at(-1)); setFocusHistory(history => history.slice(0, -1)) }}>Back focus</button></div>
-        <button onClick={() => { if (result) setLayout({ key: layoutKey, positions: initialGraphPositions(result, selected, mobile, new Map()) }); setExpanded(false); setZoom(mobile ? Math.max(.6, Math.min(1, 620 / (180 + (selected.node_ids.length - 1) * 180))) : 1) }}>Fit selected route</button>
+        <button disabled={pending || !!error} onClick={() => { if (result) setLayout({ key: layoutKey, positions: initialGraphPositions(result, selected, mobile, new Map()) }); setExpanded(false); const height = mobile ? 185 + (selected.node_ids.length - 1) * 172 : Math.max(600, 220 + Math.floor((selected.node_ids.length - 1) / 2) * 210); setZoom(Math.min(1, (stageRef.current?.clientWidth ?? 560) / (mobile ? 310 : 560), (mobile ? 550 : 670) / height)); stageRef.current?.scrollTo({ top: 0, left: 0 }) }}>Fit selected route</button>
         <div ref={stageRef} className="ranked-stage" tabIndex={0} aria-label="Scrollable relationship network; arrow keys scroll"><svg width={stageWidth * zoom} height={stageHeight * zoom} viewBox={`0 0 ${stageWidth} ${stageHeight}`} role="group" aria-label="Canonical relationship network"><defs><marker id={`route-arrow-${accountId}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" /></marker><radialGradient id={`origin-halo-${accountId}`}><stop offset="0" stopColor="#36c5f0" stopOpacity=".18" /><stop offset="1" stopColor="#36c5f0" stopOpacity="0" /></radialGradient></defs>
-          {!mobile && <g className="ranked-depth-field" aria-hidden="true"><circle className="origin-halo" cx="220" cy="390" r="145" fill={`url(#origin-halo-${accountId})`} />{Array.from({ length: Math.min(6, Math.max(1, selected.hop_count)) }, (_, index) => { const radius = Math.min(560, 220 + index * 160); return <g key={`${radius}:${index}`}><circle cx="220" cy="390" r={radius} /><text x={220 + radius - 48} y="382">Hop {index + 1}</text></g> })}</g>}
+          {!mobile && <g className="ranked-depth-field" aria-hidden="true">{selected.node_ids.map((id, index) => { const point = positions.get(id); return point ? <g key={id}><circle cx={point.x} cy={point.y} r="108" /><text x={point.x - 40} y={point.y - 84}>{index === 0 ? 'Origin' : `Hop ${index}`}</text></g> : null })}</g>}
           {result?.graph.edges.map(item => {
             const a = positions.get(item.source); const b = positions.get(item.target); if (!a || !b) return null
             const parallel = result.graph.edges.filter(e => [item.source, item.target].includes(e.source) && [item.source, item.target].includes(e.target)).sort((x, y) => x.id.localeCompare(y.id))

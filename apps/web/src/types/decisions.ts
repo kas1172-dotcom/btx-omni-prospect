@@ -3,6 +3,8 @@ import type { ActionPriority } from './api'
 export interface CommercialDecision {
   decision_id: string; family: string; subject_id: string; as_of: string; revision: string
   configuration_version: string; score: string | number | null; status: string
+  score_range?: { low: string | number; high: string | number }
+  priority_rank?: number; priority_class?: number
   interpretation: string; eligibility_reasons: string[]; blocking_constraints: string[]
   factors: Array<{ key: string; points: string | number | null; reason: string; weight: number; evidence_ids: string[]; required_fields: string[]; observed_fields: string[] }>
   data_coverage: { present: number; applicable: number; ratio: string | number; missing_fields: string[] }

@@ -538,7 +538,8 @@ def assemble_evidence_package(
         "analysis_eligibility": analysis_state,
         "commercial_relevance_state": relevance,
         "priority_eligible": relevance
-        in {"ESTABLISHED_ACCOUNT_REVIEW", "ESTABLISHED_COMMERCIAL_RELEVANCE"},
+        in {"ESTABLISHED_ACCOUNT_REVIEW", "ESTABLISHED_COMMERCIAL_RELEVANCE"}
+        and (brief.signal_confidence or {}).get('seller_recommendation_eligible', True),
         "why_it_matters": why,
         "recommended_action": action,
         "action_rationale": rationale,

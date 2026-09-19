@@ -25,6 +25,7 @@ const developmentPrincipalHeaders: Record<string, string> = import.meta.env.DEV
 const actionRequest = <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, headers: { 'content-type': 'application/json', ...developmentPrincipalHeaders, ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}) } })
 
 export const api = {
+  opportunities: (signal?: AbortSignal) => actionRequest<{ opportunities: import('../types/opportunities').Opportunity[]; revision: string }>('/accounts/workspace/opportunities', { signal }),
   omniRun: (id: string, signal?: AbortSignal) => actionRequest<OmniRun>(`/omni/runs/${encodeURIComponent(id)}`, { signal }),
   aiUsage: (signal?: AbortSignal) => actionRequest<AiUsageSummary>('/settings/ai-usage', { signal }),
   session: async () => { const value = await request<HostedSession>('/session'); csrfToken = value.csrf_token; return value },

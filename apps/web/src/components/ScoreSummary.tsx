@@ -13,8 +13,8 @@ const sellerInterpretation = (value: string) => value.startsWith('IMPLEMENTATION
   : value
 const coverageText = (coverage?: ScoreSummaryModel['coverage']) => {
   if (!coverage) return 'Completeness has not been calculated.'
+  if (coverage.ratio != null) return `${Math.round(Number(coverage.ratio) * 100)}% weighted evidence coverage.`
   if (coverage.present != null && coverage.applicable != null) return `${coverage.present} of ${coverage.applicable} applicable inputs supported.`
-  if (coverage.ratio != null) return `${Math.round(Number(coverage.ratio) * 100)}% of applicable inputs supported.`
   return 'Completeness has not been calculated.'
 }
 
@@ -25,7 +25,8 @@ export function ScoreSummary({ model, compact = false }: { model: ScoreSummaryMo
     {!compact && <><p className="score-summary-decision"><strong>Decision supported:</strong> {model.decision}</p><p>{available ? sellerInterpretation(model.interpretation) : 'A decision score is not available from the current supported inputs.'}</p><dl><div><dt>Subject</dt><dd>{model.subject}</dd></div>{model.asOf && <div><dt>As of</dt><dd>{model.asOf}</dd></div>}</dl></>}
     <p className="score-summary-coverage"><strong>Data Coverage</strong> · {coverageText(model.coverage)} Coverage describes completeness and never raises this decision score.</p>
     {!compact && <Disclosure title="Formula, inputs and supporting evidence">
-      {!!model.positiveFactors?.length && <section><h4>Most important positive factors</h4><ul>{model.positiveFactors.map(factor => <li key={factor.label}><strong>{factor.label}</strong>{factor.value != null ? ` · ${factor.value}` : ''}<span>{factor.detail}</span></li>)}</ul></section>}
+      {model.numericValue != null && <p>Calculated result: {model.numericValue}/100. This does not change eligibility or override a mandatory constraint.</p>}
+      {!!model.positiveFactors?.length && <section><h4>Factors driving this result</h4><ul>{model.positiveFactors.map(factor => <li key={factor.label}><strong>{factor.label}</strong>{factor.value != null ? ` · ${factor.value}` : ''}<span>{factor.detail}</span></li>)}</ul></section>}
       {!!model.limitingFactors?.length && <section><h4>Limiting factors</h4><ul>{model.limitingFactors.map(factor => <li key={factor.label}><strong>{factor.label}</strong>{factor.value != null ? ` · ${factor.value}` : ''}<span>{factor.detail}</span></li>)}</ul></section>}
       {!!model.missingInputs?.length && <section><h4>Missing required inputs</h4><ul>{model.missingInputs.map(input => <li key={input}>{words(input)}</li>)}</ul></section>}
       <p className="muted">The configured formula and source inputs are unchanged; this summary does not recalculate the score.{model.version ? ` Score model: ${words(model.version)}.` : ''}</p>

@@ -20,7 +20,9 @@ test('attention uses deterministic assessment outcomes and labeled high medium l
 
 test('decision summaries separate change impact uncertainty and next decision', () => {
   for (const label of ['What changed', 'Why it may matter', 'Next decision', 'still unconfirmed']) assert.match(signal, new RegExp(label, 'i'))
-  assert.match(accounts, /curatedSignalBrief\(sourceSignal, detail\.account\)/)
+  assert.match(accounts, /persistedBrief\?\.analysis_status === 'READY' \? persistedBrief : undefined/)
+  assert.doesNotMatch(accounts, /curatedSignalBrief\(sourceSignal/)
+  assert.match(accounts, /detail\.commercial_briefing\?\.explanation/)
   assert.doesNotMatch(accounts, /No material uncertainty is currently recorded/)
   assert.match(accounts, /program-level BTX fit and a commercial route have not yet been established/)
   assert.match(intelligence, /Research direction · not yet assessed/)

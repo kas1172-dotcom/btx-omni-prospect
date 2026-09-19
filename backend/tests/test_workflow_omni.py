@@ -227,7 +227,8 @@ def test_omni_explains_alerts_coordination_matching_and_truthful_missingness() -
     )
     assert dormant.recommended_action
     assert stale.citations and stale.recommended_action
-    assert "CROSS_BU_COORDINATION" in cross_bu.content
+    assert "Business-unit coordination" in cross_bu.content
+    assert "CROSS_BU_COORDINATION" not in cross_bu.content
     assert "AWARD_CONTRACT" in defense.content and "EXACT_PART" in defense.content
     assert external.citations
     assert (
@@ -253,8 +254,8 @@ def test_omni_supports_grounded_unscoped_and_session_follow_up_context() -> None
     assert overview.citation_links and overview.recommended_action
     assert follow_up.account_id == "boeing" and follow_up.account_name == "Boeing"
     assert (
-        "Account Attractiveness" in follow_up.content
-        and "CROSS_BU_COORDINATION" in follow_up.content
+        "Attractiveness belongs to a specific expansion or prospecting opportunity" in follow_up.content
+        and "Business-unit coordination" in follow_up.content
     )
     assert "cannot perform CRM writes" in follow_up.content
 
@@ -832,7 +833,8 @@ def test_omni_relationship_routing_preserves_account_and_unrelated_routes() -> N
         context={"selected_account_id": "spirit-aerosystems"},
     )
     assert "Defense researched account(s) with open quotes" in cross_account.content
-    assert "Account Attractiveness" in score.content
+    assert "Attractiveness belongs to a specific expansion or prospecting opportunity" in score.content
+    assert "Account Attractiveness" not in score.content
     assert "Account briefing for Boeing" in named_account.content
     assert "curated public-company universe" in general.content
 
@@ -1065,15 +1067,15 @@ def test_omni_cross_account_score_ranking_uses_canonical_scores_filters_and_boun
         context={"active_filters": {"market": "Robotics"}},
     )
     assert (
-        "Ranked by the existing canonical Account Attractiveness score"
+        "No scoped opportunities in this selection have complete Attractiveness inputs"
         in ranked.content
     )
-    assert ranked.content.count("coverage") <= 5
-    assert "Boeing" in filtered.content and "Intel" not in filtered.content
+    assert "Organization-level scores are not a substitute" in ranked.content
+    assert "No scoped opportunities" in filtered.content and "Intel" not in filtered.content
     assert filtered.context_used == {"filters": {"market": "Defense"}}
     assert robotics.context_used == {"filters": {"market": "Robotics"}}
     assert (
-        "1 matching account(s) have no available canonical attractiveness score."
+        "Review opportunity-specific evidence before ranking potential business."
         in robotics.missingness
     )
 
@@ -1551,6 +1553,6 @@ def test_omni_conversation_comparison_relationship_and_ambiguity_are_bounded() -
         and warmer.context_used["context_source"] == "conversation"
     )
     assert (
-        "Ranked by the existing canonical" in global_query.content
+        "No scoped opportunities" in global_query.content
         and global_query.conversation_referent is None
     )

@@ -14,6 +14,7 @@ import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
 import '../design/mobile.css'
+const Opportunities = deferredSurface(() => import('../features/opportunities/Opportunities').then(module => module.Opportunities), 'Opportunities', 'Opportunities')
 const Accounts = deferredSurface(() => import('../features/accounts/Accounts').then(module => module.Accounts), 'Customers & Prospects', 'Accounts')
 const Map = deferredSurface(() => import('../features/map/Map').then(module => module.Map), 'Map', 'Map')
 const Actions = deferredSurface(() => import('../features/actions/Actions').then(module => module.Actions), 'Actions', 'Actions')
@@ -21,10 +22,11 @@ const Communications = deferredSurface(() => import('../features/communications/
 const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
 const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Source Health', 'Source Health')
 const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
-type OmniViewContext = Pick<OmniContext, 'selected_account_id' | 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
+type OmniViewContext = Pick<OmniContext, 'selected_commercial_opportunity' | 'selected_account_id' | 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
 const surfaceLabels: Record<Surface, string> = {
   today: 'Today',
-  accounts: 'Customers & Prospects',
+  accounts: 'Profiles',
+  opportunities: 'Opportunities',
   intelligence: 'Intelligence',
   map: 'Map',
   actions: 'Actions',
@@ -107,6 +109,7 @@ export default function App() {
     if (update.method === 'none' && update.hash === decodeWorkspaceLocation(window.location.hash).canonicalHash) return
     if (update.method === 'push') window.history.pushState({ btxOmniNavigation: true }, '', update.hash)
     else if (update.method === 'replace') window.history.replaceState({ btxOmniNavigation: true }, '', update.hash)
+    locationRef.current = next
     setLocation(next)
     setLinkRecovery('')
   }, [])
@@ -268,6 +271,9 @@ export default function App() {
       if (decoded.recovery) setLinkRecovery('This link is malformed or no longer supported. A safe workspace view is shown instead.')
       if (window.location.hash !== decoded.canonicalHash) window.history.replaceState({ btxOmniNavigation: true }, '', decoded.canonicalHash)
       if (!decoded.location.accountId) { setDetail(undefined); clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext() }
+      // Child portfolio effects can run before the parent passive effect. Publish
+      // the restored scope now so they cannot replace a profile deep link.
+      locationRef.current = decoded.location
       setLocation(decoded.location)
       if (decoded.location.surface === 'today') setTodayFilters(todayFiltersFromLocation(decoded.location))
       if (decoded.location.surface === 'map') {
@@ -359,7 +365,7 @@ export default function App() {
   const locationAssessment: OmniAssessmentSelection | undefined = location.assessment ? { assessment_id: location.assessment.assessmentId, assessment_version: location.assessment.assessmentVersion, event_id: location.assessment.eventId, account_id: location.assessment.accountId } : undefined
   const locationFederal: OmniFederalSelection | undefined = location.federal ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined
   const content =
-    surface === 'accounts' ? (
+    surface === 'opportunities' ? (<Opportunities location={location} onLocationChange={commitLocation} onOmniContext={setViewContext} />) : surface === 'accounts' ? (
       <Accounts accounts={accounts} detail={detail} initialAssessment={locationAssessment} initialFederal={locationFederal} initialSnapshot={portfolioSnapshot} onSnapshot={updatePortfolioSnapshot} onSelect={(id) => void select(id)} onBack={backFromAccount} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'intelligence' ? (
       <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'overview', federalAssessment)} onFederalPartnership={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'partnership', federalAssessment)} onFederalRelationship={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'relationships', federalAssessment)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); commitLocation({ ...location, federal: { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } }, 'replace'); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
@@ -435,6 +441,7 @@ export default function App() {
           {
             today: 'TODAY',
             accounts: 'ACCOUNTS',
+            opportunities: 'ACCOUNTS',
             intelligence: 'INTELLIGENCE',
             map: 'MAP',
             actions: 'ACTIONS',
@@ -456,6 +463,7 @@ export default function App() {
     selected_event_id: surface === 'intelligence' || surface === 'today' || surface === 'map' || (surface === 'accounts' && detail) ? (viewContext.selected_assessment?.event_id ?? selectedEventId ?? viewContext.selected_event_id) : undefined,
     selected_assessment: viewContext.selected_assessment,
     selected_federal_opportunity: viewContext.selected_federal_opportunity,
+    selected_commercial_opportunity: viewContext.selected_commercial_opportunity,
     selected_program_id: surface === 'today' ? viewContext.selected_program_id : undefined,
     // A facility-supported map investigation remains scoped to that facility
     // after the user opens Organization 360.  The URL never promotes an
@@ -503,7 +511,7 @@ export default function App() {
         {error && <div className="api-notice">{error}</div>}
         {accountOpening && <LoadingStatus className="api-notice">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'organization'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></LoadingStatus>}
         {surface !== 'settings' && resourceState[surface] === 'error' && <StatusMessage state="error" title={`${surfaceLabels[surface]} could not refresh`} action={<Button onClick={() => setResourceRefresh(previous => ({ key: surface, version: (previous?.version ?? 0) + 1 }))}>Retry {surfaceLabels[surface]}</Button>}>{resourceReady[surface] ? 'Last-good content remains visible and is not labeled as freshly collected.' : 'This resource is unavailable. Other permitted workspace sections remain available.'}</StatusMessage>}
-        {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
+        {surface === 'settings' || surface === 'opportunities' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
       </section>
       <nav className="mobile-primary-nav" aria-label="Mobile primary navigation">
         {mobilePrimaryDestinations.map(destination => (

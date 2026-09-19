@@ -91,15 +91,6 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
     <header className="page-title today-title"><h1>Today</h1><p>Your next commercial decisions</p></header>
     {state === 'loading' && <LoadingStatus>Aligning today’s intelligence and commercial priorities…</LoadingStatus>}
     {state === 'unavailable' ? <Panel title="Today briefing unavailable"><Empty>Today briefing is unavailable. This is not zero activity. Retry using the workspace notice above; your filters are retained.</Empty></Panel> : <>
-    <section className="today-priority-summary" aria-label="Top priorities">
-      {priority.slice(0, 3).map(item => <article key={item.id} className="today-priority-card" data-summary-id={item.id}>
-        <div className="today-item-heading"><span className="eyebrow">{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence' : 'Public intelligence') : 'Internal intelligence'}</span>{item.signal_brief ? <AttentionBadge level={assessmentAttention(item.signal_brief)} /> : item.severity && <AttentionBadge level={['HIGH', 'MEDIUM', 'LOW'].includes(item.severity) ? item.severity as 'HIGH' | 'MEDIUM' | 'LOW' : 'UNAVAILABLE'} />}</div>
-        <h2>{item.account_id ? name(item.account_id) : 'Prospect research'}: {item.signal_brief?.headline ?? item.reason}</h2>
-        <p>{item.signal_brief?.what_happened ?? item.reason}</p>
-        <p className="today-card-next">{item.recommended_action ?? 'Review supporting evidence before choosing an action.'}</p>
-        <Button variant="primary" onClick={() => inspectPriority(item.id)}>Review priority <span aria-hidden="true">→</span></Button>
-      </article>)}
-    </section>
     <div className="today-priority-toolbar">
       <div className="today-priority-tabs" role="group" aria-label="Priority source">
         {([['ALL', 'All priorities'], ['PUBLIC_SIGNAL', 'Public intelligence'], ['COMMERCIAL_REVIEW', 'Internal intelligence']] as const).map(([kind, label]) => <button key={kind} type="button" aria-pressed={filters.kind === kind} onClick={() => changeFilters({ ...filters, kind })}>{label}</button>)}
@@ -109,6 +100,15 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
       <label>Business unit<select aria-label="Filter priorities by business unit" value={filters.businessUnit} onChange={event => changeFilters({ ...filters, businessUnit: event.target.value })}><option value="">All business units</option>{businessUnits.map(unit => <option key={unit} value={unit}>{unit.replaceAll('-', ' ')}</option>)}</select></label>
       <label>Worklist order<select aria-label="Sort Today worklist" value={filters.sort} onChange={event => changeFilters({ ...filters, sort: event.target.value as TodayFilters['sort'], page: 1 })}><option value="RANKED">Ranked decision order</option><option value="RECENT">Most recent first</option><option value="OLDEST">Oldest first</option><option value="CUSTOMER_ASC">Customer A–Z</option><option value="CUSTOMER_DESC">Customer Z–A</option></select></label>
     </div>
+    <section className="today-priority-summary" aria-label="Top priorities">
+      {priority.slice(0, 3).map(item => <article key={item.id} className="today-priority-card" data-summary-id={item.id}>
+        <div className="today-item-heading"><span className="eyebrow">{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence' : 'Public intelligence') : 'Internal intelligence'}</span>{item.signal_brief ? <AttentionBadge level={assessmentAttention(item.signal_brief)} /> : item.severity && <AttentionBadge level={['HIGH', 'MEDIUM', 'LOW'].includes(item.severity) ? item.severity as 'HIGH' | 'MEDIUM' | 'LOW' : 'UNAVAILABLE'} />}</div>
+        <h2>{item.account_id ? name(item.account_id) : 'Prospect research'}: {item.signal_brief?.headline ?? item.reason}</h2>
+        <p>{item.signal_brief?.what_happened ?? item.reason}</p>
+        <p className="today-card-next">{item.recommended_action ?? 'Review supporting evidence before choosing an action.'}</p>
+        <Button variant="primary" onClick={() => inspectPriority(item.id)}>Review priority <span aria-hidden="true">→</span></Button>
+      </article>)}
+    </section>
     <p className="today-lane-summary" role="status">{allPriority.length} total action priorities · {priority.length} filtered · {displayedPriority.length} displayed · {allValidation.length} total needs validation · {validation.length} filtered</p>
     <div className="today-command-grid">
       <Panel title="Action priorities" action={<span className="panel-kicker">{priority.length} confirmed for action</span>}>

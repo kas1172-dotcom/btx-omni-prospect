@@ -731,3 +731,11 @@
 .decision-evidence-buttons { display: flex; flex-wrap: wrap; }
 .commercial-records{min-width:0}.commercial-records summary{min-height:44px;padding:12px 0;cursor:pointer;overflow-wrap:anywhere}.commercial-records select{width:100%;min-height:44px;margin:8px 0;white-space:normal}.commercial-records .commercial-evidence-detail{overflow-wrap:anywhere;min-width:0}.commercial-records .commercial-evidence-detail dl>div{grid-template-columns:minmax(0,1fr);gap:4px}.commercial-records .commercial-evidence-detail dt{font-weight:600}.commercial-records .commercial-evidence-detail ul{padding-left:18px}.commercial-records p{font-size:13px;line-height:1.5}.commercial-records button{min-height:44px}
 .customer-section .line > span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.portfolio-view-switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.portfolio-tabs { display: flex; border-bottom: 1px solid #d6d9de; gap: 8px; }
+.portfolio-tabs [role="tab"] { padding: 12px 22px; min-height: 44px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #535b66; font: inherit; font-weight: 600; cursor: pointer; }
+.portfolio-tabs [aria-selected="true"] { color: #111315; background: #f1f2f4; border-bottom-color: #111315; }
+.portfolio-tabs button:focus-visible, .portfolio-classification-link:focus-visible { outline: 2px solid #111315; outline-offset: 3px; }
+.portfolio-classification-link { min-height: 44px; border: 0; background: transparent; color: #535b66; text-decoration: underline; font: inherit; cursor: pointer; }
+.portfolio-classification-link[aria-pressed="true"] { color: #111315; font-weight: 700; }
+@media (max-width: 600px) { .portfolio-tabs { width: 100%; } .portfolio-tabs [role="tab"] { flex: 1; } .portfolio-view-switch { gap: 4px; } }

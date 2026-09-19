@@ -59,6 +59,13 @@ class OmniService:
         federal_context: Mapping[str, object] | None = None,
     ) -> OmniResponse:
         intelligence_events = tuple(intelligence_events)
+        selection = context.get('selected_commercial_opportunity')
+        if selection:
+            from btx_omni.modules.commercial.opportunities import selected_opportunity
+            if not isinstance(selection, dict) or (account_id and selection.get('account_id') != account_id):
+                raise ValueError('Opportunity and organization scope differ.')
+            pursuit = selected_opportunity(environment, selection)
+            return self._commercial_opportunity_answer(pursuit, question, context)
         operational_contract = self._operational_contract(question)
         recent_turns = self._recent_turns(context.get("prior_turns"))
         work_items = tuple(work_items)
@@ -601,6 +608,44 @@ class OmniService:
             ):
                 return business
         return None
+
+    def _commercial_opportunity_answer(self, pursuit: dict, question: str, context: dict) -> OmniResponse:
+        """Explain exactly the revalidated pursuit; language cannot change its action."""
+        from decimal import Decimal
+        score = pursuit['attractiveness']['score']
+        money = Decimal(pursuit['value_minor']) / 100
+        uncertainty = tuple(pursuit['material_uncertainties'])
+        action = pursuit['next_action']
+        content = (f"{pursuit['account_name']}: {pursuit['title']}. "
+                   f"Quoted value: {pursuit['currency']} {money:,.2f}; this is not booked revenue.\n\n"
+                   + (pursuit['business_context'] or 'A scoped pursuit is recorded; the business case needs review.')
+                   + f"\n\nAttractiveness: {score if score is not None else 'not yet established; opportunity-specific inputs are missing'}. "
+                   + 'Customer Health describes the existing relationship separately.'
+                   + ('\n\nStill unconfirmed: ' + '; '.join(uncertainty) if uncertainty else ''))
+        provider_status, provider_name, model = 'NOT_CONFIGURED', 'deterministic', None
+        if self.provider is not None and self.provider.configured:
+            request = GroundedSynthesisRequest(question, content + '\nExplain only this pursuit; do not invent qualification, change scores, or prescribe another action. Do not expose internal record IDs.\nRecorded next action: ' + (action or 'None recorded'), (pursuit['source_record_id'],), uncertainty, self._recent_turns(context.get('prior_turns')))
+            try:
+                result = self.provider.synthesize(request)
+                rejection = synthesis_rejection(result.content, request.governed_answer)
+                if not rejection and (not action or action in result.content) and not re.search(r'\b(?:OPP2|QUO2|ROLE2|ACC|C2|P2)-', result.content):
+                    content = result.content
+                    provider_name, model, provider_status = self.provider.name, getattr(result, 'model', None), 'AVAILABLE'
+                else:
+                    provider_status = 'UNAVAILABLE'
+            except LanguageProviderError as error:
+                provider_status = error.status.value
+            except (ValueError, RuntimeError, TimeoutError):
+                provider_status = 'UNAVAILABLE'
+        # A separate server-owned next step remains identical to the workspace.
+        content += '\n\nNext step: ' + (action or 'No opportunity-specific action is recorded.')
+        return OmniResponse(content=content, account_id=pursuit['account_id'], account_name=pursuit['account_name'],
+                            citations=(pursuit['source_record_id'],), citation_links=(OmniCitation('Opportunity and supporting record', f"#/opportunities?record={pursuit['source_record_id']}&f.account={pursuit['account_id']}&f.lane={pursuit['lane']}"),),
+                            provenance=(AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION),
+                            missingness=uncertainty, recommended_action=action,
+                            context_used={'commercial_opportunity_id': pursuit['opportunity_id'], 'commercial_revision': pursuit['revision']},
+                            structured_reads={'selected_opportunity': pursuit}, language_provider=provider_name,
+                            language_model=model, provider_status=provider_status)
 
     @staticmethod
     def _federal_opportunity_answer(

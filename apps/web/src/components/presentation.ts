@@ -3,6 +3,9 @@ import type { Principal } from '../types/api'
 export type PresentationDomain = 'general' | 'workflow' | 'assessment' | 'evidence' | 'federal' | 'relationship' | 'communication' | 'provider'
 
 const labels: Record<string, string> = {
+  ACCOUNT: 'Organization', BUSINESS_UNIT: 'Business unit', FACILITY: 'Facility', BTX_FACILITY: 'BTX facility', ACCOUNT_FACILITY: 'Organization facility', PERSON: 'Person', ROLE: 'Role', ROLE_TARGET: 'Role to research', PROGRAM: 'Program', COMPONENT: 'Component', COMPONENT_CLASS: 'Component family', CAPABILITY: 'Capability', CERTIFICATION: 'Certification', PUBLIC_EVENT: 'Public development', OPPORTUNITY: 'Opportunity',
+  QUOTED: 'Quoted', QUALIFIED: 'Qualified', NEGOTIATION: 'In negotiation', PROPOSAL_APPROVED: 'Proposal approved', QUALIFY: 'Qualification', ACTIVE: 'Active', CLOSED: 'Closed',
+  CROSS_BU_COORDINATION: 'Coordinate business units', OVERDUE_ORDER: 'Delivery commitment needs review', QUOTE_FOLLOW_UP: 'Follow up on the quote', STALE_QUOTE: 'Confirm the quote is still active',
   ALL: 'All', AVAILABLE: 'Available', UNAVAILABLE: 'Unavailable', CONNECTED: 'Connected', CONFIGURED: 'Configured', NOT_CONFIGURED: 'Not configured', ADMIN_MANAGED: 'Managed by an administrator', RESTRICTED: 'Restricted',
   OPEN: 'Open', IN_PROGRESS: 'In progress', COMPLETED: 'Completed', CANCELED: 'Canceled', DRAFT: 'Draft', READY: 'Ready for delivery confirmation', SENT: 'Sent', PENDING: 'Awaiting review', APPROVED: 'Approved by reviewer', REJECTED: 'Not approved', NOT_REQUIRED: 'No approval required',
   HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low', INFORMATIONAL: 'Informational',

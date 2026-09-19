@@ -28,7 +28,8 @@ def test_confidence_uses_agreed_weights_and_never_modifies_risk():
 def test_missing_fields_do_not_disappear_or_become_zero():
     result = run("signal_confidence", {"source_reliability": 100})
     assert result["score"] is None
-    assert result["data_coverage"]["ratio"] == Decimal(".2")
+    assert result["data_coverage"]["ratio"] == Decimal(".30")
+    assert result["score_range"] == {"low": 30, "high": 100}
     assert len(result["data_coverage"]["missing_fields"]) == 4
     assert next(f for f in result["factors"] if f["key"] == "freshness")["points"] is None
 
@@ -37,7 +38,7 @@ def test_high_delivery_factors_cannot_overrule_constraint_or_missing_capacity():
     values = {k: 100 for k, _ in FAMILIES["delivery_feasibility"].weights}
     result = run("delivery_feasibility", values, blocking_constraints=("qualification-retracted",))
     assert result["score"] is None and result["status"] == "BLOCKED"
-    del values["capacity"]
+    del values["schedule_feasibility"]
     assert run("delivery_feasibility", values)["score"] is None
 
 
@@ -49,18 +50,22 @@ def test_unknown_factor_and_untraced_points_rejected():
 
 
 def test_duplicate_articles_never_strengthen_public_risk():
-    event = {"underlying_event_id": "closure", "active": True, "severity": 80, "risk_domain": "operations"}
+    event = {"underlying_event_id": "closure", "active": True, "severity": 80, "signal_confidence": 70, "risk_domain": "operations/site"}
     assert public_risk_rollup((event, event, event))["score"] == 80
-    other = {**event, "underlying_event_id": "credit", "risk_domain": "finance"}
-    assert public_risk_rollup((event, other))["score"] == 90
+    other = {**event, "underlying_event_id": "credit", "risk_domain": "financial/legal"}
+    assert public_risk_rollup((event, other))["score"] == 85
     assert public_risk_rollup(())["score"] is None
+    assert public_risk_rollup((), monitoring_complete=True)["score"] == 0
+    assert public_risk_rollup((event, {**other, "signal_confidence": 69}))["score"] == 80
+    third = {**event, "underlying_event_id": "demand", "risk_domain": "demand/program"}
+    assert public_risk_rollup((event, other, third))["score"] == 90
 
 
 def test_customer_risk_projection_keeps_public_internal_and_missingness_separate():
     current = SimpleNamespace(
         id="risk-1", canonical_account_ids=("boeing",), freshness="CURRENT",
         seller_promotion_state="RESOLVED_ELIGIBLE", event_type="PRODUCTION_DELAY",
-        risk_severity={"score": 80}, signal_confidence={"status": "SCORED"},
+        risk_severity={"score": 80}, signal_confidence={"status": "SCORED", "score": 70},
     )
     copied = SimpleNamespace(**{**current.__dict__, "id": "risk-2", "canonical_account_ids": ("kla",)})
     result = customer_risk_projection(
@@ -84,21 +89,44 @@ def test_opportunity_keeps_six_factors_and_pwin_is_not_probability():
     assert len(FAMILIES["opportunity_priority"].weights) == 6
     result = run("pwin", {k: 80 for k, _ in FAMILIES["pwin"].weights})
     assert result["score_unit"] == "POC_INDEX_0_TO_100"
-    assert "not be displayed as a win probability" in result["interpretation"]
+    assert "not a calibrated win probability" in result["interpretation"]
 
 
 def test_coverage_counts_decision_fields_not_just_non_null_factor_scores():
     inputs = {key: FactorInput(Decimal(100), (key,), "Explicit partial evidence.", required_fields=("identity", "scope", "dated_record"), observed_fields=("identity",)) for key, _ in FAMILIES["delivery_feasibility"].weights}
     result = assess("delivery_feasibility", subject_id="solution", as_of="2026-08-31", revision="r1", inputs=inputs, eligible=True)
     assert result["data_coverage"]["factor_coverage"] == 1
-    assert result["data_coverage"]["present"] == 4 and result["data_coverage"]["applicable"] == 12
+    assert result["data_coverage"]["present"] == 6 and result["data_coverage"]["applicable"] == 18
     assert result["score"] is None
 
 
-def test_partial_normalization_has_honest_effective_contributions():
+def test_partial_evidence_retains_fixed_weights_and_a_range():
     result = run("signal_confidence", {"source_reliability": 80, "entity_match": 80, "event_specificity": 80, "independent_corroboration": 80})
-    assert result["score"] == 80
-    assert abs(sum(f["contribution"] or 0 for f in result["factors"]) - result["score"]) <= Decimal(".02")
+    assert result["score"] is None
+    assert result["score_range"] == {"low": 72, "high": 82}
+    assert sum(f["contribution"] or 0 for f in result["factors"]) == 72
+    assert [f["effective_weight_percent"] for f in result["factors"]] == [30, 25, 20, 15, 10]
+
+
+def test_known_zero_and_unknown_have_different_ranges_and_coverage():
+    values = {k: 0 for k, _ in FAMILIES["signal_confidence"].weights}
+    complete = run("signal_confidence", values)
+    assert complete["score"] == 0
+    assert complete["score_range"] == {"low": 0, "high": 0}
+    del values["freshness"]
+    partial = run("signal_confidence", values)
+    assert partial["score"] is None
+    assert partial["score_range"] == {"low": 0, "high": 10}
+
+
+def test_nested_partial_factor_preserves_known_leaf_contributions_without_reweighting():
+    result = assess("opportunity_priority", subject_id="pursuit", as_of="2026-08-31", revision="r2", eligible=True,
+        inputs={"program_durability": FactorInput(None, ("horizon-source",), "Known horizon, other conditions unresolved.", lower_bound=Decimal(40), upper_bound=Decimal(100))})
+    assert result["score"] is None
+    assert result["score_range"] == {"low": 12, "high": 100}
+    assert result["data_coverage"]["ratio"] == 0
+    with pytest.raises(ValueError, match="Invalid partial"):
+        FactorInput(None, ("source",), "Invalid bounds.", lower_bound=Decimal(90), upper_bound=Decimal(10))
 
 
 def test_overall_risk_requires_customer_and_both_sources_then_applies_agreed_floors():
@@ -122,4 +150,4 @@ def test_decision_reference_is_stable_but_changes_when_supported_input_changes()
     values = {k: 80 for k, _ in FAMILIES["pwin"].weights}
     first = run("pwin", values)
     assert first["decision_id"] == run("pwin", dict(reversed(list(values.items()))))["decision_id"]
-    assert first["decision_id"] != run("pwin", {**values, "solution_fit": 60})["decision_id"]
+    assert first["decision_id"] != run("pwin", {**values, "requirement_fit": 60})["decision_id"]

@@ -3,7 +3,7 @@
   "authorship": "Implementation-agent authored POC cases, not independent human certification or statistical generalization proof.",
   "demo_as_of": "2026-08-31",
   "public_research_dates": "Preserve real source/retrieval dates separately from the commercial demo clock.",
-  "source_sha256": "7745ab0d8d8b73d27452cb4302979440453587eaeb1c9e1512a4750b8570c493",
+  "source_sha256": "b9ff27965e2716abab313f840de903191617c4da24d8fd8df7bf999c868bcd2e",
   "showcase_scenes_excluded": ["D1", "D2", "D3"],
   "grading": {
     "scale": "0 absent/unsafe; 1 materially incomplete; 2 adequate with noncritical limitations; 3 complete and supported",

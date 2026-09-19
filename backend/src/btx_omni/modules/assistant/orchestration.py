@@ -19,6 +19,17 @@ from btx_omni.modules.scoring.account_attractiveness import (
 )
 from btx_omni.providers.sample.environment import SampleEnvironment
 
+_ALERT_LABELS = {
+    'CUSTOMER_INACTIVITY': 'No recent customer activity',
+    'BOOKINGS_DECLINE': 'Bookings are declining',
+    'STALE_QUOTE': 'Quote needs a status check',
+    'QUOTE_FOLLOW_UP': 'Quote follow-up',
+    'CRM_INACTIVITY': 'Customer contact needs attention',
+    'CROSS_BU_COORDINATION': 'Business-unit coordination',
+    'INTELLIGENCE_COMMERCIAL_CONTEXT': 'Public development with commercial context',
+    'OVERDUE_ORDER': 'Delivery commitment needs review',
+}
+
 
 class AssistantProvenance(StrEnum):
     CANONICAL_FACT = "CANONICAL_FACT"
@@ -355,7 +366,7 @@ class OmniOrchestrator:
             )
         if account_alerts:
             lines.append(
-                "Alerts: " + ", ".join(item.type.value for item in account_alerts) + "."
+                "Needs attention: " + ", ".join(_ALERT_LABELS.get(item.type.value, 'Commercial review') for item in account_alerts) + "."
             )
             citations.extend(
                 value for alert in account_alerts for value in alert.evidence_ids
@@ -367,21 +378,16 @@ class OmniOrchestrator:
         ]
         if not commercial_contexts:
             missing.append("PRISM commercial context unavailable.")
-        if (
-            "score" in question.casefold() or "attractive" in question.casefold()
-        ) and account.id in environment.scoring_inputs:
-            score = seller_attractiveness_projection(
-                environment.attractiveness_inputs(account.id),
-                calculated_at=observed_at,
-            )
-            lines.append(
-                f"Account Attractiveness: {score.score if score.score is not None else 'insufficient data'} with coverage {score.coverage}."
-            )
-            missing.extend(score.missingness)
-        elif "score" in question.casefold() or "attractive" in question.casefold():
-            missing.append(
-                "Account Attractiveness is unavailable: no simulated BTX scoring input is mapped to this public identity."
-            )
+        if "score" in question.casefold() or "attractive" in question.casefold():
+            ledger = environment.commercial_ledgers.get(account.id)
+            if ledger and account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}:
+                from btx_omni.modules.scoring.commercial_decisions import (
+                    customer_decisions,
+                )
+                health = customer_decisions(ledger, account_id=account.id, revision=environment.commercial_revision, current_customer=True)["customer_health"]
+                lines.append(f"Customer Health: {health['score'] if health['score'] is not None else 'more commercial evidence needed'}. This measures the existing relationship.")
+                citations.extend(eid for factor in health['factors'] for eid in factor['evidence_ids'])
+            lines.append("Attractiveness belongs to a specific expansion or prospecting opportunity, not this organization. Open an opportunity to review its inputs and qualification.")
         events = [
             item
             for item in environment.intelligence_events
@@ -2771,61 +2777,24 @@ class OmniOrchestrator:
         links: list[OmniCitation] = []
 
         if intent == "SCORE_RANKING":
-            scored = [
-                (account, result)
-                for account, result in self._canonical_scores(environment, observed_at)
-                if account.id in account_by_id
-            ]
-            scored.sort(
-                key=lambda item: (
-                    -item[1].score,
-                    item[0].legal_name.casefold(),
-                    item[0].id,
-                )
-            )
-            unavailable = [
-                account
-                for account in researched
-                if account.id not in {candidate.id for candidate, _ in scored}
-            ]
-            if unavailable:
-                missing.append(
-                    f"{len(unavailable)} matching account(s) have no available canonical attractiveness score."
-                )
+            from btx_omni.modules.commercial.opportunities import account_opportunities
+            opportunities = [row for account in researched for row in account_opportunities(environment, account.id)]
+            scored = [row for row in opportunities if row['attractiveness']['score'] is not None]
+            scored.sort(key=lambda row: (-row['attractiveness']['score'], row['account_name'].casefold(), row['opportunity_id']))
             if not scored:
                 return self._cross_empty_answer(
-                    "No matching accounts have an available canonical attractiveness score.",
-                    context_used,
-                    missing,
-                )
-            selected = scored[:5]
-            lines = [
-                f"Ranked by the existing canonical Account Attractiveness score{f' for {market}' if market else ''}:"
-            ]
-            for account, score in selected:
-                lines.append(
-                    f"{account.legal_name}: {score.score} (coverage {score.coverage})."
-                )
-                if account.provenance:
-                    citations.append(account.provenance.source_record_id)
-            lines.append(
-                "Scores use the established deterministic scoring service and current SAMPLE commercial inputs; Omni does not add a separate priority score."
-            )
-            return OmniResponse(
-                " ".join(lines),
-                "",
-                tuple(dict.fromkeys(citations)),
-                (
-                    AssistantProvenance.CANONICAL_FACT,
-                    AssistantProvenance.DETERMINISTIC_DERIVATION,
-                )
-                + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()),
-                tuple(missing),
-                "Review the listed Account 360 records before acting.",
-                (),
-                None,
-                context_used=context_used,
-            )
+                    "No scoped opportunities in this selection have complete Attractiveness inputs. Organization-level scores are not a substitute.",
+                    context_used, ["Review opportunity-specific evidence before ranking potential business."])
+            lines = ["Opportunities ranked by Attractiveness; customer health is a separate assessment:"]
+            for row in scored[:5]:
+                lines.append(f"{row['account_name']} — {row['title']}: {row['attractiveness']['score']}/100.")
+                citations.append(row['source_record_id'])
+            if len(opportunities) != len(scored):
+                missing.append(f"{len(opportunities) - len(scored)} opportunities need additional scoring inputs and were not ranked.")
+            return OmniResponse(" ".join(lines), "", tuple(citations),
+                                (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION),
+                                tuple(missing), "Review the selected opportunity and its qualification before acting.",
+                                context_used=context_used)
 
         open_items = self._open_work_items(work_items)
         actions_by_account: dict[str, list[object]] = {}

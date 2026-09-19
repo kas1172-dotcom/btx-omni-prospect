@@ -127,9 +127,10 @@ def test_only_controlled_aliases_can_match() -> None:
         is TechnicalMatchStatus.MATCHED
     )
     assert (
-        service().match(candidate("precision widget housing")).status
+        service().match(candidate("landing gear structural component")).status
         is TechnicalMatchStatus.POSSIBLE_MATCH_REVIEW_REQUIRED
     )
+    assert service().match(candidate("precision widget housing")).status is TechnicalMatchStatus.INSUFFICIENT_TAXONOMY
 
 
 def test_cache_hash_changes_with_evidence_and_contract() -> None:

@@ -32,13 +32,79 @@ from btx_omni.monitor.business_briefings import (
 )
 from btx_omni.monitor.contracts import CollectionRun
 from btx_omni.monitor.repository import MonitorRepository
-from btx_omni.monitor.worker import run_worker
+from btx_omni.monitor.worker import _select_technical_briefs, run_worker
 from btx_omni.persistence.commercial_import import CommercialImportRepository
 from btx_omni.persistence.models import metadata
 from btx_omni.providers.research.technical_programs import references_for_text
 from btx_omni.providers.sample.environment import build_sample_environment
 
 NOW = datetime(2026, 8, 31, 12, tzinfo=UTC)
+
+
+def test_technical_queue_prioritizes_unanalysed_account_context_over_cached_rows():
+    def brief(
+        event_id: str,
+        *,
+        account_ids: tuple[str, ...],
+        technical: dict | None,
+        coverage: float,
+    ) -> SignalBrief:
+        return SignalBrief(
+            id=event_id,
+            headline=event_id,
+            what_happened="A current technical development was announced.",
+            why_it_may_matter="Technical fit requires analysis.",
+            canonical_account_ids=account_ids,
+            canonical_program_id=None,
+            markets=("Defense",),
+            publication_timestamp=NOW,
+            collection_timestamp=NOW,
+            freshness="CURRENT",
+            evidence_ids=(f"evidence-{event_id}",),
+            source_url="https://example.com/source",
+            source_system="official",
+            data_mode="CONNECTED",
+            resolution_state="RESOLVED",
+            seller_promotion_state="RESOLVED_ELIGIBLE",
+            what_to_watch="Validate the fit.",
+            recommended_action=None,
+            missing_fields=(),
+            seller_summary="Technical fit requires analysis.",
+            technical_opportunity=technical,
+            signal_confidence={"coverage": coverage},
+            event_type="CONTRACT_AWARD",
+            analysis_status="READY",
+            commercial_relevance_state="INFORMATIONAL",
+            priority_eligible=False,
+        )
+
+    already_analysed = brief(
+        "event-a-cached",
+        account_ids=("spacex",),
+        technical={"provider_status": "AVAILABLE"},
+        coverage=1,
+    )
+    unresolved = brief(
+        "event-b-unresolved",
+        account_ids=(),
+        technical=None,
+        coverage=1,
+    )
+    account_pending = brief(
+        "event-z-account-pending",
+        account_ids=("lockheed-martin",),
+        technical=None,
+        coverage=0.5,
+    )
+
+    selected = _select_technical_briefs(
+        (already_analysed, unresolved, account_pending), limit=2
+    )
+
+    assert tuple(item.id for item in selected) == (
+        "event-z-account-pending",
+        "event-a-cached",
+    )
 
 
 class Repository:

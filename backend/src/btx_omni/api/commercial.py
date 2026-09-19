@@ -11,6 +11,7 @@ from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
 from btx_omni.modules.scoring.commercial_decisions import customer_decisions
 from btx_omni.modules.scoring.families import customer_risk_projection
+from btx_omni.modules.scoring.monitoring_coverage import monitoring_complete
 from btx_omni.modules.work.commercial_followup import confirm_followup, followup_preview
 from btx_omni.modules.work.service import (
     ActionConflictError,
@@ -23,6 +24,19 @@ from btx_omni.persistence.commercial_schema import COLLECTION_TABLES
 from btx_omni.providers.research.enriched_evidence import public_sources
 
 router = APIRouter(prefix="/accounts", tags=["commercial"])
+
+
+@router.get("/workspace/opportunities")
+def opportunity_workspace(response: Response, actor: Principal = Depends(principal),
+                          runtime: PocRuntime = Depends(get_runtime)) -> dict:
+    """A read projection of existing pursuits, never an account-to-pursuit conversion."""
+    from btx_omni.modules.commercial.opportunities import account_opportunities
+
+    sample = runtime.environment()
+    rows = [row for account_id in sorted(sample.commercial_ledgers)
+            for row in account_opportunities(sample, account_id)]
+    response.headers["Cache-Control"] = "private, no-store"
+    return {"opportunities": rows, "revision": sample.commercial_revision}
 
 
 class ConfirmFollowup(BaseModel):
@@ -87,6 +101,7 @@ def commercial_evidence(
         current_customer = account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}
         decisions = customer_decisions(ledger, account_id=account_id, revision=sample.commercial_revision,
                                        current_customer=current_customer,
+                                       facility_ids=frozenset(f.id for f in sample.btx_facilities),
                                        work_items=tuple(runtime.work.list(actor)))
         return {
             **decisions,
@@ -95,6 +110,7 @@ def commercial_evidence(
                 current_customer=current_customer,
                 internal_decision=decisions["internal_commercial_risk"],
                 signal_briefs=signal_briefs_for_monitor(runtime.monitor, environment=sample),
+                monitoring_complete=monitoring_complete(runtime.monitor, account_id),
             ),
         }
     if collection == "reference":
