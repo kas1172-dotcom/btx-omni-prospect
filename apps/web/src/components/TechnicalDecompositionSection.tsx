@@ -53,7 +53,7 @@ export function TechnicalDecompositionSection({ technical, compact = false }: { 
   const roots = childrenByParent.get('') ?? components.filter(item => !components.some(parent => parent.name === item.parent_component))
   const citations = technical.citations ?? []
   return <section className="technical-decomposition" aria-labelledby="technical-decomposition-heading">
-    <div><span className="eyebrow">Evidence-governed research</span><h2 id="technical-decomposition-heading">Components and BTX fit</h2></div>
+    <div><span className="eyebrow">Source-backed technical research</span><h2 id="technical-decomposition-heading">Components and BTX fit</h2></div>
     <p>{technical.event_summary}</p>
     <div className="technical-layer-key" aria-label="Evidence layer key"><State value="Confirmed in this announcement" /><State value="Supported program architecture" /><State value="Possible BTX fit — validation required" /></div>
     <ul className="technical-component-tree">{roots.map(component => <Branch key={component.component_id ?? component.name} component={component} childrenByParent={childrenByParent} hypotheses={hypotheses} />)}</ul>

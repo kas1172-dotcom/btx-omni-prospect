@@ -34,7 +34,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
     <div className="seller-signal-decision">
       <section><span>What changed</span><p>{brief.what_happened}</p></section>
       <section><span>Why it may matter</span><p>{brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></p></section>
-      <section className="seller-signal-action" aria-label="Governed next action"><span>Next decision</span><p>{brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p></section>
+      <section className="seller-signal-action" aria-label="Recommended next action"><span>Next decision</span><p>{brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p></section>
     </div>
     {!!brief.material_uncertainties?.length && <p className="seller-signal-uncertainty"><strong>Material uncertainty — still unconfirmed:</strong> {brief.material_uncertainties[0]}</p>}
     {brief.analysis_status && brief.analysis_status !== 'READY' && <p className="notice">Analysis is incomplete. The source remains available, but no completed commercial recommendation is shown.</p>}
@@ -69,7 +69,7 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
         {brief.action_rationale && <p><strong>Action rationale:</strong> {brief.action_rationale}</p>}
         {!!brief.material_uncertainties?.length && <div><strong>What remains uncertain:</strong><ul>{brief.material_uncertainties.map(item => <li key={item}>{item}</li>)}</ul></div>}
         {brief.priority_reasons.length > 0 && <div><strong>Why watched:</strong><ul>{brief.priority_reasons.map(reason => <li key={`${reason.code}:${reason.source_system}:${reason.source_record_id ?? ''}`}>{reason.detail} <small>({display(reason.source_system)})</small></li>)}</ul></div>}
-        {brief.recommended_action && <p><strong>Governed next step:</strong> {brief.recommended_action}</p>}
+        {brief.recommended_action && <p><strong>Next step:</strong> {brief.recommended_action}</p>}
         {brief.missing_fields.length > 0 && <p><strong>Missing:</strong> {brief.missing_fields.join(', ')}</p>}
         <EvidenceSource title={brief.headline} source={brief.source_system} date={dateLabel(brief.publication_timestamp)} evidenceState="Source reviewed" url={brief.source_url} detail="Primary public source for this assessment" />
         {brief.references?.filter(item => item.url && item.url !== brief.source_url).map(item => <EvidenceSource key={item.evidence_id} title={item.title} source="Public source" date={dateLabel(item.publication_date ?? undefined)} evidenceState="CITED" url={item.url} detail="Supporting passage used in this briefing" />)}

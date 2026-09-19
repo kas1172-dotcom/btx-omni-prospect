@@ -187,7 +187,7 @@ def _selected_records(
             )
             match_reasons = []
             if matches_program:
-                match_reasons.append("Shares the governed program scope")
+                match_reasons.append("Shares the same recorded program scope")
             if matches_component:
                 match_reasons.append("Shares a reviewed component family")
             if record.get("business_unit_id"):
@@ -451,7 +451,7 @@ def assemble_evidence_package(
         )
     elif relevance == "ESTABLISHED_COMMERCIAL_RELEVANCE":
         why = f"The development is linked to {account_name} and has scoped program or capability context alongside existing BTX commercial records."
-        action = "Validate the technical fit and account scope, then prepare a governed customer follow-up."
+        action = "Validate the technical fit and account scope, then prepare a customer follow-up tied to the cited records."
         rationale = (
             "The evidence supports investigation, while qualification and customer need remain separate gates."
             + (
@@ -478,7 +478,7 @@ def assemble_evidence_package(
         action = (
             validation_questions[0]
             if validation_questions
-            else "Validate governed customer and counterparty records for the announced program, facilities, component terms, and relevant buyer activity before proposing follow-up."
+            else "Check customer and counterparty records for the announced program, facilities, component terms, and relevant buyer activity before proposing follow-up."
         )
         rationale = "A broad capability and account history are insufficient to establish participation in this development."
     elif relevance == "INFORMATIONAL":

@@ -19,10 +19,10 @@ test('organization mode adapts without treating research or CRM presence as a cu
 
   await openOrganization(page, 'rtx-collins-aerospace', 'RTX (Raytheon Technologies) / Collins Aerospace')
   await expect(page.getByText('Relationship needs review', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText(/commercial records exist, but the governed organization classification does not confirm/i)).toBeHidden()
+  await expect(page.getByText(/commercial records exist, but the current account classification does not confirm/i)).toBeHidden()
   const why = page.getByRole('button', { name: 'Why this?' }).first()
   await why.click()
-  await expect(page.getByText(/commercial records exist, but the governed organization classification does not confirm/i)).toBeVisible()
+  await expect(page.getByText(/commercial records exist, but the current account classification does not confirm/i)).toBeVisible()
 })
 
 test('evidence is closed by default, targeted reasoning opens independently, and mobile uses a drawer', async ({ page }) => {

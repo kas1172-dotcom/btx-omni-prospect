@@ -80,7 +80,7 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
       setConversationReferent(response.conversation_referent ?? undefined)
       setMessages(old => [...old, { role: 'assistant', text: response.content, response }])
     } catch (caught) {
-      setError(caught instanceof Error ? 'Omni could not complete that response. Governed context remains available.' : 'Omni is temporarily unavailable.')
+      setError(caught instanceof Error ? 'Omni could not complete that response. Your selected organization and evidence remain available.' : 'Omni is temporarily unavailable.')
     } finally { setLoading(false) }
   }
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void ask() } }
@@ -100,14 +100,14 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
       <div className="full-omni-grid">
         <main id="omni-panel-conversation" aria-labelledby="omni-tab-conversation" className={`omni-conversation-pane ${fullMode === 'conversation' ? 'mobile-active' : ''}`} role="tabpanel"><div className="omni-context-chips">{activeAccount && <span>{activeAccount.name}</span>}<span>{(context.surface && surfaceLabels[context.surface]) ?? 'Global'}</span></div><Conversation messages={messages} loading={loading} transcriptRef={conversation} onStarter={prompt => void ask(prompt)} /><Composer value={question} loading={loading} inputRef={input} onChange={setQuestion} onKeyDown={onKeyDown} onSubmit={() => void ask()} />{error && <p className="omni-error" role="alert">{error}</p>}</main>
         <aside id="omni-panel-evidence" aria-label="Evidence" aria-labelledby="omni-tab-evidence" className={`omni-evidence-pane ${fullMode === 'evidence' ? 'mobile-active' : ''}`}><h2>Evidence &amp; sources</h2><Disclosure title={`View supporting evidence (${latestResponse?.citation_links?.length ?? 0})`}><EvidencePanel response={latestResponse} /></Disclosure></aside>
-        <aside id="omni-panel-customer" aria-label="Organization context" aria-labelledby="omni-tab-customer" className={`omni-customer-pane ${fullMode === 'customer' ? 'mobile-active' : ''}`}><h2>Organization context</h2>{activeAccount ? <div className="omni-context-card"><strong>{activeAccount.name}</strong><span>Canonical organization context</span><p>Current selection and governed conversation referents determine what Omni may read.</p><Button variant="ghost" onClick={clearContext}>Clear organization context</Button></div> : <p className="muted">No organization selected. Global questions remain unscoped.</p>}{latestResponse?.recommended_action && <div className="omni-context-card"><strong>Suggested next step</strong><p>{latestResponse.recommended_action}</p><small>Discussion only. Use the governed Actions workspace for mutations.</small></div>}</aside>
+        <aside id="omni-panel-customer" aria-label="Organization context" aria-labelledby="omni-tab-customer" className={`omni-customer-pane ${fullMode === 'customer' ? 'mobile-active' : ''}`}><h2>Organization context</h2>{activeAccount ? <div className="omni-context-card"><strong>{activeAccount.name}</strong><span>Selected organization</span><p>Omni will use this organization, the selected assessment, and directly related records in its answer.</p><Button variant="ghost" onClick={clearContext}>Clear organization context</Button></div> : <p className="muted">No organization selected. Global questions remain unscoped.</p>}{latestResponse?.recommended_action && <div className="omni-context-card"><strong>Suggested next step</strong><p>{latestResponse.recommended_action}</p><small>Discussion only. Use Actions to create or update work.</small></div>}</aside>
       </div>
     </Drawer>
   </>
 }
 
 function Conversation({ messages, loading, compact = false, transcriptRef, onStarter }: { messages: Message[]; loading: boolean; compact?: boolean; transcriptRef: RefObject<HTMLDivElement | null>; onStarter: (prompt: string) => void }) {
-  return <div className={`conversation ${compact ? 'compact' : ''}`} ref={transcriptRef} aria-live="polite" aria-label="Omni conversation">{!messages.length && <div className="omni-welcome"><strong>How can I help?</strong><p>Ask about Customers, evidence, relationships, Intelligence, geography, or permitted Actions.</p><div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => onStarter(prompt)} disabled={loading}>{prompt}</button>)}</div></div>}{messages.map((message, index) => <article className={`message ${message.role}`} key={`${message.role}-${index}`}><p>{message.text}</p>{message.response && <ResponseDetails response={message.response} />}</article>)}{loading && <div className="message assistant pending"><p>Reviewing governed context…</p></div>}</div>
+  return <div className={`conversation ${compact ? 'compact' : ''}`} ref={transcriptRef} aria-live="polite" aria-label="Omni conversation">{!messages.length && <div className="omni-welcome"><strong>How can I help?</strong><p>Ask about Customers, evidence, relationships, Intelligence, geography, or permitted Actions.</p><div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => onStarter(prompt)} disabled={loading}>{prompt}</button>)}</div></div>}{messages.map((message, index) => <article className={`message ${message.role}`} key={`${message.role}-${index}`}><p>{message.text}</p>{message.response && <ResponseDetails response={message.response} />}</article>)}{loading && <div className="message assistant pending"><p>Reviewing the selected evidence and account context…</p></div>}</div>
 }
 
 function Composer({ value, loading, inputRef, onChange, onKeyDown, onSubmit }: { value: string; loading: boolean; inputRef: RefObject<HTMLTextAreaElement | null>; onChange: (value: string) => void; onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void; onSubmit: () => void }) {
@@ -115,11 +115,11 @@ function Composer({ value, loading, inputRef, onChange, onKeyDown, onSubmit }: {
 }
 
 const fallbackLabels: Record<Exclude<OmniResponse['provider_status'], 'AVAILABLE'>, string> = {
-  NOT_CONFIGURED: 'Gemini not configured · governed fallback',
-  AUTH_FAILED: 'Gemini authentication unavailable · governed fallback',
-  TIMEOUT: 'Gemini timed out · governed fallback',
-  QUOTA: 'Gemini quota unavailable · governed fallback',
-  UNAVAILABLE: 'Gemini temporarily unavailable · governed fallback',
+  NOT_CONFIGURED: 'Gemini not configured · structured evidence summary',
+  AUTH_FAILED: 'Gemini authentication unavailable · structured evidence summary',
+  TIMEOUT: 'Gemini timed out · structured evidence summary',
+  QUOTA: 'Gemini quota unavailable · structured evidence summary',
+  UNAVAILABLE: 'Gemini temporarily unavailable · structured evidence summary',
 }
 
 function ResponseDetails({ response }: { response: OmniResponse }) { return <div className="omni-response-summary">{response.run_id && <Disclosure title="Answer receipt"><OmniRunReceipt key={response.run_id} id={response.run_id} /></Disclosure>}{response.structured_relationship && <Disclosure title="Selected route · reasons and constraints"><ol>{response.structured_relationship.route.steps.map(step => <li key={step.id}>{step.label}</li>)}</ol><p>{response.structured_relationship.route.hop_count} connections · route strength {Number(response.structured_relationship.route.utility).toFixed(1)} out of 100, not a probability</p>{response.structured_relationship.route.constraints.map(c => <p key={c.id}>{c.reason}</p>)}<p>{response.structured_relationship.route.next_action}</p><Disclosure title="Technical receipt"><small>{response.structured_relationship.rubric_version} · graph revision {response.structured_relationship.graph_revision}</small></Disclosure></Disclosure>}

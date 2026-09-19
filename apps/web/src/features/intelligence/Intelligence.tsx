@@ -392,7 +392,7 @@ export function Intelligence({
   const tiles = [
     {
       title: "Available intelligence",
-      detail: `${base.length} governed assessments and saved research signals`,
+      detail: `${base.length} current assessments and saved research signals`,
       state: base.length > 0 ? "AVAILABLE" : "UNAVAILABLE",
     },
     {
@@ -413,7 +413,7 @@ export function Intelligence({
     },
     {
       title: "Tracked organizations",
-      detail: `${tracked.length} Customers and Prospects in the governed watchlist`,
+      detail: `${tracked.length} Customers and Prospects in the recommended watchlist`,
       state: tracked.length > 0 ? "AVAILABLE" : "NO CURRENT ITEMS",
     },
   ];
@@ -485,7 +485,7 @@ export function Intelligence({
       </section>
       <Disclosure title={`Tracked Customers & Prospects (${tracked.length})`}>
         <section className="intelligence-tracked" aria-label="Tracked Customers and Prospects">
-          <p className="muted">Open the governed watchlist only when you need to change organization context.</p>
+          <p className="muted">Open the watchlist when you need to change the organization context for this review.</p>
           {tracked.length ? (
             <div>
               {tracked.map((item) => (
@@ -504,7 +504,7 @@ export function Intelligence({
               ))}
             </div>
           ) : (
-            <Empty>No governed tracked targets are available.</Empty>
+            <Empty>No tracked Customers or Prospects are available for this view.</Empty>
           )}
         </section>
       </Disclosure>
@@ -625,7 +625,7 @@ export function Intelligence({
         title="Intelligence Feed"
         action={
           <span className="panel-kicker">
-            {ordered.length} governed signals ·{" "}
+            {ordered.length} saved intelligence items ·{" "}
             {sort === "PRIORITY" ? "importance order" : label(sort)}
           </span>
         }
@@ -648,7 +648,7 @@ export function Intelligence({
           </div>
         ) : (
           <Empty>
-            No governed Intelligence matches the current search and filters.
+            No saved Intelligence matches the current search and filters.
           </Empty>
         )}
       </Panel>

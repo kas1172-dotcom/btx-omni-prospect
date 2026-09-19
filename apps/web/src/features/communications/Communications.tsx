@@ -127,7 +127,7 @@ export function Communications({
     <div className="surface communications-surface">
       <header className="page-title communications-header">
         <div>
-          <span className="eyebrow">Governed outreach</span>
+          <span className="eyebrow">Draft and approval workflow</span>
           <h1>Communications</h1>
           <p>
             Trigger → Draft → Human review → Approved send. Gemini can assist

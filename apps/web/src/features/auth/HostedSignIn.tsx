@@ -22,7 +22,7 @@ function BeaconStage({ children }: { children: React.ReactNode }) {
       <span className="beacon-kicker">BTX Omni</span>
       <h1 id="beacon-title">Project <strong>Beacon</strong></h1>
       <p className="beacon-statement">See the signal. Connect the evidence. Move with precision.</p>
-      <p className="beacon-description">A governed commercial intelligence workspace for the opportunities, risks, and relationships that deserve action.</p>
+      <p className="beacon-description">Commercial intelligence for the opportunities, risks, and relationships that deserve action.</p>
       <dl className="beacon-pillars" aria-label="Project Beacon workspace">
         <div><dt>Signal</dt><dd>Public and internal intelligence</dd></div>
         <div><dt>Context</dt><dd>Customers, programs and facilities</dd></div>

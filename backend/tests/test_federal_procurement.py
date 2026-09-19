@@ -140,7 +140,7 @@ def test_projection_tolerates_live_sam_notice_without_response_deadline(
 def test_relevance_missing_context_is_conservative() -> None:
     score = relevance({"naics": "336413", "naics_targeting": "VERIFIED"}, now=datetime(2026, 9, 1, tzinfo=UTC))
     assert score["score"] == 40
-    assert "BTX governed commercial context" in score["missingness"]
+    assert "Relevant BTX commercial context" in score["missingness"]
 
 
 def test_sector_totals_and_scope_are_truthful() -> None:

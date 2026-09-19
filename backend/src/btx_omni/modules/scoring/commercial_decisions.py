@@ -191,7 +191,7 @@ def action_decisions(account: dict, *, account_id: str, revision: str, fulfillme
         inputs = {
             "impact": FactorInput(impact, tuple(evidence), f"Largest linked open-order or quoted-opportunity exposure is {_money(exposure, account['currency'])}; it is not expected loss or recognized revenue.", raw_value=exposure, required_fields=("linked_exposure", "account_revenue_denominator"), observed_fields=(("linked_exposure",) if exposure is not None else ()) + (("account_revenue_denominator",) if revenue > 0 else ())),
             "urgency": FactorInput(urgency, (action["action_id"],), f"The case follow-up is due {action.get('due_date')}; {days} days from the demo as-of date.", raw_value=days, required_fields=("due_date",), observed_fields=("due_date",) if due else ()),
-            "readiness": FactorInput(Decimal(100) if assigned and scoped else None, tuple(evidence) + ((work.id,) if work else ()), "A governed work item has an assigned user; approval and current version checks still govern execution." if assigned else "A role target is not an assigned authorized user; create or reconcile a governed work proposal before execution.", required_fields=("scoped_evidence", "assigned_user"), observed_fields=(("scoped_evidence",) if scoped else ()) + (("assigned_user",) if assigned else ())),
+            "readiness": FactorInput(Decimal(100) if assigned and scoped else None, tuple(evidence) + ((work.id,) if work else ()), "The Action has an assigned user; approval and current version checks still control execution." if assigned else "A role target is not an assigned user; create or reconcile an authorized Action before execution.", required_fields=("scoped_evidence", "assigned_user"), observed_fields=(("scoped_evidence",) if scoped else ()) + (("assigned_user",) if assigned else ())),
             "scope": FactorInput(Decimal(100) if scoped else None, tuple(evidence), "Referenced records resolve in the selected canonical account." if scoped else "One or more source references require resolution.", required_fields=("account_scope", "resolved_record_references"), observed_fields=("account_scope", "resolved_record_references") if scoped else ()),
         }
         work_revision = revision + ":work:" + ";".join(f"{item.id}@{item.version}" for item in sorted(linked, key=lambda item: item.id))
@@ -201,6 +201,6 @@ def action_decisions(account: dict, *, account_id: str, revision: str, fulfillme
         results.append({"action_id": action["action_id"], "account_id": account_id, "title": action["title"],
                         "decision": decision, "work_status": "AMBIGUOUS_MAPPING" if len(linked) > 1 else work.status.value if work else "SOURCE_CASE_FOLLOW_UP_NOT_CREATED_WORK",
                         "linked_work_ids": [item.id for item in linked],
-                        "execution_requirements": ["Resolve an accountable user", "Create or reconcile the governed local proposal", "Apply current approval/version checks"],
+                        "execution_requirements": ["Resolve an accountable user", "Create or reconcile the local Action proposal", "Apply current approval/version checks"],
                         "evidence_ids": evidence})
     return results

@@ -69,7 +69,7 @@ export function HighCardinalitySelector({ label, choices, value, onChange, allCh
         <span><strong>{choice.label}</strong>{choice.description && <small>{choice.description}</small>}</span>
         {choice.group && <small>{presentationLabel(choice.group)}</small>}
       </button>)}
-      {!matches.length && <p role="status">No choices match this filter. Clear or change the search to inspect the governed account list.</p>}
+      {!matches.length && <p role="status">No choices match this filter. Clear or change the search to inspect the full customer and prospect list.</p>}
       {matches.length > 0 && ordered.length > matches.length && <p className="governed-selector-more">Showing the first {MAX_RESULTS} matches. Keep typing to narrow the full set of {ordered.length} choices.</p>}
     </div>}
   </div>

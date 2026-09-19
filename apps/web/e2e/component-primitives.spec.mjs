@@ -81,6 +81,10 @@ test('decision notices give the trigger and next step a full-width reading order
   const noticeBox = await notice.boundingBox()
   const contentBox = await notice.locator('.ui-notice-content').boundingBox()
   expect(contentBox?.width ?? 0).toBeGreaterThan((noticeBox?.width ?? 0) * 0.85)
+  const workspace = page.locator('.account-workspace')
+  await page.getByRole('button', { name: /Programs, components & capabilities/ }).click()
+  await expect(workspace).toContainText('This section connects Applied Materials')
+  await expect(workspace).not.toContainText(/Governed operational relevance|Governed connections|Governed paths|Best governed route|Governed next action/i)
 
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)

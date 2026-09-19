@@ -25,7 +25,7 @@ def organization_360_projection(*, account, commercial: CommercialAccountSnapsho
     if contradictory:
         mode = "RELATIONSHIP_REVIEW"
         title = "Relationship needs review"
-        rationale = "Canonical commercial records exist, but the governed organization classification does not confirm a customer relationship."
+        rationale = "Commercial records exist, but the current account classification does not confirm a customer relationship."
     elif confirmed_customer:
         mode = "CUSTOMER"
         title = "Customer 360"
@@ -33,11 +33,11 @@ def organization_360_projection(*, account, commercial: CommercialAccountSnapsho
     elif relationship in {"PROSPECT", "TARGET", "PUBLIC_MARKET"}:
         mode = "PROSPECT"
         title = "Prospect 360"
-        rationale = "No confirmed BTX commercial relationship is present in the governed account classification."
+        rationale = "The current account classification contains no confirmed BTX commercial relationship."
     else:
         mode = "RELATIONSHIP_REVIEW"
         title = "Relationship needs review"
-        rationale = "The governed relationship classification is unresolved."
+        rationale = "The current account evidence does not resolve the relationship classification."
 
     assessments = [
         item.get("business_briefing")
@@ -185,7 +185,7 @@ def customer_360_projection(*, account_id: str, sample: SampleEnvironment, comme
         "intelligence": sorted(signals, key=lambda item: (str(item.get("observed_at", "")), str(item.get("id", ""))), reverse=True)[:10],
         "missingness": {
             "programs": "No canonical program relation" if not programs_by_id else None,
-            "capabilities": "No governed component or capability relation" if not components and not capabilities else None,
+            "capabilities": "No supported component or capability connection" if not components and not capabilities else None,
             "facilities": "No canonical facility linked" if not facilities else None,
             "intelligence": "No recent intelligence" if not signals else None,
         },

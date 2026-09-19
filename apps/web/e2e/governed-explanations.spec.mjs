@@ -4,10 +4,10 @@ import { openCustomerSection, openRelationshipWorkspace } from './helpers.mjs'
 const governedExplanation = {
   provider_status: 'AVAILABLE',
   assisted: true,
-  summary: 'The governed result is explained from its displayed deterministic inputs.',
+  summary: 'This result is explained from its displayed deterministic inputs.',
   key_drivers: ['Controlled taxonomy match'],
   limitations: ['Technical capability alignment does not establish supplier participation or a commercial probability.'],
-  what_to_consider: ['Review the displayed governed evidence before outreach.'],
+  what_to_consider: ['Review the displayed supporting evidence before outreach.'],
   evidence_ids: ['fixture-evidence-1'],
   disclosure: 'Explanation assisted by Gemini; underlying result is deterministic.',
 }
@@ -21,7 +21,7 @@ const technicalBrief = () => ({
   id: 'fixture-technical-brief',
   headline: 'Fixture public contract award',
   what_happened: 'A public award supports increased production.',
-  why_it_may_matter: 'Governed public technical context is available for review.',
+  why_it_may_matter: 'Source-backed technical context is available for review.',
   canonical_account_ids: ['lockheed-martin'],
   markets: ['Defense'],
   publication_timestamp: '2026-01-01T00:00:00Z',
@@ -33,7 +33,7 @@ const technicalBrief = () => ({
   data_mode: 'SAMPLE',
   resolution_state: 'RESOLVED',
   seller_promotion_state: 'RESOLVED_ELIGIBLE',
-  what_to_watch: 'Review governed evidence.',
+  what_to_watch: 'Review the supporting evidence.',
   missing_fields: [],
   seller_summary: 'Fixture seller summary.',
   summary_mode: 'DETERMINISTIC',
@@ -41,12 +41,12 @@ const technicalBrief = () => ({
   watchlist_eligible: true,
   priority_reasons: [],
   technical_opportunity: {
-    event_summary: 'Public award supports a governed program context.',
+    event_summary: 'The public award provides program context for review.',
     product_candidates: [],
     program_candidates: [{ name: 'Fixture Program', basis: 'SOURCE_STATED' }],
     technical_systems: [{ name: 'Actuation system', basis: 'MODEL_INFERRED' }],
     components: [
-      { component_id: 'component-round', name: 'Round', basis: 'SOURCE_STATED', evidence_layer: 'ANNOUNCED_SCOPE', confidence_state: 'DIRECTLY_ANNOUNCED', component_category: 'ALL_UP_ROUND', evidence_ids: ['lockheed-javelin'], source_publication_dates: ['2026-08-30'], research_methods: ['REVIEWED_PUBLIC_RELEASE_EXCERPT'], material_uncertainties: ['No BTX participation is established.'], validation_questions: ['Do governed customer records identify this program?'] },
+      { component_id: 'component-round', name: 'Round', basis: 'SOURCE_STATED', evidence_layer: 'ANNOUNCED_SCOPE', confidence_state: 'DIRECTLY_ANNOUNCED', component_category: 'ALL_UP_ROUND', evidence_ids: ['lockheed-javelin'], source_publication_dates: ['2026-08-30'], research_methods: ['REVIEWED_PUBLIC_RELEASE_EXCERPT'], material_uncertainties: ['No BTX participation is established.'], validation_questions: ['Do customer records identify this program?'] },
       { component_id: 'component-missile', name: 'Missile', parent_component: 'Round', basis: 'SOURCE_STATED', evidence_layer: 'SUPPORTED_PROGRAM_ARCHITECTURE', confidence_state: 'SUPPORTED_BY_AUTHORITATIVE_PROGRAM_SOURCE', component_category: 'MISSILE_BODY', evidence_ids: ['army-javelin'], source_publication_dates: ['2023-10-17'], research_methods: ['REVIEWED_PUBLIC_ARTICLE_EXCERPT'], material_uncertainties: ['Supplier and qualification scope are unknown.'], validation_questions: ['Which manufactured hardware is addressable?'] },
     ],
     fit_hypotheses: [{ component_name: 'Missile', evidence_layer: 'BTX_FIT_HYPOTHESIS', fit_state: 'HYPOTHESIS_REQUIRES_VALIDATION', candidate_component_class: 'Structural hardware', candidate_capabilities: [{ id: 'capability-machining', name: 'Precision machining' }], candidate_business_units: [{ id: 'bu-aerospace', name: 'Aerospace' }], candidate_facilities: [], material_uncertainties: ['Program participation is not established.'], validation_questions: ['Validate material, tolerance, certification, and buyer scope.'], evidence_ids: ['army-javelin'], statement: 'Structural hardware is a possible manufacturing-family fit for the missile; program participation, qualification, capacity, and an award are not established.' }],
@@ -160,7 +160,7 @@ test('Relationship explanation remains contained at 390px and 320px', async ({ p
     await openCustomerSection(page, /People and relationship paths/)
     const detail = relationshipPanel.locator('.seller-relationship-card').first()
     await detail.getByRole('button', { name: 'Why this relationship path may be useful' }).click()
-    await expect(detail).toContainText('The governed result is explained from its displayed deterministic inputs.')
+    await expect(detail).toContainText('This result is explained from its displayed deterministic inputs.')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   }
 })

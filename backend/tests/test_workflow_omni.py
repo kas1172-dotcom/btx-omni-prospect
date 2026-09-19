@@ -584,10 +584,10 @@ def test_omni_selected_work_item_handles_next_step_conflicts_invalid_and_read_on
         work_items=service.list(),
     )
     assert (
-        f"stored governed next step is the work-item summary: {item.summary}"
+        f"stored next step is: {item.summary}"
         in next_step.content
     )
-    assert "does not match this work item's canonical account" in next_step.content
+    assert "does not match this Action's recorded account" in next_step.content
     assert any("conflicts" in item for item in next_step.missingness)
     assert "cannot simulate or execute a workflow transition" in outcome.content
     assert "did not execute, complete, dismiss, or update" in execution.content
@@ -833,7 +833,7 @@ def test_omni_relationship_routing_preserves_account_and_unrelated_routes() -> N
     )
     assert "Defense researched account(s) with open quotes" in cross_account.content
     assert "Account Attractiveness" in score.content
-    assert "Deterministic governed answer for Boeing" in named_account.content
+    assert "Account briefing for Boeing" in named_account.content
     assert "curated public-company universe" in general.content
 
 
@@ -1215,7 +1215,7 @@ def test_omni_cross_account_quotes_comparison_and_route_protection() -> None:
         "account_id": "boeing",
         "related_account_id": "lockheed-martin",
     }
-    assert "exactly two canonical" in unresolved.content
+    assert "exactly two researched account names" in unresolved.content
     assert "Source-backed Intelligence event" in event_route.content
     assert item.summary in action_route.content
     assert "Current Accounts view" in screen_route.content
@@ -1367,7 +1367,7 @@ def test_omni_conversation_facility_action_account_and_cleared_screen_context() 
     )
     assert (
         "Boeing briefing" in account_follow.content
-        and "Current open governed work items: 1" in account_follow.content
+        and "Current open Actions: 1" in account_follow.content
     )
     assert (
         "Boeing briefing" in intelligence_follow.content
@@ -1534,13 +1534,13 @@ def test_omni_conversation_comparison_relationship_and_ambiguity_are_bounded() -
         and score.context_used["context_source"] == "conversation"
     )
     assert (
-        "open governed work item" in actions.content
+        "open Action" in actions.content
         and actions.context_used["context_source"] == "conversation"
     )
-    assert "Deterministic governed answer for Northrop Grumman" in explicit.content
+    assert "Account briefing for Northrop Grumman" in explicit.content
     assert "can't determine a unique conversational referent" in ambiguous.content
     assert (
-        "Deterministic governed answer for Lockheed Martin" in other.content
+            "Account briefing for Lockheed Martin" in other.content
         and other.context_used["context_source"] == "conversation"
     )
     assert relationship.conversation_referent["relationship_account_ids"] == [

@@ -73,9 +73,9 @@ def _drafting_request(
     intelligence_facts: tuple[str, ...] = (),
 ) -> GovernedDraftingRequest:
     facts = [
-        f"Canonical Customer: {account.legal_name}. Public identity and market context are governed by Omni.",
+        f"Customer: {account.legal_name}. Use the supplied public identity and market context exactly as recorded.",
         f"Public industries/markets: {', '.join(account.industries) or 'Unavailable'}.",
-        "Do not imply BTX commercial activity, supplier status, score, relationship, or authorization unless supplied through a governed workflow.",
+        "Do not imply BTX commercial activity, supplier status, score, relationship, or authorization unless the supplied records establish it.",
     ]
     facts.extend(intelligence_facts)
     return GovernedDraftingRequest(
@@ -104,7 +104,7 @@ def _intelligence_facts(runtime: PocRuntime, account_id: str, evidence_ids: tupl
         facts.extend((
             f"Current Intelligence development: {projection.get('headline')}",
             f"Supported commercial implication: {projection.get('why_it_may_matter')}",
-            f"Governed next step: {projection.get('recommended_action') or 'No seller action is established.'}",
+            f"Recommended next step: {projection.get('recommended_action') or 'No seller action is established.'}",
             f"Material uncertainty: {'; '.join(projection.get('material_uncertainties', ())) or 'None recorded.'}",
         ))
     return tuple(facts)
@@ -119,7 +119,7 @@ def _proposal_payload(outcome) -> dict:
         },
         "provider_status": outcome.provider_status.value,
         "assisted": outcome.assisted,
-        "message": "Gemini produced a proposal. Review and save it through the governed draft workflow."
+        "message": "Gemini produced a proposal. Review it before saving the draft."
         if outcome.assisted
         else "Gemini is unavailable; manual drafting remains available and no draft was changed.",
     }

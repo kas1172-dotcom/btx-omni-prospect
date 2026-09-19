@@ -51,7 +51,7 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
     await expect(page.getByText('No Commercial record is linked to this canonical Customer.')).toHaveCount(0)
   } else {
     await expect(page.getByText('No Commercial record is linked to this canonical Customer.')).toBeVisible()
-    await expect(page.getByText('No governed alert is currently open')).toBeVisible()
+    await expect(page.getByText('No current account alert is open.')).toBeVisible()
     await expect(page.getByText('No eligible validated connection is currently available for this Customer.')).toBeVisible()
   }
 })

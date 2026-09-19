@@ -51,7 +51,7 @@ async function openSelectedAssessmentFromToday(page) {
   await page.goto('/#/today')
   await page.getByRole('button', { name: 'Public intelligence' }).click()
   const priority = page.locator('[data-priority-id="priority-navigation"]')
-  await priority.getByText('Evidence and governed action').click()
+  await priority.getByText('Evidence and next action').click()
   await priority.getByRole('button', { name: 'Use in Omni' }).click()
   await priority.locator('.seller-signal-brief').getByRole('button', { name: 'Lockheed Martin' }).click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()

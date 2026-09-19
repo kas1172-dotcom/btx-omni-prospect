@@ -67,7 +67,7 @@ def procurement_stage(raw: object, *, active: object = None) -> dict[str, str]:
         "AWARD": "The source reports a completed government award.",
         "MODIFICATION": "The source reports a change to an existing award or requirement.",
         "INACTIVE": "The source no longer presents this notice as active.",
-        "UNCLASSIFIED": "The source label has not been mapped to a governed procurement stage.",
+        "UNCLASSIFIED": "The source label has not yet been mapped to a procurement stage.",
     }
     return {"code": code, "label": labels[code], "explanation": explanations[code], "source_label": value or "Unavailable"}
 
@@ -148,7 +148,7 @@ def route_opportunity(opportunity: dict[str, Any], *, environment: Any, partners
             "label": "Direct BTX pursuit to validate",
             "score": min(100, 35 + 8 * len(capabilities) + 5 * timing),
             "evidence_state": "HYPOTHESIS",
-            "why": f"{len(capabilities)} governed BTX capability record(s) share requirement terms.",
+            "why": f"{len(capabilities)} BTX capability record(s) share terms with this requirement.",
             "unknowns": ["Technical-data access", "Source approval", "Current capacity and economics"],
             "governed_action": "Ask engineering and contracts to validate manufacturability, qualification, technical-data access and response timing.",
             "account_id": None,
@@ -163,7 +163,7 @@ def route_opportunity(opportunity: dict[str, Any], *, environment: Any, partners
             "label": label,
             "score": min(100, 40 + 8 * min(3, len(matched)) + (12 if is_customer else 5)),
             "evidence_state": "SUPPORTED_CONTEXT_REQUIRES_VALIDATION",
-            "why": "Source or governed program context matches " + ", ".join(matched[:3]) + ".",
+            "why": "The source or recorded program context matches " + ", ".join(matched[:3]) + ".",
             "unknowns": ["Role in this requirement", "Buying or teaming authority", "Current pursuit status"],
             "governed_action": "Validate the organization’s role and review related internal records before outreach.",
             "account_id": account.id,

@@ -80,7 +80,7 @@ export default function App() {
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>()
   const [settingsState, setSettingsState] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [actionPrincipal, setActionPrincipal] = useState<Principal>()
-  const [actionWarning, setActionWarning] = useState('Actions use durable governed storage.')
+  const [actionWarning, setActionWarning] = useState('Actions retain their evidence, owner, status, and approval history.')
   const [monitor, setMonitor] = useState<MonitorHealth>()
   const navigationAuthority: NavigationAuthority = { authenticated: authState === 'authenticated', sourceHealth: workspaceSettings?.capabilities.view_source_health === true }
   const destinations = authorizedDestinations(navigationAuthority)
@@ -234,7 +234,7 @@ export default function App() {
   const createFederalAction = useCallback(async (opportunity: FederalOpportunity, route: FederalRoute) => {
     const assessment = opportunity.assessment
     if (!assessment || !route.account_id) {
-      setError('This route does not establish an organization for a governed Action proposal.')
+      setError('This route does not identify an organization for an Action proposal.')
       return
     }
     const referents: Array<[string, string]> = [
@@ -484,7 +484,7 @@ export default function App() {
         </nav>
         <div className="sidebar-footer">
           {desktopSecondaryDestinations.map(destination => <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-current={surface === destination.surface ? 'page' : undefined} title={destination.job} onClick={() => navigate(destination.surface)}>{destination.label}</button>)}
-          <span className="eyebrow">{actionPrincipal?.display_name ?? 'Governed seller workspace'}</span>
+          <span className="eyebrow">{actionPrincipal?.display_name ?? 'Seller workspace'}</span>
           <small>{actionPrincipal?.role ?? 'Public evidence + SAMPLE context'}</small>
         </div>
       </aside>

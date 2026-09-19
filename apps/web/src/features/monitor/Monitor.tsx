@@ -70,7 +70,7 @@ export function Monitor({ health, settings, onIntelligence }: { health?: Monitor
 
     <Panel title="Operator decision" action={<StatusBadge value={health.scheduler_state} kind="source" label={schedulerLabel(health.scheduler_state)} />}>
       <p className="monitor-operator-action"><strong>What to do next:</strong> {operatorAction}</p>
-      <dl className="monitor-decision-counts" aria-label="Latest governed collection counts">
+      <dl className="monitor-decision-counts" aria-label="Latest collection decision counts">
         <div><dt>Accepted for seller review</dt><dd>{accepted}</dd></div>
         <div><dt>Requires review</dt><dd>{reviewRequired}</dd></div>
         <div><dt>Rejected in latest run</dt><dd>{latestRun?.records_rejected ?? 0}</dd></div>
@@ -81,20 +81,20 @@ export function Monitor({ health, settings, onIntelligence }: { health?: Monitor
     </Panel>
 
     <div className="monitor-status-grid">
-      <Panel title="Source freshness and coverage" action={<span className="panel-kicker">{health.sources.length} governed sources</span>}>
+      <Panel title="Source freshness and coverage" action={<span className="panel-kicker">{health.sources.length} configured sources</span>}>
         <div className="card-list monitor-source-list">
           {health.sources.length ? health.sources.map(source => {
             const sourceCoverage = coverage.filter(item => item.query_key.startsWith(`${source.source_id}:`) || item.query_key === source.source_id)
             const pending = sourceCoverage.filter(item => item.pending_continuation).length
             return <article className="line" key={source.source_id}>
-              <span><strong>{source.source_name ?? 'Configured source'}</strong><small>Last successful check: {utcDateTime(source.last_success_at)}</small><small>{source.failure_summary ?? (pending ? `${pending} governed queries will continue from saved checkpoints.` : 'No current source failure is reported.')}</small></span>
+              <span><strong>{source.source_name ?? 'Configured source'}</strong><small>Last successful check: {utcDateTime(source.last_success_at)}</small><small>{source.failure_summary ?? (pending ? `${pending} source queries will continue from saved checkpoints.` : 'No current source failure is reported.')}</small></span>
               <StatusBadge value={source.state ?? 'UNAVAILABLE'} kind="source" label={sourceState(source.state)} />
             </article>
-          }) : <Empty>No governed sources are configured.</Empty>}
+          }) : <Empty>No collection sources are configured.</Empty>}
         </div>
       </Panel>
       <Panel title="Resumable procurement coverage" action={<span className="panel-kicker">{completeCoverage.length} complete · {pendingCoverage.length} continuing</span>}>
-        {coverage.length ? <><p>Each governed query retains its own window and continuation state. Incomplete windows continue on later worker runs.</p><div className="monitor-coverage-list">{coverage.map(item => <article key={item.query_key}><span><strong>{item.query_value || 'Governed query'}</strong><small>{item.window_start} to {item.window_end}</small></span><StatusBadge value={item.coverage_state} kind="source" label={item.pending_continuation ? 'Awaiting continuation' : presentationLabel(item.coverage_state, 'provider')} /></article>)}</div></> : <Empty>No resumable procurement coverage checkpoint is available.</Empty>}
+        {coverage.length ? <><p>Each source query retains its own collection window and continuation state. Incomplete windows continue on later worker runs.</p><div className="monitor-coverage-list">{coverage.map(item => <article key={item.query_key}><span><strong>{item.query_value || 'Configured query'}</strong><small>{item.window_start} to {item.window_end}</small></span><StatusBadge value={item.coverage_state} kind="source" label={item.pending_continuation ? 'Awaiting continuation' : presentationLabel(item.coverage_state, 'provider')} /></article>)}</div></> : <Empty>No resumable procurement coverage checkpoint is available.</Empty>}
       </Panel>
     </div>
 

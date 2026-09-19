@@ -146,7 +146,7 @@ test('an immediately launched selected assessment reaches Omni before submission
   await waitForApp(page)
   await page.getByRole('button', { name: 'Public intelligence', exact: true }).click()
   const priority = page.locator('.today-attention-item').filter({ hasText: assessment.headline })
-  await priority.getByRole('button', { name: 'Evidence and governed action' }).click()
+  await priority.getByRole('button', { name: 'Evidence and next action' }).click()
   await priority.getByRole('button', { name: /View supporting evidence/ }).click()
   const scoreSummary = priority.getByRole('article', { name: 'Signal Confidence score summary' })
   await expect(scoreSummary).toContainText(String(assessment.signal_confidence.score))
@@ -154,7 +154,7 @@ test('an immediately launched selected assessment reaches Omni before submission
   const expectedAction = await priority.locator('.today-priority-meaning > p').filter({ hasText: 'Next:' }).innerText()
   await priority.getByRole('button', { name: 'Use in Omni', exact: true }).click()
   await openOmni(page)
-  const answer = await ask(page, 'Explain this selected assessment, including its Signal Confidence and governed action.')
+  const answer = await ask(page, 'Explain this selected assessment, including its Signal Confidence and recommended action.')
   expect(answer.request.context.selected_assessment).toMatchObject({
     assessment_id: expect.any(String),
     assessment_version: expect.any(Number),

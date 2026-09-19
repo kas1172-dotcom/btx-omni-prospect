@@ -48,7 +48,7 @@ export function MapAccountDetails({ record }: { record: MapRecord }) {
       <p><strong>Verified location:</strong> {verifiedLocation || "Location details unavailable"} · {presentationLabel(record.location_truth_state)}</p>
       <p><strong>Market and industry:</strong> {record.primary_markets.join(" · ") || record.industry || "Unavailable"}</p>
       {Boolean(record.naics_assignments?.length) && <p><strong>Account NAICS:</strong> {record.naics_assignments?.map((item) => `${item.code} (${item.taxonomy_version})`).join(" · ")} · POC classification</p>}
-      {record.candidate_capabilities?.length ? <p><strong>Candidate BTX capability fit:</strong> {record.candidate_capabilities.map(item => item.name).join(" · ")}. Derived from account-level business-unit context and requires site qualification.</p> : <p><strong>Candidate BTX capability fit:</strong> No governed account-level match is available.</p>}
+      {record.candidate_capabilities?.length ? <p><strong>Candidate BTX capability fit:</strong> {record.candidate_capabilities.map(item => item.name).join(" · ")}. Derived from account-level business-unit context and requires site qualification.</p> : <p><strong>Candidate BTX capability fit:</strong> No supported account-level capability match is available.</p>}
       {score && <ScoreSummary model={score} />}
       {nearest?.distance_miles != null ? <p><strong>Nearest BTX facility:</strong> {nearest.name} · {nearest.distance_miles} miles straight-line</p> : <p>Nearest BTX facility not yet established.</p>}
       {record.governed_next_step && <p><strong>Next:</strong> {record.governed_next_step}</p>}

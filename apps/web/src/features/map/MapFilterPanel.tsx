@@ -4,7 +4,7 @@ import { Button, FilterChip, SearchInput } from '../../components/UI'
 import { FULFILLMENT_LABELS, toggleValue, type MapFilters, type MapMarker } from './mapModel'
 import { layerOptions, relationshipOptions } from './mapPresentation'
 
-const selectedChoices = (ids: string[] | undefined, choices: GovernedChoice[]) => (ids ?? []).map(id => choices.find(choice => choice.id === id) ?? { id, label: 'Selected governed value' })
+const selectedChoices = (ids: string[] | undefined, choices: GovernedChoice[]) => (ids ?? []).map(id => choices.find(choice => choice.id === id) ?? { id, label: 'Selected saved value' })
 
 export function MapFilterPanel({ filters, onChange, onReset, onClose, changed, markets, naics, filterOptions, fulfillment, planning, planningError, focal }: {
   filters: MapFilters

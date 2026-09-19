@@ -17,7 +17,7 @@ test('Wave 2 queues bound rendering after whole-result filtering and stable sort
   assert.match(actions, /pageSlice\(visible/)
   assert.match(actions, /missingLast/)
   assert.match(suggestions, /pageSlice\(filtered/)
-  assert.match(suggestions, /Each canonical suggestion remains separate/)
+  assert.match(suggestions, /Each remains separate because its evidence or source revision may differ/)
 })
 
 test('Wave 2 selectors are bounded, identity preserving and explicit about zero matches', () => {
