@@ -7,6 +7,7 @@ import type { OmniContext } from '../../types/api'
 import { SupportingEvidence } from '../../components/SupportingEvidence'
 import { presentationLabel } from '../../components/presentation'
 import { relationshipDirectionLabel, relationshipEvidenceLabel, relationshipPredicateLabel, relationshipRouteStatus } from '../../components/relationshipPresentation'
+import { LoadingStatus } from '../../components/UI'
 
 const modes: Array<[RelationshipMode, string]> = [['cross_account_experience', 'Shared experience'], ['commercial_fit', 'Commercial fit'], ['contact_candidates', 'Contact candidates'], ['documented_access', 'Documented access']]
 const label = (value: string) => presentationLabel(value, 'relationship')
@@ -144,7 +145,7 @@ export function RankedRelationships({ accountId, initialMode, initialPathId, onS
     {includeRecords && <p>Record links explain the commercial history. They do not strengthen a route, establish personal access or promise capacity.</p>}
     <div className="ranked-toolbar"><label>Objective<select value={mode} onChange={e => changing(e.target.value as RelationshipMode, depth)}>{modes.map(([value, title]) => <option key={value} value={value}>{title}</option>)}</select></label><label>Search depth<select value={depth} onChange={e => changing(mode, Number(e.target.value))}><option value={4}>Up to four edges</option><option value={6}>Deeper · up to six edges</option></select></label><button onClick={() => { changing(mode, depth); setRetry(n => n + 1) }}>Refresh evidence</button></div>
     {result?.query_options && <div className="ranked-toolbar"><label>Component scope<select value={component} onChange={e => { changing(mode, depth); setComponent(e.target.value) }}><option value="">All applicable components</option>{result.query_options.components.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>{mode === 'cross_account_experience' && <label>Compare account<select value={target} onChange={e => { changing(mode, depth); setTarget(e.target.value); setTargetComponent('') }}><option value="">Relevant shared experience</option>{result.query_options.accounts.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}</select></label>}{mode === 'cross_account_experience' && target && <label>Compared component<select value={targetComponent} onChange={e => { changing(mode, depth); setTargetComponent(e.target.value) }}><option value="">All compared components</option>{result.query_options.target_components?.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>}</div>}
-    {pending && <p role="status">Updating connections… Previous results remain visible but are not current.</p>}
+    {pending && <LoadingStatus>Updating connections… Previous results remain visible but are not current.</LoadingStatus>}
     {error && <p role="alert">{error}</p>}
     {result && <p>{result.candidate_count} paths found · searched up to {result.searched_depth} edges{!result.search_complete ? ` · Partial search: ${label(result.stop_reason ?? 'budget reached')}` : ''}</p>}
     {result?.scope && <p>Evidence evaluated as of {result.scope.as_of}. Commercial history through {result.commercial_as_of?.join(', ') ?? 'the recorded snapshot'}.</p>}

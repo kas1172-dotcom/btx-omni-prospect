@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../../api/client'
 import heroUrl from '../../assets/project-beacon-hero.jpg'
+import { PrecisionLoader } from '../../components/UI'
 import './hosted-sign-in.css'
 
 function BeaconBrand() {
@@ -35,11 +36,11 @@ function BeaconStage({ children }: { children: React.ReactNode }) {
 
 export function HostedSessionCheck() {
   return <BeaconStage>
-    <div className="beacon-check" role="status" aria-live="polite">
-      <span className="beacon-check-indicator" aria-hidden="true" />
-      <span className="beacon-form-kicker">Secure workspace</span>
-      <h2>Opening Project Beacon</h2>
-      <p>Confirming your protected workspace session.</p>
+    <div className="beacon-check" role="status" aria-live="polite" aria-busy="true">
+      <PrecisionLoader size="large" />
+      <span className="beacon-form-kicker">Precision in motion</span>
+      <h2>Aligning your Project Beacon workspace</h2>
+      <p>Bringing intelligence, relationships, and next steps into focus.</p>
     </div>
   </BeaconStage>
 }
@@ -92,8 +93,8 @@ export function HostedSignIn({ onAuthenticated }: { onAuthenticated: () => void 
         </span>
       </div>
       {error && <p className="beacon-error" id="beacon-sign-in-error" role="alert">{error}</p>}
-      <button className="beacon-submit" type="submit" disabled={submitting || !accessCode.trim()}>
-        <span>{submitting ? 'Verifying access…' : 'Enter Project Beacon'}</span>
+      <button className="beacon-submit" type="submit" disabled={submitting || !accessCode.trim()} aria-busy={submitting || undefined}>
+        <span>{submitting && <PrecisionLoader size="compact" />}{submitting ? 'Preparing your workspace…' : 'Enter Project Beacon'}</span>
         <span aria-hidden="true">&#8594;</span>
       </button>
       <p className="beacon-security" id="beacon-code-note"><span aria-hidden="true">&#9670;</span>Your code is exchanged securely with the server and is never stored in this browser.</p>

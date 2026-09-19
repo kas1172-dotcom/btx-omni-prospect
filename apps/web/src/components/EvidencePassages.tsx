@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { LoadingStatus } from './UI'
 
 export function EvidencePassages({ eventId }: { eventId: string }) {
   const [open, setOpen] = useState(false)
@@ -39,6 +40,6 @@ export function EvidencePassages({ eventId }: { eventId: string }) {
           <ol>{result.research.steps.map(step => <li key={step.number}>{step.tool.replaceAll('_', ' ')} · {step.status.replaceAll('_', ' ')} · {step.completed_at ?? 'completion unknown'}</li>)}</ol>
         </details>
       </section>}
-    </> : <p role="status">Loading persisted passages…</p>}
+    </> : <LoadingStatus>Opening retained source passages…</LoadingStatus>}
   </>}</details>
 }

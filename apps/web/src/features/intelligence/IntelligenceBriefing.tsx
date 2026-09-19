@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import type { Account360, MonitorSignalBrief, OmniAssessmentSelection } from "../../types/api";
-import { Button, Empty, EvidenceSource, Notice, State } from "../../components/UI";
+import { Button, Empty, EvidenceSource, LoadingStatus, Notice, State } from "../../components/UI";
 import { EvidencePassages } from "../../components/EvidencePassages";
 import { TechnicalDecompositionSection } from "../../components/TechnicalDecompositionSection";
 import { SupportingEvidence, WhyThis } from "../../components/SupportingEvidence";
@@ -24,11 +24,12 @@ function BriefingLoading({ onBack }: { onBack: () => void }) {
   return (
     <div className="intelligence-briefing">
       <Button variant="ghost" onClick={onBack}>← Back to Intelligence</Button>
-      <div className="intelligence-briefing-loading" role="status" aria-live="polite">
+      <div className="intelligence-briefing-loading">
+        <LoadingStatus>Preparing the organization-specific briefing…</LoadingStatus>
         <span className="ui-skeleton" />
         <span className="ui-skeleton" />
         <span className="ui-skeleton" />
-        <span>Loading canonical customer context…</span>
+        <span>Connecting the signal to relevant BTX context…</span>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { importLibrary } from "@googlemaps/js-api-loader";
 import { api } from "../../api/client";
 import type { Itinerary, ItineraryStop } from "../../types/api";
-import { Button, Disclosure, Drawer, Empty, Notice, SelectInput, StatusBadge, Textarea, TextInput } from "../../components/UI";
+import { Button, Disclosure, Drawer, Empty, LoadingStatus, Notice, SelectInput, StatusBadge, Textarea, TextInput } from "../../components/UI";
 import type { MapMarker } from "./mapModel";
 
 export interface ItineraryPlannerHandle {
@@ -123,7 +123,7 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
 
   return <Drawer open={open} onClose={() => setOpen(false)} titleId="itinerary-title" className="itinerary-drawer">
     <header><div><span className="eyebrow">Seller trip plan</span><h2 id="itinerary-title">Itinerary</h2></div><Button variant="ghost" onClick={() => setOpen(false)}>Close</Button></header>
-    {loading ? <p role="status">Loading saved itinerary…</p> : <>
+    {loading ? <LoadingStatus>Opening your saved itinerary…</LoadingStatus> : <>
       {failure && <Notice tone="warning" title="Itinerary needs attention">{failure}</Notice>}
       {saved && <Notice title="Itinerary saved">{saved}. The plan is private to the signed-in seller.</Notice>}
       <div className="itinerary-state"><StatusBadge value={saving ? "Saving" : dirty ? "Pending changes" : draft.version ? "Saved" : "Not saved"} tone={saving || dirty ? "warning" : draft.version ? "success" : "neutral"} /><span>{draft.version ? `Version ${draft.version}` : "Private seller plan"}</span></div>

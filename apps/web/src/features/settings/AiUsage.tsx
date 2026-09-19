@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
-import { Button, Disclosure } from '../../components/UI'
+import { Button, Disclosure, LoadingStatus } from '../../components/UI'
 
 export interface AiUsageSummary {
   policy_version: string
@@ -31,7 +31,7 @@ export function AiUsage() {
   return <Disclosure className="settings-section" title="AI call budget and usage" onOpenChange={value => { setOpen(value); setPending(value); setError('') }}>
     <p>Daily call limits are provisional workspace controls, not provider billing or a measure of successful answers. Failed and uncertain calls count toward these limits.</p>
     {error && <p role="alert">{error}</p>}
-    {pending && <p role="status">Refreshing AI usage…</p>}
+    {pending && <LoadingStatus>Refreshing AI usage…</LoadingStatus>}
     {data && <dl className="action-meta">
       <div><dt>UTC accounting day</dt><dd>{data.utc_day}</dd></div>
       <div><dt>Your reserved calls</dt><dd>{data.your_reserved_calls} / {data.limits.your_daily_calls}</dd></div>

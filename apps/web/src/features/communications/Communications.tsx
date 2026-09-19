@@ -6,6 +6,7 @@ import {
   Drawer,
   Empty,
   FilterChip,
+  LoadingStatus,
   Panel,
   SearchInput,
   SelectInput,
@@ -343,7 +344,7 @@ export function Communications({
                   </Panel>
                 )}
                 <Disclosure title="Audit history" open={historyOpen} onOpenChange={setHistoryOpen}>
-                  {!currentHistory && <p role="status">Loading this communication’s history…</p>}
+                  {!currentHistory && <LoadingStatus>Opening this communication’s history…</LoadingStatus>}
                   {currentHistory?.error && <p role="alert">History could not be loaded. No other communication’s history is shown.</p>}
                   <Button onClick={() => setHistoryRefresh(value => value + 1)}>Refresh communication history</Button>
                   <ol className="communication-history">

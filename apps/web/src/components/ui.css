@@ -53,15 +53,30 @@
   padding: 0;
   border-radius: var(--radius-pill);
 }
-.ui-button-spinner,
-.ui-state-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: ui-spin 0.7s linear infinite;
+.ui-precision-loader {
+  --precision-loader-accent: #d21f38;
+  --precision-loader-metal: #8f9aa8;
+  --precision-loader-core: #111318;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  transform-origin: center;
+  animation: precision-orbit 1.15s cubic-bezier(.55,.12,.45,.88) infinite;
 }
+.ui-precision-loader-compact { width: 18px; height: 18px; }
+.ui-precision-loader-large { width: 82px; height: 82px; }
+.ui-precision-loader svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ui-precision-orbit { fill: none; stroke: var(--precision-loader-metal); stroke-width: 3.5; }
+.ui-precision-core { fill: var(--precision-loader-core); stroke: #fff; stroke-width: 2; }
+.ui-precision-glint { fill: #fff; }
+.ui-precision-staff-metal { fill: none; stroke: var(--precision-loader-metal); stroke-width: 8; stroke-linecap: round; }
+.ui-precision-staff-accent { fill: none; stroke: var(--precision-loader-accent); stroke-width: 3.5; stroke-linecap: round; }
+.ui-precision-collar,.ui-precision-tip { fill: var(--precision-loader-metal); stroke: #fff; stroke-width: 1; }
+.ui-button-primary .ui-precision-loader { --precision-loader-accent: #fff; --precision-loader-metal: #d9dde2; }
+.ui-loading-status { display: flex; align-items: center; gap: 9px; margin: 8px 0; color: var(--text-secondary); }
+.ui-loading-status .ui-precision-loader { align-self: center; }
 .ui-field {
   display: grid;
   gap: 6px;
@@ -462,7 +477,7 @@
   background: var(--semantic-unavailable-soft);
   border-color: var(--semantic-unavailable-border);
 }
-@keyframes ui-spin {
+@keyframes precision-orbit {
   to {
     transform: rotate(360deg);
   }

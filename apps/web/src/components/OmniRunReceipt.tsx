@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { OmniRun } from '../types/omniRun'
+import { LoadingStatus } from './UI'
 
 export function OmniRunReceipt({ id }: { id: string }) {
   const [record, setRecord] = useState<OmniRun>()
@@ -13,7 +14,7 @@ export function OmniRunReceipt({ id }: { id: string }) {
     return () => controller.abort()
   }, [id, retry])
   if (error) return <div role="alert">This private run receipt could not be loaded. The displayed answer is unchanged. <button onClick={() => { setError(false); setRetry(value => value + 1) }}>Retry run receipt</button></div>
-  if (!record || record.id !== id) return <p role="status">Loading your run receipt…</p>
+  if (!record || record.id !== id) return <LoadingStatus>Opening the answer receipt…</LoadingStatus>
   return <div className="commercial-evidence-detail">
     <p>{record.operational_state.replaceAll('_', ' ').toLowerCase()} · {record.started_at}</p>
     <p>{record.authority}</p>

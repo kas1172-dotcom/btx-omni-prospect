@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, resolveFederalAssessment } from '../api/client'
 import { OmniDrawer } from '../components/OmniDrawer'
-import { Button, Drawer, StatusMessage } from '../components/UI'
+import { Button, Drawer, LoadingStatus, StatusMessage } from '../components/UI'
 import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
@@ -400,7 +400,7 @@ export default function App() {
           clearViewContext()
           navigate('intelligence')
         }}
-      /> : <section className="surface" role="status">Checking workspace access…</section>
+      /> : <section className="surface"><LoadingStatus>Preparing workspace access…</LoadingStatus></section>
     ) : (
       <Today
         filters={todayFilters}
@@ -501,7 +501,7 @@ export default function App() {
         <aside className="demonstration-banner" aria-label="Demonstration environment">Simulated data environment</aside>
         {linkRecovery && <div className="api-notice" role="alert">{linkRecovery} <button type="button" onClick={() => navigate(surface)}>Return to {surfaceLabels[surface]}</button></div>}
         {error && <div className="api-notice">{error}</div>}
-        {accountOpening && <div className="api-notice" role="status">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'account'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></div>}
+        {accountOpening && <LoadingStatus className="api-notice">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'organization'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></LoadingStatus>}
         {surface !== 'settings' && resourceState[surface] === 'error' && <StatusMessage state="error" title={`${surfaceLabels[surface]} could not refresh`} action={<Button onClick={() => setResourceRefresh(previous => ({ key: surface, version: (previous?.version ?? 0) + 1 }))}>Retry {surfaceLabels[surface]}</Button>}>{resourceReady[surface] ? 'Last-good content remains visible and is not labeled as freshly collected.' : 'This resource is unavailable. Other permitted workspace sections remain available.'}</StatusMessage>}
         {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
       </section>

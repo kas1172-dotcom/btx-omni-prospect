@@ -5,8 +5,26 @@ import { presentationLabel } from './presentation'
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
 type ButtonSize = 'compact' | 'touch' | 'icon'
 
-export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean }>(function Button({ variant = 'secondary', size = 'compact', loading = false, disabled, className = '', children, ...props }, ref) {
-  return <button {...props} ref={ref} className={`ui-button ui-button-${variant} ui-button-${size} ${className}`.trim()} disabled={disabled || loading} aria-busy={loading || undefined}>{loading && <span className="ui-button-spinner" aria-hidden="true" />}{loading ? <span>Loading…</span> : children}</button>
+export function PrecisionLoader({ size = 'medium', className = '' }: { size?: 'compact' | 'medium' | 'large'; className?: string }) {
+  return <span className={`ui-precision-loader ui-precision-loader-${size} ${className}`.trim()} aria-hidden="true">
+    <svg viewBox="0 0 80 80" focusable="false">
+      <ellipse className="ui-precision-orbit" cx="20" cy="18" rx="15" ry="8" transform="rotate(-24 20 18)" />
+      <circle className="ui-precision-core" cx="20" cy="18" r="7" />
+      <circle className="ui-precision-glint" cx="17" cy="15" r="2" />
+      <path className="ui-precision-staff-metal" d="M27 25 66 65" />
+      <path className="ui-precision-staff-accent" d="M29 27 64 63" />
+      <path className="ui-precision-collar" d="m23 21 13 5-9 9Z" />
+      <circle className="ui-precision-tip" cx="67" cy="66" r="3" />
+    </svg>
+  </span>
+}
+
+export function LoadingStatus({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <p className={`ui-loading-status ${className}`.trim()} role="status" aria-live="polite" aria-busy="true"><PrecisionLoader size="compact" /><span>{children}</span></p>
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean; loadingLabel?: ReactNode }>(function Button({ variant = 'secondary', size = 'compact', loading = false, loadingLabel = 'Loading…', disabled, className = '', children, ...props }, ref) {
+  return <button {...props} ref={ref} className={`ui-button ui-button-${variant} ui-button-${size} ${className}`.trim()} disabled={disabled || loading} aria-busy={loading || undefined}>{loading && <PrecisionLoader size="compact" />}{loading ? <span>{loadingLabel}</span> : children}</button>
 })
 
 export function IconButton({ label, children, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> & { label: string; children: ReactNode }) { return <Button {...props} size="icon" aria-label={label}>{children}</Button> }
@@ -77,5 +95,5 @@ export function Drawer({ open, onClose, titleId, children, className = '', initi
 }
 
 export type ResourceStateKind = 'loading' | 'empty' | 'filtered-empty' | 'not-applicable' | 'partial' | 'stale' | 'unavailable' | 'permission' | 'error' | 'refreshing' | 'needs-research'
-export function StatusMessage({ state = 'empty', title, children, action }: { state?: ResourceStateKind; title?: string; children: ReactNode; action?: ReactNode }) { const alert = state === 'error' || state === 'permission'; const busy = state === 'loading' || state === 'refreshing'; return <div className={`ui-status-message ui-status-message-${state}`} role={alert ? 'alert' : 'status'} aria-live={busy ? 'polite' : undefined} aria-busy={busy || undefined}>{busy && <span className="ui-state-spinner" aria-hidden="true" />}{title && <strong>{title}</strong>}<span>{children}</span>{action}</div> }
+export function StatusMessage({ state = 'empty', title, children, action }: { state?: ResourceStateKind; title?: string; children: ReactNode; action?: ReactNode }) { const alert = state === 'error' || state === 'permission'; const busy = state === 'loading' || state === 'refreshing'; return <div className={`ui-status-message ui-status-message-${state}`} role={alert ? 'alert' : 'status'} aria-live={busy ? 'polite' : undefined} aria-busy={busy || undefined}>{busy && <PrecisionLoader size={state === 'refreshing' ? 'compact' : 'medium'} />}{title && <strong>{title}</strong>}<span>{children}</span>{action}</div> }
 export function Empty({ children }: { children: ReactNode }) { return <StatusMessage state="empty">{children}</StatusMessage> }

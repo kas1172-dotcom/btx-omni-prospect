@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import type { Account360, Alert, CommandPriorityItem } from "../../types/api";
-import { Button, Disclosure, Empty, Notice, State } from "../../components/UI";
+import { Button, Disclosure, Empty, LoadingStatus, Notice, State } from "../../components/UI";
 
 const money = (value?: number | null, currency = "USD") =>
   value == null
@@ -51,7 +51,7 @@ export function CommercialRecoveryBriefing({
     return () => controller.abort();
   }, [accountId, attempt]);
 
-  if (load.loading) return <div className="recovery-briefing"><Button variant="ghost" onClick={onBack}>← Back to Today</Button><p role="status">Loading reconciled commercial records…</p></div>;
+  if (load.loading) return <div className="recovery-briefing"><Button variant="ghost" onClick={onBack}>← Back to Today</Button><LoadingStatus>Reconciling the commercial records behind this recovery decision…</LoadingStatus></div>;
   if (load.failure) return <div className="recovery-briefing"><Button variant="ghost" onClick={onBack}>← Back to Today</Button><Notice title="Recovery briefing unavailable" tone="warning"><p>{load.failure}</p><Button variant="secondary" onClick={() => { setLoad({ loading: true }); setAttempt((value) => value + 1); }}>Retry</Button></Notice></div>;
 
   const detail = load.detail;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
 import { CanonicalRecord } from '../../components/CanonicalRecord'
-import { Button } from '../../components/UI'
+import { Button, LoadingStatus } from '../../components/UI'
 import type { Action, Principal } from '../../types/api'
 import type { CrmAttempt, CrmDecision, CrmHistory, CrmProposal } from '../../types/crm'
 import { presentationLabel } from '../../components/presentation'
@@ -71,7 +71,7 @@ function CrmWorkflow({ action, principal }: { action: Action; principal?: Princi
     <p>Prepare and review exact follow-up fields. External CRM writes are disabled in this environment.</p>
     <div className="card-actions"><Button disabled={busy} onClick={() => void prepare()}>Prepare exact CRM proposal</Button><Button disabled={busy} onClick={() => setReload(value => value + 1)}>Refresh CRM history</Button></div>
     {notice && <p role="status">{notice}</p>}{error && <p role="alert">{error}</p>}
-    {!history && !error && <p role="status">Loading saved CRM proposals…</p>}
+    {!history && !error && <LoadingStatus>Opening saved CRM proposals…</LoadingStatus>}
     {history && proposals.length === 0 && <p>No saved proposal for this Action.</p>}
     {proposal && <>
       <label>Saved proposal<select value={proposal.proposal_id} onChange={event => setSelectedId(event.target.value)} disabled={busy}>{proposals.map((item, index) => <option key={item.proposal_id} value={item.proposal_id}>Proposal {index + 1} · Action version {item.action_version}{item.proposal_id === history?.current_proposal_id ? ' · current' : ' · historical'}</option>)}</select></label>

@@ -1,6 +1,6 @@
 import { type KeyboardEvent, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
-import { Button, Disclosure, Drawer, EvidenceSource, IconButton } from './UI'
+import { Button, Disclosure, Drawer, EvidenceSource, IconButton, PrecisionLoader } from './UI'
 import type { OmniContext, OmniConversationReferent, OmniResponse } from '../types/api'
 import { OmniRunReceipt } from './OmniRunReceipt'
 import './omni-drawer.css'
@@ -107,11 +107,11 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
 }
 
 function Conversation({ messages, loading, compact = false, transcriptRef, onStarter }: { messages: Message[]; loading: boolean; compact?: boolean; transcriptRef: RefObject<HTMLDivElement | null>; onStarter: (prompt: string) => void }) {
-  return <div className={`conversation ${compact ? 'compact' : ''}`} ref={transcriptRef} aria-live="polite" aria-label="Omni conversation">{!messages.length && <div className="omni-welcome"><strong>How can I help?</strong><p>Ask about Customers, evidence, relationships, Intelligence, geography, or permitted Actions.</p><div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => onStarter(prompt)} disabled={loading}>{prompt}</button>)}</div></div>}{messages.map((message, index) => <article className={`message ${message.role}`} key={`${message.role}-${index}`}><p>{message.text}</p>{message.response && <ResponseDetails response={message.response} />}</article>)}{loading && <div className="message assistant pending"><p>Reviewing the selected evidence and account context…</p></div>}</div>
+  return <div className={`conversation ${compact ? 'compact' : ''}`} ref={transcriptRef} aria-live="polite" aria-label="Omni conversation">{!messages.length && <div className="omni-welcome"><strong>How can I help?</strong><p>Ask about Customers, evidence, relationships, Intelligence, geography, or permitted Actions.</p><div className="starter-prompts" aria-label="Prompt starters">{starters.map(prompt => <button key={prompt} onClick={() => onStarter(prompt)} disabled={loading}>{prompt}</button>)}</div></div>}{messages.map((message, index) => <article className={`message ${message.role}`} key={`${message.role}-${index}`}><p>{message.text}</p>{message.response && <ResponseDetails response={message.response} />}</article>)}{loading && <div className="message assistant pending" role="status" aria-busy="true"><PrecisionLoader size="compact" /><p>Reviewing the selected evidence and organization context…</p></div>}</div>
 }
 
 function Composer({ value, loading, inputRef, onChange, onKeyDown, onSubmit }: { value: string; loading: boolean; inputRef: RefObject<HTMLTextAreaElement | null>; onChange: (value: string) => void; onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void; onSubmit: () => void }) {
-  return <form className="omni-compose" onSubmit={event => { event.preventDefault(); onSubmit() }}><label className="sr-only" htmlFor="omni-message">Ask Omni</label><textarea id="omni-message" ref={inputRef} value={value} onChange={event => onChange(event.target.value)} onKeyDown={onKeyDown} placeholder="Ask Omni anything…" rows={1} /><Button variant="primary" disabled={loading || !value.trim()} type="submit">{loading ? 'Working…' : 'Send'}</Button></form>
+  return <form className="omni-compose" onSubmit={event => { event.preventDefault(); onSubmit() }}><label className="sr-only" htmlFor="omni-message">Ask Omni</label><textarea id="omni-message" ref={inputRef} value={value} onChange={event => onChange(event.target.value)} onKeyDown={onKeyDown} placeholder="Ask Omni anything…" rows={1} /><Button variant="primary" loading={loading} loadingLabel="Reviewing context…" disabled={!value.trim()} type="submit">Send</Button></form>
 }
 
 const fallbackLabels: Record<Exclude<OmniResponse['provider_status'], 'AVAILABLE'>, string> = {

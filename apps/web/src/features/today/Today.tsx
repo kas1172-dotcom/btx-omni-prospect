@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Account, Alert, CommandCenter, CommandPriorityItem, MonitorSignalBrief, OmniAssessmentSelection, OmniContext, Signal } from '../../types/api'
 import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { curatedSignalBrief } from '../../components/signalBriefModel'
-import { Button, Disclosure, Empty, Panel, State } from '../../components/UI'
+import { Button, Disclosure, Empty, LoadingStatus, Panel, State } from '../../components/UI'
 import { HighCardinalitySelector } from '../../components/HighCardinalitySelector'
 import { WorklistPagination } from '../../components/WorklistPagination'
 import { clampPage, pageSlice } from '../../components/worklistModel'
@@ -89,7 +89,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   if (recoveryItem) return <div className="surface today-surface"><CommercialRecoveryBriefing key={recoveryItem.id} item={recoveryItem} alert={alertById.get(recoveryItem.id)} onBack={() => onLocationChange({ ...location, subview: undefined, recordId: undefined }, 'push')} onAccount={onAccount} onAction={onAction} /></div>
   return <div className="surface today-surface">
     <header className="page-title today-title"><h1>Today</h1><p>Your next commercial decisions</p></header>
-    {state === 'loading' && <p role="status">Refreshing your briefing…</p>}
+    {state === 'loading' && <LoadingStatus>Aligning today’s intelligence and commercial priorities…</LoadingStatus>}
     {state === 'unavailable' ? <Panel title="Today briefing unavailable"><Empty>Today briefing is unavailable. This is not zero activity. Retry using the workspace notice above; your filters are retained.</Empty></Panel> : <>
     <section className="today-priority-summary" aria-label="Top priorities">
       {priority.slice(0, 3).map(item => <article key={item.id} className="today-priority-card" data-summary-id={item.id}>
