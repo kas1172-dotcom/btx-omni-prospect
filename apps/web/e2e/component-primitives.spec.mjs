@@ -1,19 +1,22 @@
 import { expect, test } from '@playwright/test'
 
-test('shared disclosure and controls expose keyboard and selected-state contracts', async ({ page }) => {
+test('mobile secondary navigation and controls expose keyboard and selected-state contracts', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
 
-  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible({ timeout: 15_000 })
-  const disclosure = page.getByRole('button', { name: /Workspace menu/ })
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
-  await disclosure.focus()
-  await expect(disclosure).toBeFocused()
-  await disclosure.press('Enter')
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.getByText(/Public evidence and SAMPLE commercial context/)).toBeVisible()
-  await disclosure.press('Enter')
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
+  const mobileNavigation = page.getByRole('navigation', { name: 'Mobile primary navigation' })
+  await expect(mobileNavigation).toBeVisible({ timeout: 15_000 })
+  const more = mobileNavigation.getByRole('button', { name: 'More', exact: true })
+  await expect(more).toHaveAttribute('aria-expanded', 'false')
+  await more.focus()
+  await expect(more).toBeFocused()
+  await more.press('Enter')
+  await expect(page.getByRole('dialog', { name: 'More' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'More workspaces' })).toBeVisible()
+  await page.getByLabel('Close more workspaces').press('Enter')
+  await expect(page.getByRole('dialog', { name: 'More' })).toBeHidden()
 
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects' })
   await search.focus()

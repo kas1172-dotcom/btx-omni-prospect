@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, resolveFederalAssessment } from '../api/client'
 import { OmniDrawer } from '../components/OmniDrawer'
-import { Button, Disclosure, StatusMessage } from '../components/UI'
+import { Button, Drawer, StatusMessage } from '../components/UI'
 import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
@@ -496,13 +496,6 @@ export default function App() {
           </div>
           <div className="topbar-controls">
           {actionPrincipal && <div className="signed-in-user" aria-label="Signed-in user"><span aria-hidden="true">{actionPrincipal.display_name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span><strong>{actionPrincipal.display_name}</strong></div>}
-          <Disclosure className="mode" title="Workspace menu" open={workspaceMenuOpen} onOpenChange={setWorkspaceMenuOpen}>
-            <div className="mobile-secondary-links">
-              {mobileSecondaryDestinations.map(destination => <button key={destination.surface} aria-current={surface === destination.surface ? 'page' : undefined} onClick={() => navigate(destination.surface)}>{destination.label}</button>)}
-            </div>
-            <p>Public evidence and SAMPLE commercial context remain explicitly separated.</p>
-            {actionPrincipal && <p className="mobile-user-identity">Signed in as {actionPrincipal.display_name}</p>}
-          </Disclosure>
           </div>
         </header>
         <aside className="demonstration-banner" aria-label="Demonstration environment">Simulated data environment</aside>
@@ -518,7 +511,18 @@ export default function App() {
             {destination.label}
           </button>
         ))}
+        {mobileSecondaryDestinations.length > 0 && <button type="button" className={mobileSecondaryDestinations.some(destination => destination.surface === surface) ? 'active' : ''} aria-expanded={workspaceMenuOpen} aria-haspopup="dialog" aria-controls="mobile-more-workspaces" onClick={() => setWorkspaceMenuOpen(true)}>More</button>}
       </nav>
+      <Drawer open={workspaceMenuOpen} onClose={() => setWorkspaceMenuOpen(false)} titleId="mobile-more-workspaces-title" className="mobile-workspace-drawer">
+        <header>
+          <div><span className="eyebrow">BTX Omni · Project Beacon</span><h2 id="mobile-more-workspaces-title">More</h2></div>
+          <Button type="button" variant="ghost" aria-label="Close more workspaces" onClick={() => setWorkspaceMenuOpen(false)}>Close</Button>
+        </header>
+        <nav id="mobile-more-workspaces" className="mobile-secondary-links" aria-label="More workspaces">
+          {mobileSecondaryDestinations.map(destination => <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-label={destination.label} aria-current={surface === destination.surface ? 'page' : undefined} onClick={() => navigate(destination.surface)}><strong>{destination.label}</strong><span>{destination.job}</span></button>)}
+        </nav>
+        {actionPrincipal && <footer><span>Signed in as</span><strong>{actionPrincipal.display_name}</strong></footer>}
+      </Drawer>
       <OmniDrawer accountId={selectedAccountId} accountName={detail?.account.name ?? detail?.account.legal_name ?? selectedAccount?.name ?? selectedAccount?.legal_name} context={omniContext} />
     </main>
   )

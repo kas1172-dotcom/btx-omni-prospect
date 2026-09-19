@@ -16,11 +16,7 @@
 .signed-in-user { display: flex; align-items: center; gap: 10px; font-size: 12px; }
 .signed-in-user > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--surface-selected); font-weight: 700; }
 .signed-in-user strong { max-width: 220px; overflow-wrap: anywhere; font-weight: 500; }
-.mobile-user-identity { display: none; }
 .topbar-context strong { overflow: hidden; color: var(--text-primary); font-family: Archivo, Inter, ui-sans-serif, system-ui, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
-.mode { max-width: min(520px, 52vw); color: var(--text-secondary); font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; letter-spacing: 0; }
-.mode summary { cursor: pointer; font-weight: 600; }
-.mode p { margin: 8px 0 0; padding: 10px 12px; background: var(--surface-base); border: 1px solid var(--border-default); border-radius: var(--radius-control); box-shadow: var(--shadow-card); line-height: 1.45; }
 .surface { width: 100%; max-width: var(--content-max-width); margin-inline: auto; padding-top: var(--space-6); }
 .page-title { margin-bottom: var(--space-5); }
 .page-title h1 { margin: var(--space-1) 0; color: var(--text-primary); font-family: Archivo, Inter, ui-sans-serif, system-ui, sans-serif; font-size: 24px; font-weight: 700; line-height: 1.2; letter-spacing: -.025em; }

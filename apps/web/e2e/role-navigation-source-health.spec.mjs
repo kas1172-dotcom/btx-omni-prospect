@@ -9,10 +9,11 @@ async function desktopDestinations(page) {
 }
 
 async function mobileDestinations(page) {
-  const primary = await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button').allTextContents()
-  const menu = page.getByRole('button', { name: 'Workspace menu' })
+  const mobileNavigation = page.getByRole('navigation', { name: 'Mobile primary navigation' })
+  const primary = await mobileNavigation.getByRole('button').filter({ hasNotText: /^More$/ }).allTextContents()
+  const menu = mobileNavigation.getByRole('button', { name: 'More', exact: true })
   if (await menu.getAttribute('aria-expanded') !== 'true') await menu.click()
-  const secondary = await page.locator('.mobile-secondary-links > button').allTextContents()
+  const secondary = await page.locator('.mobile-secondary-links > button').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-label') ?? button.textContent ?? ''))
   return sorted([...primary, ...secondary].map(value => value.trim()).filter(Boolean))
 }
 
@@ -39,7 +40,7 @@ test('seller navigation is consistent and permission-safe on direct Source Healt
   expect(denied.status()).toBe(403)
   expect(await denied.text()).not.toMatch(/sam\.gov|scheduler_state|source_id|records_seen/i)
 
-  const menu = page.getByRole('button', { name: 'Workspace menu' })
+  const menu = page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'More', exact: true })
   if (await menu.getAttribute('aria-expanded') !== 'true') await menu.click()
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
@@ -82,6 +83,7 @@ test('administrator has desktop/mobile Source Health parity, durable navigation,
 
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await mobileDestinations(page)).toEqual(desktop)
+  await expect(page.getByRole('dialog', { name: 'More' })).toBeVisible()
   await expect(page.locator('.mobile-secondary-links').getByRole('button', { name: 'Source Health', exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
 

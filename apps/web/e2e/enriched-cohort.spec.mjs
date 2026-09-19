@@ -43,11 +43,11 @@ for (const [width, height] of [[360, 800], [390, 844], [768, 1024], [1440, 900],
     await expect(page.getByLabel('Open Omni assistant')).toBeVisible()
     await expect(page.getByRole('complementary', { name: 'Demonstration environment', exact: true })).toHaveCount(1)
     if (width <= 760) {
-      const menu = await page.getByRole('button', { name: 'Workspace menu', exact: true }).boundingBox()
+      const more = await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'More', exact: true }).boundingBox()
       const omni = await page.getByLabel('Open Omni assistant').boundingBox()
-      expect(menu).not.toBeNull()
+      expect(more).not.toBeNull()
       expect(omni).not.toBeNull()
-      expect(menu.x + menu.width).toBeLessThanOrEqual(omni.x - 4)
+      expect((more?.y ?? 0)).toBeGreaterThan((omni?.y ?? 0) + (omni?.height ?? 0))
     }
     expect(errors).toEqual([])
     await page.screenshot({ path: testInfo.outputPath(`kla-${width}x${height}.png`) })

@@ -69,7 +69,7 @@ test('frontend uses only canonical Omni Prospect API routes', () => {
 })
 
 test('mobile-first layout prevents horizontal overflow and exposes responsive Omni workspaces', () => {
-  assert.match(mobileStyles, /grid-template-columns:\s*repeat\(5,/)
+  assert.match(mobileStyles, /grid-template-columns:\s*repeat\(6,/)
   assert.match(mobileStyles, /safe-area-inset-bottom/)
   assert.match(mobileStyles, /--touch-target/)
   assert.match(omniStyles, /\.quick-omni\s*\{/)

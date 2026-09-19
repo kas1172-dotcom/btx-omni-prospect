@@ -51,7 +51,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }
     }
 
     for (const label of ['Communications', 'Settings']) {
-      const menu = page.getByRole('button', { name: 'Workspace menu' })
+      const menu = navigation.getByRole('button', { name: 'More', exact: true })
       if (await menu.getAttribute('aria-expanded') !== 'true') await menu.click()
       await page.getByRole('button', { name: label, exact: true }).click()
       await expect(page.locator('.surface')).toBeVisible()
