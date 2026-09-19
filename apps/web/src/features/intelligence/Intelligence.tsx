@@ -97,7 +97,6 @@ function matches(
 
 function Card({
   brief,
-  rank,
   name,
   onAccount,
   onSelect,
@@ -106,7 +105,6 @@ function Card({
   onOpenBriefing,
 }: {
   brief: MonitorSignalBrief;
-  rank?: number;
   name: (id: string) => string;
   onAccount: (id: string, assessment?: OmniAssessmentSelection) => void;
   onSelect: (brief: MonitorSignalBrief) => void;
@@ -124,7 +122,6 @@ function Card({
     >
       <header>
         <div className="intelligence-card-kicker">
-          {rank && <b>#{rank}</b>}
           <span>
             {brief.event_timing === "UPCOMING"
               ? "Forward radar"
@@ -264,24 +261,21 @@ export function Intelligence({
       ),
     [byId, signals],
   );
-  const priority = useMemo(
-    () =>
-      commandCenter?.priority_briefing
-        .filter((item) => item.kind === "PUBLIC_SIGNAL" && item.signal_brief)
-        .map((item) => item.signal_brief!) ?? [],
-    [commandCenter],
-  );
   const current = useMemo(
     () => commandCenter?.current_signal_briefs ?? [],
     [commandCenter],
   );
+  const savedRecent = useMemo(
+    () => commandCenter?.saved_recent_signal_briefs ?? [],
+    [commandCenter],
+  );
   const base = useMemo(() => {
     const items = new Map<string, MonitorSignalBrief>();
-    [...curated, ...current, ...priority].forEach((item) =>
+    [...curated, ...savedRecent, ...current].forEach((item) =>
       items.set(briefKey(item), item),
     );
     return [...items.values()];
-  }, [priority, current, curated]);
+  }, [current, curated, savedRecent]);
   const visible = useMemo(
     () =>
       base.filter((item) =>
@@ -297,7 +291,11 @@ export function Intelligence({
   const ordered = useMemo(
     () =>
       sort === "PRIORITY"
-        ? visible
+        ? [...visible].sort((a, b) => {
+            const importance = { HIGH: 0, MEDIUM: 1, LOW: 2, UNAVAILABLE: 3 } as const;
+            const importanceDelta = importance[assessmentAttention(a)] - importance[assessmentAttention(b)];
+            return importanceDelta || when(b).localeCompare(when(a)) || briefKey(a).localeCompare(briefKey(b));
+          })
         : [...visible].sort((a, b) =>
             sort === "MOST_RECENT"
               ? when(b).localeCompare(when(a))
@@ -310,20 +308,6 @@ export function Intelligence({
                   ),
           ),
     [name, sort, visible],
-  );
-  const ranked = useMemo(
-    () =>
-      priority
-        .filter((item) =>
-          matches(
-            item,
-            byId.get(item.canonical_account_ids[0] ?? ""),
-            query,
-            filters,
-          ),
-        )
-        .slice(0, 5),
-    [byId, filters, priority, query],
   );
   const radar = useMemo(
     () =>
@@ -407,19 +391,25 @@ export function Intelligence({
   };
   const tiles = [
     {
-      title: "Action priorities",
-      detail: `${commandCenter?.public_intelligence_counts.action_priorities ?? 0} decisions ready for seller action`,
-      state: (commandCenter?.public_intelligence_counts.action_priorities ?? 0) > 0 ? "AVAILABLE" : "NO CURRENT ITEMS",
-    },
-    {
-      title: "Needs validation",
-      detail: `${commandCenter?.public_intelligence_counts.needs_validation ?? 0} assessments require evidence or fit review`,
-      state: (commandCenter?.public_intelligence_counts.needs_validation ?? 0) > 0 ? "REVIEW_REQUIRED" : "NO CURRENT ITEMS",
-    },
-    {
       title: "Available intelligence",
       detail: `${base.length} governed assessments and saved research signals`,
       state: base.length > 0 ? "AVAILABLE" : "UNAVAILABLE",
+    },
+    {
+      title: "Collection freshness",
+      detail: current.length
+        ? `${current.length} newly collected signals are available`
+        : base.length
+          ? "No fresh collection in this session · saved intelligence remains available"
+          : "No collected or saved intelligence is available",
+      state: current.length ? "CURRENT" : base.length ? "STALE" : "UNAVAILABLE",
+    },
+    {
+      title: "Source coverage",
+      detail: commandCenter?.source_health_warnings.length
+        ? `${commandCenter.source_health_warnings.length} source issues need administrator review`
+        : "No source issue is currently reported",
+      state: commandCenter?.source_health_warnings.length ? "REVIEW_REQUIRED" : "AVAILABLE",
     },
     {
       title: "Tracked organizations",
@@ -492,46 +482,6 @@ export function Intelligence({
             <State value={tile.state} />
           </article>
         ))}
-      </section>
-      <section
-        className="intelligence-priority"
-        aria-labelledby="priority-signals"
-      >
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Backend ranked</span>
-            <h2 id="priority-signals">Today's Priority Signals</h2>
-          </div>
-          <span>{ranked.length} shown</span>
-        </div>
-        {ranked.length ? (
-          <ol>
-            {ranked.map((brief, index) => (
-              <li key={briefKey(brief)}>
-                <b>{index + 1}</b>
-                <div>
-                  <button
-                    onClick={() =>
-                      brief.canonical_account_ids[0] &&
-                      onAccount(brief.canonical_account_ids[0])
-                    }
-                  >
-                    {brief.canonical_account_ids[0]
-                      ? name(brief.canonical_account_ids[0])
-                      : "Customer unavailable"}
-                  </button>
-                  <strong>{brief.headline}</strong>
-                  <span>{brief.what_happened}</span>
-                </div>
-                <small>
-                  {date(when(brief))} · {presentationLabel(brief.analysis_status ?? "PENDING_ANALYSIS", "assessment")}
-                </small>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <Empty>No backend-ranked public signals are available.</Empty>
-        )}
       </section>
       <Disclosure title={`Tracked Customers & Prospects (${tracked.length})`}>
         <section className="intelligence-tracked" aria-label="Tracked Customers and Prospects">
@@ -636,7 +586,7 @@ export function Intelligence({
             value={sort}
             onChange={(event) => setSort(event.target.value as Sort)}
           >
-            <option value="PRIORITY">Sort: Priority</option>
+            <option value="PRIORITY">Sort: Importance</option>
             <option value="MOST_RECENT">Sort: Most Recent</option>
             <option value="UPCOMING_EVENT">Sort: Upcoming Event Date</option>
             <option value="CUSTOMER">Sort: Customer</option>
@@ -676,18 +626,17 @@ export function Intelligence({
         action={
           <span className="panel-kicker">
             {ordered.length} governed signals ·{" "}
-            {sort === "PRIORITY" ? "backend priority" : label(sort)}
+            {sort === "PRIORITY" ? "importance order" : label(sort)}
           </span>
         }
         className="intelligence-feed-panel"
       >
         {ordered.length ? (
           <div className="intelligence-signal-list">
-            {ordered.map((brief, index) => (
+            {ordered.map((brief) => (
               <Card
                 key={briefKey(brief)}
                 brief={brief}
-                rank={sort === "PRIORITY" ? index + 1 : undefined}
                 name={name}
                 onAccount={onAccount}
                 onSelect={select}

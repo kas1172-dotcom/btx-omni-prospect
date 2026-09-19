@@ -27,3 +27,12 @@ test('decision summaries separate change impact uncertainty and next decision', 
   assert.match(intelligence, /brief\.why_it_may_matter/)
   assert.doesNotMatch(intelligence, /The commercial implication has not yet been established/)
 })
+
+test('Intelligence owns the research library while Today exclusively owns priority queues', () => {
+  assert.doesNotMatch(intelligence, /Today's Priority Signals|title: "Action priorities"|title: "Needs validation"/)
+  assert.match(intelligence, /title: "Available intelligence"/)
+  assert.match(intelligence, /title: "Collection freshness"/)
+  assert.match(intelligence, /saved_recent_signal_briefs/)
+  assert.match(intelligence, /Sort: Importance/)
+  assert.doesNotMatch(intelligence, /backend priority|rank=\{/)
+})

@@ -27,9 +27,12 @@ test('Project Beacon leads with a specific decision, governed importance, and a 
   await capture(page, 'organization-360-applied-materials-mobile')
 })
 
-test('Intelligence prioritizes the decision feed and keeps the governed watchlist collapsed', async ({ page }) => {
+test('Intelligence presents the research library without duplicating Today priorities', async ({ page }) => {
   await page.goto('/#/intelligence?sort=PRIORITY')
   await expect(page.getByRole('button', { name: 'Public Intelligence', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: "Today's Priority Signals" })).toHaveCount(0)
+  await expect(page.getByText('Action priorities', { exact: true })).toHaveCount(0)
+  await expect(page.getByText(/No fresh collection in this session · saved intelligence remains available/)).toBeVisible()
   await expect(page.getByRole('button', { name: /Tracked Customers & Prospects/ })).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByRole('heading', { name: 'Intelligence Feed' })).toBeVisible()
   const applied = page.locator('.intelligence-card').filter({ hasText: 'Applied Materials receives $100 million advanced-packaging award' })
