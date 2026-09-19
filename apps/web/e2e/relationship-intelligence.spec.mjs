@@ -15,27 +15,27 @@ async function inspectCanonicalNetwork(ranked) {
   await expect(ranked.locator('.relationship-graph-canvas')).toHaveCount(0)
 }
 
-async function openAccount(page, query, accountId) {
+async function openAccount(page, query) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
   await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
   await page.getByPlaceholder('Search Customer, industry, or location').fill(query)
-  const relationshipResponse = page.viewportSize().width <= 760 ? undefined : page.waitForResponse(response => response.url().endsWith(`/api/accounts/${accountId}/relationships?depth=2`))
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(query, 'i') }).first().click()
-  if (!relationshipResponse) return undefined
-  const response = await relationshipResponse
-  expect(response.status()).toBe(200)
-  return response.json()
+  await expect(page.getByRole('heading', { name: new RegExp(query, 'i'), level: 1 })).toBeVisible()
 }
 
 test('Customer 360 presents canonical relationships in seller-facing language', async ({ page }) => {
   await page.goto('/')
-  const lockheedRelationships = await openAccount(page, 'Lockheed', 'lockheed-martin')
+  await openAccount(page, 'Lockheed')
+  const relationshipResponse = page.waitForResponse(response => response.url().endsWith('/api/accounts/lockheed-martin/relationships?depth=2'))
+  await openCustomerSection(page, /People and relationship paths/)
+  const response = await relationshipResponse
+  expect(response.status()).toBe(200)
+  const lockheedRelationships = await response.json()
   expect(lockheedRelationships.account.id).toBe('lockheed-martin')
   expect(lockheedRelationships.direct_relationships.length).toBeGreaterThan(0)
   expect(lockheedRelationships.seller_direct_relationships.length).toBe(lockheedRelationships.direct_relationships.length)
 
   const relationshipPanel = page.locator('.account-workspace-relationship')
-  await openCustomerSection(page, /People and relationship paths/)
   await expect(relationshipPanel).toContainText('How this organization is connected')
   await expect(relationshipPanel).toContainText('Public professional contact research remains separate')
   await expect(relationshipPanel).toContainText(lockheedRelationships.seller_direct_relationships[0].steps.at(-1).display_name)
@@ -60,10 +60,11 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
 
   const switcher = page.getByLabel('Switch organization')
   await switcher.fill('Symbotic')
-  const symboticResponse = page.waitForResponse(response => response.url().endsWith('/api/accounts/symbotic/relationships?depth=2'))
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
-  expect((await symboticResponse).status()).toBe(200)
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
+  const symboticResponse = page.waitForResponse(response => response.url().endsWith('/api/accounts/symbotic/relationships?depth=2'))
+  await openCustomerSection(page, /People and relationship paths/)
+  expect((await symboticResponse).status()).toBe(200)
   const symboticPanel = page.locator('.account-workspace-relationship')
   await expect(symboticPanel).toContainText('No eligible recorded route is currently available. This does not establish a real-world absence.')
   await expect(symboticPanel.locator('.seller-relationship-card')).toHaveCount(0)
@@ -74,7 +75,7 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
 test('mobile Relationship Intelligence uses readable vertical paths and disclosure', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await openAccount(page, 'Lockheed', 'lockheed-martin')
+  await openAccount(page, 'Lockheed')
 
   const relationshipSection = page.locator('.account-workspace-relationship')
   await openCustomerSection(page, /People and relationship paths/)
@@ -106,7 +107,7 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
 test('Relationship Intelligence remains non-overflowing at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('/')
-  await openAccount(page, 'Lockheed', 'lockheed-martin')
+  await openAccount(page, 'Lockheed')
   const relationshipSection = page.locator('.account-workspace-relationship')
   await openCustomerSection(page, /People and relationship paths/)
   const ranked = await openRelationshipWorkspace(page)

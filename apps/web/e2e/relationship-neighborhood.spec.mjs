@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { openCustomerSection } from './helpers.mjs'
 
 for (const width of [390, 1440]) {
   test(`canonical neighborhood expansion, collapse and paging preserve route and coordinates at ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/#/accounts/kla')
+    await openCustomerSection(page, /People and relationship paths/)
     await page.getByRole('button', { name: 'Open full Relationship Intelligence workspace' }).click()
     const section = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
     await expect(section).toHaveAttribute('aria-busy', 'false')
