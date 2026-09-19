@@ -70,3 +70,19 @@ test('shared drawer closes by controls and backdrop and becomes a safe mobile sh
   await page.locator('.ui-drawer-backdrop').click({ position: { x: 4, y: 4 } })
   await expect(dialog).toBeHidden()
 })
+
+test('decision notices give the trigger and next step a full-width reading order', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/accounts/applied-materials')
+  const notice = page.getByRole('alert').filter({ hasText: 'Execution attention' })
+  await expect(notice).toContainText('What needs attention:')
+  await expect(notice).toContainText('Next:')
+  expect(await notice.evaluate(element => getComputedStyle(element).display)).toBe('grid')
+  const noticeBox = await notice.boundingBox()
+  const contentBox = await notice.locator('.ui-notice-content').boundingBox()
+  expect(contentBox?.width ?? 0).toBeGreaterThan((noticeBox?.width ?? 0) * 0.85)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+  await expect(notice).toBeVisible()
+})

@@ -79,8 +79,8 @@ test('mobile-first layout prevents horizontal overflow and exposes responsive Om
 
 test('asynchronous warning notices announce failures and wrap provider diagnostics', () => {
   assert.match(ui, /tone === 'info' \? 'status' : 'alert'/)
-  assert.match(uiStyles, /\.ui-notice > span[\s\S]*overflow-wrap:\s*anywhere/)
-  assert.match(uiStyles, /@media \(max-width: 760px\)[\s\S]*\.ui-notice[\s\S]*flex-direction:\s*column/)
+  assert.match(uiStyles, /\.ui-notice\s*\{[\s\S]*display:\s*grid/)
+  assert.match(uiStyles, /\.ui-notice-content[\s\S]*overflow-wrap:\s*anywhere/)
   assert.match(itineraryPlanner, /Driving estimates are unavailable because the route service is not enabled/)
   assert.match(itineraryPlanner, /setFailure\(routeFailureMessage\(error\)\)/)
 })
