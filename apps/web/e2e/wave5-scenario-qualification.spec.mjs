@@ -56,7 +56,7 @@ test('journeys 1–5 remain explicitly incomplete without manufactured evidence'
   const card = page.locator('.intelligence-card').filter({ hasText: 'FAA production oversight update' })
   await expect(card).toBeVisible()
   await expect(card).toContainText('Analysis in progress')
-  await expect(card).toContainText('The commercial implication has not yet been established.')
+  await expect(card).toContainText('Complete the account-specific assessment before deciding whether action is warranted.')
   await screenshot(page, testInfo, 'journeys-4-5-public-assessment-incomplete-1440x900.png')
 })
 

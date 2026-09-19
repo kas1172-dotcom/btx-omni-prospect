@@ -31,7 +31,7 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await expect(profileLink).toBeFocused()
   await profileLink.press('Enter')
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('Why it matters')
+  await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('Why it may matter')
   await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
   await expect(page.getByLabel('Demonstration environment')).toHaveCount(1)
   await expect(page.getByRole('button', { name: /People and relationship paths/ })).toBeVisible()

@@ -61,7 +61,7 @@
 .ranked-stage .edge-hit { fill: none; stroke: transparent; stroke-width: 18px; cursor: pointer; }
 .ranked-stage .edge-hit:focus-visible { stroke: #fff; stroke-width: 5px; outline: none; }
 .ranked-stage foreignObject { overflow: visible; }
-.ranked-stage foreignObject button { position: relative; display: grid; grid-template-columns: 34px minmax(0,1fr); grid-template-rows: auto auto; align-items: center; column-gap: 8px; width: 100%; height: 100%; padding: 12px; text-align: left; background: #151c26ee; color: #e8edf4; border: 1px solid #647386; border-radius: 13px; font-size: 13px; line-height: 1.25; overflow: visible; box-shadow: 0 10px 26px #0006; }
+.ranked-stage foreignObject button { position: relative; display: grid; grid-template-columns: 34px minmax(0,1fr); grid-template-rows: auto auto; align-items: center; column-gap: 8px; width: 100%; height: 100%; padding: 14px 38px 14px 12px; text-align: left; background: #151c26ee; color: #e8edf4; border: 1px solid #647386; border-radius: 13px; font-size: 13px; line-height: 1.25; overflow: hidden; box-shadow: 0 10px 26px #0006; }
 .ranked-node-symbol { grid-row: 1/3; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #7d8b9d; border-radius: 10px; color: #fff; background: #263241; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
 .ranked-node-label { min-width: 0; color: #fff; font-weight: 700; overflow-wrap: anywhere; }
 .ranked-stage small { display: block; color: #aebccc; font-size: 10px; }
@@ -69,7 +69,7 @@
 .ranked-stage foreignObject button[aria-pressed=true] { border: 2px solid #fff; background: #27384b; }
 .ranked-stage foreignObject button { transition: background-color 300ms,border-color 300ms,box-shadow 300ms,transform 300ms; }
 .ranked-stage foreignObject button:hover { transform: translateY(-2px); border-color: #fff; }
-.ranked-hop-badge { position: absolute; top: -10px; right: -9px; display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 5px; border: 2px solid #0d1219; border-radius: 999px; color: #10141c; background: #fff; box-shadow: 0 0 12px #fff6; font-size: 11px; }
+.ranked-hop-badge { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 5px; border: 2px solid #0d1219; border-radius: 999px; color: #10141c; background: #fff; box-shadow: 0 0 12px #fff6; font-size: 11px; }
 .node-person .ranked-node-symbol,.node-role .ranked-node-symbol { border-radius: 50%; color: #ded1ff; border-color: #a78bfa; }
 .node-program .ranked-node-symbol,.node-component .ranked-node-symbol,.node-component-class .ranked-node-symbol,.node-capability .ranked-node-symbol,.node-certification .ranked-node-symbol { color: #ffe6a8; border-color: #f5b942; }
 .node-facility .ranked-node-symbol { color: #b9ffe9; border-color: #45d6a8; border-radius: 4px; }

@@ -114,7 +114,7 @@ test('Quick Omni opens the Full Omni workspace without losing the conversation',
   await expect(full.locator('.message.user')).toContainText('What should I review today?')
   await expect(full.getByRole('complementary', { name: 'Evidence' })).toBeVisible()
   await expect(full.getByRole('complementary', { name: 'Organization context' })).toBeVisible()
-  await expect(full.getByText(/create|edit|assign|approve/i)).not.toBeVisible()
+  await expect(full.getByRole('button', { name: /create|edit|assign|approve/i })).toHaveCount(0)
   await page.getByLabel('Back to Quick Omni').click()
   await expect(page.locator('.quick-omni .message.user')).toContainText('What should I review today?')
 })

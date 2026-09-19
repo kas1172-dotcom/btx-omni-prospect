@@ -35,7 +35,7 @@ test('desktop target shell preserves primary seller navigation and Omni access',
   expect(shellCopy).not.toMatch(/\b(Account|Accounts|Client|Clients|Company|Companies)\b/)
 })
 
-test('390 × 844 target shell uses five safe touch destinations without overflow or Omni collision', async ({ page }) => {
+test('390 × 844 target shell keeps primary destinations and More safe without overflow or Omni collision', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
 
@@ -49,8 +49,8 @@ test('390 × 844 target shell uses five safe touch destinations without overflow
   await expect(page.getByRole('navigation', { name: 'Primary navigation', exact: true })).toBeHidden()
 
   const controls = navigation.getByRole('button')
-  await expect(controls).toHaveCount(5)
-  expect(await controls.allTextContents()).toEqual(primaryDestinations)
+  await expect(controls).toHaveCount(6)
+  expect(await controls.allTextContents()).toEqual([...primaryDestinations, 'More'])
 
   for (const destination of primaryDestinations) {
     const control = navigation.getByRole('button', { name: destination, exact: true })
@@ -86,7 +86,7 @@ test('390 × 844 target shell uses five safe touch destinations without overflow
 test('320px shell smoke check remains structurally contained', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 })
   await page.goto('/')
-  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(5)
+  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(6)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(1)
 })

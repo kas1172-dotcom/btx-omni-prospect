@@ -51,7 +51,7 @@ test('finite Today and scalable Actions retain every governed record through dur
   await expect(page.locator('[data-suggestion-id]')).toHaveCount(12)
   await page.locator('[data-suggestion-id]').nth(2).click()
   await expect(page).toHaveURL(/record=wave2-suggestion-/)
-  await expect(page.locator('.suggestion-detail')).toContainText('Each canonical suggestion remains separate')
+  await expect(page.locator('.suggestion-detail')).toContainText('Each remains separate because its evidence or source revision may differ')
 })
 
 test('bounded account selector preserves canonical scope and mobile containment', async ({ page }) => {
@@ -97,7 +97,7 @@ test('memory refresh keeps last-good content visible when only that resource fai
   await page.goto('/#/settings')
   await expect(page.getByText('Keep last-good preference visible')).toBeVisible()
   refreshShouldFail = true
-  await page.getByRole('button', { name: 'Refresh memories' }).click()
+  await page.getByRole('button', { name: 'Refresh preferences' }).click()
   await expect(page.getByText('Keep last-good preference visible')).toBeVisible()
   await expect(page.getByText(/Refresh failed/)).toBeVisible()
 })

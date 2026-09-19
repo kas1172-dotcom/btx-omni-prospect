@@ -92,7 +92,7 @@ test('customer expansion pursuit reuses one assessment and ranked internal recor
   await expect(page.getByText('Expansion pursuit', { exact: true }).first()).toBeVisible()
   await page.getByRole('button', { name: /Current intelligence assessment/ }).click()
   await expect(page.getByRole('heading', { name: briefing.headline }).first()).toBeVisible()
-  await expect(page.getByText('Why it may matter:')).toBeVisible()
+  await expect(page.locator('.organization-briefing').getByText('Why it may matter', { exact: true })).toBeVisible()
   await page.locator('.organization-briefing').getByRole('button', { name: /View supporting evidence/ }).click()
   await page.getByRole('button', { name: 'Inspect source record' }).first().click()
   await expect(page.getByRole('region', { name: 'Expansion component quote source record' })).toContainText('Expansion component quote')
