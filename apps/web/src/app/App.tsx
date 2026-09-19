@@ -6,6 +6,7 @@ import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
 import { Today, type TodayFilters } from '../features/today/Today'
+import { HostedSessionCheck, HostedSignIn } from '../features/auth/HostedSignIn'
 import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
 import { authorizedDestinations, canOpenDestination, type NavigationAuthority } from './destinations'
 import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapFilterOptions, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
@@ -353,7 +354,7 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [commitLocation, location.subview, location.surface, navigationAuthority.sourceHealth, settingsState, workspaceSettings?.capabilities.view_integration_diagnostics])
   useEffect(() => () => accountRequest.current?.abort(), [])
-  if (authState === 'checking') return <main className="app-shell app-shell-loading"><div className="loading-stage"><span className="eyebrow">Secure workspace</span><h1>Checking hosted session</h1><p>Validating the server-held POC session without exposing role credentials.</p></div></main>
+  if (authState === 'checking') return <HostedSessionCheck />
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
   const locationAssessment: OmniAssessmentSelection | undefined = location.assessment ? { assessment_id: location.assessment.assessmentId, assessment_version: location.assessment.assessmentVersion, event_id: location.assessment.eventId, account_id: location.assessment.accountId } : undefined
   const locationFederal: OmniFederalSelection | undefined = location.federal ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined
@@ -469,7 +470,7 @@ export default function App() {
       <aside className="app-sidebar">
         <button className="wordmark" onClick={() => navigate('today')} aria-label="Go to Today">
           BTX <span>OMNI</span>
-          <small>Commercial intelligence</small>
+          <small>Project Beacon</small>
         </button>
         <nav className="sidebar-nav" aria-label="Primary navigation">
           {desktopPrimaryDestinations.map(destination => (
@@ -487,7 +488,7 @@ export default function App() {
       <section className="app-workspace">
         <header className="topbar">
           <div className="topbar-context">
-            <span className="eyebrow">BTX Omni Prospect</span>
+            <span className="eyebrow">BTX Omni · Project Beacon</span>
             <strong>{surfaceLabels[surface]}</strong>
           </div>
           <div className="topbar-controls">
@@ -518,10 +519,4 @@ export default function App() {
       <OmniDrawer accountId={selectedAccountId} accountName={detail?.account.name ?? detail?.account.legal_name ?? selectedAccount?.name ?? selectedAccount?.legal_name} context={omniContext} />
     </main>
   )
-}
-
-function HostedSignIn({ onAuthenticated }: { onAuthenticated: () => void }) {
-  const [accessCode, setAccessCode] = useState(''); const [error, setError] = useState(''); const [submitting, setSubmitting] = useState(false)
-  const submit = async (event: React.FormEvent) => { event.preventDefault(); setSubmitting(true); setError(''); try { await api.signIn(accessCode); setAccessCode(''); onAuthenticated() } catch { setError('The hosted access code is invalid or session authentication is not configured.') } finally { setSubmitting(false) } }
-  return <main className="app-shell app-shell-loading"><form className="loading-stage" onSubmit={event => void submit(event)}><span className="eyebrow">Hosted POC access</span><h1>Sign in to Omni Prospect</h1><p>Enter an administrator-issued short-lived POC access code. The code is exchanged server-side and is never stored in the frontend.</p><label>Access code<input type="password" autoComplete="current-password" value={accessCode} onChange={event => setAccessCode(event.target.value)} required /></label>{error && <p role="alert">{error}</p>}<button type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button></form></main>
 }
