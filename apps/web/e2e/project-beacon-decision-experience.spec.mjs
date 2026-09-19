@@ -10,6 +10,10 @@ async function capture(page, name) {
   await page.screenshot({ path: join(evidenceDir, `${name}.png`), fullPage: false })
 }
 
+async function expectNoPageOverflow(page) {
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+}
+
 test('Project Beacon leads with a specific decision, governed importance, and a concise score', async ({ page }) => {
   await page.goto('/#/accounts/applied-materials?scope=account')
   await expect(page.getByRole('heading', { name: 'Applied Materials receives $100 million advanced-packaging award' })).toBeVisible()
@@ -59,4 +63,36 @@ test('Omni explains the selected Applied Materials evidence in human language', 
   await expect(drawer).toContainText(/What to validate next:/i)
   await expect(drawer).not.toContainText(/Canonical account follow-up|source-backed Intelligence|CHIPS_APPLIED/)
   await capture(page, 'omni-applied-materials-grounded-answer')
+})
+
+test('Project Beacon mobile command surfaces remain concise, reachable, and overflow-free', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/today')
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await expect(page.locator('.today-priority-summary')).toBeVisible()
+  await expectNoPageOverflow(page)
+  await capture(page, 'today-mobile')
+
+  const mobileNav = page.getByRole('navigation', { name: 'Mobile primary navigation' })
+  await mobileNav.getByRole('button', { name: 'Intelligence' }).click()
+  await expect(page.locator('.topbar-context').getByText('Intelligence', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: "Today's Priority Signals" })).toHaveCount(0)
+  await expect(page.getByText(/saved intelligence remains available/)).toBeVisible()
+  await expect(page.locator('.intelligence-card').first()).toBeVisible()
+  await expectNoPageOverflow(page)
+  await capture(page, 'intelligence-mobile')
+
+  await mobileNav.getByRole('button', { name: 'Map' }).click()
+  await expect(page.getByRole('heading', { name: 'Tactical Map' })).toBeVisible()
+  await page.getByRole('button', { name: 'List', exact: true }).click()
+  const result = page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /customer site · inspect details/i }).first()
+  await result.click()
+  await expect(page.getByRole('complementary', { name: 'Selected map location' })).toBeVisible()
+  await expectNoPageOverflow(page)
+  await capture(page, 'map-selected-site-mobile')
+
+  await page.getByLabel('Open Omni assistant').click()
+  await expect(page.getByRole('dialog', { name: 'Omni' })).toBeVisible()
+  await expectNoPageOverflow(page)
+  await capture(page, 'omni-mobile')
 })

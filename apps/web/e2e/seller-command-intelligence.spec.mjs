@@ -103,9 +103,10 @@ test('desktop Intelligence composes search and canonical filters with evidence a
 test('public briefing joins the selected signal to canonical account context without cross-contaminating actions', async ({ page }) => {
   await page.goto('/')
   await navigate(page, 'Intelligence')
-  const first = page.locator('.intelligence-card').first()
-  const headline = await first.getByRole('heading').innerText()
-  await first.getByRole('button', { name: 'Open briefing' }).click()
+  await page.getByLabel('Filter Intelligence by Customer').selectOption('applied-materials')
+  const technicalSignal = page.locator('.intelligence-card').filter({ hasText: 'Applied Materials receives $100 million advanced-packaging award' })
+  const headline = await technicalSignal.getByRole('heading').innerText()
+  await technicalSignal.getByRole('button', { name: 'Open briefing' }).click()
 
   await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
   await expect(page).toHaveURL(/#\/intelligence\?view=brief&event=/)

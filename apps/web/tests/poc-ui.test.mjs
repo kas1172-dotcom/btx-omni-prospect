@@ -513,6 +513,11 @@ test('target primitive CSS encodes focus, touch, responsive rows, and safe-area 
   assert.match(componentStyles, /\.ui-drawer\s*\{/)
 })
 
+test('shared search inputs use the full available mobile grid width', () => {
+  assert.match(uiStyles, /\.ui-search\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s)
+  assert.doesNotMatch(uiStyles, /\.ui-search\s*\{[^}]*grid-template-columns:\s*auto\s+minmax\(0, 1fr\)/s)
+})
+
 test('sanitized reference classifications remain orthogonal and source-backed in Portfolio and Map', () => {
   assert.match(accounts, /btx_top_100/)
   assert.match(accounts, /BTX Top 100/)

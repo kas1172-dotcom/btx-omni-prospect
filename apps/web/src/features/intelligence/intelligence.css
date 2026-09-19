@@ -1,5 +1,6 @@
 .intelligence-surface {
   max-width: 1480px;
+  min-width: 0;
   display: grid;
   gap: 16px;
 }
@@ -140,6 +141,7 @@
 .intelligence-controls {
   display: grid;
   gap: 9px;
+  min-width: 0;
 }
 .intelligence-controls > .ui-search,
 .intelligence-controls > .ui-search .ui-field {
@@ -501,8 +503,38 @@
   .intelligence-title p {
     font-size: 17px;
   }
-  .intelligence-context-tiles {
-    grid-template-columns: 1fr 1fr;
+  .intelligence-context-tiles,
+  .intelligence-filter-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 5px;
+    scroll-snap-type: x proximity;
+  }
+  .intelligence-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .intelligence-tabs .ui-button {
+    width: 100%;
+    min-height: 44px;
+    padding-inline: 6px;
+    line-height: 1.15;
+    white-space: normal;
+    scroll-snap-align: start;
+  }
+  .intelligence-context-tiles,
+  .intelligence-filter-grid {
+    width: 100%;
+    max-width: 100%;
+  }
+  .intelligence-context-tiles article {
+    flex: 0 0 min(72vw, 270px);
+    min-height: 118px;
+    align-content: start;
+    scroll-snap-align: start;
   }
   .intelligence-context-tiles article {
     padding: 10px;
@@ -516,8 +548,9 @@
   .intelligence-priority li small {
     grid-column: 2;
   }
-  .intelligence-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .intelligence-filter-grid .ui-field {
+    flex: 0 0 min(72vw, 260px);
+    scroll-snap-align: start;
   }
   .intelligence-feed-panel {
     padding: 0 12px;
@@ -569,11 +602,8 @@
   }
 }
 @media (max-width: 350px) {
-  .intelligence-context-tiles,
-  .intelligence-filter-grid {
-    grid-template-columns: 1fr;
-  }
   .intelligence-tabs .ui-button {
     width: 100%;
+    font-size: 10px;
   }
 }
