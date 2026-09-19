@@ -72,7 +72,7 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
     ) as client:
         response = await client.get("/api/map")
     assert response.status_code == 200
-    records = response.json()["records"]
+    records = response.json()["accounts"]
     assert records
     assert all(
         record["nearest_btx_facility"]["distance_method"]
@@ -87,9 +87,10 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
         for record in records
         for brief in record["current_signal_briefs"]
     )
-    assert all(record["selection_missingness"] is not None for record in records)
+    assert all("selection_missingness" not in record for record in records)
     assert all(record["city"] and record["region"] and record["country"] for record in records)
-    assert all("account_attractiveness" in record for record in records)
+    assert all("account_attractiveness" not in record for record in records)
+    assert all("prospect_fit" not in record for record in records)
     assert all("candidate_capabilities" in record for record in records)
     assert all(
         capability["name"] != capability["id"]
@@ -108,7 +109,7 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
     ]
     assert public_market
     assert all(record["account_segment"] == "PROSPECT" for record in public_market)
-    assert all(record["prospect_fit"]["applicable"] for record in public_market)
+    assert all("prospect_fit" not in record for record in public_market)
 
 
 @pytest.mark.asyncio

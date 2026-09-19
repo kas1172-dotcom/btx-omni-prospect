@@ -39,6 +39,7 @@ class RawSignal:
     evidence_state: EvidenceState
     summary: str
     source_validation_state: SourceValidationState = SourceValidationState.NEEDS_RESEARCH
+    business_relevance: str | None = None
 
 
 @dataclass(frozen=True)
@@ -66,7 +67,11 @@ def normalize_signal(raw: RawSignal, *, account_name_to_id: dict[str, str], prov
     event_digest = sha256(f"{raw.source_id}\x1f{raw.source_url}\x1f{raw.account_name or ''}\x1f{raw.program_name or ''}".encode()).hexdigest()[:24]
     evidence_id = f"evidence-signal-{source_digest}"
     relationship = "a canonical account" if account_id else "no canonical account"
-    relevance = f"{raw.kind.value} names {relationship}" + (f" and program {raw.program_name}" if raw.program_name else "") + "; review only the supplied source evidence."
+    relevance = raw.business_relevance or raw.summary or (
+        f"{raw.kind.value} names {relationship}"
+        + (f" and program {raw.program_name}" if raw.program_name else "")
+        + "; review only the supplied source evidence."
+    )
     return IntelligenceSignal(
         f"signal-{event_digest}", raw.kind, raw.title, raw.source_url, account_id,
         raw.program_name, raw.evidence_state, relevance, (evidence_id,), raw.occurred_at,

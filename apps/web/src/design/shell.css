@@ -40,7 +40,9 @@
 .primary { color: var(--text-inverse) !important; background: var(--interaction-primary) !important; border-color: var(--interaction-primary) !important; border-radius: var(--radius-control) !important; }
 .primary:hover { background: var(--interaction-primary-hover) !important; border-color: var(--interaction-primary-hover) !important; }
 .state { padding: 4px 7px; color: var(--text-secondary); background: var(--surface-subdued); border-color: var(--border-default); border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.state-high, .state-confirmed, .state-available { color: var(--status-success); }
+.state-confirmed, .state-available { color: var(--status-success); }
+.state-high { color: var(--status-danger); }
+.state-low { color: var(--status-success); }
 .state-inferred, .state-medium { color: var(--status-warning); }
 .state-conflicting, .state-stale_quote, .state-customer_inactivity { color: var(--status-danger); }
 .state-live_public { color: var(--status-info); background: #eef4f8; border-color: #b9cedb; }

@@ -406,8 +406,9 @@ def test_model_interpretation_selects_only_governed_read_and_preserves_metadata(
     assert response.citations and response.provenance
     assert response.provider_status == "AVAILABLE"
     governed = provider.synthesis_requests[0]
-    assert "Canonical account follow-up for Boeing" in governed.governed_answer
-    assert "source-backed Intelligence" in governed.governed_answer
+    assert "Boeing briefing" in governed.governed_answer
+    assert "What changed" in governed.governed_answer
+    assert "Why it may matter to BTX" in governed.governed_answer
     assert governed.evidence_ids == response.citations
 
 

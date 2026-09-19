@@ -1366,12 +1366,13 @@ def test_omni_conversation_facility_action_account_and_cleared_screen_context() 
         and action_follow.context_used["context_source"] == "conversation"
     )
     assert (
-        "Canonical account follow-up for Boeing" in account_follow.content
+        "Boeing briefing" in account_follow.content
         and "Current open governed work items: 1" in account_follow.content
     )
     assert (
-        "Canonical account follow-up for Boeing" in intelligence_follow.content
-        and "source-backed Intelligence" in intelligence_follow.content
+        "Boeing briefing" in intelligence_follow.content
+        and "What changed" in intelligence_follow.content
+        and "Why it may matter to BTX" in intelligence_follow.content
     )
 
 

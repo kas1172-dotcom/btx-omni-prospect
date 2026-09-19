@@ -156,6 +156,35 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
+.ui-status-priority {
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ui-status-priority::before {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  background: currentColor;
+  border-radius: 50%;
+  content: '';
+}
+.ui-status-priority.ui-status-danger {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+.ui-status-priority.ui-status-warning {
+  color: #854d0e;
+  background: #fef3c7;
+  border-color: #eab308;
+}
+.ui-status-priority.ui-status-success {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #22c55e;
+}
 .ui-status-neutral {
   color: var(--text-secondary);
   background: var(--surface-subdued);

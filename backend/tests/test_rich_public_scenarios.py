@@ -41,3 +41,7 @@ def test_curated_events_record_official_source_validation_without_replacing_bloc
     assert events["intel"].source_url == "https://www.commerce.gov/news/press-releases/2024/11/biden-harris-administration-announces-chips-incentives-award-intel"
     assert events["anduril-industries"].occurred_at.date().isoformat() == "2024-10-29"
     assert events["applied-materials"].occurred_at.date().isoformat() == "2025-01-16"
+    assert events["applied-materials"].title == "Applied Materials receives $100 million advanced-packaging award"
+    assert "silicon-core substrate technology" in events["applied-materials"].summary
+    assert "precision hardware, tooling, or equipment-support demand" in (events["applied-materials"].business_relevance or "")
+    assert events["applied-materials"].source_url.endswith("14-billion-final-awards-support-next")

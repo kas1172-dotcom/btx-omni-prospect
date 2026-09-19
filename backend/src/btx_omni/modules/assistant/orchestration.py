@@ -1170,9 +1170,11 @@ class OmniOrchestrator:
                 None,
                 context_used=context_used,
             )
-        lines = [f"Canonical account follow-up for {account.legal_name}."]
+        lines = [f"{account.legal_name} briefing."]
         citations: list[str] = []
+        citation_links: list[OmniCitation] = []
         missing: list[str] = []
+        recommended_action: str | None = None
         intent = self._account_follow_up_intent(question)
         if intent == "ACTIONS":
             items = [
@@ -1204,17 +1206,31 @@ class OmniOrchestrator:
             ]
             if events:
                 latest = max(events, key=self._event_sort_key)
+                scenario = environment.rich_scenarios.get(account.id)
                 lines.append(
-                    f"Canonical source-backed Intelligence: {latest.get('title') or latest.get('id')}; evidence {latest.get('evidence_state') or 'MISSING'}."
+                    f"What changed: {latest.get('title') or 'A public development was recorded'}."
                 )
+                relevance = latest.get("relevance_explanation")
+                lines.append(
+                    f"Why it may matter to BTX: {relevance}"
+                    if relevance
+                    else "Why it may matter to BTX: the commercial implication still needs assessment."
+                )
+                recommended_action = (
+                    scenario.recommended_next_step
+                    if scenario
+                    else "Review the source and validate a supported commercial route before acting."
+                )
+                lines.append(f"What to validate next: {recommended_action}")
                 citations.extend(str(value) for value in latest.get("evidence_ids", ()))
+                source_url = latest.get("source_url")
+                if isinstance(source_url, str) and source_url.startswith(("http://", "https://")):
+                    citation_links.append(OmniCitation(str(latest.get("title") or account.legal_name), source_url))
             else:
                 lines.append(
-                    "No canonical Intelligence event is currently associated with this account."
+                    "No current public development is associated with this organization."
                 )
-            lines.append(
-                "No event geography or account association is inferred beyond the canonical Monitor read."
-            )
+                missing.append("A current organization-specific public development is not available.")
         elif intent == "QUOTES":
             quotes = [
                 quote for quote in environment.quotes if quote.account_id == account.id
@@ -1292,8 +1308,8 @@ class OmniOrchestrator:
             )
             + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()),
             tuple(missing),
-            None,
-            (),
+            recommended_action,
+            tuple(dict.fromkeys(citation_links)),
             account.legal_name,
             context_used=context_used,
         )

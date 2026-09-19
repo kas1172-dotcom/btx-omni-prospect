@@ -7,6 +7,8 @@ import { SupportingEvidence, WhyThis } from './SupportingEvidence'
 import { RelatedBtxActivity } from './RelatedBtxActivity'
 import { ScoreSummary } from './ScoreSummary'
 import { commercialDecisionSummary } from './scoreSummaryModel'
+import { AttentionBadge } from './AttentionBadge'
+import { assessmentAttention } from './attentionModel'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
@@ -18,19 +20,23 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
   const evidenceCount = new Set([...(brief.evidence_ids ?? []), ...(brief.references ?? []).map(item => item.evidence_id), ...records.map(item => item.record_id)]).size
   const coverage = brief.signal_confidence?.data_coverage
   const knowledgeLabel = !coverage ? 'Still being assessed' : Number(coverage.ratio) >= .8 ? 'Substantial' : Number(coverage.ratio) >= .5 ? 'Partial' : 'Limited'
-  return <article className="seller-signal-brief">
+  const attention = assessmentAttention(brief)
+  return <article className={`seller-signal-brief attention-${attention.toLocaleLowerCase()}`}>
     <div className="seller-signal-head">
       <div><span className="eyebrow">{brief.event_timing === 'UPCOMING' ? 'Upcoming radar' : 'Signal brief'}</span><h3>{brief.headline}</h3></div>
+      <AttentionBadge level={attention} />
     </div>
     <div className="seller-signal-meta">
       {accountId && <Button variant="ghost" onClick={() => onAccount?.(accountId, brief.assessment_id && brief.assessment_version ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined)}>{accountName?.(accountId) ?? 'Open organization'}</Button>}
       {brief.markets.map(market => <State key={market} value={market} />)}
       <span>{brief.event_timing === 'UPCOMING' ? 'Event' : 'Published'}: {dateLabel(eventDate)}</span>
     </div>
-    <p><strong>What happened:</strong> {brief.what_happened}</p>
-    <p><strong>Why it may matter:</strong> {brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></p>
-    <p><strong>Governed next action:</strong> {brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p>
-    {!!brief.material_uncertainties?.length && <p><strong>Material uncertainty:</strong> {brief.material_uncertainties[0]}</p>}
+    <div className="seller-signal-decision">
+      <section><span>What changed</span><p>{brief.what_happened}</p></section>
+      <section><span>Why it may matter</span><p>{brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></p></section>
+      <section className="seller-signal-action" aria-label="Governed next action"><span>Next decision</span><p>{brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p></section>
+    </div>
+    {!!brief.material_uncertainties?.length && <p className="seller-signal-uncertainty"><strong>Material uncertainty — still unconfirmed:</strong> {brief.material_uncertainties[0]}</p>}
     {brief.analysis_status && brief.analysis_status !== 'READY' && <p className="notice">Analysis is incomplete. The source remains available, but no completed commercial recommendation is shown.</p>}
     {brief.commercial_relevance_state === 'INFORMATIONAL' && <small>Informational update · no established commercial priority</small>}
     <SupportingEvidence count={evidenceCount} investigationKey={`${brief.assessment_id ?? brief.id}:${brief.assessment_version ?? 0}`}>

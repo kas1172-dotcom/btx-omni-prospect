@@ -28,6 +28,8 @@ import { FederalProcurementView } from "./FederalProcurement";
 import { MarketIntelligence } from "./MarketIntelligence";
 import { IntelligenceBriefing } from "./IntelligenceBriefing";
 import { presentationLabel } from "../../components/presentation";
+import { AttentionBadge } from "../../components/AttentionBadge";
+import { assessmentAttention } from "../../components/attentionModel";
 import type { WorkspaceLocation } from "../../app/navigation";
 import "./intelligence.css";
 
@@ -130,7 +132,7 @@ function Card({
           </span>
           <span>{date(when(brief))}</span>
         </div>
-        <div className="intelligence-card-states"><State value={brief.analysis_status ?? "PENDING_ANALYSIS"} /><State value={brief.freshness} /></div>
+        <div className="intelligence-card-states"><AttentionBadge level={assessmentAttention(brief)} /><State value={brief.analysis_status ?? "PENDING_ANALYSIS"} /><State value={brief.freshness} /></div>
       </header>
       <div className="intelligence-card-main">
         <button
@@ -141,15 +143,15 @@ function Card({
           {accountId ? name(accountId) : "Customer association unavailable"}
         </button>
         <h3>{brief.headline}</h3>
-        <p>{complete ? brief.seller_summary : "Account-specific analysis is still in progress. The source remains available while the commercial implication is assessed."}</p>
+        <p>{complete ? brief.seller_summary : brief.what_happened}</p>
       </div>
       <section className="intelligence-bottom-line">
-        <span>Why it matters</span>
-        <strong>{complete ? brief.why_it_may_matter : "The commercial implication has not yet been established."}</strong>
+        <span>{complete ? "Why it matters" : "Research direction · not yet assessed"}</span>
+        <strong>{brief.why_it_may_matter}</strong>
         {uncertainty && <p><b>Still uncertain:</b> {uncertainty}</p>}
-        {complete && brief.recommended_action && (
+        {(brief.recommended_action || brief.what_to_watch) && (
           <p>
-            <b>Next:</b> {brief.recommended_action}
+            <b>{complete && brief.recommended_action ? "Next:" : "Validate next:"}</b> {brief.recommended_action ?? brief.what_to_watch}
           </p>
         )}
       </section>
@@ -207,7 +209,6 @@ export function Intelligence({
   signals,
   accounts,
   commandCenter,
-  settings,
   onAccount,
   onEventSelect,
   onCreateAction,
@@ -233,7 +234,7 @@ export function Intelligence({
   onFederalOmni: (selection: OmniFederalSelection) => void;
   onFederalAction: (opportunity: FederalOpportunity, route: FederalRoute) => void;
   onOmniContext: (
-    context: Pick<OmniContext, "selected_assessment" | "selected_federal_opportunity" | "active_filters" | "visible_record_ids">,
+    context: Pick<OmniContext, "selected_account_id" | "selected_assessment" | "selected_federal_opportunity" | "active_filters" | "visible_record_ids">,
   ) => void;
   location: WorkspaceLocation;
   onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void;
@@ -357,6 +358,7 @@ export function Intelligence({
     if (workspace === 'markets') return;
     const selectedBrief = base.find((item) => briefKey(item) === selected || item.assessment_id === location.assessment?.assessmentId);
     onOmniContext({
+      selected_account_id: selectedBrief?.canonical_account_ids[0],
       selected_assessment: selectedBrief?.assessment_id && selectedBrief.assessment_version && selectedBrief.canonical_account_ids[0] ? {
         assessment_id: selectedBrief.assessment_id,
         assessment_version: selectedBrief.assessment_version,
@@ -375,8 +377,24 @@ export function Intelligence({
   const select = (brief: MonitorSignalBrief) => {
     const contextId = briefKey(brief);
     const next = selected === contextId ? undefined : contextId;
+    const accountId = brief.canonical_account_ids[0];
+    const selectedAssessment = next && brief.assessment_id && brief.assessment_version && accountId ? {
+      assessment_id: brief.assessment_id,
+      assessment_version: brief.assessment_version,
+      event_id: brief.id,
+      account_id: accountId,
+    } : undefined;
     setSelected(next);
     onEventSelect(next ? brief.id : undefined);
+    onOmniContext({
+      selected_account_id: next ? accountId : undefined,
+      selected_assessment: selectedAssessment,
+      active_filters: {
+        ...Object.fromEntries(active),
+        ...(next && accountId ? { account_id: accountId } : {}),
+      },
+      visible_record_ids: ordered.map((item) => item.id).slice(0, 50),
+    });
   };
   const openBriefing = (brief: MonitorSignalBrief) => {
     setSelected(briefKey(brief));
@@ -389,34 +407,29 @@ export function Intelligence({
   };
   const tiles = [
     {
-      title: "Public intelligence",
-      detail: `${current.length} current eligible signals`,
-      state: commandCenter?.daily_briefing.live_intelligence_available
-        ? "CONNECTED"
-        : "UNAVAILABLE",
+      title: "Action priorities",
+      detail: `${commandCenter?.public_intelligence_counts.action_priorities ?? 0} decisions ready for seller action`,
+      state: (commandCenter?.public_intelligence_counts.action_priorities ?? 0) > 0 ? "AVAILABLE" : "NO CURRENT ITEMS",
     },
     {
-      title: "Internal commercial context",
-      detail: "Account-scoped BTX commercial records",
-      state: "AVAILABLE",
+      title: "Needs validation",
+      detail: `${commandCenter?.public_intelligence_counts.needs_validation ?? 0} assessments require evidence or fit review`,
+      state: (commandCenter?.public_intelligence_counts.needs_validation ?? 0) > 0 ? "REVIEW_REQUIRED" : "NO CURRENT ITEMS",
     },
     {
-      title: "CRM / contacts",
-      detail:
-        settings?.integrations.hubspot?.detail ?? "Provider status unavailable",
-      state: settings?.integrations.hubspot?.state ?? "NOT_CONFIGURED",
+      title: "Available intelligence",
+      detail: `${base.length} governed assessments and saved research signals`,
+      state: base.length > 0 ? "AVAILABLE" : "UNAVAILABLE",
     },
     {
-      title: "Quotes / RFQs",
-      detail:
-        settings?.integrations.paperless?.detail ??
-        "Provider status unavailable",
-      state: settings?.integrations.paperless?.state ?? "NOT_CONFIGURED",
+      title: "Tracked organizations",
+      detail: `${tracked.length} Customers and Prospects in the governed watchlist`,
+      state: tracked.length > 0 ? "AVAILABLE" : "NO CURRENT ITEMS",
     },
   ];
   if (workspace === 'markets') return <>
     <nav className="intelligence-tabs" aria-label="Intelligence modes">
-      <Button onClick={() => selectWorkspace('monitor')}>Intelligence Monitor</Button>
+      <Button onClick={() => selectWorkspace('monitor')}>Public Intelligence</Button>
       <Button onClick={() => selectWorkspace('federal')}>Federal Procurement</Button>
       <Button aria-current="page">Market Intelligence</Button>
     </nav>
@@ -428,7 +441,7 @@ export function Intelligence({
         <div className="surface intelligence-surface">
           <nav className="intelligence-tabs" aria-label="Intelligence modes">
             <Button onClick={() => selectWorkspace("monitor")}>
-              Intelligence Monitor
+              Public Intelligence
             </Button>
             <Button aria-current="page">Federal Procurement</Button>
             <Button onClick={() => selectWorkspace('markets')}>Market Intelligence</Button>
@@ -457,7 +470,7 @@ export function Intelligence({
   return (
     <div className="surface intelligence-surface">
       <nav className="intelligence-tabs" aria-label="Intelligence modes">
-        <Button aria-current="page">Intelligence Monitor</Button>
+        <Button aria-current="page">Public Intelligence</Button>
         <Button onClick={() => selectWorkspace("federal")}>
           Federal Procurement
         </Button>
@@ -466,7 +479,7 @@ export function Intelligence({
       <header className="page-title intelligence-title">
         <span className="eyebrow">External Intelligence</span>
         <h1>Intelligence</h1>
-        <p>What changed: prioritized evidence, Customer context, and governed next steps.</p>
+        <p>Review specific developments, commercial relevance, uncertainty, and the next decision.</p>
       </header>
       <section
         className="intelligence-context-tiles"
@@ -520,37 +533,31 @@ export function Intelligence({
           <Empty>No backend-ranked public signals are available.</Empty>
         )}
       </section>
-      <section
-        className="intelligence-tracked"
-        aria-labelledby="tracked-targets"
-      >
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">System recommended · read only</span>
-            <h2 id="tracked-targets">Tracked Customers & Prospects</h2>
-          </div>
-        </div>
-        {tracked.length ? (
-          <div>
-            {tracked.map((item) => (
-              <button
-                key={item.account_id}
-                onClick={() => onAccount(item.account_id)}
-              >
-                <strong>{item.name}</strong>
-                <span>{item.markets.join(" · ")}</span>
-                <small>
-                  {item.reasons.length
-                    ? "New signal context"
-                    : "No new activity"}
-                </small>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <Empty>No governed tracked targets are available.</Empty>
-        )}
-      </section>
+      <Disclosure title={`Tracked Customers & Prospects (${tracked.length})`}>
+        <section className="intelligence-tracked" aria-label="Tracked Customers and Prospects">
+          <p className="muted">Open the governed watchlist only when you need to change organization context.</p>
+          {tracked.length ? (
+            <div>
+              {tracked.map((item) => (
+                <button
+                  key={item.account_id}
+                  onClick={() => onAccount(item.account_id)}
+                >
+                  <strong>{item.name}</strong>
+                  <span>{item.markets.join(" · ")}</span>
+                  <small>
+                    {item.reasons.length
+                      ? "New signal context"
+                      : "No new activity"}
+                  </small>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <Empty>No governed tracked targets are available.</Empty>
+          )}
+        </section>
+      </Disclosure>
       <section
         className="intelligence-controls"
         aria-label="Intelligence search and filters"

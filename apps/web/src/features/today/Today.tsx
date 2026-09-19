@@ -8,6 +8,8 @@ import { WorklistPagination } from '../../components/WorklistPagination'
 import { clampPage, pageSlice } from '../../components/worklistModel'
 import { CommercialRecoveryBriefing } from './CommercialRecoveryBriefing'
 import type { WorkspaceLocation } from '../../app/navigation'
+import { AttentionBadge } from '../../components/AttentionBadge'
+import { assessmentAttention } from '../../components/attentionModel'
 import './today.css'
 
 export interface TodayFilters { kind: 'ALL' | 'PUBLIC_SIGNAL' | 'COMMERCIAL_REVIEW'; accountId: string; businessUnit: string; query: string; sort: 'RANKED' | 'RECENT' | 'OLDEST' | 'CUSTOMER_ASC' | 'CUSTOMER_DESC'; page: number; validationPage: number }
@@ -91,7 +93,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
     {state === 'unavailable' ? <Panel title="Today briefing unavailable"><Empty>Today briefing is unavailable. This is not zero activity. Retry using the workspace notice above; your filters are retained.</Empty></Panel> : <>
     <section className="today-priority-summary" aria-label="Top priorities">
       {priority.slice(0, 3).map(item => <article key={item.id} className="today-priority-card" data-summary-id={item.id}>
-        <div className="today-item-heading"><span className="eyebrow">{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence' : 'Public intelligence') : 'Internal intelligence'}</span>{item.severity && <State value={item.severity} />}</div>
+        <div className="today-item-heading"><span className="eyebrow">{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence' : 'Public intelligence') : 'Internal intelligence'}</span>{item.signal_brief ? <AttentionBadge level={assessmentAttention(item.signal_brief)} /> : item.severity && <AttentionBadge level={['HIGH', 'MEDIUM', 'LOW'].includes(item.severity) ? item.severity as 'HIGH' | 'MEDIUM' | 'LOW' : 'UNAVAILABLE'} />}</div>
         <h2>{item.account_id ? name(item.account_id) : 'Prospect research'}: {item.signal_brief?.headline ?? item.reason}</h2>
         <p>{item.signal_brief?.what_happened ?? item.reason}</p>
         <p className="today-card-next">{item.recommended_action ?? 'Review supporting evidence before choosing an action.'}</p>
@@ -122,7 +124,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
                 {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedBriefContextId === (item.signal_brief.assessment_id ?? item.signal_brief.context_id ?? item.signal_brief.id)} /> : <><p className="today-evidence-note">BTX commercial record · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button variant="primary" onClick={() => onLocationChange({ ...location, subview: 'recovery', recordId: item.id, anchor: `priority-${item.id}` }, 'push')}>Open recovery briefing</Button>{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="ghost" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
               </Disclosure>
             </div>
-            {item.severity && <State value={item.severity} />}
+            {item.signal_brief ? <AttentionBadge level={assessmentAttention(item.signal_brief)} /> : item.severity && <AttentionBadge level={['HIGH', 'MEDIUM', 'LOW'].includes(item.severity) ? item.severity as 'HIGH' | 'MEDIUM' | 'LOW' : 'UNAVAILABLE'} />}
           </li> )})}</ol><WorklistPagination page={priorityPage} pageSize={PAGE_SIZE} total={priority.length} onPage={page => changeFilters({ ...filters, page })} /></> : <Empty>{allPriority.length ? 'No action priorities match the current search and filters. The complete eligible queue is unchanged.' : validation.length ? 'No eligible action priorities exist. Review the separate validation lane below.' : 'No eligible action priorities exist for this briefing.'}</Empty>}
       </Panel>
       {filters.kind !== 'COMMERCIAL_REVIEW' && <Panel title="Needs validation" action={<span className="panel-kicker">{validation.length} to review</span>}>
@@ -130,7 +132,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
           const brief = item.signal_brief
           const score = brief?.signal_confidence?.score
           return <article className="today-validation-item" key={item.id} data-validation-id={item.id}>
-            <div className="today-validation-head"><div><span className="today-validation-label">Needs validation</span><button className="today-customer-link" disabled={!item.account_id} onClick={() => item.account_id && onAccount(item.account_id)}>{item.account_id ? name(item.account_id) : 'Prospect research'}</button></div>{item.observed_at && <time dateTime={item.observed_at}>{dateLabel(item.observed_at)}</time>}</div>
+            <div className="today-validation-head"><div><span className="today-validation-label">Needs validation</span><button className="today-customer-link" disabled={!item.account_id} onClick={() => item.account_id && onAccount(item.account_id)}>{item.account_id ? name(item.account_id) : 'Prospect research'}</button></div><AttentionBadge level="MEDIUM" />{item.observed_at && <time dateTime={item.observed_at}>{dateLabel(item.observed_at)}</time>}</div>
             <h3>{brief?.headline ?? item.reason}</h3>
             <div className="today-validation-facts"><span><strong>Signal Confidence</strong> {score == null ? 'More evidence needed' : `${score}/100`}</span><span>Potential BTX relevance not yet established</span></div>
             <p><strong>Next:</strong> {item.recommended_action ?? 'Validate the account-specific evidence before choosing an action.'}</p>

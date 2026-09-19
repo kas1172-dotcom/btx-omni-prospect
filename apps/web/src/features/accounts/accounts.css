@@ -209,14 +209,17 @@
 }
 .account-decision-zone {
   display: grid;
-  grid-template-columns: minmax(0, 2.3fr) minmax(260px, 1.2fr) minmax(150px, .65fr);
+  grid-template-columns: minmax(0, 2.25fr) minmax(260px, .9fr);
   gap: 12px;
   padding: 14px;
   background: var(--surface-workspace);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }
-.account-decision-narrative{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.account-decision-narrative article{padding:10px 12px;border-left:3px solid var(--border-default);background:var(--surface-card)}.account-decision-narrative article p{margin:6px 0 0;color:var(--text-secondary);line-height:1.45}.account-decision-narrative .account-next-action{border-left-color:var(--accent-primary)}.account-decision-narrative .ui-notice{grid-column:1/-1}
+.account-decision-zone:has(.ui-status-danger) { border-top: 4px solid #dc2626; }
+.account-decision-zone:has(.ui-status-warning) { border-top: 4px solid #ca8a04; }
+.account-decision-zone:has(.ui-status-success) { border-top: 4px solid #16a34a; }
+.account-decision-header{grid-column:1/-1;display:flex;align-items:start;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border-default)}.account-decision-header>div{display:grid;gap:4px}.account-decision-header h2{margin:0;max-width:32ch;font-size:clamp(20px,2.1vw,28px);line-height:1.08;letter-spacing:-.025em}.account-decision-narrative{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border:1px solid var(--border-default);border-radius:var(--radius-panel);overflow:hidden}.account-decision-narrative article{min-height:112px;padding:14px;border-left:1px solid var(--border-default);border-bottom:1px solid var(--border-default);background:var(--surface-card)}.account-decision-narrative article:nth-child(odd){border-left:0}.account-decision-narrative article p{margin:7px 0 0;color:var(--text-secondary);font-size:13px;line-height:1.45}.account-decision-narrative .account-change{border-top:3px solid var(--semantic-public)}.account-decision-narrative .account-uncertainty{background:var(--semantic-validation-soft);border-top:3px solid var(--semantic-validation)}.account-decision-narrative .account-next-action{background:var(--surface-subdued);border-top:3px solid var(--text-primary)}.account-decision-narrative .ui-notice{grid-column:1/-1;border:0;border-top:1px solid var(--border-default);border-radius:0}
 .relationship-decision-summary{display:grid;gap:8px}.relationship-decision-summary .seller-relationship-card{border-color:var(--accent-primary)}
 .account-decision-zone .ui-stat {
   box-shadow: none;
@@ -607,13 +610,14 @@
   .account-workspace-states {
     justify-content: flex-start;
   }
+  .account-decision-header{align-items:flex-start}
   .account-decision-zone {
     grid-template-columns: minmax(0, 1fr);
     padding: 0;
     background: transparent;
     border: 0;
   }
-  .account-decision-narrative{grid-column:1/-1;grid-template-columns:1fr}
+  .account-decision-narrative{grid-column:1/-1;grid-template-columns:1fr}.account-decision-narrative article{min-height:auto;border-left:0}.account-decision-header{display:grid}.account-decision-header h2{font-size:20px}.account-decision-zone>.score-summary{padding:12px}.account-decision-zone>.score-summary .score-summary-decision,.account-decision-zone>.score-summary>p:not(.score-summary-coverage),.account-decision-zone>.score-summary dl{display:none}
   .account-secondary-grid > .account-workspace-relationship{grid-column:1;grid-row:auto}
   .account-decision-zone .ui-stat {
     padding: 10px;

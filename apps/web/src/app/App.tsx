@@ -21,7 +21,7 @@ const Communications = deferredSurface(() => import('../features/communications/
 const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
 const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Source Health', 'Source Health')
 const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
-type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
+type OmniViewContext = Pick<OmniContext, 'selected_account_id' | 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
 const surfaceLabels: Record<Surface, string> = {
   today: 'Today',
   accounts: 'Customers & Prospects',
@@ -446,7 +446,10 @@ export default function App() {
   const filteredAccountId = typeof viewContext.active_filters?.account_id === 'string'
     ? viewContext.active_filters.account_id
     : undefined
-  const selectedAccountId = detail?.account.id ?? (surface === 'map' ? selectedMapAccountId : filteredAccountId)
+  const locationCustomerId = surface === 'intelligence' && typeof location.filters?.customer === 'string'
+    ? location.filters.customer
+    : undefined
+  const selectedAccountId = detail?.account.id ?? (surface === 'map' ? selectedMapAccountId : locationCustomerId ?? viewContext.selected_account_id ?? filteredAccountId)
   const omniContext: OmniContext = {
     surface: omniSurface,
     selected_account_id: selectedAccountId,
