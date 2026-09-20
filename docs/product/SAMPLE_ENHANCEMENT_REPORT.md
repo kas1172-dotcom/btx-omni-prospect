@@ -1,6 +1,52 @@
 # SAMPLE enhancement report
 
-Status: Tiers 1 and 2 verified; Tier 3 in progress.
+Status: Tiers 1, 2 and 3 implemented and verified locally. Checkpoints: `tier1-complete`, `tier2-complete`, `tier3-complete`.
+
+The enhancement is an opt-in, deterministic demonstration dataset, not evidence of real BTX commercial activity. It supplies reconciled synthetic transactions, fictional regional accounts, all requested scoring vectors and context for J1–J9. Verified Kratos, Federal Reserve and FDA public context stays separate from invented commercial facts. The mechanics are tested; unresolved identity, location, sourcing and adverse-event research remains visibly unresolved rather than fabricated. Live Gemini generation and browser/map-provider rendering were not exercised.
+
+## Local activation and scope
+
+Use the isolated `sample-data-enhancement` branch/worktree. Configure only a local database with the existing migration chain, then run the existing application startup workflow with these settings:
+
+```text
+BTX_DATA_MODE=SAMPLE
+BTX_SAMPLE_ENHANCEMENT_ENABLED=true
+DEMO_AS_OF_DATE=2026-09-20
+BTX_COMMERCIAL_DURABLE_STATE_ENABLED=false
+BTX_MONITOR_MODE=disabled
+BTX_MARKET_REFRESH_ENABLED=false
+BTX_DATABASE_URL=<your task-owned local database URL>
+```
+
+Selection composes a read-only runtime view; no seed script, new migration or fixture import is required. The switch defaults off and does not activate the additions in CONNECTED mode. Existing persisted planning/itinerary choices override demonstration defaults. Explicit user workflow saves still use the normal local persistence APIs. No deployment, push, production configuration change or production database access was performed. The task-owned PostgreSQL container is `btx-sample-enhancement-pg` on loopback port 57379; it remains available for reproduction.
+
+## Per-journey coverage
+
+Paths below are relative to `backend/tests/`; scenario modules are in `backend/src/btx_omni/providers/sample/`.
+
+| Journey | Demonstration and honest boundary | Fixture-backed assertion |
+|---|---|---|
+| J1 regional prospecting | Fictional Watch Southwest origin, nine nearby organization sites plus fictional BTX site; six markets, matching directory/map IDs, nine-stop draft itinerary. No invented meetings or travel times. | `test_sample_regional.py:test_j1_regional_cohort_has_exact_pins_and_directory_parity`; `test_sample_journey_contracts.py:test_j1_prefilled_itinerary_has_no_contact_or_meeting_or_travel_inventions` |
+| J2 cross-BU planning | APM missing monthly feed explicitly Unknown, not a forecast; ERA invoices at three sites; All/Exclude/Only partnership filters and persisted override precedence. | `test_sample_planning.py:test_j2_gap_is_not_forecast_and_three_sister_bu_sites_have_invoices`; `test_sample_journey_contracts.py:test_j2_j3_api_defaults_and_model_context_are_available_without_writes` |
+| J3 market coverage | Medical customer/prospects/partnership/BTX location and fictional regional concentration; verified national G.17 series and FDA draft context separate from account evidence. No M&A score. | `test_sample_medical_market.py:test_j3_medical_coverage_and_separate_verified_national_series`; `test_sample_public_research.py:test_fda_draft_stays_aggregate_and_expires_without_invented_effective_date` |
+| J4 research lead | Curated Kratos J85 signal, computed 63.75 Medium, Auburn Hills production statement, superseded Oxford history, Unknown need and sourcing-role gap. Research-only publication hold is intentional, not a qualified prospect. | `test_sample_kratos.py:test_j4_visible_provenance_and_publication_hold`; `test_j4_curated_research_not_invented_canonical_pursuit` |
+| J5 expansion | Boeing public Kratos development joined to explicitly synthetic programs, component rationale, two BUs and current quote; unsupported BTX/JDAM-LR supply remains a hypothesis. | `test_sample_expansion.py:test_j5_public_signal_and_synthetic_history_join_without_inventing_supply` |
+| J6 external risk | Fictional consolidation exercises distinguish unconfirmed Validate immediately from high-confidence Escalate now; separate public/internal explanations and live combined 62 result. Not a real SEC/WARN allegation. | `test_sample_external_risk.py:test_j6_unconfirmed_risk_requires_validation_and_confirmed_risk_escalates`; `test_sample_journey_contracts.py:test_live_customer_risk_wrapper_is_62_not_only_a_standalone_vector` |
+| J7 recovery | Boeing 292 ordered / 146 shipped / 146 open / $143,080; pending September 26 proposal, revisions, partial shipments, options, owner role and dependency. Completion without scoped proof is rejected. | `test_sample_enhancement_ledger.py:test_j7_reconciles_exact_units_value_and_unaccepted_proposal`; `test_j7_completion_requires_scoped_verified_proof` |
+| J8 relationship discovery | Fictional regional-defense manufacturing goal has distinct 2/3/4-edge evidenced routes, dates, source IDs and weakest links; unsupported link displayed separately. No personal introduction. | `test_sample_relationships.py:test_j8_j9_longer_evidenced_route_beats_shorter_older_route` |
+| J9 relationship comparison | Four-edge route outranks older two-edge route; separate versioned relationship calculation, no cycles/duplicates, not PWIN or Signal Confidence. | `test_sample_relationships.py:test_j8_j9_longer_evidenced_route_beats_shorter_older_route` |
+
+`test_sample_journey_contracts.py:test_all_authored_ledgers_reconcile_and_commercial_rows_are_labeled` checks all 15 selected ledgers. `test_sample_model_budgets.py:test_rich_fixtures_reach_model_without_exceeding_evidence_budget` exercises model retrieval and exact drill-down traces without a live model request. All corrected numeric golden targets in the two tables below match; no expected failures remain.
+
+## Confidence and remaining unknowns
+
+- The supplied rubric lacked R9–R10 text: **NOT FOUND**. Explicit user amendments take precedence; missing make/buy bands retain the documented existing mapping. These are specification limitations, not silently invented authority.
+- Kratos investor-page retrieval returned 403; its primary corporate mirror verifies the date and J85 production scope. Official CAGE/UEI, precise address/coordinates and sourcing contact remain unverified. The lead correctly stays in Research, not Map/directory. No names or introductions were invented.
+- The supplied stale history is retained but not newly verified: Air & Space Forces Magazine, 2026-08-05, https://www.airandspaceforces.com/long-range-jdam-air-force-new-standoff-strike-option/; Kratos via GlobeNewswire, 2024-09-12, https://finance.yahoo.com/news/kratos-announces-immediate-availability-tdi-120000356.html. Both retain the payload's 2026-09-20 retrieval-date field and explicit historical status; this is not a claim that their page contents were retrieved in this run.
+- AIM-260 primary-government verification was not completed. J5 uses the verified Kratos release instead. No new SAM.gov/USAspending/SEC/WARN account claim was verified; J6 uses explicitly fictional adverse-event exercises. Therefore real connected risk intelligence is not delivered by this fixture task.
+- Actual travel, meeting confirmation, named contacts, warm introductions, browser interaction and live Gemini/provider output are unverified. Contract tests prove evidence delivery, scoring and API behavior, not generated prose quality or third-party map rendering.
+- Connected operation still requires real governed source records, entity/site resolution, commercial-system mappings, verified role/access evidence and authorized credentials through existing integration boundaries. Integration stubs were not altered. Synthetic quantitative assumptions must never be treated as BTX measurements or real customer facts.
+- Full suite warnings are dependency deprecations (Starlette/httpx and Alembic path separation), not failed assertions. Historical intermediate results below are retained for traceability and superseded by the final 877/87 checkpoint.
 
 ## Tier checkpoints
 
@@ -113,7 +159,7 @@ Three fictional Southwest medical organizations provide one invoiced customer, t
 | Public / internal / legal floors | 75 / 80 / 85 | 75 / 80 / 85; legal case blocks execution |
 | Convergence | +5 only with linking evidence | 75/75 risks produce 80 with recorded link; 60/60 without link remains 60 |
 | Independent vs syndicated origins | 3 vs 1 | 100 vs 25 corroboration factor points; separate evidence IDs retain shared origin for copies |
-| Low distribution | Priority <50, Fit <50, Confidence Low | Complete low pursuit; Fit 31.25; confidence 37.75 |
+| Low distribution | Priority <50, Fit <50, Confidence Low | Complete Priority 28.95; Fit 31.25; confidence 37.75 Low |
 | Expired / contradictory evidence | Unknown, no reweighting | Stale and Conflicting capacity factors yield ranges, no point score |
 
 Assertions: `test_sample_golden_tier2.py` plus regional/external-risk tests. The live Fictional Watch ledger stores qualified, blocked, incomplete, low, stale and conflicting pursuit variants, and a separately labeled computed what-if lab. Floor examples are explicitly band-table teaching cases, **not measured customer conditions**. The lab includes its input bands, evidence, rule versions and computed receipts in the model's history context.
@@ -211,6 +257,6 @@ The original no-socket baseline guard was too broad for Windows asyncio's loopba
 
 Added `core/clock.py`, with fixed configurable `DEMO_AS_OF_DATE=2026-09-20`, inclusive expiry and relative fixture dates. Runtime observations previously used August 31; Today mixed that with wall-clock public evaluation. Both now use the provider. Public brief evaluation and catalog provenance default to the same clock. Explicit timestamps remain supported for historical replay. Authentication, provider accounting and retry timers remain operational clocks, not evidence-age clocks.
 
-`test_demo_clock.py`: 2 passed. Covers advancing evaluation beyond the two-day expiry while preserving the observation, plus a wall-clock prohibition across scoring and provider fixture modules. Additional plumbing remains part of scoring alignment and fixture integration.
+`test_demo_clock.py` covers advancing evaluation beyond the two-day expiry while preserving the observation, plus a wall-clock prohibition across scoring and provider fixture modules. The final guard also covers business-date API and explanation paths. Clock plumbing is complete for these paths; operational security/collection/deadline timers intentionally remain independent.
 
-Previous checkpoint: focused baseline 73 passed; preflight probes 80 passed, 2 expected failures. Full-suite baseline is being established with the user-approved reference-file loading policy. Tier tags will only be created after verification.
+Historical pre-implementation checkpoint: focused baseline 73 passed; preflight probes 80 passed, 2 expected failures. Both expected failures now pass under the corrected authority. The final full-suite results above supersede this checkpoint; all tier tags follow successful verification.
