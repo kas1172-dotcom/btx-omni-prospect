@@ -95,6 +95,16 @@ Verification: typecheck/lint/build PASS; frontend unit 84 passed / 0 failed (unc
 
 List E2E initially counted nested sparkline table rows; corrected its new selector to direct account rows. The same check exposed and fixed arrow navigation selecting nested rows: navigation is now restricted to direct sibling account rows. Final new list E2E: 1 passed / 0 failed.
 
+## Step 4 — header and Overview
+
+Removed decision brief and Opportunities tab, added Actions tab. Existing manager-only designation and personal shortlist forms are available in a header disclosure with required audited reason (minimum 10), actor/time, optimistic version and idempotency preserved. Owner and BUs are shown; no identity invented. Customer Overview shows canonical KPIs, separate public/internal risk, explicit coverage, a revenue/bookings chart with table fallback, quote records, function coverage, activity/cadence, concentration and top three active records. Prospect Overview uses Fit factors, market, evidenced sites and access state; no revenue chart. Expansion count links to account-filtered Opportunities. Existing federal pursuit context and program/capability evidence retained on Overview.
+
+Boeing account total is 2 open orders / $167,090 open; the requested $143,080 is the bracket line, not all account history. Score explanation modal remains keyboard-accessible. Initial compact score omitted its explanation control; restored it and explicit inline coverage before final E2E rerun.
+
+Step4 tests: typecheck/lint/build PASS; frontend 84/84; focused backend profile/planning 17/17; focused E2E 5/5. Test changes: decision-experience and wave3-contracts replace decision-brief assertions with Overview/absence checks; profile-ux-refinement relocates brief selectors and removed Opportunities-tab planning to the header while retaining draft preservation, modal, keyboard and responsive checks; profile-opportunity-scope uses the new health KPI selector without changing its score-scope assertions. Screenshots include all five requested Boeing tabs (Actions now exists), list and Intel.
+
+Step4 files: Accounts.tsx, ProfileOverview.tsx, profileTabs.ts; the four tests above; report/screenshots. No App.tsx changes. No DTO additions in this step. Header planning opens inline; it is not a new authorization path.
+
 ## Unverified / remaining
 
 - Steps 1–6 are in progress, not complete.

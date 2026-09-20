@@ -11,8 +11,10 @@ const scores = read('../src/components/ScoreSummary.tsx')
 const scoreModels = read('../src/components/scoreSummaryModel.ts')
 const omni = read('../src/components/OmniDrawer.tsx')
 
-test('Organization 360 leads with the seller decision and gates the full graph', () => {
-  for (const label of ['What changed', 'Why it may matter', 'Still unconfirmed', 'Next decision']) assert.match(accounts, new RegExp(label))
+test('Organization 360 replaces the decision brief with Overview and gates the full graph', () => {
+  const overview = read('../src/features/accounts/ProfileOverview.tsx')
+  for (const label of ['Health', 'Open orders', 'Prospect Fit', 'Top three open items']) assert.match(overview, new RegExp(label))
+  assert.doesNotMatch(accounts, /Decision brief/)
   assert.match(accounts, /Open full Relationship Intelligence workspace/)
   assert.match(accounts, /subview === 'relationships'/)
   assert.match(accounts, /Current customer status does not establish participation in this pursuit/)
