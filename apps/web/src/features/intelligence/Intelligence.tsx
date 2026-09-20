@@ -630,7 +630,7 @@ export function Intelligence({
             <option value="OBSERVED">Observed</option>
             <option value="UPCOMING">Upcoming</option>
           </SelectInput>
-          
+
       </FilterBar>
       <Panel
         title="Intelligence Feed"

@@ -83,13 +83,13 @@ test('Phase 6 Omni browser acceptance preserves typed context, continuity, and i
   await closeOmni(page)
 
   // A current market filter is serialized, then absent after clearing it.
-  await page.getByRole('button', { name: 'Defense', exact: true }).click()
+  await page.getByLabel('Industry', { exact: true }).selectOption('Defense')
   await openOmni(page)
   const filtered = await ask(page, 'What matters most on this page?')
   expect(filtered.request.context.active_filters.market).toBe('Defense')
   expect(filtered.body.context_used.filters.market).toBe('Defense')
   await closeOmni(page)
-  await page.getByRole('button', { name: 'All industries', exact: true }).click()
+  await page.getByLabel('Industry', { exact: true }).selectOption('ALL')
   await openOmni(page)
   const filterCleared = await ask(page, 'What matters most on this page?')
   expect(filterCleared.request.context.active_filters?.market).toBeUndefined()
@@ -144,7 +144,9 @@ test('an immediately launched selected assessment reaches Omni before submission
   })
   await page.goto('/')
   await waitForApp(page)
-  await page.getByRole('button', { name: 'Public intelligence', exact: true }).click()
+  await page.getByLabel('Today filters').waitFor()
+  if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
+    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
   const priority = page.locator('.today-attention-item').filter({ hasText: assessment.headline })
   await priority.getByRole('button', { name: 'Evidence and governed action' }).click()
   await priority.getByRole('button', { name: /View supporting evidence/ }).click()

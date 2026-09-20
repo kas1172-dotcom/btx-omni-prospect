@@ -15,7 +15,7 @@ test('Wave 2 queues bound rendering after whole-result filtering and stable sort
   assert.match(today, /pageSlice\(sortedPriority/)
   assert.match(today, /missingLastDate/)
   assert.match(actions, /pageSlice\(visible/)
-  assert.match(actions, /a\.due_date \?\? '9999'/)
+  assert.match(actions, /compareDue\(a, b\)/)
   assert.match(actions, /a\.created_at\.localeCompare\(b\.created_at\)/)
   assert.match(suggestions, /pageSlice\(filtered/)
   assert.match(suggestions, /Each canonical suggestion remains separate/)

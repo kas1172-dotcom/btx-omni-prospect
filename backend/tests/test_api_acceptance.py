@@ -235,8 +235,10 @@ async def test_actions_are_idempotent_confirmed_and_audited(tmp_path, monkeypatc
     assert first.json()["id"] == replay.json()["id"]
     assert denied.status_code == 409
     assert len(audit.json()["events"]) == 2
-    assert listed.json()["items"][0]["id"] == high_item.json()["id"]
-    assert listed.json()["items"][0]["priority"] == "HIGH"
+    items = listed.json()["items"]
+    assert items == sorted(items, key=lambda item: (item["due_date"] is None, item["due_date"] or "9999-12-31", item["created_at"], item["id"]))
+    assert next(item for item in items if item["id"] == high_item.json()["id"])["priority"] == "HIGH"
+    assert all("priority_rank" not in item for item in items)
     assert listed.json()["persistence"] == "DURABLE_DATABASE"
 
 

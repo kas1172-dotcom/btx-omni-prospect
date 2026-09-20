@@ -111,7 +111,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
 
   // The full curated scenario roster is discoverable through the actual Accounts UI.
   await navigate(page, 'Customers & Prospects')
-  await page.locator('.filters select').selectOption('ALL')
+  await page.getByLabel('Customer scope', { exact: true }).selectOption('ALL')
   const search = page.getByPlaceholder('Search Customer, industry, or location')
   for (const [scenario, account] of scenarioAccounts) {
     await search.fill(account)
@@ -217,13 +217,13 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
 
   // A current filter is used only for the active view and disappears after the UI clears it.
   await navigate(page, 'Customers & Prospects')
-  await page.getByRole('button', { name: 'Defense', exact: true }).click()
+  await page.getByLabel('Industry', { exact: true }).selectOption('Defense')
   await openOmni(page)
   const filtered = await ask(page, 'What matters most on this page?')
   expect(filtered.request.context.active_filters.market).toBe('Defense')
   expect(filtered.body.context_used.filters.market).toBe('Defense')
   await closeOmni(page)
-  await page.getByRole('button', { name: 'All industries', exact: true }).click()
+  await page.getByLabel('Industry', { exact: true }).selectOption('ALL')
   await openOmni(page)
   const global = await ask(page, 'Which Defense accounts have the highest scores?')
   expect(global.request.context.active_filters?.market).toBeUndefined()

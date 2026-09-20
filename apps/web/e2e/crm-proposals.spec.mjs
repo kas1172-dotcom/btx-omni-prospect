@@ -39,6 +39,7 @@ for (const width of [390, 1440]) {
     expect(history.events.filter(item => item.kind === 'CRM_SAMPLE_ATTEMPT')).toHaveLength(1)
     expect(history.events.find(item => item.kind === 'CRM_SAMPLE_ATTEMPT').data.external_write).toBe(false)
     await page.reload()
+    await page.getByRole('button', { name: 'Close detail', exact: true }).click()
     await page.getByLabel('Search actions').fill(title)
     await expect(page.getByText('1 results', { exact: true })).toBeVisible()
     await page.locator('.action-select').first().click()

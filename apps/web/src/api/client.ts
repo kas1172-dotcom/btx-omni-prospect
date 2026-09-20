@@ -67,7 +67,7 @@ export const api = {
   suggestionFeedback: (id: string, body: SuggestionFeedbackInput) => actionRequest<{ receipt_id: string; current: SuggestionFeedback; external_write: false; canonical_scores_changed: false; work_status_changed: false }>(`/actions/suggestions/${encodeURIComponent(id)}/feedback`, { method: 'POST', body: JSON.stringify(body) }),
   suggestionFeedbackHistory: (offset = 0, signal?: AbortSignal) => actionRequest<SuggestionFeedbackHistory>(`/actions/suggestion-feedback/history?offset=${offset}`, { signal }),
   undoSuggestionFeedbackReceipt: (id: string, key: string) => actionRequest<{ receipt_id: string; state: string; scope: string; external_write: false }>(`/actions/suggestion-feedback/${encodeURIComponent(id)}/undo`, { method: 'POST', body: JSON.stringify({ idempotency_key: key }) }),
-  history: (id: string) => actionRequest<{ events: ActionHistoryEvent[] }>(`/actions/${id}/history`),
+  history: (id: string, signal = AbortSignal.timeout(15000)) => actionRequest<{ events: ActionHistoryEvent[] }>(`/actions/${id}/history`, { signal }),
   crmHistory: (id: string, signal?: AbortSignal) => actionRequest<CrmHistory>(`/actions/${encodeURIComponent(id)}/crm-proposals`, { signal }),
   crmPreview: (id: string, expected_version: number) => actionRequest<CrmProposal>(`/actions/${encodeURIComponent(id)}/crm-preview`, { method: 'POST', body: JSON.stringify({ expected_version }) }),
   crmDecision: (id: string, body: { proposal_id: string; decision: 'APPROVED' | 'REJECTED'; expected_decision_id: string | null }) => actionRequest<CrmDecision>(`/actions/${encodeURIComponent(id)}/crm-proposal-decision`, { method: 'POST', body: JSON.stringify(body) }),

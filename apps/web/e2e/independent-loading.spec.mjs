@@ -25,7 +25,7 @@ test('navigation cancels an unfinished account read without late context takeove
     const nav = page.getByRole('navigation', { name: 'Primary navigation', exact: true })
     await nav.getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
     await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('Opening')
+    await expect(page.getByRole('status').filter({ hasText: 'Opening' })).toContainText('Opening KLA Corporation')
     await nav.getByRole('button', { name: 'Map', exact: true }).click()
     release()
     await expect(page.getByRole('heading', { name: 'Tactical Map', exact: true })).toBeVisible()

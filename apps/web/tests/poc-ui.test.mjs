@@ -263,8 +263,10 @@ test('Actions creation and editing use canonical Customers and role-aware contro
   assert.match(actions, /Quick add task/)
   assert.doesNotMatch(actions, /Edit Action|ActionEditor|<Drawer/)
   assert.match(actionDetail, /principal\?\.role === 'MANAGER'/)
-  assert.match(actionDetail, /HighCardinalitySelector label="Customer"/)
+  assert.match(actionDetail, /InlineField label="Customer"/)
+  assert.match(actionDetail, /HighCardinalitySelector label=\{label\} value=\{draft\} choices=\{choices\}/)
   assert.match(actionDetail, /Your typed value is retained/)
+  assert.match(app, /subview: 'brief', recordId: brief\.context_id \?\? brief\.id, eventId: brief\.id/)
   assert.match(client, /X-BTX-Principal-Token/)
 })
 
@@ -386,7 +388,7 @@ test('list surfaces publish only their current filters and bounded canonical vis
 })
 
 test('shell clears stale list, detail, and passive entity context across surface changes', () => {
-  assert.match(app, /const navigate = useCallback\(\(id: Surface, recordHistory = true\) => \{[\s\S]*clearSelectedEvent\(\)[\s\S]*clearMapSelection\(\)[\s\S]*clearSelectedAction\(\)[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(undefined\)[\s\S]*commitLocation\(\{ surface: id \}/)
+  assert.match(app, /const navigate = useCallback\(\(id: Surface, recordHistory = true\) => \{[\s\S]*clearSelectedEvent\(\)[\s\S]*clearMapSelection\(\)[\s\S]*clearSelectedAction\(\)[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(undefined\)[\s\S]*commitLocation\(destination/)
   assert.match(app, /await api\.account\(id, controller\.signal\)[\s\S]*if \(controller\.signal\.aborted\) return[\s\S]*clearViewContext\(\)[\s\S]*setDetail\(federalAssessment[\s\S]*commitLocation\(next/)
   assert.match(app, /active_filters:[\s\S]*viewContext\.active_filters/)
   assert.match(app, /visible_record_ids:[\s\S]*viewContext\.visible_record_ids/)

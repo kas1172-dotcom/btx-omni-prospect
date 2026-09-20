@@ -107,8 +107,32 @@ def test_due_order_and_injected_overdue_date():
     unscheduled = task(service, idempotency_key='unscheduled')
     later = task(service, idempotency_key='later', due_date=date(2026, 10, 1))
     earlier = task(service, idempotency_key='earlier', due_date=date(2026, 9, 1))
-    assert service.list() == (earlier, later, unscheduled)
+    last_date = task(service, idempotency_key='last-date', due_date=date.max)
+    assert service.list() == (earlier, later, last_date, unscheduled)
     assert not earlier.is_overdue(date(2026, 9, 1))
     assert earlier.is_overdue(date(2026, 9, 2))
     completed = service.transition(earlier.id, ActionStatus.COMPLETED, principal=SELLER, occurred_at=NOW)
     assert not completed.is_overdue(date(2026, 9, 2))
+
+
+def test_required_fields_cannot_be_cleared_and_closed_approval_cannot_reopen_work():
+    service = WorkService()
+    action = task(service, approval_required=True)
+    for changes in ({'title': None}, {'title': ' '}, {'priority': None}):
+        with pytest.raises(ValueError):
+            service.edit(action.id, principal=SELLER, occurred_at=NOW, **changes)
+    canceled = service.transition(action.id, ActionStatus.CANCELED, principal=SELLER, occurred_at=NOW)
+    with pytest.raises(ActionConflictError, match='Reopen'):
+        service.decide_approval(action.id, ApprovalStatus.CHANGES_REQUESTED, principal=MANAGER, occurred_at=NOW, comment='More evidence')
+    assert service.get(action.id) == canceled
+
+
+def test_creation_replay_accepts_added_navigation_context_but_never_changed_evidence():
+    service = WorkService()
+    request = {'account_id': 'boeing', 'title': 'Original', 'principal': SELLER, 'occurred_at': NOW,
+               'idempotency_key': 'existing-intelligence-key', 'context_referents': (('intelligence_event', 'event-1'),)}
+    original = service.create(**request)
+    replay = service.create(**{**request, 'context_referents': (*request['context_referents'], ('source_screen', 'Intelligence'))})
+    assert replay == original
+    with pytest.raises(ActionConflictError):
+        service.create(**{**request, 'evidence_ids': ('different-evidence',)})

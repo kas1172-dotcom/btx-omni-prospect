@@ -236,7 +236,7 @@ export default function App() {
         description: `${brief.why_it_may_matter}${brief.action_rationale ? ` ${brief.action_rationale}` : ''}`,
         priority: brief.commercial_relevance_state === 'ESTABLISHED_ACCOUNT_REVIEW' ? 'HIGH' : 'MEDIUM',
         evidence_ids: [brief.assessment_id, ...brief.evidence_ids],
-        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id], ['source_screen', 'Intelligence'], ['source_route', workspaceHash({ ...locationRef.current, returnTo: undefined })]],
+        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id], ['source_screen', 'Intelligence'], ['source_route', workspaceHash({ ...locationRef.current, surface: 'intelligence', subview: 'brief', recordId: brief.context_id ?? brief.id, eventId: brief.id, assessment: brief.assessment_version ? { assessmentId: brief.assessment_id, assessmentVersion: brief.assessment_version, eventId: brief.id, accountId } : undefined, returnTo: undefined })]],
         approval_required: false,
         idempotency_key: `monitor-${brief.assessment_id.slice(0, 56)}`,
       })

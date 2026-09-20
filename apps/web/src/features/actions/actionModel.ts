@@ -2,6 +2,9 @@ import type { Action } from '../../types/api'
 import { workspaceHash } from '../../app/navigation'
 
 export const closed = (action: Action) => ['COMPLETED', 'CANCELED'].includes(action.status)
+export function compareDue(a: Pick<Action, 'due_date'>, b: Pick<Action, 'due_date'>): number {
+  return Number(!a.due_date) - Number(!b.due_date) || (a.due_date ?? '').localeCompare(b.due_date ?? '')
+}
 export function localDate(now = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }

@@ -50,7 +50,7 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
 
   await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   const defense = payload.command_center.market_hubs.find(hub => hub.market === 'Defense')
-  await page.getByRole('navigation', { name: 'Market hubs' }).getByRole('button', { name: /Defense/ }).click()
+  await page.getByLabel('Watch market').selectOption('Defense')
   await expect(page.getByRole('heading', { name: 'Defense coverage and gaps' })).toBeVisible()
   const watchPanel = page.getByRole('heading', { name: 'Recommended Customer watchlist' }).locator('..').locator('..')
   const programPanel = page.getByRole('heading', { name: 'Watched programs' }).locator('..').locator('..')
@@ -59,7 +59,7 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
   const coverage = page.getByRole('heading', { name: 'Defense coverage and gaps' }).locator('..').locator('..')
   for (const gap of defense.gaps) await expect(coverage).toContainText(gap)
 
-  await page.getByRole('navigation', { name: 'Market hubs' }).getByRole('button', { name: /All markets/ }).click()
+  await page.getByLabel('Watch market').selectOption('')
   await expect(page.getByRole('heading', { name: 'Coverage and source freshness' })).toBeVisible()
   await expect(watchPanel.locator('.today-watch-list > button')).toHaveCount(Math.min(12, payload.command_center.watched_accounts.length))
 
@@ -80,7 +80,7 @@ test('desktop Intelligence composes search and canonical filters with evidence a
 
   await page.getByLabel('Filter Intelligence by market').selectOption({ label: 'Defense' })
   await expect(page.locator('.intelligence-card')).toHaveCount(1)
-  const active = page.locator('.intelligence-active-filters')
+  const active = page.getByLabel('Applied filters')
   await expect(active.getByRole('button', { name: 'Remove Market: Defense filter' })).toHaveAttribute('aria-pressed', 'true')
   await search.fill('no governed signal matches this')
   await expect(page.getByText(/No governed Intelligence matches/)).toBeVisible()
@@ -152,6 +152,7 @@ test('mobile Today and Intelligence remain touch-usable at 390px and 320px witho
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
   await expect(page.getByRole('searchbox', { name: 'Search Intelligence' })).toBeVisible()
+  await page.locator('.filter-mobile-trigger').click()
   await expect(page.getByLabel('Filter Intelligence by market')).toBeVisible()
   await expect(page.locator('.intelligence-card').first()).toBeVisible()
   await page.locator('.intelligence-card').first().getByRole('button', { name: /Evidence/ }).click()

@@ -99,7 +99,9 @@ for (const width of [390, 1440]) {
     })
 
     await page.goto('/#/today')
-    await page.getByRole('button', { name: 'Public intelligence', exact: true }).click()
+    await page.getByLabel('Today filters').waitFor()
+    if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
+    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
     await expect(page.locator('.today-lane-summary')).toContainText('1 filtered · 1 displayed · 1 total needs validation · 1 filtered')
     await expect(page.locator('[data-priority-id]')).toHaveCount(1)
     await expect(page.locator('[data-validation-id]')).toHaveCount(1)

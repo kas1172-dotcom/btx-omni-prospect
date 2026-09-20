@@ -260,7 +260,7 @@ class WorkService:
         return tuple(
             sorted(
                 items,
-                key=lambda x: (x.due_date or date.max, x.created_at, x.id),
+                key=lambda x: (x.due_date is None, x.due_date or date.max, x.created_at, x.id),
             )
         )
 
@@ -276,6 +276,10 @@ class WorkService:
         action = self.get(action_id)
         ActionPolicy.require_manage(principal, action)
         owner_id = changes.get("owner_id", action.owner_id)
+        if 'title' in changes and (not isinstance(changes['title'], str) or not changes['title'].strip()):
+            raise ValueError("Action title is required.")
+        if 'priority' in changes and changes['priority'] is None:
+            raise ValueError("Action priority is required.")
         if owner_id != action.owner_id:
             ActionPolicy.require_manager(principal)
         permitted = {
@@ -360,6 +364,8 @@ class WorkService:
         ActionPolicy.require_manager(principal)
         action = self.get(action_id)
         self._require_version(action, expected_version)
+        if action.status in {ActionStatus.COMPLETED, ActionStatus.CANCELED}:
+            raise ActionConflictError("Reopen the task before deciding its approval.")
         if principal.user_id == (action.approval_requested_by or action.created_by):
             raise ActionForbiddenError("The requester cannot decide their own approval request.")
         if action.approval_status not in {ApprovalStatus.PENDING, ApprovalStatus.REQUESTED} or decision not in {

@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }) })
+
 const cloneAccount = (base, index) => ({ ...base, id: `scale-account-${index}`, name: `Scale Account ${String(index).padStart(3, '0')}`, legal_name: `Scale Account ${String(index).padStart(3, '0')} Incorporated`, domain: `scale-${index}.example`, industries: index % 2 ? ['Aerospace'] : ['Industrial'], relationship: index % 3 ? 'PROSPECT' : 'CURRENT_CUSTOMER' })
 
 async function installScaleFixtures(page) {
@@ -18,7 +20,7 @@ async function installScaleFixtures(page) {
   await page.route(/\/api\/actions(?:\?.*)?$/, async route => {
     if (route.request().method() !== 'GET') return route.continue()
     const response = await route.fetch(); const body = await response.json(); const actionBase = body.items[0] ?? { account_id: 'boeing', title: 'Review governed work', description: 'Fixture detail', owner_id: 'seller-1', priority: 'MEDIUM', status: 'OPEN', approval_status: 'NOT_REQUIRED', evidence_ids: [], context_referents: [], version: 1, created_by: 'seller-1', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z' }
-    body.items = Array.from({ length: 31 }, (_, index) => ({ ...actionBase, id: `wave2-action-${index}`, title: `Scale Action ${String(index).padStart(2, '0')}`, account_id: index % 2 ? 'boeing' : 'lockheed-martin', due_date: index % 7 === 0 ? undefined : `2026-10-${String((index % 28) + 1).padStart(2, '0')}`, priority: ['HIGH', 'MEDIUM', 'LOW'][index % 3], status: 'OPEN' }))
+    body.items = Array.from({ length: 31 }, (_, index) => ({ ...actionBase, subtasks: [], allowed_transitions: ['IN_PROGRESS', 'COMPLETED', 'CANCELED'], id: `wave2-action-${index}`, title: `Scale Action ${String(index).padStart(2, '0')}`, account_id: index % 2 ? 'boeing' : 'lockheed-martin', due_date: index % 7 === 0 ? undefined : `2026-10-${String((index % 28) + 1).padStart(2, '0')}`, priority: ['HIGH', 'MEDIUM', 'LOW'][index % 3], status: 'OPEN' }))
     body.suggestions = Array.from({ length: 40 }, (_, index) => ({ id: `wave2-suggestion-${index}`, account_id: index % 2 ? 'boeing' : 'lockheed-martin', title: `Suggestion family ${index % 4}`, rationale: `Governed rationale ${index}`, priority: ['HIGH', 'MEDIUM', 'LOW'][index % 3], evidence_ids: [`suggestion-evidence-${index}`], source: 'SAMPLE_COMMERCIAL_ALERT', observed_at: `2026-09-${String((index % 16) + 1).padStart(2, '0')}T12:00:00Z`, dismissed: false, revision: String(index % 10).repeat(64), conversion_blocked: false }))
     await route.fulfill({ response, json: body })
   })
@@ -38,26 +40,31 @@ test('finite Today and scalable Actions retain every governed record through dur
   await expect(page.locator('[data-priority-id]')).toHaveCount(1)
 
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Actions' }).click()
-  await expect(page.getByText('31 total Actions · 31 filtered · 12 displayed')).toBeVisible()
-  await page.locator('.action-row').nth(3).click()
+  await expect(page.getByText('31 results')).toBeVisible()
+  await page.locator('.action-select').nth(3).click()
   await expect(page).toHaveURL(/action=wave2-action-/)
   await page.getByRole('navigation', { name: 'Worklist pages' }).getByRole('button', { name: 'Next' }).click()
   await expect(page).toHaveURL(/f\.page=2/)
   await page.reload()
-  await expect(page.getByText('31 total Actions · 31 filtered · 12 displayed')).toBeVisible()
+  await expect(page.getByText('31 results')).toBeVisible()
 
   await page.getByRole('button', { name: 'Suggested' }).click()
-  await expect(page.getByText('40 total Suggestions · 40 filtered · 12 displayed')).toBeVisible()
+  await expect(page.getByText('40 results')).toBeVisible()
   await expect(page.locator('[data-suggestion-id]')).toHaveCount(12)
   await page.locator('[data-suggestion-id]').nth(2).click()
   await expect(page).toHaveURL(/record=wave2-suggestion-/)
   await expect(page.locator('.suggestion-detail')).toContainText('Each canonical suggestion remains separate')
+  for (let index = 0; index < 3; index++) await page.getByRole('navigation', { name: 'Worklist pages' }).getByRole('button', { name: 'Next' }).click()
+  await expect(page).toHaveURL(/f\.page=4/)
+  await expect(page.locator('[data-suggestion-id]')).toHaveCount(4)
 })
 
 test('bounded account selector preserves canonical scope and mobile containment', async ({ page }) => {
   await installScaleFixtures(page)
   await page.setViewportSize({ width: 390, height: 844 })
+  const initialActions = page.waitForResponse(response => response.url().endsWith('/api/actions') && response.request().method() === 'GET')
   await page.goto('/#/settings')
+  await initialActions
   const selector = page.getByRole('combobox', { name: 'Private memory scope' })
   await selector.fill('Scale Account 089')
   await expect(page.getByRole('option', { name: /Scale Account 089/ })).toHaveCount(1)

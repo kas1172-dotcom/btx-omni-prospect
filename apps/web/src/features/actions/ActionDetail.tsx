@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../../api/client'
 import { Button, Disclosure, Panel, SelectInput, TextInput, Textarea } from '../../components/UI'
-import { HighCardinalitySelector } from '../../components/HighCardinalitySelector'
+import { HighCardinalitySelector, type GovernedChoice } from '../../components/HighCardinalitySelector'
 import type { Account, Action, ActionHistoryEvent, ActionSubtask, ActionStatus, Principal, Signal } from '../../types/api'
 import { actionSource, closed } from './actionModel'
 
@@ -9,8 +9,9 @@ type Edit = Parameters<typeof api.editAction>[1]
 type Mutate = (operation: (current: Action) => Promise<Action>, optimistic?: Partial<Action>) => Promise<void>
 const message = (error: unknown) => error instanceof Error ? error.message : 'Save failed. Your draft is retained.'
 
-export function InlineField({ label, value, onSave, refresh, type = 'text', children }: {
+export function InlineField({ label, value, onSave, refresh, type = 'text', children, choices, disabled }: {
   label: string; value: string; onSave: (value: string) => Promise<void>; refresh: () => Promise<void>; type?: string; children?: ReactNode
+  choices?: GovernedChoice[]; disabled?: boolean
 }) {
   const [draft, setDraft] = useState(value)
   const [state, setState] = useState('')
@@ -28,7 +29,7 @@ export function InlineField({ label, value, onSave, refresh, type = 'text', chil
   }
   const change = (next: string) => { dirty.current = true; latestDraft.current = next; setDraft(next); setState('Unsaved') }
   return <div className="inline-field">
-    {children ? <SelectInput label={label} aria-label={label} value={draft} onChange={event => { change(event.target.value); void save(event.target.value) }}>{children}</SelectInput>
+    {choices ? <HighCardinalitySelector label={label} value={draft} choices={choices} disabled={disabled} allChoice={{ label: 'No customer', description: 'Personal task without an organization' }} onChange={next => { change(next); void save(next) }} /> : children ? <SelectInput label={label} aria-label={label} value={draft} onChange={event => { change(event.target.value); void save(event.target.value) }}>{children}</SelectInput>
       : type === 'textarea' ? <Textarea label={label} aria-label={label} value={draft} onChange={event => change(event.target.value)} onBlur={() => void save(draft)} />
         : <TextInput label={label} aria-label={label} type={type} value={draft} onChange={event => change(event.target.value)} onBlur={() => void save(draft)} />}
     <small role="status">{state}</small>
@@ -41,26 +42,29 @@ function SubtasksSection({ action, mutate, refresh }: { action: Action; mutate: 
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const receipts = useRef(new Map<string, string>())
+  const [pending, setPending] = useState(0)
   const children = action.subtasks.filter(child => !child.removed)
   const change = async (id: string | undefined, changes: Partial<ActionSubtask>) => {
     const signature = JSON.stringify([id, changes])
     const key = receipts.current.get(signature) ?? crypto.randomUUID()
     receipts.current.set(signature, key)
+    setPending(value => value + 1)
     try {
       await mutate(current => api.subtask(current.id, id, { ...changes, expected_version: current.version, idempotency_key: key }), id ? { subtasks: action.subtasks.map(child => child.id === id ? { ...child, ...changes } : child) } : undefined)
       receipts.current.delete(signature); setError('')
     } catch (caught) { setError(message(caught)); throw caught }
+    finally { setPending(value => value - 1) }
   }
   return <section aria-label="Subtasks"><h3>Subtasks · {children.filter(child => child.done).length}/{children.length}</h3>
     {!closed(action) && <form onSubmit={event => { event.preventDefault(); if (!title.trim() || busy) return; setBusy(true); void change(undefined, { title: title.trim() }).then(() => setTitle('')).catch(() => undefined).finally(() => setBusy(false)) }}><TextInput label="New subtask" value={title} onChange={event => setTitle(event.target.value)} /><Button type="submit" disabled={busy || !title.trim()}>Add subtask</Button></form>}
     {error && <p role="alert">{error}</p>}
     <ul className="subtask-list">{action.subtasks.map(child => <li key={child.id}>{child.removed
-      ? <div>Removed: {child.title} <Button disabled={closed(action)} onClick={() => void change(child.id, { removed: false }).catch(() => undefined)}>Restore subtask</Button></div>
-      : <><label><input type="checkbox" checked={child.done} disabled={closed(action)} onChange={event => void change(child.id, { done: event.target.checked }).catch(() => undefined)} />Done: {child.title}</label>
+      ? <div>Removed: {child.title} <Button disabled={closed(action) || pending > 0} onClick={() => void change(child.id, { removed: false }).catch(() => undefined)}>Restore subtask</Button></div>
+      : <><label><input type="checkbox" checked={child.done} disabled={closed(action) || pending > 0} onChange={event => void change(child.id, { done: event.target.checked }).catch(() => undefined)} />Done: {child.title}</label>
         <InlineField label="Subtask title" value={child.title} refresh={refresh} onSave={value => change(child.id, { title: value })} />
         <InlineField label="Subtask due date" type="date" value={child.due_date ?? ''} refresh={refresh} onSave={value => change(child.id, { due_date: value || null })} />
         <InlineField label="Subtask owner" value={child.owner_id ?? ''} refresh={refresh} onSave={value => change(child.id, { owner_id: value || null })} />
-        <Button disabled={closed(action)} onClick={() => void change(child.id, { removed: true }).catch(() => undefined)}>Remove subtask</Button></>}</li>)}</ul>
+        <Button disabled={closed(action) || pending > 0} onClick={() => void change(child.id, { removed: true }).catch(() => undefined)}>Remove subtask</Button></>}</li>)}</ul>
   </section>
 }
 
@@ -125,10 +129,11 @@ export function ActionDetail({ action, accounts, principal, signals, onItem, onA
       <SelectInput label="Status" aria-label="Status" value={action.status} onChange={event => transition(event.target.value as ActionStatus)}><option value={action.status}>{action.status}</option>{action.allowed_transitions.map(status => <option key={status}>{status}</option>)}</SelectInput>
       {closed(action) ? <Button disabled={!action.allowed_transitions.length} onClick={() => transition(action.allowed_transitions[0])}>Reopen</Button> : <div className="card-actions">{action.allowed_transitions.includes('COMPLETED') && <Button onClick={() => transition('COMPLETED')}>Complete</Button>}{action.allowed_transitions.includes('CANCELED') && <Button onClick={() => transition('CANCELED')}>Cancel task</Button>}</div>}
       {completeNotice && <div role="status">This task has open subtasks. <Button onClick={() => transition('COMPLETED', true)}>Complete all and finish</Button></div>}
+      {closed(action) && !action.allowed_transitions.length && <p role="alert">The previous work state was not recorded. Reopening requires reviewed recovery; no prior state has been guessed.</p>}
       <InlineField label="Priority" value={action.priority} onSave={value => edit({ priority: value as Action['priority'] })} refresh={refresh}><option>HIGH</option><option>MEDIUM</option><option>LOW</option></InlineField>
       <InlineField label="Due date" type="date" value={action.due_date ?? ''} onSave={value => edit({ due_date: value || null })} refresh={refresh} />
       {principal?.role === 'MANAGER' ? <InlineField label="Owner" value={action.owner_id ?? ''} onSave={value => edit({ owner_id: value || null })} refresh={refresh} /> : <p>Owner: {action.owner_id ?? 'Unassigned'}</p>}
-      <HighCardinalitySelector label="Customer" value={action.account_id ?? ''} disabled={Boolean(action.evidence_ids.length || action.source_suggestion_id || action.context_referents.some(([kind]) => !kind.startsWith('source_')))} choices={accounts.map(account => ({ id: account.id, label: account.name ?? account.legal_name ?? account.id }))} onChange={value => void edit({ account_id: value || null }).catch(caught => setError(message(caught)))} />
+      <InlineField label="Customer" value={action.account_id ?? ''} onSave={value => edit({ account_id: value || null })} refresh={refresh} disabled={Boolean(action.evidence_ids.length || action.source_suggestion_id || action.context_referents.some(([kind]) => !kind.startsWith('source_')))} choices={accounts.map(account => ({ id: account.id, label: account.name ?? account.legal_name ?? account.id }))} />
       {action.account_id && <Button onClick={() => onAccount(action.account_id!)}>View Customer</Button>}
       {source ? <p>Created from <a href={source.href}>{source.label}</a></p> : <p>Creation source was not recorded.</p>}
       {error && <p role="alert">{error}</p>}</section> },

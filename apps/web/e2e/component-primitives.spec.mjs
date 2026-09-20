@@ -21,13 +21,12 @@ test('shared disclosure and controls expose keyboard and selected-state contract
   await search.fill('Intel')
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
 
-  const defense = page.getByRole('button', { name: 'Defense', exact: true })
-  await defense.click()
+  await page.getByLabel('Industry', { exact: true }).selectOption('Defense')
+  const defense = page.getByRole('button', { name: 'Remove Industry: Defense filter' })
   await expect(defense).toHaveAttribute('aria-pressed', 'true')
-  const clear = page.getByRole('button', { name: 'All industries', exact: true })
-  await clear.click()
-  await expect(clear).toHaveAttribute('aria-pressed', 'true')
-  await expect(defense).toHaveAttribute('aria-pressed', 'false')
+  await defense.click()
+  await expect(page.getByLabel('Industry', { exact: true })).toHaveValue('ALL')
+  await expect(defense).toHaveCount(0)
 })
 
 test('shared evidence treatment renders truthful sourced and unavailable states', async ({ page }) => {
