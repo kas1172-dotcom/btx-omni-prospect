@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openCustomerSection, openOrganizationEvidence } from './helpers.mjs'
+import { openCustomerSection, openOrganizationEvidence, openRecordedDecision } from './helpers.mjs'
 
 const priorityCustomers = [
   'Honeywell', 'Boeing', 'KLA Corporation', 'SpaceX', 'Intuitive Surgical',
@@ -28,7 +28,6 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
   await openOrganizationEvidence(page)
   await expect(page.getByText(/sanitized-reference-01:Sheet1:/)).toBeVisible()
   await page.locator('.supporting-evidence-trigger').last().click()
-  await openCustomerSection(page, /Decision panel/)
   await openCustomerSection(page, /Commercial context/)
   await expect(page.getByText(/Commercial context available/)).toBeVisible()
   if (honeywell.commercial_briefing) {
@@ -43,6 +42,7 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
   await page.getByRole('searchbox', { name: 'Switch organization' }).fill('HUXWRX')
   await page.getByRole('listbox', { name: 'Organization switcher results' }).getByRole('option', { name: /HUXWRX/ }).click()
   await expect(page.getByRole('heading', { name: 'HUXWRX', level: 1 })).toBeVisible()
+  await openRecordedDecision(page)
   if (huxwrx.commercial_briefing) {
     expect(huxwrx.orders.length).toBeGreaterThan(0)
     expect(huxwrx.commercial_briefing.summary).toBe('A seasonal replenishment increase needs a release plan')
@@ -63,7 +63,7 @@ for (const width of [390, 320]) test(`priority Customer disclosures remain usabl
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Eaton')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Eaton', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Eaton', level: 1 })).toBeVisible()
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click()
+  await openRecordedDecision(page)
   if (eaton.commercial_briefing) {
     expect(eaton.commercial_briefing.summary).toBe('The newest housing shipment is awaiting acceptance')
     await expect(page.getByText(eaton.commercial_briefing.summary, { exact: true }).first()).toBeVisible()

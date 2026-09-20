@@ -8,6 +8,9 @@ from btx_omni.modules.accounts.customer_360 import (
     organization_360_projection,
 )
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
+from btx_omni.modules.accounts.profile_projection import LIST_PROFILE_FIELDS, profile_projection
+from btx_omni.modules.scoring.monitoring_coverage import monitoring_complete
+from btx_omni.monitor.briefs import signal_briefs_for_monitor
 from btx_omni.modules.commercial.briefing import commercial_briefing
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
 from btx_omni.modules.federal_procurement import federal_assessments_for_account
@@ -89,10 +92,15 @@ def get_runtime() -> PocRuntime:
 @router.get("")
 def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     sample = runtime.environment()
+    alerts = CommercialAlertEngine().evaluate(sample.commercial_contexts, sample.quotes,
+        observed_at=runtime.observed_at(), orders=sample.orders)
+    briefs = signal_briefs_for_monitor(runtime.monitor, environment=sample)
     facilities = {item.account_id: item for item in sample.facilities}
     contexts = {item.account_id: item for item in sample.commercial_contexts}
     records = []
     for item in sample.accounts:
+        profile = profile_projection(sample, item, alerts=alerts, signal_briefs=briefs,
+                                     monitoring_complete=monitoring_complete(runtime.monitor, item.id))
         scenario = sample.priority_scenarios.get(item.id) or sample.rich_scenarios.get(
             item.id
         )
@@ -105,6 +113,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         records.append(
             {
                 "id": item.id,
+                **{key: profile[key] for key in LIST_PROFILE_FIELDS},
                 "name": item.legal_name,
                 "relationship": item.relationship,
                 "industries": item.industries,
@@ -204,6 +213,9 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     ]
     return {
         "account": account,
+        "profile": profile_projection(sample, account, alerts=alerts,
+            signal_briefs=signal_briefs_for_monitor(runtime.monitor, environment=sample),
+            monitoring_complete=monitoring_complete(runtime.monitor, account_id)),
         "customer_health": _profile_health(sample, account),
         "public_identity": account.public_identity,
         "public_identity_state": account.public_identity.verification_state

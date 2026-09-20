@@ -1,0 +1,288 @@
+[WebServer] INFO:     Started server process [39296]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8163 (Press CTRL+C to quit)
+[WebServer] (node:30208) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 187 tests using 1 worker
+
+(node:34976) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34976) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok   1 e2e\account-planning.spec.mjs:11:1 › seller saves a dated private research shortlist and filters the same portfolio (4.3s)
+  ok   2 e2e\account-planning.spec.mjs:51:1 › manager creates an audited partnership designation and portfolio include/exclude filters agree (3.5s)
+  ok   3 e2e\account-planning.spec.mjs:78:1 › a late planning read cannot overwrite a seller draft (2.4s)
+  ok   4 e2e\actions-v2.spec.mjs:21:1 › salesperson creates, edits, persists, and completes an Action through valid transitions (4.4s)
+  ok   5 e2e\actions-v2.spec.mjs:40:1 › Suggestions remain distinct and convert idempotently without an external write (1.1s)
+  ok   6 e2e\actions-v2.spec.mjs:52:1 › approval is Manager-only and remains separate from work status (4.7s)
+  ok   7 e2e\actions-v2.spec.mjs:83:1 › 390px Actions queue and create sheet remain touch-usable without overflow (869ms)
+  ok   8 e2e\actions-v2.spec.mjs:97:1 › 320px Actions list and sheet stay contained (910ms)
+  ok   9 e2e\adaptive-organization-360.spec.mjs:9:1 › organization mode adapts without treating research or CRM presence as a customer relationship (4.3s)
+  ok  10 e2e\adaptive-organization-360.spec.mjs:29:1 › evidence is closed by default, targeted reasoning opens independently, and mobile uses a drawer (3.4s)
+  ok  11 e2e\adaptive-organization-360.spec.mjs:50:1 › customer expansion pursuit reuses one assessment and ranked internal records (3.3s)
+  ok  12 e2e\ai-usage.spec.mjs:3:1 › private usage loads independently and a failed refresh preserves prior values (1.1s)
+  ok  13 e2e\canonical-industry-taxonomy.spec.mjs:8:1 › canonical industries compose across Portfolio, Intelligence, and Map (3.4s)
+  ok  14 e2e\canonical-industry-taxonomy.spec.mjs:34:33 › canonical industry controls remain usable at 390px (3.0s)
+  ok  15 e2e\canonical-industry-taxonomy.spec.mjs:34:33 › canonical industry controls remain usable at 320px (3.0s)
+  ok  16 e2e\commercial-records.spec.mjs:4:1 › retained reference fields and paginated lifecycle records use canonical API identity (3.3s)
+  ok  17 e2e\commercial-records.spec.mjs:35:1 › customer risk view keeps public severity separate and preserves missingness (2.8s)
+  ok  18 e2e\communication-stale-version.spec.mjs:3:1 › stale communication edit preserves local text and requires explicit saved-version comparison (2.9s)
+  ok  19 e2e\communications-settings.spec.mjs:9:1 › seller creates a durable governed draft without recipient or autonomous delivery (2.4s)
+  ok  20 e2e\communications-settings.spec.mjs:32:1 › manager can review but approval does not bypass recipient and confirmation boundaries (3.7s)
+  ok  21 e2e\communications-settings.spec.mjs:62:1 › Settings and secondary mobile navigation are role-aware, safe, and non-overflowing (1.0s)
+  ok  22 e2e\communications-settings.spec.mjs:82:1 › Settings failure stays on Settings and retries only its failed read (997ms)
+  ok  23 e2e\component-primitives.spec.mjs:3:1 › mobile secondary navigation and controls expose keyboard and selected-state contracts (3.0s)
+  ok  24 e2e\component-primitives.spec.mjs:34:1 › shared evidence treatment renders truthful sourced and unavailable states (972ms)
+  ok  25 e2e\component-primitives.spec.mjs:51:1 › shared drawer closes by controls and backdrop and becomes a safe mobile sheet (877ms)
+  ok  26 e2e\component-primitives.spec.mjs:72:1 › decision notices give the trigger and next step a full-width reading order (4.5s)
+  ok  27 e2e\crm-proposals.spec.mjs:4:3 › exact CRM proposal approval and uncertain sample retry persist at 390 (3.3s)
+  ok  28 e2e\crm-proposals.spec.mjs:4:3 › exact CRM proposal approval and uncertain sample retry persist at 1440 (4.0s)
+  ok  29 e2e\customer-experience-core.spec.mjs:9:1 › desktop Portfolio composes accessible search, filters, sorting, and canonical Customer navigation (7.1s)
+  ok  30 e2e\customer-experience-core.spec.mjs:40:1 › 390px Portfolio keeps a semantic scrollable table and accessible commercial details (3.2s)
+  ok  31 e2e\customer-experience-core.spec.mjs:61:1 › 320px Customer Experience remains navigable without horizontal overflow (2.7s)
+  ok  32 e2e\customer-experience-core.spec.mjs:72:1 › Portfolio sorts the complete result set before pagination and retains sort after navigation (3.1s)
+  ok  33 e2e\deferred-workspaces.spec.mjs:13:1 › off-route workspace code is deferred and a failed Map download is recoverable (3.0s)
+  ok  34 e2e\deferred-workspaces.spec.mjs:41:1 › workspace recovery does not depend on an import error containing its URL (2.7s)
+  ok  35 e2e\durable-navigation-context.spec.mjs:62:1 › Today assessment and related record retain the filtered return location through browser history (2.5s)
+  ok  36 e2e\durable-navigation-context.spec.mjs:80:1 › Intelligence briefing to Organization 360 refresh restores the exact assessment version (3.7s)
+  ok  37 e2e\durable-navigation-context.spec.mjs:96:1 › Map facility scope survives Organization 360 and is supplied when Omni opens (3.5s)
+  ok  38 e2e\durable-navigation-context.spec.mjs:111:1 › federal route, Relationship Intelligence, governed Action, Omni and Back share one version (3.9s)
+  ok  39 e2e\durable-navigation-context.spec.mjs:141:1 › Actions state, copied links, malformed links and permission denial recover safely on desktop and mobile (7.5s)
+  ok  40 e2e\editor-independent-loading.spec.mjs:4:3 › communication editor waits for canonical accounts and retries a lost acknowledgement once (2.6s)
+  ok  41 e2e\editor-independent-loading.spec.mjs:4:3 › action editor waits for canonical accounts and retries a lost acknowledgement once (2.4s)
+  ok  42 e2e\enriched-cohort.spec.mjs:5:1 › all eleven persisted enriched accounts have distinct briefings and twelve-month records in the seller UI (11.2s)
+  ok  43 e2e\enriched-cohort.spec.mjs:40:3 › enriched account reading is contained at 360x800 (2.9s)
+  ok  44 e2e\enriched-cohort.spec.mjs:40:3 › enriched account reading is contained at 390x844 (2.9s)
+  ok  45 e2e\enriched-cohort.spec.mjs:40:3 › enriched account reading is contained at 768x1024 (2.8s)
+  ok  46 e2e\enriched-cohort.spec.mjs:40:3 › enriched account reading is contained at 1440x900 (3.2s)
+  ok  47 e2e\enriched-cohort.spec.mjs:40:3 › enriched account reading is contained at 1920x1080 (3.5s)
+  ok  48 e2e\federal-cross-surface.spec.mjs:12:1 › canonical opportunity opens its organization and evidence-backed relationship context (2.8s)
+  ok  49 e2e\federal-cross-surface.spec.mjs:22:1 › opportunity opens Omni with the canonical route and governed next action (2.5s)
+  ok  50 e2e\federal-cross-surface.spec.mjs:37:1 › governed Action proposal is durable and restores the same opportunity context (2.0s)
+  ok  51 e2e\federal-cross-surface.spec.mjs:47:1 › strategic route exposes only the governed partnership entry point and joint-pursuit hypothesis (3.6s)
+  ok  52 e2e\federal-cross-surface.spec.mjs:88:1 › mobile workflow keeps route actions reachable without page overflow (1.5s)
+  ok  53 e2e\federal-procurement.spec.mjs:3:1 › Federal Procurement shows staged sortable opportunities, routes, and collapsed evidence (1.6s)
+  ok  54 e2e\federal-procurement.spec.mjs:22:1 › Federal Procurement awarded dollars has FY and scope disclosures (1.5s)
+  ok  55 e2e\final-release-convergence.spec.mjs:7:1 › release surfaces remain free of React/runtime errors and restore drawer focus (4.9s)
+  ok  56 e2e\final-release-convergence.spec.mjs:43:3 › mobile release matrix fits every major surface at 390px (1.6s)
+  ok  57 e2e\final-release-convergence.spec.mjs:43:3 › mobile release matrix fits every major surface at 320px (1.5s)
+  ok  58 e2e\final-release-convergence.spec.mjs:43:3 › mobile release matrix fits every major surface at 430px (1.6s)
+  ok  59 e2e\governed-explanations.spec.mjs:98:1 › Signal Brief Technical Fit retains deterministic context while disclosing its governed explanation (2.1s)
+  ok  60 e2e\governed-explanations.spec.mjs:121:1 › Technical Fit disclosure remains contained at 390px and 320px (2.5s)
+  ok  61 e2e\governed-explanations.spec.mjs:137:1 › Relationship reference retains its governed path and evidence beside the canonical graph (4.4s)
+  ok  62 e2e\governed-explanations.spec.mjs:154:1 › Relationship explanation remains contained at 390px and 320px (6.7s)
+  ok  63 e2e\independent-loading.spec.mjs:3:1 › a held optional map read does not block the account journey (4.0s)
+  ok  64 e2e\independent-loading.spec.mjs:20:1 › navigation cancels an unfinished account read without late context takeover (2.9s)
+  ok  65 e2e\independent-loading.spec.mjs:39:1 › map filters and a canonical selected site survive Account360 navigation (3.5s)
+  ok  66 e2e\itinerary-save-race.spec.mjs:3:1 › late itinerary save preserves edits and added stops, then saves with the returned version (5.8s)
+  ok  67 e2e\map-details.spec.mjs:3:1 › persisted NAICS and BU facets filter the same canonical map and list scope (4.9s)
+  ok  68 e2e\map-details.spec.mjs:36:1 › fulfillment attention filters use persisted obligations and clear without stale account context (4.9s)
+  ok  69 e2e\map-details.spec.mjs:57:1 › selected site shares canonical briefing and exposes evidence without a second account (4.3s)
+  ok  70 e2e\map-details.spec.mjs:74:1 › itinerary persists ordered canonical sites and retains explicit meeting state (3.8s)
+  ok  71 e2e\map-details.spec.mjs:102:1 › multi-stop itinerary supports non-drag reorder, removal and refresh persistence (10.9s)
+  ok  72 e2e\map-details.spec.mjs:139:1 › mobile list switch keeps the selected site when returning to the map (4.2s)
+  ok  73 e2e\map-details.spec.mjs:151:1 › zero score and zero distance are readable values (projection edge-case fixture) (3.1s)
+  ok  74 e2e\map-v2.spec.mjs:14:1 › Map V2 is marker-first and opens canonical Customer context (4.0s)
+  ok  75 e2e\map-v2.spec.mjs:36:1 › Map V2 reports missing Google browser configuration truthfully (3.5s)
+  ok  76 e2e\map-v2.spec.mjs:44:33 › Map V2 mobile sheets remain reachable at 390px (3.5s)
+  ok  77 e2e\map-v2.spec.mjs:44:33 › Map V2 mobile sheets remain reachable at 320px (3.5s)
+  ok  78 e2e\market-intelligence.spec.mjs:4:3 › market source → trend → unavailable region → canonical account at 320px (4.1s)
+  ok  79 e2e\market-intelligence.spec.mjs:4:3 › market source → trend → unavailable region → canonical account at 390px (6.1s)
+  ok  80 e2e\market-intelligence.spec.mjs:4:3 › market source → trend → unavailable region → canonical account at 768px (4.7s)
+  ok  81 e2e\market-intelligence.spec.mjs:4:3 › market source → trend → unavailable region → canonical account at 1440px (4.1s)
+  ok  82 e2e\market-intelligence.spec.mjs:38:1 › market errors retain filters and recover through the same API (1.9s)
+  ok  83 e2e\market-intelligence.spec.mjs:50:1 › market comparisons enforce compatibility and retain last-good observations during a failed refresh (2.3s)
+  ok  84 e2e\memory-retry.spec.mjs:3:1 › lost memory-save response retries once without duplication; deletion blocks resurrection (1.5s)
+  ok  85 e2e\memory-retry.spec.mjs:37:1 › an unsaved private memory draft survives navigation for the same principal (884ms)
+  ok  86 e2e\monitor-responsive.spec.mjs:6:3 › Monitor keeps long source diagnostics readable at 320px (1.4s)
+  ok  87 e2e\monitor-responsive.spec.mjs:6:3 › Monitor keeps long source diagnostics readable at 390px (1.4s)
+  ok  88 e2e\monitor-responsive.spec.mjs:6:3 › Monitor keeps long source diagnostics readable at 1440px (1.7s)
+  ok  89 e2e\navigation.spec.mjs:3:1 › portfolio search and sort survive a customer and another surface (3.1s)
+  ok  90 e2e\navigation.spec.mjs:18:1 › canonical account deep link survives refresh and browser back/forward (5.2s)
+  ok  91 e2e\navigation.spec.mjs:35:1 › malformed account links cannot become account API paths (2.3s)
+  ok  92 e2e\omni-phase6.spec.mjs:36:1 › Phase 6 Omni browser acceptance preserves typed context, continuity, and isolation (7.3s)
+  ok  93 e2e\omni-phase6.spec.mjs:106:1 › Quick Omni opens the Full Omni workspace without losing the conversation (1.4s)
+  ok  94 e2e\omni-phase6.spec.mjs:122:1 › an immediately launched selected assessment reaches Omni before submission (2.5s)
+  ok  95 e2e\omni-phase6.spec.mjs:170:1 › mobile Quick and Full Omni use touch-safe sheet and mode navigation (961ms)
+  ok  96 e2e\omni-phase6.spec.mjs:189:1 › Omni replaces prompt starters with a readable current exchange (1.4s)
+  ok  97 e2e\omni-phase6.spec.mjs:202:1 › Monitor sends its truthful typed surface without scoping global Omni queries (2.3s)
+  ok  98 e2e\omni-run-receipt.spec.mjs:4:3 › Omni records a private answer and retries receipt inspection at 390px (1.6s)
+  ok  99 e2e\omni-run-receipt.spec.mjs:4:3 › Omni records a private answer and retries receipt inspection at 1440px (2.3s)
+  ok 100 e2e\organization-tabs.spec.mjs:4:3 › organization tabs retain classification and context at 1440 (7.2s)
+  ok 101 e2e\organization-tabs.spec.mjs:4:3 › organization tabs retain classification and context at 390 (5.2s)
+  ok 102 e2e\priority-customer-enrichment.spec.mjs:15:1 › all priority Customers are discoverable and rich/reference scenarios remain truthful (4.3s)
+  ok 103 e2e\priority-customer-enrichment.spec.mjs:59:33 › priority Customer disclosures remain usable at 390px (3.4s)
+  ok 104 e2e\priority-customer-enrichment.spec.mjs:59:33 › priority Customer disclosures remain usable at 320px (3.3s)
+  ok 105 e2e\profile-opportunity-scope.spec.mjs:5:3 › profiles and scoped opportunities remain distinct at 1440 (10.0s)
+  ok 106 e2e\profile-opportunity-scope.spec.mjs:5:3 › profiles and scoped opportunities remain distinct at 390 (9.2s)
+  ok 107 e2e\profile-ux-refinement.spec.mjs:3:34 › profile tabs, score explanation and investigation context at 1440 (6.2s)
+  ok 108 e2e\profile-ux-refinement.spec.mjs:3:34 › profile tabs, score explanation and investigation context at 390 (7.3s)
+  ok 109 e2e\profiles-redesign.spec.mjs:3:1 › Relationships keeps ranked routes visible and the full graph secondary (4.0s)
+  ok 110 e2e\profiles-redesign.spec.mjs:18:1 › Boeing commercial line reconciles and uses governed follow-up preview (3.6s)
+  ok 111 e2e\profiles-redesign.spec.mjs:38:1 › account views persist, filter canonical rows and support keyboard navigation (5.5s)
+  ok 112 e2e\project-beacon-decision-experience.spec.mjs:17:1 › Project Beacon keeps Fit distinct from an unconfirmed customer classification (7.1s)
+  ok 113 e2e\project-beacon-decision-experience.spec.mjs:36:1 › Intelligence presents the research library without duplicating Today priorities (1.0s)
+  ok 114 e2e\project-beacon-decision-experience.spec.mjs:51:1 › Omni explains the selected Applied Materials evidence in human language (3.6s)
+  ok 115 e2e\project-beacon-decision-experience.spec.mjs:70:1 › Project Beacon mobile command surfaces remain concise, reachable, and overflow-free (3.6s)
+  ok 116 e2e\recovery-briefing.spec.mjs:5:1 › Boeing recovery briefing renders the canonical reconciliation and opens its governed proposal (1.4s)
+  ok 117 e2e\recovery-briefing.spec.mjs:30:1 › recovery briefing preserves exact quantities and does not overflow on mobile (1.3s)
+  ok 118 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D1 canonical commercial route and evidence at 360x800 (7.9s)
+  ok 119 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D2 canonical commercial route and evidence at 360x800 (6.8s)
+  ok 120 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D3 canonical commercial route and evidence at 360x800 (5.7s)
+  ok 121 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D1 canonical commercial route and evidence at 390x844 (6.2s)
+  ok 122 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D2 canonical commercial route and evidence at 390x844 (6.2s)
+  ok 123 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D3 canonical commercial route and evidence at 390x844 (6.1s)
+  ok 124 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D1 canonical commercial route and evidence at 768x1024 (6.8s)
+  ok 125 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D2 canonical commercial route and evidence at 768x1024 (6.5s)
+  ok 126 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D3 canonical commercial route and evidence at 768x1024 (6.1s)
+  ok 127 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D1 canonical commercial route and evidence at 1440x900 (8.0s)
+  ok 128 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D2 canonical commercial route and evidence at 1440x900 (6.2s)
+  ok 129 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D3 canonical commercial route and evidence at 1440x900 (6.4s)
+  ok 130 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D1 canonical commercial route and evidence at 1920x1080 (6.7s)
+  ok 131 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D2 canonical commercial route and evidence at 1920x1080 (5.8s)
+  ok 132 e2e\relationship-commercial-scenes.spec.mjs:8:5 › D3 canonical commercial route and evidence at 1920x1080 (6.5s)
+  ok 133 e2e\relationship-commercial-scenes.spec.mjs:87:1 › Omni waits for an in-flight selected relationship before answering (6.4s)
+  ok 134 e2e\relationship-intelligence.spec.mjs:26:1 › Customer 360 presents canonical relationships in seller-facing language (5.7s)
+  ok 135 e2e\relationship-intelligence.spec.mjs:76:1 › mobile Relationship Intelligence uses readable vertical paths and disclosure (5.0s)
+  ok 136 e2e\relationship-intelligence.spec.mjs:109:1 › Relationship Intelligence remains non-overflowing at 320px (4.3s)
+  ok 137 e2e\relationship-neighborhood.spec.mjs:5:3 › canonical neighborhood expansion, collapse and paging preserve route and coordinates at 390 (5.6s)
+  ok 138 e2e\relationship-neighborhood.spec.mjs:5:3 › canonical neighborhood expansion, collapse and paging preserve route and coordinates at 1440 (5.0s)
+  ok 139 e2e\relationship-no-access.spec.mjs:4:1 › documented-access absence retains canonical query metadata and recovers to shared experience (4.6s)
+  ok 140 e2e\relationship-record-context.spec.mjs:5:3 › commercial record context preserves ranked authority and opens actual evidence at 390 (4.5s)
+  ok 141 e2e\relationship-record-context.spec.mjs:5:3 › commercial record context preserves ranked authority and opens actual evidence at 1440 (4.8s)
+  ok 142 e2e\release-identity.spec.mjs:4:3 › release diagnostics cross actual API and expose unverified builds at 390 (872ms)
+  ok 143 e2e\release-identity.spec.mjs:4:3 › release diagnostics cross actual API and expose unverified builds at 1440 (1.2s)
+  ok 144 e2e\release-identity.spec.mjs:27:1 › a mismatched backend declaration is visibly rejected, not rendered as release success (850ms)
+  ok 145 e2e\role-navigation-source-health.spec.mjs:20:1 › seller navigation is consistent and permission-safe on direct Source Health access (1.5s)
+  ok 146 e2e\role-navigation-source-health.spec.mjs:57:1 › administrator has desktop/mobile Source Health parity, durable navigation, and disclosed diagnostics (3.5s)
+  ok 147 e2e\sanitized-reference-data.spec.mjs:9:1 › sanitized reference Customers, provenance, and BTX Top 100 flow through canonical surfaces (5.3s)
+  ok 148 e2e\sanitized-reference-data.spec.mjs:43:33 › expanded reference filters remain usable at 390px (2.7s)
+  ok 149 e2e\sanitized-reference-data.spec.mjs:43:33 › expanded reference filters remain usable at 320px (2.9s)
+  ok 150 e2e\scoring-v2.spec.mjs:5:3 › v2 account scoring, disclosure and unknown pursuit inputs at 1440 (3.0s)
+  ok 151 e2e\scoring-v2.spec.mjs:5:3 › v2 account scoring, disclosure and unknown pursuit inputs at 390 (2.5s)
+  ok 152 e2e\seller-command-intelligence.spec.mjs:7:1 › desktop Today presents truthful priority, meaning, action, and evidence (2.0s)
+  ok 153 e2e\seller-command-intelligence.spec.mjs:32:1 › Today consumes projected priority, market hubs, and curated IDs without substitution (2.5s)
+  ok 154 e2e\seller-command-intelligence.spec.mjs:74:1 › desktop Intelligence composes search and canonical filters with evidence and Omni selection (2.3s)
+  ok 155 e2e\seller-command-intelligence.spec.mjs:104:1 › public briefing joins the selected signal to canonical account context without cross-contaminating actions (3.2s)
+  ok 156 e2e\seller-command-intelligence.spec.mjs:129:1 › public briefing exposes recoverable account-context failure and remains usable on mobile (1.2s)
+  ok 157 e2e\seller-command-intelligence.spec.mjs:149:1 › mobile Today and Intelligence remain touch-usable at 390px and 320px without overflow (1.7s)
+  ok 158 e2e\seller-scenarios.spec.mjs:37:1 › Tactical Map composes canonical industry and SAMPLE commercial segment filters (5.5s)
+  ok 159 e2e\seller-scenarios.spec.mjs:87:1 › Phase 7 seller scenarios remain coherent across real product surfaces (14.9s)
+  ok 160 e2e\settings-section-navigation.spec.mjs:3:1 › Settings section links preserve the workspace route, keyboard focus and browser navigation (1.6s)
+  ok 161 e2e\shared-shell.spec.mjs:10:1 › desktop target shell preserves primary seller navigation and Omni access (5.0s)
+  ok 162 e2e\shared-shell.spec.mjs:39:1 › 390 × 844 target shell keeps primary destinations and More safe without overflow or Omni collision (2.8s)
+  ok 163 e2e\shared-shell.spec.mjs:87:1 › 320px shell smoke check remains structurally contained (452ms)
+  ok 164 e2e\suggestion-feedback.spec.mjs:4:1 › stale recommendation feedback is rejected without losing the draft; refresh requires review (1.9s)
+  ok 165 e2e\suggestion-feedback.spec.mjs:39:3 › private feedback persists, keeps drafts, and can be undone at 390 (3.2s)
+  ok 166 e2e\suggestion-feedback.spec.mjs:39:3 › private feedback persists, keeps drafts, and can be undone at 1440 (3.2s)
+  ok 167 e2e\suggestion-feedback.spec.mjs:78:1 › private feedback history inspects and reverses a persisted receipt without creating work (2.0s)
+  x  168 e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 390px (10.0s)
+(node:12272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  169 e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 1440px (8.5s)
+(node:28340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 170 e2e\today-validation-lanes.spec.mjs:75:3 › Today keeps action and validation outcomes distinct at 390px (2.7s)
+  ok 171 e2e\today-validation-lanes.spec.mjs:75:3 › Today keeps action and validation outcomes distinct at 1440px (2.7s)
+  ok 172 e2e\wave2-attention-scale.spec.mjs:29:1 › finite Today and scalable Actions retain every governed record through durable worklists (4.1s)
+  ok 173 e2e\wave2-attention-scale.spec.mjs:59:1 › bounded account selector preserves canonical scope and mobile containment (2.1s)
+  ok 174 e2e\wave2-attention-scale.spec.mjs:73:1 › memory refresh keeps last-good content visible when only that resource fails (789ms)
+  ok 175 e2e\wave3-decision-experience.spec.mjs:13:3 › Wave 3 Organization 360 and relationship decision hierarchy · desktop (4.9s)
+  ok 176 e2e\wave3-decision-experience.spec.mjs:13:3 › Wave 3 Organization 360 and relationship decision hierarchy · mobile (4.6s)
+  ok 177 e2e\wave3-decision-experience.spec.mjs:41:1 › Settings-origin focus question stays scope-safe and provider detail is secondary (1.5s)
+  ok 178 e2e\wave4-visual.spec.mjs:4:3 › Wave 4 map and itinerary remain usable at 320×800 (4.2s)
+  ok 179 e2e\wave4-visual.spec.mjs:4:3 › Wave 4 map and itinerary remain usable at 390×844 (3.3s)
+  ok 180 e2e\wave4-visual.spec.mjs:4:3 › Wave 4 map and itinerary remain usable at 768×1024 (3.5s)
+  ok 181 e2e\wave4-visual.spec.mjs:4:3 › Wave 4 map and itinerary remain usable at 1440×900 (3.7s)
+  ok 182 e2e\wave5-scenario-qualification.spec.mjs:13:1 › journeys 1–5 remain explicitly incomplete without manufactured evidence (2.9s)
+  ok 183 e2e\wave5-scenario-qualification.spec.mjs:64:1 › journey 6 keeps the internal-risk identity, evidence and action across surfaces (2.6s)
+  ok 184 e2e\wave5-scenario-qualification.spec.mjs:99:3 › Wave 5 truth states remain readable at 390×844 (1.5s)
+  ok 185 e2e\wave5-scenario-qualification.spec.mjs:99:3 › Wave 5 truth states remain readable at 320×800 (1.5s)
+  ok 186 e2e\workbook-fields.spec.mjs:5:3 › original workbook cells load privately and retain disclosure state at 390 (3.9s)
+  ok 187 e2e\workbook-fields.spec.mjs:5:3 › original workbook cells load privately and retain disclosure state at 1440 (3.6s)
+
+
+  1) e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 390px
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+    Expected: "GE Vernova"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+
+
+      39 |     await expect(page).toHaveURL(new RegExp(`#/accounts/${item.account_id}(?:\\?|$)`))
+      40 |     await page.goBack()
+    > 41 |     await expect(accountFilter).toHaveValue(accountName)
+         |                                 ^
+      42 |     await expect(page.getByLabel('Filter priorities by business unit')).toHaveValue(item.business_unit_ids[0])
+      43 |     await parity(expected)
+      44 |     await page.locator('[data-priority-id]').first().getByRole('button', { name: 'Evidence and next action' }).click()
+        at C:\dev\btx-omni-prospect-redesign\apps\web\e2e\today-reference.spec.mjs:41:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\today-reference-Today-refe-533e0-d-navigation-state-at-390px\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\today-reference-Today-refe-533e0-d-navigation-state-at-390px\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\today-reference-Today-refe-533e0-d-navigation-state-at-390px\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\today-reference-Today-refe-533e0-d-navigation-state-at-390px\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 1440px
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+    Expected: "GE Vernova"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+
+
+      39 |     await expect(page).toHaveURL(new RegExp(`#/accounts/${item.account_id}(?:\\?|$)`))
+      40 |     await page.goBack()
+    > 41 |     await expect(accountFilter).toHaveValue(accountName)
+         |                                 ^
+      42 |     await expect(page.getByLabel('Filter priorities by business unit')).toHaveValue(item.business_unit_ids[0])
+      43 |     await parity(expected)
+      44 |     await page.locator('[data-priority-id]').first().getByRole('button', { name: 'Evidence and next action' }).click()
+        at C:\dev\btx-omni-prospect-redesign\apps\web\e2e\today-reference.spec.mjs:41:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\today-reference-Today-refe-546bd--navigation-state-at-1440px\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\today-reference-Today-refe-546bd--navigation-state-at-1440px\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\today-reference-Today-refe-546bd--navigation-state-at-1440px\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\today-reference-Today-refe-546bd--navigation-state-at-1440px\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 390px
+    e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 1440px
+  185 passed (12.5m)

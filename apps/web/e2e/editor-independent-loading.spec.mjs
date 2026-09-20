@@ -49,8 +49,7 @@ for (const kind of ['communication', 'action']) {
     await editor.getByLabel(kind === 'communication' ? 'Subject' : 'Title', { exact: true }).fill(title)
     await editor.getByLabel(kind === 'communication' ? 'Message' : 'Details', { exact: true }).fill('Private local review only. Do not send or promise capacity.')
     const save = editor.getByRole('button', { name: kind === 'communication' ? 'Save draft' : 'Create Action', exact: true })
-    if (kind === 'communication') await expect(save).toBeDisabled()
-    else { await save.click(); await expect(editor).toContainText('Choose an available Customer') }
+    await expect(save).toBeDisabled()
     expect(posts).toBe(0)
     release()
     const customer = editor.getByRole('combobox', { name: 'Customer', exact: true })

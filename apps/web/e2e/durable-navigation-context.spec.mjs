@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test'
 
-// Finish intercepted reads before Playwright disposes their responses.
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }) })
 
 test.use({ viewport: { width: 1440, height: 900 } })
@@ -66,7 +65,7 @@ test('Today assessment and related record retain the filtered return location th
   await openSelectedAssessmentFromToday(page)
   expect(page.url()).toContain(`assessment=${assessmentId}`)
   expect(page.url()).toContain('return=%23%2Ftoday')
-  await page.getByRole('tab', { name: 'Commercial', exact: true }).click()
+  await page.getByRole('tab', { name: 'More', exact: true }).click()
   const related = page.locator('.account-primary-grid .customer-section').filter({ hasText: 'Related BTX activity to review' })
   await related.getByRole('button', { name: /Related BTX activity to review/ }).click()
   await related.getByRole('button', { name: 'Inspect source record' }).first().click()
@@ -92,6 +91,7 @@ test('Intelligence briefing to Organization 360 refresh restores the exact asses
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   expect(page.url()).toBe(before)
+  await page.getByRole('tab', { name: 'Intelligence', exact: true }).click()
   await expect(page.getByRole('heading', { name: briefing.headline }).first()).toBeVisible()
 })
 

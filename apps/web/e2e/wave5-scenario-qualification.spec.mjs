@@ -1,3 +1,4 @@
+import { openRecordedDecision } from './helpers.mjs'
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -86,7 +87,9 @@ test('journey 6 keeps the internal-risk identity, evidence and action across sur
 
   await row.locator('.today-customer-link').click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('Next decision')
+  const context = await openRecordedDecision(page)
+  await expect(context).toContainText(alert.trigger_reason)
+  await expect(context).toContainText(alert.recommended_action)
 })
 
 for (const viewport of [

@@ -83,14 +83,14 @@ async function addTodayTechnicalExplanationFixture(page) {
 
 async function openLockheed(page) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
-  await page.getByPlaceholder('Search Customer, industry, or location').fill('Lockheed')
+  await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Lockheed')
   await page.getByRole('link', { name: 'Lockheed Martin', exact: true }).click()
   await expect(page.locator('.account-workspace')).toBeVisible()
 }
 
 async function openLockheedMobile(page) {
   await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
-  await page.getByPlaceholder('Search Customer, industry, or location').fill('Lockheed')
+  await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Lockheed')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Lockheed Martin', exact: true }).click()
   await expect(page.locator('.account-workspace')).toBeVisible()
 }
@@ -140,6 +140,7 @@ test('Relationship reference retains its governed path and evidence beside the c
   await openLockheed(page)
   const relationshipPanel = page.locator('.account-workspace-relationship')
   await openCustomerSection(page, /People and relationship paths/)
+  await relationshipPanel.getByText('Reference connections and retained evidence', { exact: true }).click()
   const detail = relationshipPanel.locator('.seller-relationship-card').first()
   await expect(detail).toContainText('Connection:')
   await openRelationshipWorkspace(page)
@@ -158,7 +159,8 @@ test('Relationship explanation remains contained at 390px and 320px', async ({ p
     await openLockheedMobile(page)
     const relationshipPanel = page.locator('.account-workspace-relationship')
     await openCustomerSection(page, /People and relationship paths/)
-    const detail = relationshipPanel.locator('.seller-relationship-card').first()
+    await relationshipPanel.getByText('Reference connections and retained evidence', { exact: true }).click()
+  const detail = relationshipPanel.locator('.seller-relationship-card').first()
     await detail.getByRole('button', { name: 'Why this relationship path may be useful' }).click()
     await expect(detail).toContainText('This result is explained from its displayed deterministic inputs.')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

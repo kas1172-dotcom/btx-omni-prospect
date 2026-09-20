@@ -31,7 +31,7 @@ async function ask(page, question) {
 
 async function navigate(page, name) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name }).click()
-  await expect(page.locator('.page-title h1')).toHaveText(name === 'Profiles' ? 'Customers' : name)
+  await expect(page.locator('.page-title h1')).toHaveText(name === 'Profiles' ? 'Accounts' : name)
 }
 
 test('Phase 6 Omni browser acceptance preserves typed context, continuity, and isolation', async ({ page }) => {
@@ -84,14 +84,13 @@ test('Phase 6 Omni browser acceptance preserves typed context, continuity, and i
   await closeOmni(page)
 
   // A current market filter is serialized, then absent after clearing it.
-  await page.getByRole('button', { name: /Filters/ }).click()
-  await page.getByRole('button', { name: 'Defense', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Market', exact: true }).selectOption('Defense')
   await openOmni(page)
   const filtered = await ask(page, 'What matters most on this page?')
   expect(filtered.request.context.active_filters.market).toBe('Defense')
   expect(filtered.body.context_used.status).toBe('DEGRADED')
   await closeOmni(page)
-  await page.getByLabel('Industry', { exact: true }).selectOption('ALL')
+  await page.getByRole('combobox', { name: 'Market', exact: true }).selectOption('ALL')
   await openOmni(page)
   const filterCleared = await ask(page, 'What matters most on this page?')
   expect(filterCleared.request.context.active_filters?.market).toBeUndefined()

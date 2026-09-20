@@ -625,7 +625,7 @@ function CommunicationEditor({
           <Button type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={working} disabled={working || !accountId}>
+          <Button type="submit" variant="primary" loading={working} disabled={working || !accountId || !accounts.some(item => item.id === accountId)}>
             {draft ? "Save changes" : "Save draft"}
           </Button>
         </footer>

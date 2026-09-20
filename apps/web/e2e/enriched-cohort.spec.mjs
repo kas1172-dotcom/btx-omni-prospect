@@ -21,13 +21,14 @@ test('all eleven persisted enriched accounts have distinct briefings and twelve-
     expect(history.revision).toBe(account.commercial_briefing.revision)
     await page.goto(`/#/accounts/${id}`)
     await expect(page.getByRole('heading', { name: account.account.name ?? account.account.legal_name, exact: true, level: 1 })).toBeVisible()
+    await page.getByRole('tab', { name: 'More', exact: true }).click()
+    await page.getByRole('button', { name: 'Recorded decision context', exact: true }).click()
     const decision = page.getByRole('region', { name: 'Organization decision summary' })
     const briefings = account.customer_360.intelligence.map(item => item.business_briefing).filter(Boolean)
     const expansion = account.organization_360.expansion_pursuit
     const currentAssessment = expansion ? briefings.find(item => item.assessment_id === expansion.assessment_id) ?? briefings[0] : briefings[0]
-    const readyAssessment = currentAssessment?.analysis_status === 'READY' ? currentAssessment : undefined
-    await expect(decision).toContainText(readyAssessment?.what_happened ?? account.commercial_briefing.summary)
-    await expect(decision).toContainText(expansion?.governed_action ?? readyAssessment?.recommended_action ?? account.recommended_next_step ?? account.commercial_briefing.next_action)
+    await expect(decision).toContainText(currentAssessment?.analysis_status === 'READY' ? currentAssessment.headline : account.commercial_briefing.summary)
+    await expect(decision).toContainText(expansion?.governed_action ?? currentAssessment?.recommended_action ?? account.recommended_next_step ?? account.commercial_briefing.next_action)
     evidence.push({ id, revision: history.revision, periods: history.records.map(row => row.period), briefing: account.commercial_briefing })
   }
   expect(new Set(evidence.map(item => item.briefing.summary)).size).toBe(accounts.length)
@@ -42,6 +43,8 @@ for (const [width, height] of [[360, 800], [390, 844], [768, 1024], [1440, 900],
     page.on('pageerror', error => errors.push(error.message))
     await page.goto('/#/accounts/kla')
     await expect(page.getByRole('heading', { name: 'KLA Corporation', exact: true, level: 1 })).toBeVisible()
+    await page.getByRole('tab', { name: 'More', exact: true }).click()
+    await page.getByRole('button', { name: 'Recorded decision context', exact: true }).click()
     await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('New cleaning and inspection scope changed the current quote')
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
     await expect(page.getByLabel('Open Omni assistant')).toBeVisible()

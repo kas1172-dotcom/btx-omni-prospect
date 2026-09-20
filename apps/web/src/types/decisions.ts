@@ -6,7 +6,7 @@ export interface CommercialDecision {
   score_range?: { low: string | number; high: string | number }
   priority_rank?: number; priority_class?: number
   interpretation: string; eligibility_reasons: string[]; blocking_constraints: string[]
-  factors: Array<{ key: string; points: string | number | null; reason: string; weight: number; evidence_ids: string[]; required_fields: string[]; observed_fields: string[] }>
+  factors: Array<{ key: string; points: string | number | null; raw_value?: string | number | null; period?: string | null; reason: string; weight: number; evidence_ids: string[]; required_fields: string[]; observed_fields: string[] }>
   data_coverage: { present: number; applicable: number; ratio: string | number; missing_fields: string[] }
 }
 export interface CommercialDecisions {

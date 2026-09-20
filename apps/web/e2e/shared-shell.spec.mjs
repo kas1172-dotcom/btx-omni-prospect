@@ -4,7 +4,7 @@ const primaryDestinations = ['Today', 'Opportunities', 'Profiles', 'Intelligence
 
 async function expectSurface(page, name) {
   const heading = name === 'Opportunities' ? page.getByRole('heading', { level: 1, name, exact: true }) : page.locator('.page-title h1')
-  await expect(heading).toHaveText(name === 'Map' ? 'Tactical Map' : name === 'Profiles' ? 'Customers' : name)
+  await expect(heading).toHaveText(name === 'Map' ? 'Tactical Map' : name === 'Profiles' ? 'Accounts' : name)
 }
 
 test('desktop target shell preserves primary seller navigation and Omni access', async ({ page }) => {

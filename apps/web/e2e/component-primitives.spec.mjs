@@ -25,12 +25,11 @@ test('mobile secondary navigation and controls expose keyboard and selected-stat
   await search.fill('Lockheed')
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
 
-  await page.getByLabel('Industry', { exact: true }).selectOption('Defense')
-  const defense = page.getByRole('button', { name: 'Remove Industry: Defense filter' })
-  await expect(defense).toHaveAttribute('aria-pressed', 'true')
-  await defense.click()
-  await expect(page.getByLabel('Industry', { exact: true })).toHaveValue('ALL')
-  await expect(defense).toHaveCount(0)
+  const market = page.getByRole('combobox', { name: 'Market', exact: true })
+  await market.selectOption('Defense')
+  await expect(market).toHaveValue('Defense')
+  await page.getByRole('button', { name: 'Remove market filter', exact: true }).click()
+  await expect(market).toHaveValue('ALL')
 })
 
 test('shared evidence treatment renders truthful sourced and unavailable states', async ({ page }) => {
@@ -74,6 +73,8 @@ test('shared drawer closes by controls and backdrop and becomes a safe mobile sh
 test('decision notices give the trigger and next step a full-width reading order', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/#/accounts/applied-materials')
+  await page.getByRole('tab', { name: 'More', exact: true }).click()
+  await page.getByRole('button', { name: 'Recorded decision context', exact: true }).click()
   const notice = page.getByRole('alert').filter({ hasText: 'Execution attention' })
   await expect(notice).toContainText('What needs attention:')
   await expect(notice).toContainText('Next:')
@@ -82,12 +83,13 @@ test('decision notices give the trigger and next step a full-width reading order
   const contentBox = await notice.locator('.ui-notice-content').boundingBox()
   expect(contentBox?.width ?? 0).toBeGreaterThan((noticeBox?.width ?? 0) * 0.85)
   const workspace = page.locator('.account-workspace')
-  await openProfileSection(page, /Programs, components & capabilities/, 'Opportunities')
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Programs, components & capabilities/ })).toHaveAttribute('aria-expanded', 'true')
   await expect(workspace).toContainText('This section connects Applied Materials')
   await expect(workspace).not.toContainText(/Governed operational relevance|Governed connections|Governed paths|Best governed route|Governed next action/i)
 
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click()
+  await page.getByRole('tab', { name: 'More', exact: true }).click()
   await expect(notice).toBeVisible()
 })

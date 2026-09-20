@@ -14,21 +14,22 @@ async function expectNoPageOverflow(page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
 }
 
-test('Project Beacon preserves research context and withholds a score for unclassified organizations', async ({ page }) => {
+test('Project Beacon keeps Fit distinct from an unconfirmed customer classification', async ({ page }) => {
   await page.goto('/#/accounts/applied-materials?scope=account')
-  await expect(page.getByRole('heading', { name: 'Applied Materials account review' })).toBeVisible()
-  await expect(page.getByText('High importance', { exact: true })).toBeVisible()
-  await expect(page.getByText(/Commerce awarded Applied Materials \$100 million to develop and scale silicon-core substrate technology/i)).toBeVisible()
-  await expect(page.getByText(/program-level BTX fit and a commercial route have not yet been established/i)).toBeVisible()
-  await expect(page.getByText('Relationship classification requires review.', { exact: true })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Organization decision summary' }).locator('.score-summary')).toHaveCount(0)
-  await expect(page.getByText(/public semiconductor-equipment context supports fit discovery/i)).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Applied Materials', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Prospect Fit', exact: true })).toBeVisible()
+  const account = await (await page.request.get('/api/accounts/applied-materials')).json()
+  expect(account.organization_360.mode).toBe('RELATIONSHIP_REVIEW')
+  expect(account.organization_360.classification_basis).toContain('does not confirm a customer relationship')
+  const summary = page.getByRole('article', { name: 'Prospect Fit score summary' })
+  await expect(summary).toContainText('Prospect Fit')
+  await expect(page.locator('.profile-overview')).toContainText('Data Coverage')
+  await expect(page.getByRole('heading', { name: 'TTM commercial activity' })).toHaveCount(0)
   await capture(page, 'organization-360-applied-materials-desktop')
-
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload()
-  await expect(page.getByText('High importance', { exact: true })).toBeVisible()
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+  await expect(summary).toBeVisible()
+  await expectNoPageOverflow(page)
   await capture(page, 'organization-360-applied-materials-mobile')
 })
 

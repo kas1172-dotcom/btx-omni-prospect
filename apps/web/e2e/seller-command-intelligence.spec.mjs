@@ -22,6 +22,7 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
 
   await navigate(page, 'Today')
   const customer = page.locator('.today-attention-item .today-customer-link').first()
+  await expect(customer).not.toHaveText('Unresolved Customer')
   const customerName = await customer.textContent()
   await customer.click()
   await expect(page.getByRole('heading', { name: customerName ?? '', level: 1 })).toBeVisible()
