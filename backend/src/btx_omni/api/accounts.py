@@ -125,7 +125,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
                 "btx_top_100_provenance": item.btx_top_100_provenance,
                 "is_rich_scenario": item.id in sample.rich_scenarios
                 or item.id in sample.priority_scenarios or item.id in sample.commercial_ledgers,
-                "truth_state": "PUBLICLY_VERIFIED"
+                "truth_state": "FICTIONAL_SAMPLE" if item.public_research_state == 'FICTIONAL_SAMPLE' else "PUBLICLY_VERIFIED"
                 if item.id in sample.rich_scenarios
                 else (
                     "REFERENCE_SOURCE"

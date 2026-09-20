@@ -31,10 +31,12 @@ def enhance_environment(base, *, anchor=None):
         evidence_record_ids=[critical_case['service_events'][0]['service_event_id']]))
     clock = as_of_datetime(anchor)
     accounts = tuple(CanonicalAccount(a['account_id'], a['identity']['display_name'], AccountRelationship.CURRENT_CUSTOMER,
-        None, ('Defense',), provenance=Provenance(VERSION, a['account_id'], None, clock, clock,
+        None, ('Defense',), public_research_state='FICTIONAL_SAMPLE', provenance=Provenance(VERSION, a['account_id'], None, clock, clock,
             Classification.INTERNAL_COMMERCIAL, EvidenceState.CONFIRMED, DataMode.SAMPLE, True)) for a in additions)
     base = replace(base, accounts=base.accounts + accounts)
-    records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor), **{a['account_id']: a for a in additions}}
+    from btx_omni.providers.sample.regional import regional_environment
+    base, regional = regional_environment(base, anchor=anchor)
+    records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor), **{a['account_id']: a for a in additions}, **regional}
     projected = project_commercial_records(base, records, revision=VERSION)
     # Preserve shared graph identity even when a selected commercial scenario changes.
     preserve = {}

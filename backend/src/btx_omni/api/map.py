@@ -166,6 +166,7 @@ def map_data(
         if (
             facility.verification_state.startswith("VERIFIED_PUBLIC")
             or facility.verification_state == "SANITIZED_REFERENCE_LOCATION"
+            or (facility.verification_state == 'FICTIONAL_SAMPLE_LOCATION' and runtime.settings.sample_enhancement_enabled)
         )
         and _coordinates(facility.latitude, facility.longitude)
     )
@@ -321,6 +322,7 @@ def map_data(
                     "location_truth_state": location.verification_state,
                     "location_name": location.name,
                     "location_type": location.facility_type,
+                    "sample_context": sample.commercial_ledgers.get(account.id, {}).get('site_context'),
                     "city": location.city,
                     "region": location.region,
                     "country": location.country,
@@ -478,6 +480,12 @@ def map_data(
         "btx_facilities": btx_points,
         "intelligence": intelligence_points,
         "proximity_note": "Seller planning input only; never an attractiveness input.",
+        "sample_journey": {
+            "origin": next((p['id'] for p in account_points if p['facility_id'] == 'demo-watch-southwest'), None),
+            "stop_ids": [p['id'] for p in account_points if p.get('sample_context')],
+            "btx_stop_id": 'btx-facility:demo-btx-southwest',
+            "meeting_status": 'NOT_CONFIRMED', "travel_times": None,
+        } if runtime.settings.sample_enhancement_enabled else None,
         "filter_options": {
             "business_units": [
                 {"id": unit.id, "name": unit.name}

@@ -27,6 +27,12 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Validation
 
+### Item 2.1 regional prospecting
+
+`providers/sample/regional.py` adds nine explicitly fictional organizations/sites across six markets and a fictional BTX site, surrounding the existing Tier 1 Fictional Watch customer (new fictional Southwest operating-site pin). This supplies ten nearby stops, plus the origin. Map/list ID sets match; HQ and operating sites differ, NAICS/program/website/hypothesis/role-gap context is visible in marker panels. Placeholder `.example` websites are not operating companies. Top 100 membership on Fictional Southwest Aero Partner is explicitly a SAMPLE designation, not membership in the real BTX list. Tests: `test_sample_regional.py`, two passed.
+
+Decision: existing verified-site projections had no Arizona origin. A new Boeing job posting confirms Mesa operations (Boeing, September 3, 2026, retrieved September 20: https://jobs.boeing.com/job/mesa/experienced-or-mid-level-manufacturing-operations-analyst/185/100137880336), but does not verify precise site coordinates. It was therefore **not** used to fabricate a real map pin. The existing fictional customer is the origin instead. No real-site fact was added from protected references. Distances remain straight-line, no travel durations or meeting confirmations are invented.
+
 ### Item 1.6 narrative and model evidence
 
 New quote notes, revision reasons, service narratives, function-only CRM notes, fictional program descriptions, capability constraints and mitigation notes live on the source-shaped records. `CommercialToolSession` now passes the engine's exact and displayed numeric contribution, raw observation, evidence state, period, rule version, blocked weighted result and counterfactual text to Gemini; it previously stripped several of these fields. The model is not asked to recalculate totals.
