@@ -27,6 +27,12 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Validation
 
+### Item 2.2 expansion
+
+`providers/sample/expansion.py` joins the verified Kratos/Boeing public development to Boeing's separate synthetic dispatch/program history, a current synthetic inspection-fixture quote and two BU scopes. `commercial_briefing` and the model's history read expose the joined context while explicitly retaining Unknown need and an unsupported BTX/JDAM-LR edge. Fixture assertion: `test_j5_public_signal_and_synthetic_history_join_without_inventing_supply`.
+
+Decision: AIM-260 was not imported. Searches located company and secondary reports and the government release URL https://www.war.gov/News/Releases/Release/Article/4603380/department-of-war-signs-framework-agreement-with-lockheed-martin-to-increase-pr/ (September 17), but government retrieval returned 403 and the defense.gov alias was inaccessible on September 20. The user's primary-government verification condition was not met. Used the already verified Kratos company release instead. No classified program or component assignment was invented.
+
 ### Item 2.1 regional prospecting
 
 `providers/sample/regional.py` adds nine explicitly fictional organizations/sites across six markets and a fictional BTX site, surrounding the existing Tier 1 Fictional Watch customer (new fictional Southwest operating-site pin). This supplies ten nearby stops, plus the origin. Map/list ID sets match; HQ and operating sites differ, NAICS/program/website/hypothesis/role-gap context is visible in marker panels. Placeholder `.example` websites are not operating companies. Top 100 membership on Fictional Southwest Aero Partner is explicitly a SAMPLE designation, not membership in the real BTX list. Tests: `test_sample_regional.py`, two passed.

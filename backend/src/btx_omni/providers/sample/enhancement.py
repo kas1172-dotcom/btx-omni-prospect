@@ -37,6 +37,8 @@ def enhance_environment(base, *, anchor=None):
     from btx_omni.providers.sample.regional import regional_environment
     base, regional = regional_environment(base, anchor=anchor)
     records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor), **{a['account_id']: a for a in additions}, **regional}
+    from btx_omni.providers.sample.expansion import add_boeing_expansion
+    add_boeing_expansion(records['boeing'])
     projected = project_commercial_records(base, records, revision=VERSION)
     # Preserve shared graph identity even when a selected commercial scenario changes.
     preserve = {}

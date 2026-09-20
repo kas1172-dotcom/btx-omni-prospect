@@ -54,6 +54,7 @@ def commercial_briefing(account: dict, *, canonical_account_id: str, revision: s
     return {
         "id": f"commercial-brief:{canonical_account_id}", "revision": revision,
         "account_id": canonical_account_id, "as_of": account["as_of"],
+        "expansion_context": account.get('expansion_brief'),
         "summary": case["title"] if case else "Review the linked commercial history.",
         "explanation": case["details"] if case else None,
         "component": component_names.get(opportunity["component_id"]) if opportunity else None,

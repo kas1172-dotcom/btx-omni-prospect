@@ -167,7 +167,8 @@ class PocRuntime:
         if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.kratos import context
             from btx_omni.providers.sample.risk_cases import risk_context
-            self.monitor.curated_contexts = (context(), risk_context(anchor=self.settings.demo_as_of_date))
+            from btx_omni.providers.sample.expansion import expansion_context
+            self.monitor.curated_contexts = (context(), risk_context(anchor=self.settings.demo_as_of_date), expansion_context())
         if repository:
             try:
                 self.monitor.hydrate_events()
