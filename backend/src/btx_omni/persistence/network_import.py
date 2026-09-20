@@ -88,6 +88,8 @@ class NetworkImportRepository:
 
     def import_file(self, path: Path, *, tenant_id: str, owner_user_id: str, owner_name: str, exported_at: datetime,
                     adapter: ConnectionAdapter | None = None, apply: bool = False) -> dict[str, object]:
+        if not owner_user_id.strip() or owner_user_id.strip() == "shared-access":
+            raise ValueError("A unique server-configured owner is required")
         source = adapter or LinkedInConnectionsCsvAdapter()
         safe_path = _outside_worktree(path)
         digest = hashlib.sha256(safe_path.read_bytes()).hexdigest()
@@ -110,6 +112,8 @@ class NetworkImportRepository:
                 models.network_import_batches.c.file_sha256 == digest,
             )).mappings().first()
             if existing:
+                if existing["owner_user_id"] != owner_user_id:
+                    raise ValueError("File already belongs to another owner; ownership cannot be reassigned")
                 return {**report, "status": "UNCHANGED"}
             connection.execute(insert(models.network_import_batches).values(
                 id=batch_id, tenant_id=tenant_id, source_kind=source.source_kind, file_sha256=digest,
@@ -151,7 +155,8 @@ class NetworkImportRepository:
         permitted = and_(
             models.network_import_batches.c.tenant_id == principal.tenant_id,
             or_(models.network_import_batches.c.visibility == "tenant_shared",
-                models.network_import_batches.c.owner_user_id == principal.user_id),
+                and_(principal.user_id != "shared-access",
+                     models.network_import_batches.c.owner_user_id == principal.user_id)),
         )
         owners = models.network_people.alias("network_owners")
         query = (select(
@@ -196,6 +201,8 @@ class NetworkImportRepository:
             return tuple(dict(row) for row in connection.execute(query).mappings())
 
     def share_batch(self, batch_id: str, *, tenant_id: str, owner_user_id: str) -> bool:
+        if owner_user_id.strip() == "shared-access":
+            return False
         with self.engine.begin() as connection:
             result = connection.execute(update(models.network_import_batches).where(
                 models.network_import_batches.c.id == batch_id,

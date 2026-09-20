@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     monitor_schedule_configured: bool = False
     action_salesperson_token: str = "development-salesperson"
     action_manager_token: str = "development-manager"
+    # Server-only JSON map: stable user ID -> SHA-256 of a high-entropy access code.
+    user_access_code_hashes: dict[str, str] = Field(default_factory=dict, repr=False)
     ai_provider: str = "gemini"
     gemini_api_key: str | None = Field(
         default=None,
@@ -107,6 +109,17 @@ class Settings(BaseSettings):
             return "postgresql+psycopg://" + value.removeprefix("postgres://")
         if value.startswith("postgresql://"):
             return "postgresql+psycopg://" + value.removeprefix("postgresql://")
+        return value
+
+    @field_validator("user_access_code_hashes")
+    @classmethod
+    def validate_user_codes(cls, value: dict[str, str]) -> dict[str, str]:
+        if any(not key.strip() or key != key.strip() or key == "shared-access"
+               or len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest)
+               for key, digest in value.items()):
+            raise ValueError("Invalid server access-code mapping")
+        if len(set(value.values())) != len(value):
+            raise ValueError("Access codes must identify exactly one user")
         return value
 
     @property
