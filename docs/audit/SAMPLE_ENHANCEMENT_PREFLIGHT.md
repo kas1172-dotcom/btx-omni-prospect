@@ -1,5 +1,13 @@
 # SAMPLE enhancement preflight
 
+## Resumed preflight 2026-09-20
+
+The previous checkpoint below is historical, not the current authority. The supplied Downloads DOCX has now been imported as [Rubric v2.0](../product/BTX_Omni_Scoring_Rubric_v2.0.md). Its full factor and band tables govern; the user's amended nine-day target is 86.25. Scoring changes and local additive migrations are authorized. Existing tests may load the two protected reference files, but this task must not inspect or derive new fixture content from them. The prior collection blocker was an audit-hook restriction, not an application defect.
+
+Confirmed alignment work: public risk still exposes `reversibility`; public risk retains numeric stale inputs; internal snapshots lack two-day expiry; pursuit reviews require same-day dates; risk projection does not expose explicit convergence/override inputs; SAMPLE runtime clock is August 31. Core direct internal risk, queue classes and weighted missing-factor ranges already exist. Preserve those and extend tests rather than replace the scoring engine. No migration is currently required.
+
+The available DOCX lacks the promised R1–R10 preamble. The imported Markdown labels explicit user resolutions R1–R8 and records R9–R10 as unavailable. No absent resolution text is represented as supplied authority. See the report decision log.
+
 ## Status and blocking input
 
 Preflight checkpoint only. Tier 1 is not implemented and Tier 2 has not started.

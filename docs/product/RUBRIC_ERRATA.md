@@ -1,5 +1,7 @@
 # Scoring rubric errata preflight
 
+Current resolution: [Rubric v2.0](BTX_Omni_Scoring_Rubric_v2.0.md) is now available. The user corrected A to **86.25 High** at nine days and **88.75 High** at three days; B is **62.00 Moderate**; C is **72.5 B**. These supersede the historical preflight discussion below. The original DOCX remains unchanged. No expected failure is acceptable for the amended targets.
+
 Status: provisional review on 2026-09-20. The authoritative BTX Omni Scoring
 Rubric v2.0 document was not found in this checkout. The only scoring DOCX is
 `docs/scoring/BTX_Account_Scoring_Working_Draft (1).docx`; it describes an older

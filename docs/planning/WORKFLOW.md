@@ -153,7 +153,7 @@ The workflow's job is to take one piece of public evidence (a contract award, a 
 
 **Source.** Composed from prior steps.
 
-**Current state.** `modules/scoring/account_attractiveness.py` is a full implementation of the working-draft rubric. Weights, bin definitions, missing-data reweighting, factor contributions — all present. The `INTERPRETATION_NOTE` explicitly flags missing-subfactor reweighting as pending Jamie calibration.
+**Scoring authority.** [Rubric v2.0](../product/BTX_Omni_Scoring_Rubric_v2.0.md) supersedes the older working draft. Missing or stale factors keep their original weights and produce a low/high range; they are never proportionally reweighted. See the SAMPLE enhancement report for implementation verification.
 
 **Gap where the workflow challenges the current rubric.**
 - **Signal-provenance strength is not a factor.** Two accounts can produce identical scores while one is backed by a SAM.gov contract award and the other by a company press release. The workflow reveals that "which source produced the evidence" materially affects trust. Consider a Signal Confidence factor or a rubric-level provenance multiplier. Your scope doc's second-tier "Signal Confidence" score is exactly this; the workflow argues for pulling it forward into Account Attractiveness, or wiring it as a top-level display next to attractiveness.
