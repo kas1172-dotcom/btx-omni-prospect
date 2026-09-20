@@ -9,6 +9,7 @@ from time import monotonic
 from uuid import uuid4
 
 from btx_omni.core.config import Settings
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.monitor.candidates import (
     organization_candidate_for,
     program_candidate_for,
@@ -99,7 +100,7 @@ class MonitorService:
     watch_profiles: tuple[AccountWatchProfile, ...] = ()
     catalog: MonitorCatalog = field(default_factory=MonitorCatalog)
     watch_targets: dict[str, tuple[WatchTarget, ...]] = field(default_factory=dict)
-    clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
+    clock: Callable[[], datetime] = field(default=as_of_datetime)
     entity_candidate_resolver: EntityCandidateResolver | None = None
 
     @staticmethod

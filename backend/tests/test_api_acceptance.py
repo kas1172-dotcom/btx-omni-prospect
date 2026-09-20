@@ -550,7 +550,8 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
     payload = response.json()
     assert response.status_code == 200
     assert (
-        "Ranked by the existing canonical Account Attractiveness score"
+        # Rubric v2 sections 1/6: account context is not a scoped pursuit.
+        "No scoped opportunities in this selection have complete Attractiveness inputs"
         in payload["content"]
     )
     assert payload["context_used"] == {"filters": {"market": "Defense"}}

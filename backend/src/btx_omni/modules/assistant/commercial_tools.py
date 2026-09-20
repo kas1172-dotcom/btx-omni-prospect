@@ -81,9 +81,11 @@ class CommercialToolSession:
             def bounded(value):
                 if isinstance(value, dict):
                     if "decision_id" in value:
-                        return {k: bounded(value[k]) for k in ("decision_id", "family", "subject_id", "score", "score_range", "configuration_version", "status", "priority_rank", "priority_class", "eligibility_reasons", "blocking_constraints", "factors", "data_coverage") if k in value}
+                        return {k: bounded(value[k]) for k in ("decision_id", "family", "subject_id", "score", "score_range", "configuration_version", "rule_version", "weighted_score", "weighted_band", "band", "what_would_change_result", "status", "priority_rank", "priority_class", "eligibility_reasons", "blocking_constraints", "factors", "data_coverage") if k in value}
                     if "points" in value and "required_fields" in value:
                         return {"key": value["key"], "points": value["points"], "weight": value["weight"],
+                                "contribution": value.get('contribution'), "evidence_state": value.get('evidence_state'),
+                                "raw_value": value.get('raw_value'), "period": value.get('period'),
                                 "reason": value["reason"], "truth_class": value["truth_class"],
                                 "missing_fields": sorted(set(value["required_fields"]) - set(value["observed_fields"])),
                                 "evidence_ids": value["evidence_ids"][:5], "evidence_ids_omitted": max(0, len(value["evidence_ids"]) - 5)}

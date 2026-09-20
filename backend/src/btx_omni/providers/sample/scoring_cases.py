@@ -125,3 +125,41 @@ def add_expansion(account, *, facility_id):
             no_disqualifiers=True, program_current=True, review_window_on=relative_date(30, anchor=account['as_of']),
             essential_assertion_confidence=dict.fromkeys(('identity', 'need', 'capability', 'timing'), 75))))
     return account
+
+
+def add_queue_examples(account, *, facility_id):
+    """Same-customer escalation, fully assessed RFQ, and lower-priority cooling work."""
+    from btx_omni.modules.scoring.public_inputs import public_risk_assessment
+    from btx_omni.core.clock import as_of_datetime
+    from btx_omni.providers.sample.risk_cases import risk_context
+    add_expansion(account, facility_id=facility_id)
+    opportunity = account['opportunities'][-1]
+    overrides = {
+        'program_durability.repeat_production_pattern': 'ESTABLISHED_RECURRING',
+        'program_durability.commitment_strength': 'FUNDED_AWARDED_CONTRACTED',
+        'btx_manufacturing_fit.process_tolerance_match': 'ROUTINE',
+        'btx_manufacturing_fit.certification_compliance_fit': 'ALL_MET',
+        'btx_manufacturing_fit.volume_compatibility': 'NORMAL_RANGE',
+        'addressable_btx_work.btx_relevant_component_content': 'MULTIPLE_FAMILIES',
+        'addressable_btx_work.cross_bu_applicability': 'ONE_BU',
+        'program_momentum.recent_awards_funding_production_increases': 'SOME_POSITIVE',
+        'program_momentum.regulatory_funding_events': 'MATERIALLY_IMPROVES',
+    }
+    for row in opportunity['score_observations']:
+        row['bin'] = overrides.get(row['path'], row['bin'])
+    opportunity['business_context'] = 'Fictional funded recurring multi-family RFQ with routine manufacturing fit. No actual buyer commitment is asserted.'
+    event, observation = risk_context(anchor=account['as_of'])
+    risk = public_risk_assessment(event, observation, now=as_of_datetime(account['as_of']))
+    account['public_event_assessments'] = {event.id: risk}
+    account['interactions'].append(synthetic_record(interaction_id=event.id, date=account['as_of'], real_person_ids=[], participant_role_ids=[],
+        notes='Fictional filing exercise reviewed for action triage; do not present as an SEC disclosure.', related_record_ids=[]))
+    for key, title, evidence, owner, event_id in [
+        ('escalate', 'Review fictional consolidation risk', event.id, 'demo-role:account-owner', event.id),
+        ('rfq', 'Validate fictional expansion RFQ', opportunity['opportunity_id'], 'demo-role:seller', None),
+        ('cooling', 'Re-engage fictional cooling customer', account['service_events'][0]['service_event_id'], None, None),
+    ]:
+        account['actions'].append(synthetic_record(action_id=account['account_id'] + ':' + key, title=title,
+            status='OPEN', owner_id=owner, due_date=relative_date(1, anchor=account['as_of']), created_at=account['as_of'],
+            evidence_record_ids=[evidence], underlying_event_id=event_id,
+            completion_criteria='Record the review outcome and next accountable owner; this is synthetic seller work.'))
+    return account

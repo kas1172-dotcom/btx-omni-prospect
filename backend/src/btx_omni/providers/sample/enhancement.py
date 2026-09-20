@@ -14,9 +14,16 @@ def enhance_environment(base, *, anchor=None):
     from btx_omni.core.provenance import Provenance
     from btx_omni.domain.accounts import CanonicalAccount, AccountRelationship
     from btx_omni.domain.common import DataMode, EvidenceState
-    from btx_omni.providers.sample.scoring_cases import customer, add_expansion
+    from btx_omni.providers.sample.scoring_cases import customer, add_expansion, add_queue_examples
     additions = [customer(case, anchor=anchor) for case in ('risk', 'watch', 'healthy', 'at-risk', 'critical')]
     add_expansion(additions[1], facility_id=base.btx_facilities[0].id)
+    add_queue_examples(additions[0], facility_id=base.btx_facilities[0].id)
+    critical_case = additions[-1]
+    critical_case['service_events'][0].update(confirmed=True, issue_type='SAFETY_SHUTDOWN',
+        narrative='Fictional safety-shutdown exercise, not an allegation about any real site. Execution is blocked pending verified clearance.')
+    critical_case['actions'].append(synthetic_record(action_id='demo-fictional-critical:safety', title='Resolve fictional safety block',
+        status='OPEN', owner_id='demo-role:safety', due_date=critical_case['as_of'], created_at=critical_case['as_of'],
+        evidence_record_ids=[critical_case['service_events'][0]['service_event_id']]))
     clock = as_of_datetime(anchor)
     accounts = tuple(CanonicalAccount(a['account_id'], a['identity']['display_name'], AccountRelationship.CURRENT_CUSTOMER,
         None, ('Defense',), provenance=Provenance(VERSION, a['account_id'], None, clock, clock,

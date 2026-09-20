@@ -336,6 +336,8 @@ class OmniOrchestrator:
             + (
                 "Identity and location come from a sanitized reference source."
                 if reference_only
+                else "This is an explicitly fictional SAMPLE organization, not a publicly verified customer."
+                if account.id.startswith('demo-fictional-')
                 else "Public identity, location, and cited events are publicly verified."
             )
             + " BTX commercial, CRM, ownership, deal, quote, scoring, and workflow context is simulated POC data when present."
@@ -366,7 +368,7 @@ class OmniOrchestrator:
             )
         if account_alerts:
             lines.append(
-                "Needs attention: " + ", ".join(_ALERT_LABELS.get(item.type.value, 'Commercial review') for item in account_alerts) + "."
+                "Needs attention: " + ", ".join(f"{_ALERT_LABELS.get(item.type.value, 'Commercial review')} ({item.type.value})" for item in account_alerts) + "."
             )
             citations.extend(
                 value for alert in account_alerts for value in alert.evidence_ids
@@ -3544,7 +3546,7 @@ class OmniOrchestrator:
         if alerts:
             lines.append(
                 "Current commercial alerts: "
-                + ", ".join(alert.type.value for alert in alerts[:3])
+                + ", ".join(dict.fromkeys(alert.type.value for alert in alerts))
                 + "."
             )
             citations.extend(value for alert in alerts for value in alert.evidence_ids)

@@ -111,6 +111,9 @@ def action_decisions(account: dict, *, account_id: str, revision: str, fulfillme
             and item['record'].get('confirmed') is True
             and item['record'].get('issue_type') in {'SAFETY_SHUTDOWN', 'LEGAL_PROHIBITION', 'STOPPED_SHIPMENT'}
             for item in resolved)
+        public = account.get('public_event_assessments', {}).get(action.get('underlying_event_id'))
+        if public and public.get('as_of') == account['as_of'] and public.get('family') == 'risk_severity':
+            underlying = public
         rows.append({'id': action['action_id'], 'action_id': action['action_id'], 'account_id': account_id,
             'title': action['title'], 'status': status, 'valid': valid,
             'due_date': work.due_date if work else action.get('due_date'),

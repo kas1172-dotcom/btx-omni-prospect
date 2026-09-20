@@ -70,3 +70,12 @@ def test_action_queue_classes_dominate_raw_score():
         {'id': 'safety', 'account_id': 'fictional-other', 'status': 'OPEN', 'confirmed_block': True, 'underlying_decision': {'score': 1}},
     ]
     assert [r['id'] for r in rank_actions(rows)] == ['safety', 'risk', 'rfq', 'cooling']
+
+
+def test_live_fixture_queue_uses_computed_rfq_and_public_event():
+    from btx_omni.providers.sample.scoring_cases import add_queue_examples
+    account = add_queue_examples(customer('risk'), facility_id='fictional-site')
+    result = customer_decisions(account, account_id=account['account_id'], revision='s', current_customer=True)
+    assert result['opportunities'][0]['opportunity_priority']['score'] == Decimal(94)
+    assert [r['id'].rsplit(':', 1)[-1] for r in result['action_priorities']] == ['escalate', 'rfq', 'cooling']
+    assert [r['priority_rank'] for r in result['action_priorities']] == [1, 2, 3]
