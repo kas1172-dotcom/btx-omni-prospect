@@ -1,0 +1,108 @@
+# Omni chat v2 design
+
+Starting revision: `68cb63379f68e5a8c723a300642bad004152f725`. Starting checkout clean.
+Implementation lives in the separate `btx-omni-chat-v2` worktree on `codex/omni-chat-v2`.
+
+## Authority and scope
+
+Chat is available to authenticated BTX users. Business data remains read-only.
+Only private conversation, feedback and audit records may be written. Action proposals
+open the existing reviewed creation form. No scoring, CRM or Action mutation service changes.
+The scoring working draft in `docs/scoring/BTX_Account_Scoring_Working_Draft (1).docx`
+was inspected. Its prospective probability language and historical weighting descriptions
+do not override the mission: PWIN is an index and current deterministic services own scores.
+No Project Scope document was found under docs.
+
+## Existing owners to reuse
+
+- `backend/src/btx_omni/modules/commercial/read.py`: CommercialReadService.account_snapshot and quote_comparison.
+- `backend/src/btx_omni/modules/commercial/lifecycle.py`: fulfillment_state.
+- `backend/src/btx_omni/modules/assistant/commercial_tools.py`: CommercialToolSession.read.
+- `backend/src/btx_omni/modules/accounts/customer_360.py`: organization_360_projection and customer_360_projection.
+- `backend/src/btx_omni/modules/scoring/commercial_decisions.py`: customer_decisions (including eligibility, factors, coverage and versions).
+- `backend/src/btx_omni/modules/commercial/opportunities.py`: selected_opportunity and account_opportunities.
+- `backend/src/btx_omni/modules/relationships/service.py`: RelationshipIntelligenceService.
+- `backend/src/btx_omni/modules/assistant/relationship_context.py`: selected_relationship_context.
+- `backend/src/btx_omni/api/map.py`: haversine_miles; straight-line distance only.
+- `backend/src/btx_omni/modules/alerts/commercial.py`: CommercialAlertEngine.evaluate.
+- `backend/src/btx_omni/modules/federal_procurement.py`: procurement_projection.
+- `backend/src/btx_omni/api/intelligence_projection.py`: intelligence_signals.
+- `backend/src/btx_omni/modules/work/service.py`: WorkService.list(current).
+- `backend/src/btx_omni/ai/gemini.py`: metered Gemini generation and Google Search grounding.
+- `backend/src/btx_omni/persistence/omni_runs.py`: private immutable answer receipts.
+
+## Tool contracts
+
+Every input is a JSON object with additionalProperties=false. Strings are bounded;
+lists are capped, scopes come from the server principal, and results have a size cap.
+Common output: `{status, as_of, source_ids: string[], data_mode, data: object}`.
+Dates are ISO dates, money is projected by existing money helpers, and absent data is explicit.
+
+| Tool | Input properties | Data output |
+| --- | --- | --- |
+| find_organization | name: string (1..160) | status matched/candidates/not_found, confidence, at most three {id,name} candidates |
+| get_customer_360 | account_id: string | organization, identity and existing 360 projection |
+| get_commercial_history | account_id: string, quote_id?: string | quote/order rows, revisions, fulfillment, backlog, totals and dates |
+| get_intelligence_events | account_id?: string | at most ten visible events, source URLs |
+| get_assessments | account_id: string | distinct score families, factors, coverage, gaps, eligibility, rule versions |
+| get_relationship_routes | account_id: string | bounded source-backed routes, constraints, access limitations |
+| get_nearby_sites | account_id: string | verified locations and straight-line miles; no travel times |
+| get_actions | account_id?: string | at most ten principal-visible Actions |
+| get_today_priorities | account_id?: string | deterministic alerts and visible work |
+| get_federal_opportunities | account_id?: string | existing federal projection or explicit unavailable state |
+| compare_organizations | account_ids: string[2] | two independent organization/history summaries; no new score |
+| get_screen_context | empty object | validated selected entities, visible IDs and bounded filters |
+| web_search | topic: enum, account_id?: string | public-only query; title, publisher, URL, publication date or unknown, retrieved date, findings |
+
+Input/output schemas will also be executable in the tool module. A tool cannot take
+an arbitrary SQL query, URL, owner, actor, tenant, or credential. Search topics are
+allowlisted public concepts; internal question text is never sent to Google Search.
+
+## Agent and provider
+
+The configured model chooses tools and final language through a bounded JSON protocol.
+Default six tool steps; bounded input/output tokens; per-tool and request deadlines;
+existing actor/environment metering plus chat daily cap. Invalid model selections fail
+closed. Recent turns are linguistic context, never evidence. Named entities precede
+passive screen scope. Unknown explicit names return not-found, never market cohorts.
+Comparisons may use exactly the two explicitly named/resolved organizations.
+
+The old OmniService/OmniOrchestrator remain compatibility and degraded read internals.
+They are not the normal model planner. No old routing is deleted before golden evaluation.
+Missing Gemini is a supported state: a plain disclosure followed by basic safe lookups.
+
+## Validation and presentation
+
+Model output is untrusted. Validate facts, numbers, dates, entities, URLs, sample labels,
+score family/version/coverage and completed-write claims. Retry once with a violation;
+then build plain fallback from tool data. Public findings never enter canonical storage.
+Public and internal facts are separate for mixed answers. General knowledge is labeled
+by provenance and must not borrow authority from BTX data. No invented contacts/access.
+
+SSE emits progress then validated answer text; never stream unvalidated model content.
+Disconnect/cancel halts subsequent work (an in-flight SDK request is timeout bounded).
+Safe Markdown supports paragraphs, lists, bold and safe links only. Technical details
+are collapsed. Conversation list/resume/rename/delete and feedback are actor-scoped.
+Retention is configurable; deletion removes conversation content and feedback.
+
+## Tenant finding and risks
+
+Principal.tenant_id now exists, supplied by server Settings via security/sessions.py.
+The existing commercial catalog is still a single workspace; core account tables are
+not tenant partitioned. Do not claim multi-tenant business-data isolation. Chat must
+reuse existing role visibility and scope private storage by actor plus tenant.
+Hosted POC identity currently maps access codes to shared seller/manager identities;
+corporate individual identity is an external prerequisite for personal production history.
+
+Risks: heuristic names cannot prove arbitrary semantic grounding; public search metadata
+may lack publication dates; source snippets may contain injection; strict validation
+may reduce fluent answers; existing browser tests encode legacy text/transport. Tests
+will be updated only for intentional behavior changes, with reasons recorded here.
+
+## Gates and evaluation
+
+M0 path/design validation; M1 fake tools/agent plus backend; M2 search privacy/general;
+M3 validation/degradation; M4 persistence migration and frontend gates; M5 documentation;
+M6 at least 60 behavioral cases, fake provider in normal CI and optional live report.
+Tests use task-owned databases. No deployment or production writes.
+Final results, baseline differences and limitations belong in OMNI_CHAT_V2_REPORT.md.
