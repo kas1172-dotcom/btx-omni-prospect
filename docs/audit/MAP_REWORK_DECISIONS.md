@@ -40,3 +40,12 @@
 - Distance is straight-line and appears only while a selected origin exists. Itinerary controls reuse canonical account/facility markers and do not invent travel time or meeting confirmation.
 - Added `map-list-model.test.mjs` to assert shared array/count behavior and cluster exclusion.
 - No dependency added; no test removed or weakened.
+
+## 2026-09-20 — Step 4 Map-only filters
+
+- The visible Map controls are now exactly market, customer status, Top 100 membership, strategic partnership and straight-line radius. Search remains a separate bar above the map.
+- Removed the legacy sidebar/list DOM after replacing it with the synchronized table. Layer selection is fixed to the established default marker set; BU, NAICS, capability, fulfillment/decision state, coverage, shortlist and signal timing remain in shared types, URL snapshots, API payloads and detail data but have no Map control.
+- The radius camera request is emitted only when a user applies a changed radius with an existing selected origin; it fits the circle through the pure camera planner.
+- Removed only these Playwright tests because their sole purpose was to assert controls explicitly removed by scope: `persisted NAICS and BU facets filter the same canonical map and list scope`; `fulfillment attention filters use persisted obligations and clear without stale account context`.
+- Removed only these source-contract assertions because each asserted a removed Map control: `Layers & filters`; the old combined customer/review-state label; `Strategic Partnership and shortlist`; `HighCardinalitySelector`; and `Candidate BTX capability`. All remaining assertions in those tests are unchanged.
+- No dependency added and no assertion outside the explicitly removed-control assertions was deleted, skipped, weakened or modified.

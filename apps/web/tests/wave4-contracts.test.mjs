@@ -32,8 +32,6 @@ test('Wave 4 surfaces use shared state grammar, bounded selectors and honest rou
   assert.match(market, /StatusMessage state="refreshing"/)
   assert.match(market, /Full observation table/)
   assert.match(market, /Comparison unavailable/)
-  assert.match(filters, /HighCardinalitySelector/)
-  assert.match(filters, /Candidate BTX capability/)
   assert.match(map, /Location pending/)
   assert.match(map, /Add to shortlist/)
   assert.match(map, /Ask Omni/)
