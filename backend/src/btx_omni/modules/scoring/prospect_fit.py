@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-from btx_omni.core.clock import as_of_date
+from btx_omni.core.clock import as_of_date, evidence_state
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER
 
 CONFIGURATION_VERSION = "prospect-fit-v2.0"
@@ -23,6 +23,7 @@ class ProspectFitFactor:
     points: Decimal | None
     reason: str
     evidence_ids: tuple[str, ...] = ()
+    evidence_state: str = 'CURRENT'
 
 
 @dataclass(frozen=True)
@@ -78,26 +79,26 @@ def prospect_fit_projection(account, *, applicable: bool, as_of: date | None = N
     for key, label, weight in _DEFINITIONS:
         raw = account.prospect_fit_evidence.get(key, {})
         clock = as_of_date(as_of)
-        try:
-            age = (clock - date.fromisoformat(raw.get('reviewed_as_of', ''))).days if clock else None
-        except (ValueError, TypeError):
-            age = None
+        state = evidence_state(raw.get('reviewed_as_of'), as_of=clock, window_days=30 if key == 'existing_btx_access' else 180)
+        state = 'CONFLICTING' if raw.get('evidence_state') == 'CONFLICTING' else state
         valid = (raw.get('account_id') == account.id and raw.get('evidence_ids') and raw.get('source_urls')
-                 and raw.get('review_state') == 'VERIFIED' and age is not None and 0 <= age <= (30 if key == 'existing_btx_access' else 180))
+                 and raw.get('review_state') == 'VERIFIED' and state == 'CURRENT')
         normalized = _points(key, raw) if valid else None
         if normalized is not None:
             factors.append(ProspectFitFactor(key, label, weight, Decimal(normalized) * weight / 100,
                 raw.get('reason') or f'{label} follows the documented organization evidence.', tuple(raw['evidence_ids'])))
         elif key == "target_cohort_match" and account.industries and evidence and not raw:
-            points = weight if in_primary_cohort else None
+            state = evidence_state(account.provenance.observed_at, as_of=clock, window_days=180)
+            points = weight if in_primary_cohort and state == 'CURRENT' else None
             reason = (
                 "The canonical account classification includes an approved primary BTX market."
                 if in_primary_cohort
                 else "An adjacent, exploratory or excluded classification has not been reviewed."
             )
-            factors.append(ProspectFitFactor(key, label, weight, points, reason, evidence))
+            factors.append(ProspectFitFactor(key, label, weight, points, reason, evidence, state))
         else:
-            factors.append(ProspectFitFactor(key, label, weight, None, f"{label} requires additional scoped evidence."))
+            ids = tuple(raw.get('evidence_ids', ())) if raw.get('account_id') == account.id else ()
+            factors.append(ProspectFitFactor(key, label, weight, None, f"{label}: {state.lower()} evidence requires verification.", ids, state))
 
     known = sum((factor.points for factor in factors if factor.points is not None), Decimal())
     missing_weight = sum((factor.weight for factor in factors if factor.points is None), Decimal())
@@ -128,14 +129,21 @@ def prospect_fit_payload(projection: ProspectFitProjection) -> dict:
         "coverage": projection.coverage,
         "status": projection.status,
         "configuration_version": projection.configuration_version,
+        "rule_version": "BTX_SCORING_RUBRIC_V2.0",
+        "eligibility": "APPLICABLE" if projection.applicable else "NOT_APPLICABLE",
+        "what_would_change_result": [f"Verify current scoped evidence for {factor.label}." for factor in projection.factors if factor.points is None] or ["A changed verified factor observation changes its fixed-weight contribution."],
         "factors": [
             {
                 "name": factor.key,
                 "label": factor.label,
                 "weight": factor.weight,
                 "points": factor.points,
+                "contribution": factor.points,
+                "contribution_exact": factor.points,
+                "normalized_points": factor.points * 100 / factor.weight if factor.points is not None and factor.weight else None,
                 "reason": factor.reason,
                 "evidence_ids": factor.evidence_ids,
+                "evidence_state": factor.evidence_state,
             }
             for factor in projection.factors
         ],

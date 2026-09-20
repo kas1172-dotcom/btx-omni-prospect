@@ -9,7 +9,10 @@ from btx_omni.api.session import principal
 from btx_omni.domain.work import Principal
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
-from btx_omni.modules.scoring.commercial_decisions import customer_decisions
+from btx_omni.modules.scoring.commercial_decisions import (
+    critical_risk_evidence,
+    customer_decisions,
+)
 from btx_omni.modules.scoring.families import customer_risk_projection
 from btx_omni.modules.scoring.monitoring_coverage import monitoring_complete
 from btx_omni.modules.work.commercial_followup import confirm_followup, followup_preview
@@ -111,6 +114,7 @@ def commercial_evidence(
                 internal_decision=decisions["internal_commercial_risk"],
                 signal_briefs=signal_briefs_for_monitor(runtime.monitor, environment=sample),
                 monitoring_complete=monitoring_complete(runtime.monitor, account_id),
+                critical_override_evidence_ids=critical_risk_evidence(ledger),
             ),
         }
     if collection == "reference":

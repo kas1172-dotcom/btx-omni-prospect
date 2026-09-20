@@ -102,3 +102,18 @@ def regional_environment(base, *, anchor=None):
     facilities.append(origin)
     return replace(base, accounts=base.accounts + tuple(accounts), facilities=base.facilities + tuple(facilities),
                    public_facilities=base.public_facilities + tuple(facilities), btx_facilities=base.btx_facilities + (btx,)), ledgers
+def itinerary(environment, *, anchor=None):
+    """Ready-to-review route, never invented meetings or driving estimates."""
+    origin = next(f for f in environment.facilities if f.id == 'demo-watch-southwest')
+    accounts = {a.id: a for a in environment.accounts}
+    stops = [synthetic_record(id='demo-stop:' + f.id, account_id=f.account_id, facility_id=f.id,
+        site_name=f.name, organization_name=accounts[f.account_id].legal_name,
+        address='Fictional Phoenix-area pin; not an actual address', latitude=str(f.latitude), longitude=str(f.longitude),
+        purpose='Review the labeled component-fit hypothesis and identify the missing sourcing role.',
+        contact_name='', meeting_status='NOT_REQUESTED',
+        visit_brief='SAMPLE planning stop only. No named contact, appointment, qualification, travel duration or introduction is asserted.',
+        travel_distance_miles=None, travel_duration_minutes=None, route_provider=None, route_retrieved_at=None)
+        for f in environment.facilities if f.account_id in IDS]
+    return synthetic_record(id='demo-regional-itinerary', title='SAMPLE Southwest discovery itinerary — no meetings requested',
+        origin_label=origin.name, origin_latitude=str(origin.latitude), origin_longitude=str(origin.longitude),
+        stops=stops, version=None, created_at=relative_date(anchor=anchor), updated_at=relative_date(anchor=anchor))

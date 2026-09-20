@@ -4,16 +4,18 @@ import type { CommercialDecision, FollowupPreview } from '../../types/decisions'
 import { CommercialEvidence } from './CommercialEvidence'
 import { actorDisplayName, presentationLabel } from '../../components/presentation'
 import { ScoreSummary } from '../../components/ScoreSummary'
-import { commercialDecisionSummary } from '../../components/scoreSummaryModel'
+import { commercialDecisionSummary, scoreValue } from '../../components/scoreSummaryModel'
+import { CanonicalRecord } from '../../components/CanonicalRecord'
 import { Button, LoadingStatus } from '../../components/UI'
 
-const words = (value: string) => presentationLabel(value, 'assessment')
+const words = (value = '') => presentationLabel(value, 'assessment')
 const index = (value: string | number | null) => value == null ? null : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value))
 
 function Decision({ decision, onEvidence }: { decision: CommercialDecision; onEvidence: (id: string) => void }) {
   const subject = ['customer_health', 'internal_commercial_risk'].includes(decision.family) ? 'Selected customer' : decision.family === 'action_priority' ? 'Selected follow-up' : 'Selected opportunity'
   const model = commercialDecisionSummary(decision, subject)
   return <div className="commercial-decision"><ScoreSummary model={{ ...model, limitingFactors: [...(model.limitingFactors ?? []), ...decision.blocking_constraints.map(reason => ({ label: 'Execution constraint', detail: reason }))] }} />
+    {decision.rule_version && <details><summary>Computed rubric trace and what would change the result</summary><CanonicalRecord value={{ rule_version: decision.rule_version, weighted_score: decision.weighted_score, weighted_band: decision.weighted_band, displayed_band: decision.band, factors: decision.factors, what_would_change_result: decision.what_would_change_result, queue_trace: decision.calculation_trace }} /></details>}
     {decision.factors.some(factor => factor.evidence_ids.length) && <details><summary>Open a supporting record</summary><div className="decision-evidence-buttons">{[...new Set(decision.factors.flatMap(factor => factor.evidence_ids))].map(id => <button key={id} type="button" onClick={() => onEvidence(id)}>Supporting record</button>)}</div></details>}
   </div>
 }
@@ -60,8 +62,9 @@ export function CommercialDecisions({ accountId, onWorkChanged }: { accountId: s
   return <div className="commercial-decisions"><p>Separate decisions answer different questions. Missing qualification, capacity and buyer evidence cannot be replaced by a high relationship index.</p>
     {error && <p role="alert">Decisions could not be refreshed. Displayed results may be outdated. <button onClick={() => setRefresh(n => n + 1)}>Retry decisions</button></p>}
     {result ? <><Decision decision={result.customer_health} onEvidence={setEvidence} /><Decision decision={result.internal_commercial_risk} onEvidence={setEvidence} />
-      <details className="commercial-decision"><summary>overall customer risk · {index(result.overall_customer_risk.score) ?? words(result.overall_customer_risk.status)}</summary>
+      <details className="commercial-decision"><summary>overall customer risk · {index(result.overall_customer_risk.score) ?? scoreValue(null, result.overall_customer_risk.score_range) ?? words(result.overall_customer_risk.status)} · {words(result.overall_customer_risk.band)}</summary>
         <p>{result.overall_customer_risk.interpretation}</p>
+        {result.overall_customer_risk.calculation_trace && <CanonicalRecord value={result.overall_customer_risk.calculation_trace} />}
         <p>Internal commercial risk and public event severity remain separately inspectable. Missing public risk evidence is not a zero-risk observation.</p>
         <p><strong>Public risk rollup:</strong> {index(result.public_risk_rollup.score) ?? 'More source evidence needed'} · {result.public_risk_rollup.independent_event_ids.length} independent current event{result.public_risk_rollup.independent_event_ids.length === 1 ? '' : 's'}.</p>
         {result.public_risk_events.length > 0 && <ul>{result.public_risk_events.map(event => <li key={event.underlying_event_id}><strong>{words(event.risk_domain)}</strong> · {index(event.severity)} · {event.active ? 'current and eligible' : 'retained, not active in rollup'}</li>)}</ul>}

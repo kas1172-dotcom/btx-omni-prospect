@@ -4,9 +4,9 @@ Retrieved 2026-09-20 from the Federal Reserve G.17 current text, N3391,
 2024-2026 rows (source lines 16761-16763). Public observations are fixed history,
 not re-dated when the demo clock advances. No September observation is invented.
 """
+import json
 from copy import deepcopy
 from hashlib import sha256
-import json
 
 from btx_omni.modules.markets.registry import BY_ID
 from btx_omni.providers.sample.enhancement import synthetic_record
@@ -23,21 +23,21 @@ VALUES = {
 
 
 def snapshot():
-    observations = [dict(period=f'{year}-{month:02d}', value=value, status='OBSERVED',
-        source_line=16761 + year - 2024, source_url=URL, publisher=PUBLISHER,
-        event_date='2026-09-18', observation_period=f'{year}-{month:02d}', retrieval_date='2026-09-20',
-        synthetic=False, data_mode='SAMPLE', scope='US_NATIONAL_AGGREGATE')
+    observations = [{'period': f'{year}-{month:02d}', 'value': value, 'status': 'OBSERVED',
+        'source_line': 16761 + year - 2024, 'source_url': URL, 'publisher': PUBLISHER,
+        'event_date': '2026-09-18', 'observation_period': f'{year}-{month:02d}', 'retrieval_date': '2026-09-20',
+        'synthetic': False, 'data_mode': 'SAMPLE', 'scope': 'US_NATIONAL_AGGREGATE'}
         for year, values in VALUES.items() for month, value in enumerate(values.split(), 1)]
     digest = sha256(json.dumps(observations, sort_keys=True).encode()).hexdigest()
-    return dict(metadata=BY_ID[SERIES_ID].metadata(), observations=observations,
-        vintage_id=digest, is_current=True, retrieved_at=RETRIEVED, last_verified_at=RETRIEVED,
-        release_date='2026-09-18', event_date='2026-09-18', retrieval_date='2026-09-20',
-        publisher=PUBLISHER, source_url=URL, source_sha256=None, excerpt_sha256=digest,
-        release_date_source_url='https://www.federalreserve.gov/recentpostings.htm',
-        adapter_version='CURATED_G17_N3391_2026_09_20', retrieval_kind='CURATED_PUBLIC_SNAPSHOT',
-        seed_type='curated_public_snapshot', synthetic=False, data_mode='SAMPLE',
-        http_last_modified_not_release_date=None,
-        source_limitation='32 selected published observations; excerpt hash is not a hash of the complete download. Not a live monitor run, customer forecast, regional estimate, or M&A recommendation.')
+    return {'metadata': BY_ID[SERIES_ID].metadata(), 'observations': observations,
+        'vintage_id': digest, 'is_current': True, 'retrieved_at': RETRIEVED, 'last_verified_at': RETRIEVED,
+        'release_date': '2026-09-18', 'event_date': '2026-09-18', 'retrieval_date': '2026-09-20',
+        'publisher': PUBLISHER, 'source_url': URL, 'source_sha256': None, 'excerpt_sha256': digest,
+        'release_date_source_url': 'https://www.federalreserve.gov/recentpostings.htm',
+        'adapter_version': 'CURATED_G17_N3391_2026_09_20', 'retrieval_kind': 'CURATED_PUBLIC_SNAPSHOT',
+        'seed_type': 'curated_public_snapshot', 'synthetic': False, 'data_mode': 'SAMPLE',
+        'http_last_modified_not_release_date': None,
+        'source_limitation': '32 selected published observations; excerpt hash is not a hash of the complete download. Not a live monitor run, customer forecast, regional estimate, or M&A recommendation.'}
 
 
 class CuratedMarketReadRepository:

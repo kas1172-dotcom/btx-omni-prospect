@@ -77,6 +77,8 @@ class PocRuntime:
     network_imports: NetworkImportRepository = field(init=False)
 
     def __post_init__(self) -> None:
+        if self.settings.sample_enhancement_enabled and self.settings.commercial_durable_state_enabled:
+            raise ValueError('SAMPLE enhancement is a read-only fixture view; disable durable commercial imports for this local demonstration.')
         if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.enhancement import enhance_environment
             self.sample = enhance_environment(self.sample, anchor=self.settings.demo_as_of_date)
@@ -100,8 +102,14 @@ class PocRuntime:
         self.markets = MarketService(MarketSeriesRepository(application_engine), worker_enabled=self.settings.market_refresh_enabled,
                                      scheduler_configured=self.settings.monitor_schedule_configured)
         if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
-            from btx_omni.providers.sample.medical_market import CuratedMarketReadRepository
+            from btx_omni.providers.sample.medical_market import (
+                CuratedMarketReadRepository,
+            )
             self.markets.repository = CuratedMarketReadRepository(self.markets.repository)
+            from btx_omni.providers.sample.public_research import (
+                medical_regulatory_context,
+            )
+            self.markets.curated_public_context = (medical_regulatory_context(anchor=self.settings.demo_as_of_date),)
         if self.settings.commercial_durable_state_enabled:
             self.commercial_repository = CommercialImportRepository(application_engine)
             self.refresh_commercial_catalog()
@@ -168,9 +176,9 @@ class PocRuntime:
             "sec_edgar": sec_targets,
         }
         if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+            from btx_omni.providers.sample.expansion import expansion_context
             from btx_omni.providers.sample.kratos import context
             from btx_omni.providers.sample.risk_cases import risk_context
-            from btx_omni.providers.sample.expansion import expansion_context
             self.monitor.curated_contexts = (context(), risk_context(anchor=self.settings.demo_as_of_date),
                 risk_context(confidence='LOW', anchor=self.settings.demo_as_of_date), expansion_context())
         if repository:
@@ -289,7 +297,6 @@ class PocRuntime:
         """Return the configured provider-neutral commercial read projection."""
         return CommercialReadService(self.environment()).account_snapshot(canonical_account_id)
 
-    @staticmethod
-    def observed_at() -> datetime:
+    def observed_at(self=None) -> datetime:
         from btx_omni.core.clock import as_of_datetime
-        return as_of_datetime()
+        return as_of_datetime(self.settings.demo_as_of_date if self is not None else None)

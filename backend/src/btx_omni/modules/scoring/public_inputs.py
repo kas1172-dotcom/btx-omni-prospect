@@ -79,7 +79,7 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
 
     def factor(points, ids, reason, raw=None):
         return FactorInput(Decimal(points) if points is not None and ids else None, ids, reason,
-                           raw_value=raw, period=now.date().isoformat(), truth_class='PUBLIC_SOURCE')
+                           raw_value=raw, period=now.date().isoformat(), truth_class='POC_SCENARIO' if event.provenance.synthetic else 'PUBLIC_SOURCE')
 
     inputs = {
         'source_reliability': factor(source_points, source_evidence, 'Reliability follows the authenticated source category, not commercial relevance.', tier),
@@ -91,6 +91,12 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
         'freshness': factor(freshness, source_evidence,
             f'Fact freshness uses the rubric’s {window // 24}-day window; collection time does not reset publication age.', published.isoformat() if published else None),
     }
+    # R1/R2: retain the explicit section-4 zero freshness band, but do not
+    # present expired source observations as a current High confidence score.
+    if age is not None and age > window:
+        from dataclasses import replace
+        inputs = {key: replace(value, evidence_state='STALE') if key != 'freshness' else value
+                  for key, value in inputs.items()}
     # Persistence may reorder payload keys. Hash scoring inputs canonically,
     # not repr(event/observation), so worker and API reads share one identity.
     revision = sha256(json.dumps({'version': VERSION, 'event': event.id,
@@ -127,7 +133,7 @@ def public_risk_assessment(event, observation, *, now):
         inputs[key] = FactorInput(Decimal(points) if points is not None and ids else None, ids,
             f'{key.capitalize()}: source-scoped observations follow rubric v2; evidence is {state}.' if points is not None
             else f'{key.capitalize()}: quantified, scoped evidence is missing.',
-            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='PUBLIC_SOURCE', evidence_state=state)
+            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='POC_SCENARIO' if event.provenance.synthetic else 'PUBLIC_SOURCE', evidence_state=state)
     revision = sha256(repr((RISK_INPUT_VERSION, event.id, sorted(facts.items()), observation.source_version if observation else None)).encode()).hexdigest()
     result = assess('risk_severity', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
                     revision=revision, inputs=inputs, eligible=True)
@@ -140,6 +146,7 @@ def public_risk_assessment(event, observation, *, now):
                    else 'RESEARCH_FURTHER' if score >= 40 else 'MONITOR' if confirmed else 'FEED_ONLY')
     result.update({'input_configuration_version': RISK_INPUT_VERSION, 'band': severity_band,
                    'evidence_state': state,
+                   'synthetic': event.provenance.synthetic, 'data_mode': event.provenance.data_mode.value,
                    'evidence_confidence_band': 'HIGH' if confirmed else 'MEDIUM' if confidence is not None and confidence >= 40 else 'LOW',
                    'disposition': disposition})
     return result

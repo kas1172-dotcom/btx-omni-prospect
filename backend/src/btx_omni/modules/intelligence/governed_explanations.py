@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from btx_omni.ai.contracts import (
     GovernedExplanation,
@@ -12,6 +12,7 @@ from btx_omni.ai.contracts import (
     LanguageProviderError,
     ProviderStatus,
 )
+from btx_omni.core.clock import as_of_datetime
 
 
 @dataclass(frozen=True)
@@ -78,7 +79,7 @@ def seller_projection(value: ExplanationProjection) -> dict:
 class GovernedExplanationService:
     """Called by bounded processing only. It cannot replace deterministic inputs."""
     def process(self, request: GovernedExplanationRequest, provider: LanguageProvider, repository: object, *, subject_key: str, now: datetime | None = None, retry_policy: ExplanationRetryPolicy | None = None) -> ExplanationProjection:
-        clock = now or datetime.now(UTC)
+        clock = now or as_of_datetime()
         model = str(getattr(getattr(provider, "config", None), "model", ""))
         key = cache_key(request, model=model)
         cached = repository.governed_explanation(subject_key, request.explanation_type.value, key)

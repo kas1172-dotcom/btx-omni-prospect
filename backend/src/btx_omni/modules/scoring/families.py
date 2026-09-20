@@ -144,7 +144,7 @@ def assess(
         "status": "BLOCKED" if blocking_constraints else "INELIGIBLE" if not eligible else "SCORED" if score is not None else "INSUFFICIENT_EVIDENCE",
         "eligible": eligible, "eligibility_reasons": eligibility_reasons,
         "blocking_constraints": blocking_constraints, "factors": factors,
-        "data_coverage": {"family": "data_coverage", "subject_id": subject_id, "present": len(observed_fields), "applicable": len(required_fields), "ratio": coverage, "missing_fields": sorted(set(required_fields) - set(observed_fields)), "missing_factors": missing, "factor_coverage": factor_coverage},
+        "data_coverage": {"family": "data_coverage", "rule_version": VERSION, "subject_id": subject_id, "present": len(observed_fields), "applicable": len(required_fields), "ratio": coverage, "score": coverage * 100, "missing_fields": sorted(set(required_fields) - set(observed_fields)), "missing_factors": missing, "factor_coverage": factor_coverage},
         "interpretation": family.interpretation,
         "what_would_change_result": tuple(
             f"Verify current {f['key'].replace('_', ' ')} evidence; its fixed weight is {f['weight']} points."
@@ -193,6 +193,8 @@ def public_risk_rollup(events: tuple[dict, ...], *, monitoring_complete: bool = 
         unique[identity] = event
     if not unique:
         return {"score": Decimal(0) if monitoring_complete else None, "independent_event_ids": (), "uplift": 0,
+                "configuration_version": VERSION, "rule_version": VERSION,
+                "score_range": {"low": Decimal(0), "high": Decimal(0) if monitoring_complete else Decimal(100)},
                 "monitoring_complete": monitoring_complete,
                 "interpretation": "No confirmed active public risk." if monitoring_complete else "Monitoring coverage is incomplete; public risk is not assumed to be zero."}
     ranked = sorted(unique.values(), key=lambda e: (-Decimal(str(e["severity"])), e["underlying_event_id"]))
@@ -203,14 +205,15 @@ def public_risk_rollup(events: tuple[dict, ...], *, monitoring_complete: bool = 
     uplift = 10 if len(additional_domains) >= 2 else 5 if additional_domains else 0
     return {"score": min(Decimal(100), Decimal(str(ranked[0]["severity"])) + uplift),
             "independent_event_ids": tuple(e["underlying_event_id"] for e in ranked),
-            "uplift": uplift, "configuration_version": VERSION,
+            "uplift": uplift, "configuration_version": VERSION, "rule_version": VERSION,
             "calibration": "Rubric v2: each additional material domain requires severity >=40 and confidence >=70."}
 
 
 def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | None,
                           public_score: Decimal | None, public_confirmed: bool,
                           convergence_evidence_ids: tuple[str, ...] = (),
-                          critical_override_evidence_ids: tuple[str, ...] = ()) -> dict:
+                          critical_override_evidence_ids: tuple[str, ...] = (),
+                          internal_range: Mapping[str, object] | None = None) -> dict:
     """Agreed 60/40 roll-up and non-dilution floors; no fabricated prospect risk."""
     for value in (internal_score, public_score):
         if value is not None and (not value.is_finite() or not 0 <= value <= 100):
@@ -227,10 +230,34 @@ def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | N
     uplift = 5 if eligible and internal_score >= 60 and public_score >= 60 and convergence_evidence_ids else 0
     raw = Decimal(".60") * internal_score + Decimal(".40") * public_score + uplift if eligible else None
     score = min(Decimal(100), max(raw, *(floor for _, floor in floors))) if eligible and floors else raw
+    def bound(value, side, supplied=None):
+        if value is not None:
+            return value
+        result = Decimal(str((supplied or {}).get(side, 0 if side == 'low' else 100)))
+        if not result.is_finite() or not 0 <= result <= 100:
+            raise ValueError('Risk range endpoints must be governed indices')
+        return result
+    bounds = {}
+    for side in ('low', 'high'):
+        internal = bound(internal_score, side, internal_range)
+        public = bound(public_score if public_confirmed else None, side)
+        value = Decimal('.6') * internal + Decimal('.4') * public
+        if internal >= 60 and public >= 60 and convergence_evidence_ids:
+            value += 5
+        value = max(value, Decimal(80) if internal >= 85 else 0,
+                    Decimal(75) if public >= 85 else 0, Decimal(85) if critical_override_evidence_ids else 0)
+        bounds[side] = _round(min(Decimal(100), value))
+    if bounds['low'] > bounds['high']:
+        raise ValueError('Risk range is reversed')
     return {"family": "overall_customer_risk", "configuration_version": VERSION,
             "rule_version": VERSION, "band": score_band('overall_customer_risk', score),
             "status": "INELIGIBLE" if not current_customer else "SCORED" if eligible else "INSUFFICIENT_EVIDENCE",
             "score": _round(score) if score is not None else None,
+            "score_range": bounds if current_customer else None,
+            "calculation_trace": {"internal_contribution": internal_score * Decimal('.6') if internal_score is not None else None,
+                                  "public_contribution": public_score * Decimal('.4') if public_score is not None and public_confirmed else None,
+                                  "pre_floor_total": raw, "convergence_uplift": uplift},
+            "what_would_change_result": ['Resolve missing or stale inputs; separately verify a convergence link or mandatory legal/safety block.'],
             "weights": {"internal_commercial_risk": 60, "public_risk_rollup": 40},
             "convergence_uplift": uplift, "convergence_evidence_ids": convergence_evidence_ids,
             "critical_override_evidence_ids": critical_override_evidence_ids,
@@ -278,6 +305,7 @@ def customer_risk_projection(
                 "signal_confidence": confidence_score,
                 "underlying_event_id": event_id,
                 "risk_domain": domains.get(str(getattr(brief, "event_type", None)), "unclassified"),
+                "synthetic": bool(risk.get('synthetic')), "data_mode": risk.get('data_mode'),
             }
         )
         if active and confidence_score is not None and Decimal(str(confidence_score)) >= 70 and confidence.get("status") == "SCORED":
@@ -293,6 +321,7 @@ def customer_risk_projection(
         public_confirmed=bool(confirmed_event_ids) or monitoring_complete,
         convergence_evidence_ids=convergence_evidence_ids,
         critical_override_evidence_ids=critical_override_evidence_ids,
+        internal_range=internal_decision.get('score_range'),
     )
     return {
         "account_id": account_id,

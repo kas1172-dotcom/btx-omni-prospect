@@ -4,7 +4,7 @@ Status: Tiers 1 and 2 verified; Tier 3 in progress.
 
 ## Tier checkpoints
 
-## Generated catalog counts
+### Generated catalog counts
 
 Generated 2026-09-20 by existing `build_sample_environment()` and `enhance_environment(base)`; aggregate lengths only, no reference-record content exported. The base has **34 researched accounts**, not 78. Canonical totals include existing reference identities and are not counts of verified public companies.
 
@@ -23,6 +23,10 @@ Reproduce with the local Python interpreter from `backend`: prepend `os.path.abs
 
 Item 3.4: stale current-count claims in WORKFLOW, research index and acceptance matrix now point here. Historical input reports are explicitly marked historical. `SampleRepository.seed()` in `backend/src/btx_omni/persistence/repository.py` is **dead code in the inspected repository**: `rg -n 'SampleRepository|\.seed\(' backend -g '*.py'` finds only its definition, no callers. It also expects a retired `environment.ranks` attribute. It was not executed or deleted; external callers cannot be ruled out. Runtime composition, not this method, selects the enhancement.
 
+### Verified checkpoints
+
+Tier 3: **877 backend tests passed**, 8 dependency deprecation warnings, no deselection/xfail (309.43 seconds). Frontend typecheck, ESLint and production build passed; **87 frontend tests passed**. This adds 21 backend and 3 frontend tests relative to Tier 2, with no remaining failures. The final backend run used the loopback-only PostgreSQL harness below. Targeted evidence-budget/Gemini-contract checks: 46 passed; final targeted public-signal, award and journey checks: 38 passed. `git diff --check` and targeted Ruff checks passed. No live Gemini invocation or browser verification is claimed.
+
 Tier 2: **856 backend tests passed**, 8 dependency warnings, no deselection/xfail (202.94 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Ten more backend tests than Tier 1. Tag: `tier2-complete`.
 
 Tier 1: **846 backend tests passed**, 8 dependency deprecation warnings, no deselection/xfail (373.08 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Compared with the first valid local PostgreSQL checkpoint (829 passed / 3 failed), all failures are resolved and new fixture assertions are included. Tag: `tier1-complete`.
@@ -30,6 +34,32 @@ Tier 1: **846 backend tests passed**, 8 dependency deprecation warnings, no dese
 Full backend command (from this worktree's `backend`, using the existing Python 3.11 interpreter): set `PYTHONDONTWRITEBYTECODE=1`, `BTX_DATABASE_URL` to the task-owned loopback PostgreSQL database, `BTX_MONITOR_MODE=disabled`, and an empty `BTX_GEMINI_API_KEY`; prepend the absolute local `src` to `sys.path`; install a Python audit hook rejecting non-loopback `socket.connect`; run `pytest.main(['-q', '--tb=short', '-p', 'no:cacheprovider'])`. Frontend commands: `npm run typecheck`, `npm run lint`, `npm run build`, `node --test --test-reporter=dot tests/*.test.mjs`. Existing reference JSON may be loaded by existing code, but was not printed, copied, edited or used to author additions.
 
 ## Decisions made without user input
+
+- Evidence-budget validation found that the rich Watch history/decision reads were 90,184/115,189 characters and would be rejected by the existing 24,000-character per-read limit. Kept both hard budgets unchanged. Oversized reads now return explicit indexes, with account-scoped `read_decision` and `read_rubric_example` drill-downs preserving exact factor evidence and calculations. Direct API/full canonical reads remain intact. `test_sample_model_budgets.py` exercises the actual provider-selection loop, verifies completion under both budgets, and compares drill-down factors byte-for-value with the full canonical result.
+
+- Final R1/R2 review found that expired Signal Confidence still retained a numeric total in a legacy test. Section 4's freshness contribution remains its explicit zero band, while the other expired observations become Unknown with history retained: the current assessment has no point score and range 0–90. Updated `test_public_signal_assessment.py:test_source_change_invalidates_decision_and_old_publication_loses_freshness` to assert Unknown/range rather than its old 49.11 total. This is a rubric correction, not a weakened test; the 30.1-day service-level vector asserts the same result. Fresh 3/9-day vectors are unchanged. The legacy account-context compatibility projection now also carries the v2.0 rule version; its old configuration identifier is preserved.
+
+- Final verification (3.5) found business-date API paths still using the operational clock. Planning targets, itinerary persistence, snoozes and SAMPLE CRM deadlines now use the as-of provider. Minimal test/adaptor runtimes without settings use that same provider, not wall time. Authentication, receipt ordering, retention and deadline timers remain operational clocks.
+- The runtime's instance date now overrides the global default. Enhancement plus durable commercial import is rejected explicitly: a durable revision must not silently replace the selected demonstration view. This is an opt-in, local read-only scenario selector, not a production import path.
+- J1 receives a nine-stop, prefilled, read-only itinerary with origin and purpose. It has no contact names, meetings, driving times or route-provider claims. A saved user itinerary wins; null version means the draft has never been persisted. Existing optimistic concurrency remains intact.
+- Stale/Conflicting pursuit and Prospect Fit factors retain their linked history while contributing Unknown. Added missing rule-version/trace metadata on Prospect Fit, Data Coverage and queue receipts. No weights changed in this final pass.
+- Combined customer risk now exposes a fixed-weight range when an input is unknown. Its upper bound also evaluates possible rubric floors; e.g. internal 52.5/public unknown is 31.5–75, not an unjustified point score. Confirmed current legal/safety service evidence explicitly reaches the wrapper; absent or expired confirmation does not trigger a floor.
+- Gemini's canonical decision read now receives the same server-owned public/internal/combined risk projection as the API, not merely the internal score. Synthetic risk factors are labeled POC_SCENARIO, not PUBLIC_SOURCE. Account and Map disclosures expose the authored narratives, hypotheses and numerical traces; Medical context remains separate from account evidence.
+- React best-practices review: reused existing disclosures and canonical-record rendering; no new fetch waterfalls, render-time side effects or conditional hooks. New list identities remain deterministic. UI behavior is covered by typecheck, lint, build and contract tests; no live browser/Gemini validation is claimed.
+
+### Final alignment before/after (3.5)
+
+| Code | Before | After / authority |
+|---|---|---|
+| `api/runtime.py:observed_at` | Ignored instance date | Instance DEMO_AS_OF_DATE wins; R1/R6 |
+| planning/actions/itinerary API; technical-fit/explanation defaults | Mixed wall and business dates | As-of provider for business decisions, operational timers unchanged; amendment 2 |
+| `families.overall_customer_risk` | Unknown input suppressed point score but gave no range | Fixed 60/40 bounds, explicit floor/uplift trace; R2/R8 |
+| `families.customer_risk_projection` / commercial API | Explicit safety input available only to direct callers | Fresh confirmed source service events forwarded; no inference from a high risk number; R8 |
+| pursuit and Prospect Fit inputs | Expired inputs lost history IDs; fallback cohort could ignore age | Retained historical IDs/state, expired structural/access evidence Unknown; R1/R2 |
+| Prospect Fit / Data Coverage / action receipts | Incomplete version/trace metadata | Versioned exact contributions, coverage score and queue sort-key trace; section 15 |
+| `CommercialToolSession` | Public/overall risks absent from canonical decision read | Same server-owned wrapper, separate narratives and numeric trace; section 15 |
+
+Tests added rather than weakening existing assertions. The first Tier 3 full run had 863 passes / 3 failures caused by lightweight adapters missing settings/clock methods. Provider-based compatibility fallbacks fix those without changing the tests. Later final results supersede this checkpoint.
 
 - Item 3.3 prioritizes already demonstrated Boeing/Kratos and Medical Device context. No additional real-company risk allegation was fabricated to satisfy the SEC/WARN wish list. The high/low-confidence risk exercises remain explicitly fictional. No SAM.gov, USAspending, SEC or WARN fact is claimed as newly verified for these scenarios.
 

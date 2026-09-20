@@ -129,6 +129,7 @@ class AccountAttractivenessResult:
     hypothesis: bool = True
     interpretation_note: str = INTERPRETATION_NOTE
     score_range: Mapping[str, Decimal] = field(default_factory=dict)
+    rule_version: str = 'BTX_SCORING_RUBRIC_V2.0'
 
 
 @dataclass(frozen=True)
@@ -148,6 +149,7 @@ class SellerAttractivenessProjection:
     evidence_ids: tuple[str, ...]
     exclusion_reason: str | None = None
     score_range: Mapping[str, Decimal] = field(default_factory=dict)
+    rule_version: str = 'BTX_SCORING_RUBRIC_V2.0'
 
 
 def subfactor_path(factor_key: str, subfactor_key: str) -> str:

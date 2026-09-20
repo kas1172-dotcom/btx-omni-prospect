@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from hashlib import sha256
 from typing import Literal
 
@@ -141,7 +141,7 @@ def _suggestions(runtime: PocRuntime, current: Principal) -> list[dict]:
     suggestions = project_suggestions(alerts, actions=runtime.work.repository.list(),
                                        visible_action_ids={item.id for item in runtime.work.list(current)},
                                        commercial_revision=sample.commercial_revision)
-    feedback = runtime.work_feedback.current(current.user_id, tuple(item['id'] for item in suggestions), now=datetime.now(UTC),
+    feedback = runtime.work_feedback.current(current.user_id, tuple(item['id'] for item in suggestions), now=runtime.observed_at(),
                                             source_revisions={item['id']: item['revision'] for item in suggestions})
     return [{**item, 'feedback': feedback.get(item['id']),
              'dismissed': feedback[item['id']]['hidden'] if item['id'] in feedback else item['dismissed']}
@@ -173,7 +173,7 @@ def undo_feedback_receipt(receipt_id: str, body: UndoFeedbackReceipt, runtime: P
         raise HTTPException(404, 'Feedback receipt not found in your scope.')
     try:
         receipt = runtime.work_feedback.append(user_id=current.user_id, suggestion_id=original['suggestion_id'],
-                                              account_id=original['account_id'], reason='UNDO', note='', now=datetime.now(UTC),
+                                              account_id=original['account_id'], reason='UNDO', note='', now=runtime.observed_at(),
                                               idempotency_key=body.idempotency_key, expected_feedback_id=receipt_id)
     except FeedbackConflict as error:
         raise HTTPException(409, str(error)) from error
@@ -330,7 +330,7 @@ def dismiss_suggestion(
     prior_id = feedback['id'] if feedback else None
     try:
         runtime.work_feedback.append(user_id=current.user_id, suggestion_id=suggestion_id, account_id=suggestion['account_id'],
-                                     reason='NOT_RELEVANT', note='Personal relevance dismissal; no task status changed.', now=datetime.now(UTC),
+                                     reason='NOT_RELEVANT', note='Personal relevance dismissal; no task status changed.', now=runtime.observed_at(),
                                      idempotency_key=sha256(f'{current.user_id}:{suggestion_id}:{prior_id}:dismiss'.encode()).hexdigest(),
                                      expected_feedback_id=prior_id, source_revision=body.expected_revision,
                                      current_source_revision=suggestion['revision'])
@@ -344,7 +344,7 @@ def record_suggestion_feedback(suggestion_id: str, body: SuggestionFeedbackInput
     suggestion = next((item for item in _suggestions(runtime, current) if item['id'] == suggestion_id), None)
     if suggestion is None:
         raise HTTPException(404, 'Canonical suggestion not found.')
-    now = datetime.now(UTC)
+    now = runtime.observed_at()
     try:
         receipt = runtime.work_feedback.append(user_id=current.user_id, suggestion_id=suggestion_id,
                                               account_id=suggestion['account_id'], now=now,
@@ -415,8 +415,10 @@ def change_status(
             ledger = runtime.environment().commercial_ledgers.get(action.account_id, {})
             sources = [r for r in ledger.get('actions', []) if ('commercial_action', r['action_id']) in action.context_referents]
             if sources:
+                from btx_omni.modules.commercial.evidence import (
+                    resolve_commercial_evidence,
+                )
                 from btx_omni.providers.sample.enhancement import completion_gaps
-                from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
                 resolved = [resolve_commercial_evidence(ledger, eid) for eid in action.evidence_ids]
                 gaps = completion_gaps(sources[0], [r['record'] for r in resolved if r])
                 if gaps:
@@ -468,7 +470,7 @@ def crm_preview(
     current: Principal = Depends(principal),
 ):
     try:
-        return _crm_workflow(runtime).preview(action_id, expected_version=body.expected_version, principal=current, now=datetime.now(UTC))
+        return _crm_workflow(runtime).preview(action_id, expected_version=body.expected_version, principal=current, now=runtime.observed_at())
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
 
@@ -484,7 +486,7 @@ def crm_proposals(action_id: str, runtime: PocRuntime = Depends(get_runtime), cu
 @router.post('/{action_id}/crm-proposal-decision')
 def crm_proposal_decision(action_id: str, body: CrmDecisionInput, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
     try:
-        return _crm_workflow(runtime).decide(action_id, **body.model_dump(), principal=current, now=datetime.now(UTC))
+        return _crm_workflow(runtime).decide(action_id, **body.model_dump(), principal=current, now=runtime.observed_at())
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
 
@@ -504,6 +506,6 @@ def crm_execute(
     if body is None:
         raise HTTPException(422, 'A saved proposal, current approval and retry key are required.')
     try:
-        return _crm_workflow(runtime).execute_sample(action_id, **body.model_dump(), principal=current, now=datetime.now(UTC))
+        return _crm_workflow(runtime).execute_sample(action_id, **body.model_dump(), principal=current, now=runtime.observed_at())
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error

@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.session import principal
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.domain.work import Principal, PrincipalRole
 from btx_omni.modules.work.planning_gaps import sales_planning_gap
 from btx_omni.persistence.account_planning import AccountPlanningConflict
@@ -44,7 +45,8 @@ def _account(runtime: PocRuntime, account_id: str):
 def planning(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
     sample = runtime.environment()
     view = runtime.account_planning.view(current.user_id)
-    if runtime.settings.sample_enhancement_enabled and runtime.settings.data_mode.upper() == 'SAMPLE':
+    settings = getattr(runtime, 'settings', None)
+    if getattr(settings, 'sample_enhancement_enabled', False) and settings.data_mode.upper() == 'SAMPLE':
         from btx_omni.providers.sample.planning_cases import planning_view
         view = planning_view(view, sample)
     return {
@@ -67,7 +69,7 @@ def designate_partnership(account_id: str, body: PartnershipInput,
         return runtime.account_planning.designate(
             account_id=account_id, designated=body.designated, reason=body.reason.strip(),
             actor_id=current.user_id, expected_version=body.expected_version,
-            idempotency_key=body.idempotency_key, now=datetime.now(UTC),
+            idempotency_key=body.idempotency_key, now=getattr(runtime, 'observed_at', as_of_datetime)(),
         )
     except AccountPlanningConflict as error:
         raise HTTPException(409, str(error)) from error
@@ -77,14 +79,14 @@ def designate_partnership(account_id: str, body: PartnershipInput,
 def save_shortlist(body: ShortlistInput, runtime: PocRuntime = Depends(get_runtime),
                    current: Principal = Depends(principal)):
     _account(runtime, body.account_id)
-    if body.active and body.target_date and body.target_date < datetime.now(UTC).date():
+    if body.active and body.target_date and body.target_date < getattr(runtime, 'observed_at', as_of_datetime)().date():
         raise HTTPException(422, "An active pursuit target date cannot be in the past.")
     try:
         return runtime.account_planning.save_shortlist(
             user_id=current.user_id, account_id=body.account_id, kind=body.kind,
             objective=body.objective.strip(), target_date=body.target_date.isoformat() if body.target_date else None,
             active=body.active, expected_version=body.expected_version,
-            idempotency_key=body.idempotency_key, now=datetime.now(UTC),
+            idempotency_key=body.idempotency_key, now=getattr(runtime, 'observed_at', as_of_datetime)(),
         )
     except AccountPlanningConflict as error:
         raise HTTPException(409, str(error)) from error

@@ -539,7 +539,9 @@ def signal_briefs_for_monitor(
     before the window is applied, preventing unrelated recent events from
     displacing the selected account's assessment.
     """
+    from btx_omni.core.clock import as_of_datetime
     from btx_omni.monitor.service import current_event_contexts
+    now = now or as_of_datetime(getattr(getattr(monitor, 'settings', None), 'demo_as_of_date', None))
 
     repository = getattr(monitor, "repository", None)
     selected_assessments: tuple[dict, ...] = ()

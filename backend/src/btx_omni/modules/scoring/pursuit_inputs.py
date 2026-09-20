@@ -90,7 +90,8 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
                     or opportunity['opportunity_id'] in record.get('related_record_ids', [])
                     or (record.get('component_id') == opportunity['component_id']
                         and record.get('quote_revision_id') == opportunity['quote_revision_id']))
-        valid = scoped and current and bool(ids) and all(related(item) for item in resolved)
+        linked = scoped and bool(ids) and all(related(item) for item in resolved)
+        valid = linked and current
         points = factor_points(key, raw) if valid else None
         if key == 'requirement_fit':
             if valid and raw.get('critical_requirements_pass') is False:
@@ -104,8 +105,8 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
                 blocks.append('Capacity mitigation is required before committing the work.')
             if key == 'material_readiness' and points == 0:
                 blocks.append('A critical material is late; confirm an approved substitute or revised plan.')
-        inputs[key] = FactorInput(points, ids if valid else (),
+        inputs[key] = FactorInput(points, ids if linked else (),
             f"{key.replace('_', ' ').capitalize()}: reviewed evidence for this pursuit." if points is not None else f"{key.replace('_', ' ').capitalize()}: current, linked pursuit evidence is still required.",
-            raw_value=str({k: v for k, v in raw.items() if k not in {'evidence_ids', 'opportunity_id'}}) if valid else None,
+            raw_value=str({k: v for k, v in raw.items() if k not in {'evidence_ids', 'opportunity_id'}}) if linked else None,
             period=account['as_of'], evidence_state=state)
     return inputs, tuple(blocks), tuple(missing)
