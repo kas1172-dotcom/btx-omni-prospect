@@ -104,6 +104,16 @@ def project_route_graph(sample: SampleEnvironment, *, as_of: date, lookback_days
                     scoped_observed = max(date.fromisoformat(r["recognized_date"]) for r in scoped)
                     edges.append(RouteEdge(f"experience:{fid}:{cid}", aliases[fid], aliases[cid], "PRODUCED_ACCEPTED_COMPONENT", tuple(sorted(r["revenue_event_id"] for r in scoped)), tuple(f"accepted-order:{oid}" for oid in scoped_orders), ("AS-COMMERCIAL-V2",), "POC_SCENARIO_RECORD", scoped_observed, account_id=aid, component_id=cid, program_id=pid, facility_id=FACILITY_CROSSWALK.get(fid, fid), accepted_order_ids=scoped_orders, inverse_modes=EXPERIENCE_MODES, constraint_ids=component_experience[cid][3]))
 
+    for aid, account in sample.commercial_ledgers.items():
+        for row in account.get('route_evidence', []):
+            if not (row.get('synthetic') is True and row.get('data_mode') == 'SAMPLE'):
+                raise ValueError('Authored route evidence must remain explicitly synthetic.')
+            if not all(eid in records_by_id for eid in row['evidence_ids']):
+                raise ValueError('Unresolved synthetic route evidence')
+            edges.append(RouteEdge(row['id'], aliases[row['source_facility_id']], aliases[row['target_facility_id']],
+                'COORDINATED_HANDOFF', tuple(row['evidence_ids']), (row['id'],), (row['source_url'],), 'POC_SCENARIO_RECORD',
+                date.fromisoformat(row['observed_on']), account_id=aid, component_id=row['component_id'],
+                accepted_order_ids=tuple(row['accepted_order_ids'])))
     imported_seed_ids, pending_seed_ids = [], []
     for seed in catalog["edges"]:
         if seed["from_id"] not in aliases or seed["to_id"] not in aliases:

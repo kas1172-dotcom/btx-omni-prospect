@@ -13,6 +13,7 @@ export type RankedRoute = {
 }
 export type RelationshipQuery = { source_account_id: string; mode: RelationshipMode; depth: number; source_component_id?: string; target_component_id?: string; target_account_id?: string; selected_path_id?: string; node_budget: number; edge_budget: number; expanded_node_ids?: string[]; context_page?: number; expected_graph_revision?: string; include_record_context?: boolean }
 export type RankedRelationships = {
+  unsupported_links?: Array<{ from_id: string; to_id: string; state: string; reason: string }>
   mode: RelationshipMode; groups: Record<string, { routes: RankedRoute[] }>; evaluated_routes?: RankedRoute[]; research_candidates: RankedRoute[]
   candidate_count: number; additional_route_count?: number; search_complete: boolean; searched_depth: number; examined_count: number; stop_reason?: string
   eligible_graph_revision?: string; rubric_version?: string; commercial_as_of?: string[]; reason?: string

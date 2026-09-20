@@ -39,6 +39,8 @@ def enhance_environment(base, *, anchor=None):
     records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor), **{a['account_id']: a for a in additions}, **regional}
     from btx_omni.providers.sample.expansion import add_boeing_expansion
     add_boeing_expansion(records['boeing'])
+    from btx_omni.providers.sample.relationship_cases import prepare_relationships
+    prepare_relationships(records)
     projected = project_commercial_records(base, records, revision=VERSION)
     # Preserve shared graph identity even when a selected commercial scenario changes.
     preserve = {}
@@ -95,7 +97,14 @@ def reconcile_months(account):
         ):
             row[field] = sum(r[value] for r in account[collection] if r[day].startswith(period))
         row['closing_backlog_minor'] = opening + row['bookings_minor'] - row['shipments_minor'] - row['cancellations_minor']
-        row['business_unit_allocations'] = [synthetic_record(business_unit_id='BU-ERA', **{k: row[k] for k in ('revenue_minor', 'bookings_minor', 'shipments_minor')})]
+        lines = {r['order_line_id']: r for r in account['order_lines']}
+        orders = {r['order_id']: r for r in account['orders']}
+        row['business_unit_allocations'] = []
+        for bu in sorted({r['business_unit_id'] for r in account['components']}):
+            row['business_unit_allocations'].append(synthetic_record(business_unit_id=bu,
+                bookings_minor=sum(r['line_total_minor'] for r in lines.values() if r['business_unit_id'] == bu and orders[r['order_id']]['ordered_date'].startswith(period)),
+                revenue_minor=sum(r['revenue_minor'] for r in account['revenue_events'] if lines[r['order_line_id']]['business_unit_id'] == bu and r['recognized_date'].startswith(period)),
+                shipments_minor=sum(r['value_minor'] for r in account['shipments'] if lines[r['order_line_id']]['business_unit_id'] == bu and r['shipped_date'].startswith(period))))
         account['monthly_commercial_history'].append(row)
         opening = row['closing_backlog_minor']
     totals = {k: sum(r[k] for r in account['monthly_commercial_history']) for k in ('revenue_minor', 'bookings_minor', 'shipments_minor', 'cancellations_minor', 'cost_of_revenue_minor')}

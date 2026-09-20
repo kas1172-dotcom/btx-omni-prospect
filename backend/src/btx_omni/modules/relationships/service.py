@@ -148,8 +148,10 @@ class RelationshipIntelligenceService:
                 "predicate": edge.predicate,
                 "inverse": inverse,
                 "truth_class": edge.truth_class,
-                "source_url": public_evidence.get("url") if public_evidence else None,
+                "source_url": public_evidence.get("url") if public_evidence else ('sample://fictional/' + edge.evidence_ids[0] if edge.truth_class == 'POC_SCENARIO_RECORD' and edge.evidence_ids else None),
                 "source_record_id": edge.evidence_ids[0] if edge.evidence_ids else None,
+                "observed_on": edge.observed_on,
+                "freshness_days": (query.as_of - edge.observed_on).days if edge.observed_on else None,
             }
 
         for route in [*routes, *recommendations, *result["research_candidates"]]:
@@ -162,6 +164,7 @@ class RelationshipIntelligenceService:
             ]
             route["component_context"] = [components[cid] for cid in sorted({graph.edges[eid].component_id for eid in route["edge_ids"] if graph.edges[eid].component_id in components})]
             route["constraints"] = [metadata["constraints"][cid] for cid in route["constraint_ids"]]
+            route['weakest_link'] = min(route['factor_reasons'], key=lambda r: (r['B'], r['E'], r['F'], r['edge_id']), default=None)
             route["next_action"] = "Review recovery and feasibility constraints before making a commitment." if route["constraint_ids"] else "Review transferable experience and technical qualification; capability alone does not establish capacity." if query.mode != "contact_candidates" else "Verify the published role and identify the operational buyer; no introduction is established."
         from btx_omni.modules.relationships.neighborhood import project_neighborhood
         view = project_neighborhood(graph, query, routes, selected, expanded_node_ids=expanded_node_ids,

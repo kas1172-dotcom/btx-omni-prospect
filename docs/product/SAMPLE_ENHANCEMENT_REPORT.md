@@ -27,6 +27,12 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Validation
 
+### Item 2.4 relationship journeys
+
+`relationship_cases.py` authors one fictional manufacturing goal with two older accepted inspection orders and current machining/inspection coordination evidence. The live canonical graph/ranking service produces distinct 2-, 3- and 4-edge routes; the 4-edge route outranks the shorter older route. It stores its separate `BTX_RELATIONSHIP_POC_1` receipt, edge dates/source IDs, factor reasons and explicit weakest link. An unsupported fictional-company/Boeing link is excluded from the graph and displayed separately. `test_j8_j9_longer_evidenced_route_beats_shorter_older_route` verifies ordering, dates, stable IDs and no cycles/duplicates.
+
+Before/after: added a narrowly typed commercial-fit template for an evidenced manufacturing handoff; no personal-access template or probability score was added. New components now have explicit source and facility keys required by the existing graph (missing keys previously crashed the enhanced scenario). Monthly BU allocations are derived from actual synthetic line ownership rather than assigning every new record to ERA. Relationship query defaults now use the business clock. No new account/capability enum value, schema or integration change.
+
 ### Item 2.3 external-risk exercises
 
 Added a clearly **UNCONFIRMED fictional** consolidation hypothesis (severity 76.25, confidence 37.75 Low, Validate immediately) alongside the fictional high-confidence exercise (76.25, confidence 88.75 High, Escalate now). Source locators, publisher, dates, scope, mitigation and applicability questions are retained; both carry `curated_monitor_style`, synthetic/SAMPLE and no real-person attribution. `test_sample_external_risk.py` verifies the two dispositions and unconfirmed wording.

@@ -1,6 +1,6 @@
 """Authenticated relationship queries; one configured SAMPLE namespace."""
 
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -10,6 +10,7 @@ from btx_omni.api.accounts import get_runtime
 from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.session import principal
+from btx_omni.core.clock import as_of_date
 from btx_omni.domain.work import Principal
 from btx_omni.modules.relationships.network_projection import project_network_graph
 from btx_omni.modules.relationships.routes import RouteQuery
@@ -153,7 +154,7 @@ def relationship_query(
         f"TENANT:{actor.tenant_id}:account:{body.source_account_id}" if network_projection else f"SAMPLE:account:{body.source_account_id}",
         frozenset(target_ids),
         body.mode,
-        body.as_of or datetime.now(UTC).date(),
+        body.as_of or as_of_date(runtime.settings.demo_as_of_date),
         frozenset(accounts),
         body.source_component_id,
         body.target_component_id,
@@ -173,6 +174,7 @@ def relationship_query(
         }
         result = (service.ranked_network_routes(*network_projection, query, **options)
                   if network_projection else service.ranked_routes(query, **options))
+        result['unsupported_links'] = source.get('unsupported_route_links', [])
         if not target_ids:
             result["reason"] = (
                 "No documented person-to-person introduction is established."
