@@ -1,9 +1,10 @@
 from decimal import Decimal
+
 import pytest
 
 from btx_omni.modules.commercial.ledger import validate_commercial_account
 from btx_omni.modules.scoring.commercial_decisions import customer_decisions
-from btx_omni.providers.sample.scoring_cases import customer, add_expansion
+from btx_omni.providers.sample.scoring_cases import add_expansion, customer
 
 
 def decide(case):
@@ -45,8 +46,8 @@ def test_opportunity_81_75_with_independent_qualified_durable_gates():
 
 def test_public_internal_and_combined_risk_are_separate():
     from btx_omni.core.clock import as_of_datetime
-    from btx_omni.monitor.briefs import signal_brief
     from btx_omni.modules.scoring.families import customer_risk_projection
+    from btx_omni.monitor.briefs import signal_brief
     from btx_omni.providers.sample.risk_cases import risk_context
     event, observation = risk_context()
     brief = signal_brief(event, observation, freshness_hours=720, now=as_of_datetime())

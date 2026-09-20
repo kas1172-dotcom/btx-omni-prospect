@@ -100,7 +100,8 @@ class MonitorService:
     watch_profiles: tuple[AccountWatchProfile, ...] = ()
     catalog: MonitorCatalog = field(default_factory=MonitorCatalog)
     watch_targets: dict[str, tuple[WatchTarget, ...]] = field(default_factory=dict)
-    clock: Callable[[], datetime] = field(default=as_of_datetime)
+    # Collection receipts are operational timestamps, not scoring observations.
+    clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     entity_candidate_resolver: EntityCandidateResolver | None = None
 
     @staticmethod
@@ -553,7 +554,7 @@ class MonitorService:
         durable_health: dict | None = None,
         last_run: dict | None = None,
     ) -> SourceOperationalStatus:
-        clock = now or datetime.now(UTC)
+        clock = now or as_of_datetime()
         adapter = self.registry[source_id]
         available, unavailable_reason = adapter.available(self.settings)
         health = durable_health or self.health.get(source_id)

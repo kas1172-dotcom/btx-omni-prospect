@@ -3,7 +3,11 @@ from datetime import date
 
 from btx_omni.core.clock import as_of_date, relative_date
 from btx_omni.modules.commercial.ledger import validate_commercial_account
-from btx_omni.providers.sample.enhancement import empty_ledger, reconcile_months, synthetic_record
+from btx_omni.providers.sample.enhancement import (
+    empty_ledger,
+    reconcile_months,
+    synthetic_record,
+)
 
 EXPANSION_BINS = {
     'program_durability.expected_production_horizon': 'FIVE_TO_NINE_YEARS',
@@ -129,8 +133,8 @@ def add_expansion(account, *, facility_id):
 
 def add_queue_examples(account, *, facility_id):
     """Same-customer escalation, fully assessed RFQ, and lower-priority cooling work."""
-    from btx_omni.modules.scoring.public_inputs import public_risk_assessment
     from btx_omni.core.clock import as_of_datetime
+    from btx_omni.modules.scoring.public_inputs import public_risk_assessment
     from btx_omni.providers.sample.risk_cases import risk_context
     add_expansion(account, facility_id=facility_id)
     opportunity = account['opportunities'][-1]

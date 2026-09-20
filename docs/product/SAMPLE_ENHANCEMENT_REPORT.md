@@ -4,6 +4,10 @@ Status: implementation in progress; no tier certified complete yet.
 
 ## Decisions made without user input
 
+- Monitor collection receipts retain an operational timestamp so successive real collection attempts remain ordered. Business evidence age and operational-status evaluation use the configured as-of provider; a collection timestamp never refreshes a publication date.
+- The existing API acceptance test expected an internal alert enum while the existing workflow test explicitly prohibited it. Section 15's plain-language requirement resolves this: both now require the existing human label. No scenario or assertion is removed.
+- Tier 1 verification also exposed an unresolved-research visibility gap. Added `research_signal_briefs` to the shared Today projection and merged it into the Research library without admitting Kratos to canonical Map/directory records.
+
 1. Used the existing isolated `C:/Users/Aruna/btx-sample-data-enhancement` worktree and branch. Unrelated changes in the original worktree are untouched.
 2. Imported the complete supplied Downloads rubric DOCX to Markdown, preserving the original text and tables. The DOCX lacks the promised R1–R10 preamble; explicit user amendments are recorded separately and override its erroneous examples. R9–R10 text is NOT FOUND and has not been invented.
 3. Kept the earlier preflight checkpoint as historical evidence, with a superseding status section. The nine-day Signal Confidence target is now 86.25, not 85.75.
@@ -19,11 +23,11 @@ Status: implementation in progress; no tier certified complete yet.
 
 ### Item 1.6 narrative and model evidence
 
-New quote notes, revision reasons, service narratives, function-only CRM notes, fictional program descriptions, capability constraints and mitigation notes live on the source-shaped records. `CanonicalCommercialReads.read_decisions` now passes the engine's numeric contribution, raw observation, evidence state, period, rule version, blocked weighted result and counterfactual text to Gemini; it previously stripped several of these fields. The model is not asked to recalculate totals.
+New quote notes, revision reasons, service narratives, function-only CRM notes, fictional program descriptions, capability constraints and mitigation notes live on the source-shaped records. `CommercialToolSession` now passes the engine's exact and displayed numeric contribution, raw observation, evidence state, period, rule version, blocked weighted result and counterfactual text to Gemini; it previously stripped several of these fields. The model is not asked to recalculate totals.
 
 The fixture-backed action queue now uses a leaf-computed RFQ score of 94, the service-computed public-risk disposition, and internal cooling work, in ranks 1/2/3. A different fictional customer has a confirmed synthetic safety-stop class-0 item. There are no invented named contacts or warm introductions. Fictional account briefings explicitly disclaim public verification.
 
-Local PostgreSQL full-run checkpoint: **829 passed, 3 failed**, no collection/setup errors and no expected failures (832 tests collected before later fixture additions). Failures were: an old fallback assertion expecting the enum rather than the friendly alert label; an account-level score-ranking assertion inconsistent with rubric sections 1/6; and a cross-surface test freezing the retired wall clock rather than the business clock. The first is addressed by retaining friendly labels plus stable alert codes; the second now asserts scoped-opportunity behavior, and the third freezes the clock provider (R1). No test was removed or deselected. The later final tier run supersedes this checkpoint.
+Local PostgreSQL full-run checkpoint: **829 passed, 3 failed**, no collection/setup errors and no expected failures (832 tests collected before later fixture additions). Failures were: an old fallback assertion expecting the enum rather than the friendly alert label; an account-level score-ranking assertion inconsistent with rubric sections 1/6; and a cross-surface test freezing the retired wall clock rather than the business clock. The first is addressed by consistently requiring friendly labels (section 15); the second now asserts scoped-opportunity behavior, and the third freezes the clock provider (R1). No test was removed or deselected. The later final tier run supersedes this checkpoint.
 
 ### Item 1.5 golden vectors
 

@@ -395,6 +395,7 @@ def build_command_center(
         "priority_briefing": (*alert_items, *signal_items),
         "current_signal_briefs": tuple(_brief_dict(item) for item in current),
         "saved_recent_signal_briefs": tuple(_brief_dict(item) for item in recent_saved),
+        "research_signal_briefs": tuple(_brief_dict(item) for item in briefs if item.seed_context and not item.canonical_account_ids),
         "upcoming_radar": tuple(_brief_dict(item) for item in upcoming),
         "market_hubs": tuple(market_hubs),
         "watched_accounts": tuple(watched_accounts),

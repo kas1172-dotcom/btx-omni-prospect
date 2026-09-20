@@ -10,7 +10,6 @@ from decimal import Decimal
 from hashlib import sha256
 
 from btx_omni.core.clock import evidence_state
-
 from btx_omni.modules.scoring.families import FactorInput, assess
 from btx_omni.modules.scoring.public_rules import (
     GOVERNMENT_SOURCES,

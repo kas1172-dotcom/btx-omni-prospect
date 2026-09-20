@@ -4,10 +4,15 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-
-from test_customer_health_v2 import scenario, inputs as health
+from test_customer_health_v2 import inputs as health
+from test_customer_health_v2 import scenario
 from test_public_signal_assessment import NOW, records
-from btx_omni.modules.scoring.families import FactorInput, assess, customer_risk_projection
+
+from btx_omni.modules.scoring.families import (
+    FactorInput,
+    assess,
+    customer_risk_projection,
+)
 from btx_omni.modules.scoring.public_inputs import public_risk_assessment
 from btx_omni.modules.scoring.public_rules import freshness_points
 from btx_omni.monitor.contracts import NormalizedClaim
@@ -55,7 +60,7 @@ def test_internal_snapshot_expires_not_historical_transactions():
 
 
 def test_wrapper_requires_explicit_convergence_and_critical_evidence():
-    kwargs = dict(account_id='fictional', current_customer=True, internal_decision={'score': 65}, signal_briefs=(), monitoring_complete=True)
+    kwargs = {'account_id': 'fictional', 'current_customer': True, 'internal_decision': {'score': 65}, 'signal_briefs': (), 'monitoring_complete': True}
     assert customer_risk_projection(**kwargs)['overall_customer_risk']['convergence_uplift'] == 0
     result = customer_risk_projection(**kwargs, critical_override_evidence_ids=('confirmed-safety-shutdown',))['overall_customer_risk']
     assert result['score'] == 85

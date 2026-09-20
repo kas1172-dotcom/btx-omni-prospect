@@ -85,6 +85,7 @@ class CommercialToolSession:
                     if "points" in value and "required_fields" in value:
                         return {"key": value["key"], "points": value["points"], "weight": value["weight"],
                                 "contribution": value.get('contribution'), "evidence_state": value.get('evidence_state'),
+                                "contribution_exact": value.get('contribution_exact'),
                                 "raw_value": value.get('raw_value'), "period": value.get('period'),
                                 "reason": value["reason"], "truth_class": value["truth_class"],
                                 "missing_fields": sorted(set(value["required_fields"]) - set(value["observed_fields"])),

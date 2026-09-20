@@ -137,7 +137,8 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     )
     assert dormant_omni.json()["recommended_action"]
     assert stale_omni.json()["recommended_action"]
-    assert "CROSS_BU_COORDINATION" in cross_bu.json()["content"]
+    # Rubric section 15 requires plain-language explanation, not an internal enum.
+    assert "Business-unit coordination" in cross_bu.json()["content"]
     assert external.json()["citations"] and conflict.json()["citations"]
 
 

@@ -2,13 +2,19 @@
 import json
 from hashlib import sha256
 
-from btx_omni.core.clock import as_of_datetime
 from btx_omni.core.classification import Classification
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.core.provenance import Provenance
 from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.monitor.contracts import (
-    EventEvidence, IntelligenceEvent, NormalizedClaim, ProgramResolution,
-    RawEvidenceReference, SourceIdentity, SourceObservation, SourceVersion,
+    EventEvidence,
+    IntelligenceEvent,
+    NormalizedClaim,
+    ProgramResolution,
+    RawEvidenceReference,
+    SourceIdentity,
+    SourceObservation,
+    SourceVersion,
 )
 from btx_omni.monitor.ontology import EventType, ResolutionState
 
@@ -18,7 +24,7 @@ IDENTITY = 'kratos-tdi-jdam-lr-2026-08'
 
 
 def payload():
-    return {
+    result = {
         'signal_id': IDENTITY, 'seed_type': 'curated_monitor_style', 'data_mode': 'SAMPLE',
         'retrieval_date': '2026-09-20', 'publisher': 'Kratos Defense & Security Solutions',
         'event_date': '2026-08-24', 'source_url': PRIMARY, 'retrieved_primary_mirror_url': MIRROR,
@@ -51,6 +57,10 @@ def payload():
                                       'Obtain dated evidence of a relevant external sourcing requirement.',
                                       'Identify the sourcing role without inventing a person or introduction.'],
     }
+    for edge in result['routes']:
+        if edge['source_url']:
+            edge.update(publisher=result['publisher'], event_date=result['event_date'], retrieval_date=result['retrieval_date'])
+    return result
 
 
 def context():

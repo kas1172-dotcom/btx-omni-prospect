@@ -6,7 +6,6 @@ caller supplies points, weights, or a replacement scoring policy.
 from decimal import Decimal, InvalidOperation
 
 from btx_omni.core.clock import evidence_state
-
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.scoring.families import FAMILIES, FactorInput
 

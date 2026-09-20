@@ -3,7 +3,6 @@ from datetime import date
 from decimal import Decimal
 
 from btx_omni.core.clock import evidence_state
-
 from btx_omni.modules.scoring.customer_health import health_inputs
 from btx_omni.modules.scoring.families import FactorInput
 

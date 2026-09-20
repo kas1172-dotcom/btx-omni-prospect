@@ -271,11 +271,12 @@ export function Intelligence({
   );
   const base = useMemo(() => {
     const items = new Map<string, MonitorSignalBrief>();
+    (commandCenter?.research_signal_briefs ?? []).forEach((item) => items.set(briefKey(item), item));
     [...curated, ...savedRecent, ...current].forEach((item) =>
       items.set(briefKey(item), item),
     );
     return [...items.values()];
-  }, [current, curated, savedRecent]);
+  }, [current, curated, savedRecent, commandCenter?.research_signal_briefs]);
   const visible = useMemo(
     () =>
       base.filter((item) =>

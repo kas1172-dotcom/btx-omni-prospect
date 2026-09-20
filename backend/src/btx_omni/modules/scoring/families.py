@@ -99,6 +99,7 @@ def assess(
             known_weight += weight
         factors.append({"key": name, "weight": weight, "points": points,
                         "contribution": _round(points * weight / 100) if points is not None else None,
+                        "contribution_exact": points * weight / 100 if points is not None else None,
                         "evidence_ids": value.evidence_ids if value else (),
                         "reason": value.reason if value else "Required evidence has not been established.",
                         "raw_value": value.raw_value if value else None,
@@ -136,7 +137,7 @@ def assess(
         "as_of": as_of, "revision": revision, "configuration_version": VERSION,
         "rule_version": VERSION,
         "weighted_score": _round(lower) if usable_weight == 100 else None,
-        "band": score_band(family_key, score),
+        "band": 'BLOCKED' if blocking_constraints else score_band(family_key, score),
         "weighted_band": score_band(family_key, _round(lower)) if usable_weight == 100 else None,
         "score": score, "score_unit": "POC_INDEX_0_TO_100", "provisional": True,
         "score_range": {"low": _round(Decimal(lower)), "high": _round(Decimal(upper))},
@@ -227,6 +228,7 @@ def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | N
     raw = Decimal(".60") * internal_score + Decimal(".40") * public_score + uplift if eligible else None
     score = min(Decimal(100), max(raw, *(floor for _, floor in floors))) if eligible and floors else raw
     return {"family": "overall_customer_risk", "configuration_version": VERSION,
+            "rule_version": VERSION, "band": score_band('overall_customer_risk', score),
             "status": "INELIGIBLE" if not current_customer else "SCORED" if eligible else "INSUFFICIENT_EVIDENCE",
             "score": _round(score) if score is not None else None,
             "weights": {"internal_commercial_risk": 60, "public_risk_rollup": 40},

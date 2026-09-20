@@ -2,7 +2,6 @@
 from datetime import date, timedelta
 
 from btx_omni.core.clock import evidence_state
-
 from btx_omni.modules.commercial.evidence import evidence_supports_opportunity
 from btx_omni.modules.scoring.account_attractiveness import AccountAttractivenessInputs
 

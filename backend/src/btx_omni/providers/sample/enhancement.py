@@ -8,13 +8,18 @@ VERSION = 'sample-enhancement-2026-09-20-v1'
 def enhance_environment(base, *, anchor=None):
     """Opt-in SAMPLE view; old fixture files and all canonical IDs remain intact."""
     from dataclasses import replace
-    from btx_omni.modules.commercial.projection import project_commercial_records
-    from btx_omni.core.clock import as_of_datetime
+
     from btx_omni.core.classification import Classification
+    from btx_omni.core.clock import as_of_datetime
     from btx_omni.core.provenance import Provenance
-    from btx_omni.domain.accounts import CanonicalAccount, AccountRelationship
+    from btx_omni.domain.accounts import AccountRelationship, CanonicalAccount
     from btx_omni.domain.common import DataMode, EvidenceState
-    from btx_omni.providers.sample.scoring_cases import customer, add_expansion, add_queue_examples
+    from btx_omni.modules.commercial.projection import project_commercial_records
+    from btx_omni.providers.sample.scoring_cases import (
+        add_expansion,
+        add_queue_examples,
+        customer,
+    )
     additions = [customer(case, anchor=anchor) for case in ('risk', 'watch', 'healthy', 'at-risk', 'critical')]
     add_expansion(additions[1], facility_id=base.btx_facilities[0].id)
     add_queue_examples(additions[0], facility_id=base.btx_facilities[0].id)
@@ -63,6 +68,13 @@ def empty_ledger(account_id, display_name, *, anchor=None):
 def reconcile_months(account):
     """Build exact ledger summaries from transactions, not independent demo numbers."""
     anchor = as_of_date(account['as_of'])
+    for event in account['service_events']:
+        event.setdefault('title', 'Synthetic service review — ' + account['identity']['display_name'])
+        event.setdefault('details', event.get('narrative', 'Review the synthetic evidence.'))
+        event.setdefault('related_record_ids', [event['order_line_id']] if event.get('order_line_id') else [])
+    account['commercial_case'] = synthetic_record(title=account['identity']['display_name'],
+        narrative='Authored SAMPLE scenario, not connected BTX transactions. Historical records and current review timestamps are distinct.',
+        as_of=account['as_of'])
     opening = 0
     for offset in range(-11, 1):
         month_index = anchor.year * 12 + anchor.month - 1 + offset

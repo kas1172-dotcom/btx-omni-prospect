@@ -10,7 +10,6 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from btx_omni.core.clock import as_of_date
-
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER
 
 CONFIGURATION_VERSION = "prospect-fit-v2.0"

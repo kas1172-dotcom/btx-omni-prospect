@@ -3,7 +3,13 @@ from dataclasses import replace
 from hashlib import sha256
 
 from btx_omni.core.clock import as_of_datetime, relative_date
-from btx_omni.monitor.contracts import EntityResolution, EventEvidence, NormalizedClaim, SourceIdentity, SourceVersion
+from btx_omni.monitor.contracts import (
+    EntityResolution,
+    EventEvidence,
+    NormalizedClaim,
+    SourceIdentity,
+    SourceVersion,
+)
 from btx_omni.monitor.ontology import EventType, ResolutionState, SellerRelevanceState
 from btx_omni.providers.sample.kratos import context
 

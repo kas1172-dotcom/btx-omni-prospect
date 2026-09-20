@@ -368,7 +368,7 @@ class OmniOrchestrator:
             )
         if account_alerts:
             lines.append(
-                "Needs attention: " + ", ".join(f"{_ALERT_LABELS.get(item.type.value, 'Commercial review')} ({item.type.value})" for item in account_alerts) + "."
+                "Needs attention: " + ", ".join(_ALERT_LABELS.get(item.type.value, 'Commercial review') for item in account_alerts) + "."
             )
             citations.extend(
                 value for alert in account_alerts for value in alert.evidence_ids
