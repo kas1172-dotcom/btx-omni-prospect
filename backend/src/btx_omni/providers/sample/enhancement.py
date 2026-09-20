@@ -43,6 +43,8 @@ def enhance_environment(base, *, anchor=None):
     add_boeing_expansion(records['boeing'])
     from btx_omni.providers.sample.relationship_cases import prepare_relationships
     prepare_relationships(records)
+    from btx_omni.providers.sample.planning_cases import add_planning_context
+    add_planning_context(records)
     from btx_omni.providers.sample.rubric_examples import examples
     records['demo-fictional-watch']['commercial_case']['rubric_examples'] = examples(anchor=anchor)
     projected = project_commercial_records(base, records, revision=VERSION)

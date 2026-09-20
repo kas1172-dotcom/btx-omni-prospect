@@ -43,8 +43,12 @@ def _account(runtime: PocRuntime, account_id: str):
 @router.get("")
 def planning(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
     sample = runtime.environment()
+    view = runtime.account_planning.view(current.user_id)
+    if runtime.settings.sample_enhancement_enabled and runtime.settings.data_mode.upper() == 'SAMPLE':
+        from btx_omni.providers.sample.planning_cases import planning_view
+        view = planning_view(view, sample)
     return {
-        **runtime.account_planning.view(current.user_id),
+        **view,
         "can_manage_partnerships": current.role is PrincipalRole.MANAGER,
         "planning_gaps": [
             sales_planning_gap(account, canonical_account_id=account_id, revision=sample.commercial_revision)

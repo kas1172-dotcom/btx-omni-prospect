@@ -12,6 +12,12 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Decisions made without user input
 
+- Item 3.1 keeps reconciled transactions intact and records the missing APM monthly planning feed separately. Unknown feed coverage is not zero sales, a target shortfall, or a forecast. Three distinct fictional sites have resolved ERA invoice evidence. Partnership defaults require no database writes; persisted true/false designations override defaults. A null version explicitly means no persisted designation exists yet.
+
+### Item 3.1 cross-BU planning
+
+`planning_cases.py` supplies the missing-feed register and three sister-BU site histories. `/planning` exposes this context and both fictional strategic partnerships; the existing All/Exclude/Only filters consume that same projection. `test_sample_planning.py`: 1 passed, including override precedence and resolved invoice references.
+
 - Tier 2 full-suite verification exposed two timing-dependent monitor failures (both passed in the focused rerun). Fixed their causes without changing tests: validate the held PostgreSQL session synchronously before starting its keepalive thread; check remaining optional-stage budget before building the briefing environment. Previously a subsecond deadline could enter optional projection after a timed-out collection, and a short cycle could end before its first heartbeat. These are local verification fixes, not integration-stub changes.
 
 - Monitor collection receipts retain an operational timestamp so successive real collection attempts remain ordered. Business evidence age and operational-status evaluation use the configured as-of provider; a collection timestamp never refreshes a publication date.
