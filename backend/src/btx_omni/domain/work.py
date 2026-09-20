@@ -37,6 +37,7 @@ class Principal:
     user_id: str
     display_name: str
     role: PrincipalRole
+    tenant_id: str | None = None
 
 
 @dataclass(frozen=True)

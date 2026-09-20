@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     frontend_origins: str = "http://localhost:5173"
     session_ttl_seconds: int = 1800
     session_cookie_name: str = "btx_poc_session"
+    omni_tenant_id: str | None = Field(default=None, validation_alias="OMNI_TENANT_ID")
     hosted_demo_access_bypass: bool = False
     monitor_mode: str = "disabled"
     monitor_durable_state_enabled: bool = False

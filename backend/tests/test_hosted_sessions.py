@@ -130,6 +130,7 @@ def test_sample_demo_bypass_issues_only_a_normal_salesperson_session(monkeypatch
         "user_id": "seller-1",
         "display_name": "POC Salesperson",
         "role": "SALESPERSON",
+        "tenant_id": None,
     }
     assert "httponly" in session.headers["set-cookie"].casefold()
     assert client.get("/api/actions").status_code == 200

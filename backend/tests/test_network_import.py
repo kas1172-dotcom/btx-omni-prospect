@@ -31,7 +31,7 @@ def test_import_is_dry_run_by_default_and_masks_report(tmp_path):
     engine = create_engine("sqlite://")
     models.metadata.create_all(engine)
     profiles = (AccountWatchProfile("acme", "Acme Corporation"),)
-    report = NetworkImportRepository(engine, profiles).import_file(csv_file(tmp_path), tenant_id="tenant-a", owner_name="Owner Example", exported_at=datetime(2026, 9, 1, tzinfo=UTC))
+    report = NetworkImportRepository(engine, profiles).import_file(csv_file(tmp_path), tenant_id="tenant-a", owner_user_id="seller-1", owner_name="Owner Example", exported_at=datetime(2026, 9, 1, tzinfo=UTC))
     assert report["status"] == "DRY_RUN"
     assert report["resolved_rows"] == 1
     with engine.connect() as connection:
@@ -44,7 +44,7 @@ def test_apply_is_idempotent_and_never_persists_email(tmp_path):
     with engine.begin() as connection:
         connection.execute(insert(models.accounts).values(id="acme", name="Acme", relationship="PROSPECT", domain=None))
     repo = NetworkImportRepository(engine, (AccountWatchProfile("acme", "Acme Corporation"),))
-    args = dict(tenant_id="tenant-a", owner_name="Owner Example", exported_at=datetime(2026, 9, 1, tzinfo=UTC), apply=True)
+    args = dict(tenant_id="tenant-a", owner_user_id="seller-1", owner_name="Owner Example", exported_at=datetime(2026, 9, 1, tzinfo=UTC), apply=True)
     assert repo.import_file(csv_file(tmp_path), **args)["status"] == "IMPORTED"
     assert repo.import_file(csv_file(tmp_path), **args)["status"] == "UNCHANGED"
     with engine.connect() as connection:
@@ -58,4 +58,4 @@ def test_apply_is_idempotent_and_never_persists_email(tmp_path):
 def test_paths_inside_worktree_are_refused():
     with pytest.raises(ValueError, match="worktree"):
         NetworkImportRepository(create_engine("sqlite://"), ()).import_file(
-            WORKTREE / "README.md", tenant_id="tenant-a", owner_name="Owner", exported_at=datetime.now(UTC))
+            WORKTREE / "README.md", tenant_id="tenant-a", owner_user_id="seller-1", owner_name="Owner", exported_at=datetime.now(UTC))

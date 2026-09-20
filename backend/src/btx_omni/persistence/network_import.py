@@ -10,11 +10,12 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Protocol
 
-from sqlalchemy import Engine, insert, select, update
+from sqlalchemy import Engine, and_, insert, or_, select, update
 
 from btx_omni.core.config import Settings
-from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
+from btx_omni.domain.work import Principal, PrincipalRole
 from btx_omni.modules.relationships.network_classifier import classify_title
+from btx_omni.monitor.resolution import AccountWatchProfile, resolve_entity
 from btx_omni.persistence import models
 from btx_omni.persistence.database import create_database_engine
 from btx_omni.providers.sample.environment import build_sample_environment
@@ -83,7 +84,7 @@ class NetworkImportRepository:
     def __init__(self, engine: Engine, profiles: tuple[AccountWatchProfile, ...]):
         self.engine, self.profiles = engine, profiles
 
-    def import_file(self, path: Path, *, tenant_id: str, owner_name: str, exported_at: datetime,
+    def import_file(self, path: Path, *, tenant_id: str, owner_user_id: str, owner_name: str, exported_at: datetime,
                     adapter: ConnectionAdapter | None = None, apply: bool = False) -> dict[str, object]:
         source = adapter or LinkedInConnectionsCsvAdapter()
         safe_path = _outside_worktree(path)
@@ -112,7 +113,8 @@ class NetworkImportRepository:
                 id=batch_id, tenant_id=tenant_id, source_kind=source.source_kind, file_sha256=digest,
                 exported_at=exported_at, imported_at=now, owner_person_id=owner_id, status="IMPORTED",
                 input_row_count=len(rows), imported_row_count=len(rows), resolved_row_count=resolved_count,
-                unresolved_row_count=len(rows) - resolved_count, data_mode="IMPORTED"))
+                unresolved_row_count=len(rows) - resolved_count, data_mode="IMPORTED",
+                visibility="owner_only", owner_user_id=owner_user_id))
             connection.execute(insert(models.network_people).values(
                 id=owner_id, tenant_id=tenant_id, kind="internal", display_name=owner_name,
                 profile_url=None, batch_id=batch_id))
@@ -141,16 +143,43 @@ class NetworkImportRepository:
                     resolution_method=resolution.method, source="network_import", occurrence_count=count))
         return report
 
+    def visible_rows(self, principal: Principal) -> tuple[dict[str, object], ...]:
+        if principal.tenant_id is None or principal.role not in {PrincipalRole.SALESPERSON, PrincipalRole.MANAGER}:
+            return ()
+        permitted = and_(
+            models.network_import_batches.c.tenant_id == principal.tenant_id,
+            or_(models.network_import_batches.c.visibility == "tenant_shared",
+                models.network_import_batches.c.owner_user_id == principal.user_id),
+        )
+        query = (select(models.network_import_batches, models.network_people, models.network_affiliations, models.network_ties)
+                 .join(models.network_people, models.network_people.c.batch_id == models.network_import_batches.c.id)
+                 .join(models.network_affiliations, models.network_affiliations.c.person_id == models.network_people.c.id)
+                 .join(models.network_ties, models.network_ties.c.external_person_id == models.network_people.c.id)
+                 .where(permitted, models.network_affiliations.c.data_mode == "IMPORTED",
+                        models.network_affiliations.c.synthetic.is_(False)))
+        with self.engine.connect() as connection:
+            return tuple(dict(row) for row in connection.execute(query).mappings())
+
+    def share_batch(self, batch_id: str, *, tenant_id: str, owner_user_id: str) -> bool:
+        with self.engine.begin() as connection:
+            result = connection.execute(update(models.network_import_batches).where(
+                models.network_import_batches.c.id == batch_id,
+                models.network_import_batches.c.tenant_id == tenant_id,
+                models.network_import_batches.c.owner_user_id == owner_user_id,
+                models.network_import_batches.c.visibility == "owner_only",
+            ).values(visibility="tenant_shared"))
+            return result.rowcount == 1
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Import an official LinkedIn Connections.csv export")
     parser.add_argument("path", type=Path); parser.add_argument("--tenant-id", required=True)
-    parser.add_argument("--owner-name", required=True); parser.add_argument("--exported-at", required=True)
+    parser.add_argument("--owner-name", required=True); parser.add_argument("--owner-user-id", required=True); parser.add_argument("--exported-at", required=True)
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     environment = build_sample_environment()
     repository = NetworkImportRepository(create_database_engine(Settings()), environment.watch_profiles)
-    report = repository.import_file(args.path, tenant_id=args.tenant_id, owner_name=args.owner_name,
+    report = repository.import_file(args.path, tenant_id=args.tenant_id, owner_user_id=args.owner_user_id, owner_name=args.owner_name,
                                     exported_at=datetime.fromisoformat(args.exported_at), apply=args.apply)
     print("network import:", {key: value for key, value in report.items() if key not in {"batch_id", "file_sha256"}})
     return 0

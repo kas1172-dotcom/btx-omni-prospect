@@ -146,9 +146,10 @@ class WorkService:
         idempotency_key: str | None = None,
     ) -> Action:
         title = title or summary or ""
-        principal = principal or Principal(
-            actor_id or "seller-1", actor_id or "Salesperson", PrincipalRole.SALESPERSON
-        )
+        if principal is None:
+            from btx_omni.core.config import Settings
+            from btx_omni.security.sessions import server_principal
+            principal = server_principal(Settings(), actor_id or "seller-1", actor_id or "Salesperson", PrincipalRole.SALESPERSON)
         priority = ActionPriority(priority)
         if owner_id and owner_id != principal.user_id:
             ActionPolicy.require_manager(principal)

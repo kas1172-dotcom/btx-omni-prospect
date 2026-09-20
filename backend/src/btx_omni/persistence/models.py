@@ -756,6 +756,8 @@ network_import_batches = Table(
     Column("resolved_row_count", Integer, nullable=False),
     Column("unresolved_row_count", Integer, nullable=False),
     Column("data_mode", String(32), nullable=False),
+    Column("visibility", String(32), nullable=False, server_default="owner_only"),
+    Column("owner_user_id", String(128)),
     UniqueConstraint("tenant_id", "source_kind", "file_sha256", name="uq_network_import_file"),
 )
 network_people = Table(
