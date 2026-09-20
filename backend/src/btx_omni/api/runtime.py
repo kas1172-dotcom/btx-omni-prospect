@@ -164,6 +164,9 @@ class PocRuntime:
             "usaspending": usa_targets,
             "sec_edgar": sec_targets,
         }
+        if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+            from btx_omni.providers.sample.kratos import context
+            self.monitor.curated_contexts = (context(),)
         if repository:
             try:
                 self.monitor.hydrate_events()

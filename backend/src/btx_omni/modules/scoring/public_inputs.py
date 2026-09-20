@@ -59,6 +59,8 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
                 and all(item.state is ResolutionState.RESOLVED and item.canonical_account_id for item in event.subject_entities))
     # Parent identity is not subsidiary/site resolution.
     entity_points = 50 if resolved else 0
+    if facts.get('identity_resolution_scope') == 'PARENT_CONFIRMED_SITE_UNRESOLVED':
+        entity_points = 50
     if resolved and facts.get('site_identity_verified') == 'true':
         if facts.get('authoritative_identifier_verified') == 'true':
             entity_points = 100
