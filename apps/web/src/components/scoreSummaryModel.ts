@@ -2,6 +2,12 @@ import type { AttractivenessProjection, ProspectFitProjection } from '../types/a
 import type { CommercialDecision } from '../types/decisions'
 
 export type ScoreFactor = { label: string; detail: string; value?: string | number | null; evidenceIds?: string[] }
+export function scorePolarity(family: string): 'positive' | 'risk' | 'neutral' {
+  const key = family.trim().toLowerCase().replaceAll('_', ' ')
+  if (['internal commercial risk', 'overall customer risk', 'public risk severity', 'risk severity'].includes(key)) return 'risk'
+  if (['customer health', 'attractiveness', 'customer attractiveness', 'opportunity priority', 'pwin', 'delivery feasibility', 'prospect fit'].includes(key)) return 'positive'
+  return 'neutral'
+}
 export type ScoreSummaryModel = { family: string; decision: string; subject: string; value: string | number | null; numericValue?: string | number | null; interpretation: string; version?: string; asOf?: string; positiveFactors?: ScoreFactor[]; limitingFactors?: ScoreFactor[]; missingInputs?: string[]; coverage?: { present?: number; applicable?: number; ratio?: string | number }; evidenceIds?: string[]; technicalId?: string }
 const words = (value?: string) => (value || 'decision score').replaceAll('_', ' ').toLocaleLowerCase().replace(/^./, letter => letter.toUpperCase())
 export function scoreValue(score: string | number | null, range?: { low: string | number; high: string | number }): string | number | null {
@@ -23,7 +29,7 @@ export function familyValue(decision: Pick<CommercialDecision, 'family' | 'score
   if (decision.status === 'INELIGIBLE') return 'Not applicable yet'
   if (decision.score == null) return scoreValue(null, decision.score_range)
   const score = Number(decision.score)
-  if (decision.family === 'customer_health') return score >= 70 ? 'Healthy' : score >= 50 ? 'Watch' : score >= 30 ? 'At risk' : 'Critical'
+  if (decision.family === 'customer_health') return decision.score
   if (decision.family === 'delivery_feasibility') return score >= 93 ? 'A+' : score >= 85 ? 'A' : score >= 78 ? 'B+' : score >= 70 ? 'B' : score >= 55 ? 'C' : score >= 40 ? 'D' : 'F'
   if (decision.family === 'signal_confidence') return score >= 70 ? 'High' : score >= 40 ? 'Medium' : 'Low'
   return decision.score

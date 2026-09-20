@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openCustomerSection } from './helpers.mjs'
 
 async function openOrganization(page, id, name) {
   await page.goto(`/#/accounts/${id}`)
@@ -14,7 +15,7 @@ test('organization mode adapts without treating research or CRM presence as a cu
   await openOrganization(page, 'intel', 'Intel')
   await expect(page.locator('.account-workspace').getByText(/Prospect 360/i).first()).toBeVisible()
   await expect(page.getByText('No confirmed BTX commercial relationship').first()).toBeVisible()
-  await page.getByRole('button', { name: /Related BTX activity to review/ }).click()
+  await openCustomerSection(page, /Related BTX activity to review/)
   await expect(page.getByText('No confirmed BTX commercial history is available for this Prospect.')).toBeVisible()
 
   await openOrganization(page, 'rtx-collins-aerospace', 'RTX (Raytheon Technologies) / Collins Aerospace')
@@ -27,7 +28,8 @@ test('organization mode adapts without treating research or CRM presence as a cu
 
 test('evidence is closed by default, targeted reasoning opens independently, and mobile uses a drawer', async ({ page }) => {
   await openOrganization(page, 'lockheed-martin', 'Lockheed Martin')
-  const evidence = page.locator('.account-workspace > .supporting-evidence > .supporting-evidence-trigger')
+  await page.getByRole('tablist', { name: 'Profile sections' }).getByRole('tab', { name: 'More', exact: true }).click()
+  const evidence = page.locator('#profile-tab-content .profile-page-section:not([hidden]) > .supporting-evidence > .supporting-evidence-trigger')
   await expect(evidence).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByRole('heading', { name: 'How this was determined' })).toHaveCount(0)
   await evidence.click()
@@ -38,7 +40,8 @@ test('evidence is closed by default, targeted reasoning opens independently, and
 
   await page.setViewportSize({ width: 390, height: 844 })
   await openOrganization(page, 'intel', 'Intel')
-  const mobileEvidence = page.locator('.account-workspace > .supporting-evidence > .supporting-evidence-trigger')
+  await page.getByRole('tablist', { name: 'Profile sections' }).getByRole('tab', { name: 'More', exact: true }).click()
+  const mobileEvidence = page.locator('#profile-tab-content .profile-page-section:not([hidden]) > .supporting-evidence > .supporting-evidence-trigger')
   await mobileEvidence.click()
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Supporting evidence' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
@@ -90,7 +93,7 @@ test('customer expansion pursuit reuses one assessment and ranked internal recor
 
   await openOrganization(page, 'lockheed-martin', 'Lockheed Martin')
   await expect(page.getByText('Expansion pursuit', { exact: true }).first()).toBeVisible()
-  await page.getByRole('button', { name: /Current intelligence assessment/ }).click()
+  await openCustomerSection(page, /Current intelligence assessment/)
   await expect(page.getByRole('heading', { name: briefing.headline }).first()).toBeVisible()
   await expect(page.locator('.organization-briefing').getByText('Why it may matter', { exact: true })).toBeVisible()
   await page.locator('.organization-briefing').getByRole('button', { name: /View supporting evidence/ }).click()

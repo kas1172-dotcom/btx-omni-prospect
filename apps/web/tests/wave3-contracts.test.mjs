@@ -39,11 +39,11 @@ test('relationship field separates route, type, evidence and hop depth without c
 })
 
 test('shared score summary separates decision meaning, unavailable values and coverage', () => {
-  assert.match(scores, /Decision supported:/)
+  assert.match(scores, /model.decision/)
   assert.match(scores, /Data Coverage/)
   assert.match(scores, /Coverage describes completeness and never raises this decision score/)
   assert.match(scores, /Missing required inputs/)
-  assert.match(scores, /Formula, inputs and supporting evidence/)
+  assert.match(scores, /<WhyThis>/)
   assert.match(scores, /value == null.*Unavailable/)
   assert.match(scoreModels, /commercialDecisionSummary/)
 })
