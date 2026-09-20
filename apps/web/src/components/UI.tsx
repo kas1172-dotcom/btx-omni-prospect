@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useEffect, useLayoutEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import './ui.css'
 import { presentationLabel } from './presentation'
 
@@ -39,6 +39,17 @@ export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
 export const SearchInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & FieldProps>(function SearchInput(props, ref) { return <span className="ui-search"><span aria-hidden="true">⌕</span><TextInput {...props} ref={ref} type="search" /></span> })
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & FieldProps>(function Textarea({ label, helper, error, id: suppliedId, className = '', ...props }, ref) { const generatedId = useId(); const id = suppliedId ?? generatedId; return <Field label={label} helper={helper} error={error} id={id}><textarea {...props} id={id} ref={ref} className={`ui-input ui-textarea ${className}`.trim()} aria-invalid={Boolean(error) || undefined} /></Field> })
 export function SelectInput({ label, helper, error, id: suppliedId, className = '', children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & FieldProps) { const generatedId = useId(); const id = suppliedId ?? generatedId; return <Field label={label} helper={helper} error={error} id={id}><select {...props} id={id} className={`ui-input ui-select ${className}`.trim()} aria-invalid={Boolean(error) || undefined}>{children}</select></Field> }
+
+export function Tabs<T extends string>({ label, value, tabs, onChange, className = '' }: { label: string; value: T; tabs: ReadonlyArray<{ value: T; label: ReactNode }>; onChange: (value: T) => void; className?: string }) {
+  const select = (next: T, target: HTMLButtonElement) => { onChange(next); requestAnimationFrame(() => target.parentElement?.querySelector<HTMLButtonElement>(`[data-tab-value="${CSS.escape(next)}"]`)?.focus()) }
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+    select(tabs[nextIndex].value, event.currentTarget)
+  }
+  return <div className={`ui-tabs ${className}`.trim()} role="tablist" aria-label={label}>{tabs.map((tab, index) => <button key={tab.value} type="button" role="tab" data-tab-value={tab.value} aria-selected={value === tab.value} tabIndex={value === tab.value ? 0 : -1} onClick={() => onChange(tab.value)} onKeyDown={event => onKeyDown(event, index)}>{tab.label}</button>)}</div>
+}
 
 export function FilterTrigger({ active = false, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) { return <Button {...props} className="ui-filter-trigger" variant="secondary" aria-pressed={active}>{children}<span aria-hidden="true">⌄</span></Button> }
 export function FilterChip({ selected = false, onClear, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean; onClear?: () => void }) { const removableLabel = onClear && typeof children === 'string' ? `Remove ${children} filter` : undefined; return <button {...props} type={props.type ?? 'button'} className={`ui-filter-chip ${selected ? 'selected' : ''}`} aria-label={props['aria-label'] ?? removableLabel} aria-pressed={selected} onClick={event => { props.onClick?.(event); if (onClear && selected) onClear() }}>{children}{onClear && selected && <span aria-hidden="true">×</span>}</button> }

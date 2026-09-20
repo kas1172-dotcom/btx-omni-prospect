@@ -2,11 +2,50 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from btx_omni.api.today import (
+    _development_public_fixtures,
+    _development_public_fixtures_enabled,
+)
 from btx_omni.modules.command_center import build_command_center
 from btx_omni.monitor.briefs import SignalBrief
 from btx_omni.monitor.targeting import TargetReason, WatchTarget
 
 NOW = datetime(2026, 8, 28, 12, tzinfo=UTC)
+
+
+def test_development_today_fixtures_cover_current_and_upcoming_public_signals() -> None:
+    current, upcoming = _development_public_fixtures(NOW)
+
+    assert current.event_timing == "OBSERVED"
+    assert upcoming.event_timing == "UPCOMING"
+    assert current.priority_eligible is True
+    assert current.source_url
+    assert upcoming.relevant_event_timestamp == NOW + timedelta(days=5)
+
+
+def test_development_today_fixtures_are_never_enabled_in_production() -> None:
+    enabled = SimpleNamespace(
+        settings=SimpleNamespace(
+            today_public_fixture_mode=True,
+            environment="development",
+        )
+    )
+    production = SimpleNamespace(
+        settings=SimpleNamespace(
+            today_public_fixture_mode=True,
+            environment="production",
+        )
+    )
+    default_off = SimpleNamespace(
+        settings=SimpleNamespace(
+            today_public_fixture_mode=False,
+            environment="development",
+        )
+    )
+
+    assert _development_public_fixtures_enabled(enabled) is True
+    assert _development_public_fixtures_enabled(production) is False
+    assert _development_public_fixtures_enabled(default_off) is False
 
 
 def brief(

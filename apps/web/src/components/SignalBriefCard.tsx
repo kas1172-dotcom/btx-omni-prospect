@@ -37,7 +37,8 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
       <section className="seller-signal-action" aria-label="Recommended next action"><span>Next decision</span><p>{brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p></section>
     </div>
     {!!brief.material_uncertainties?.length && <p className="seller-signal-uncertainty"><strong>Material uncertainty — still unconfirmed:</strong> {brief.material_uncertainties[0]}</p>}
-    {brief.analysis_status && brief.analysis_status !== 'READY' && <p className="notice">Analysis is incomplete. The source remains available, but no completed commercial recommendation is shown.</p>}
+    {brief.analysis_status === 'PENDING_ANALYSIS' && <p className="notice">Analysis pending{brief.missing_fields.length ? `: ${brief.missing_fields.join(', ')}` : ''}</p>}
+    {brief.analysis_status === 'INCOMPLETE' && <p className="notice">Analysis incomplete: no public evidence attached yet{brief.missing_fields.length ? `. Missing: ${brief.missing_fields.join(', ')}` : ''}</p>}
     {brief.commercial_relevance_state === 'INFORMATIONAL' && <small>Informational update · no established commercial priority</small>}
     <SupportingEvidence count={evidenceCount} investigationKey={`${brief.assessment_id ?? brief.id}:${brief.assessment_version ?? 0}`}>
       <section><h4>What we know: {knowledgeLabel}</h4><p>{coverage ? `${coverage.present} of ${coverage.applicable} applicable evidence fields are supported. Coverage describes completeness, not opportunity quality.` : 'Evidence completeness has not been calculated.'}</p></section>
