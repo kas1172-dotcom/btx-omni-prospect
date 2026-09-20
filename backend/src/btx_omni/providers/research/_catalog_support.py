@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from btx_omni.core.clock import as_of_datetime
 from pathlib import Path
 
 from btx_omni.core.classification import Classification
@@ -32,7 +32,7 @@ def source_provenance(
         mode, synthetic, source_system = default_mode, default_synthetic, "btx-research"
         source_id = str(record.get("id", record.get("edge_id", "unknown")))
         evidence = EvidenceState(record.get("evidence_state", "CONFIRMED"))
-    now = datetime.now(UTC)
+    now = as_of_datetime()
     source_url = payload.get("source_url") if isinstance(payload, dict) else record.get("source_url")
     return Provenance(source_system, source_id, str(source_url) if source_url is not None else None, now, now, classification, evidence, mode, synthetic)
 

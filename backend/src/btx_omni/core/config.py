@@ -1,4 +1,5 @@
 from functools import lru_cache
+from datetime import date
 from pathlib import Path
 
 from pydantic import AliasChoices, Field, field_validator
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api"
     data_mode: str = "SAMPLE"
+    demo_as_of_date: date = Field(default=date(2026, 9, 20), validation_alias=AliasChoices("DEMO_AS_OF_DATE", "BTX_DEMO_AS_OF_DATE"))
     release_sha: str = ""
     release_tree: str = ""
     release_worktree: str = "unknown"

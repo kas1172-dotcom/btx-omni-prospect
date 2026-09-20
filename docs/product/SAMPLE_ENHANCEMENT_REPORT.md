@@ -15,4 +15,10 @@ Status: implementation in progress; no tier certified complete yet.
 
 ## Validation
 
+### Item 1.1 clock
+
+Added `core/clock.py`, with fixed configurable `DEMO_AS_OF_DATE=2026-09-20`, inclusive expiry and relative fixture dates. Runtime observations previously used August 31; Today mixed that with wall-clock public evaluation. Both now use the provider. Public brief evaluation and catalog provenance default to the same clock. Explicit timestamps remain supported for historical replay. Authentication, provider accounting and retry timers remain operational clocks, not evidence-age clocks.
+
+`test_demo_clock.py`: 2 passed. Covers advancing evaluation beyond the two-day expiry while preserving the observation, plus a wall-clock prohibition across scoring and provider fixture modules. Additional plumbing remains part of scoring alignment and fixture integration.
+
 Previous checkpoint: focused baseline 73 passed; preflight probes 80 passed, 2 expected failures. Full-suite baseline is being established with the user-approved reference-file loading policy. Tier tags will only be created after verification.

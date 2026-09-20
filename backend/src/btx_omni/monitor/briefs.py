@@ -146,7 +146,8 @@ def publication_freshness(
     threshold_hours: int,
     now: datetime | None = None,
 ) -> str:
-    clock = now or datetime.now(UTC)
+    from btx_omni.core.clock import as_of_datetime
+    clock = as_of_datetime(now)
     if published_at is None:
         return "PUBLICATION_DATE_UNAVAILABLE"
     if published_at > clock:
@@ -167,7 +168,8 @@ def signal_brief(
     now: datetime | None = None,
     target_reasons: tuple[TargetReason, ...] = (),
 ) -> SignalBrief:
-    clock = now or datetime.now(UTC)
+    from btx_omni.core.clock import as_of_datetime
+    clock = as_of_datetime(now)
     subjects = tuple(
         item.canonical_account_id
         for item in event.subject_entities

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
@@ -279,5 +279,5 @@ class PocRuntime:
 
     @staticmethod
     def observed_at() -> datetime:
-        # The curated SAMPLE commercial snapshot and its governed alerts are anchored here.
-        return datetime(2026, 8, 31, tzinfo=UTC)
+        from btx_omni.core.clock import as_of_datetime
+        return as_of_datetime()
