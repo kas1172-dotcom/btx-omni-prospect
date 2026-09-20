@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { openRelationshipWorkspace } from './helpers.mjs'
 
 for (const width of [1440, 390]) {
-  test(`profiles and scoped opportunities remain distinct at ${width}`, async ({ page }) => {
+  test(`profiles and scoped opportunities remain distinct at ${width}`, async ({ page }, testInfo) => {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
     await page.setViewportSize({ width, height: 900 })
@@ -22,13 +22,13 @@ for (const width of [1440, 390]) {
     await expect(detail.locator('details').last()).not.toHaveAttribute('open', '')
     await page.reload()
     await expect(detail).toBeVisible()
-    await page.screenshot({ path: `/Users/kapilsharma/.codex/visualizations/2026/09/08/01a07ed0-2757-7c20-b427-48a04610c3a2/opportunities-${width}.png`, fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath(`opportunities-${width}.png`), fullPage: true })
     await page.getByRole('link', { name: 'Honeywell', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Honeywell', level: 1, exact: true })).toBeVisible()
     await expect(page.locator('.account-decision-zone')).toContainText('Customer health')
     await expect(page.locator('.account-decision-zone')).not.toContainText('Attractiveness')
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
-    await page.screenshot({ path: `/Users/kapilsharma/.codex/visualizations/2026/09/08/01a07ed0-2757-7c20-b427-48a04610c3a2/customer-profile-${width}.png`, fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath(`customer-profile-${width}.png`), fullPage: true })
     await page.goBack()
     await expect(detail).toBeVisible()
     await expect(page.getByRole('searchbox', { name: 'Search opportunities' })).toHaveValue('Honeywell')
@@ -63,7 +63,7 @@ for (const width of [1440, 390]) {
       expect(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top).toBe(true)
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
-    await graph.screenshot({ path: `/Users/kapilsharma/.codex/visualizations/2026/09/08/01a07ed0-2757-7c20-b427-48a04610c3a2/profile-graph-${width}.png` })
+    await graph.screenshot({ path: testInfo.outputPath(`profile-graph-${width}.png`) })
     expect(errors).toEqual([])
   })
 }

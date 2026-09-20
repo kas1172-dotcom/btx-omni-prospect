@@ -37,13 +37,14 @@ export default defineConfig({
       },
     },
     {
-      command: `npm run dev -- --host 127.0.0.1 --port ${webPort} --strictPort`,
+      command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${webPort} --strictPort`,
       url: `http://127.0.0.1:${webPort}`,
       reuseExistingServer: false,
       timeout: 120_000,
       env: {
         ...process.env,
         VITE_MAP_TEST_MODE: 'true',
+        VITE_API_BASE_URL: '/api',
         VITE_API_PROXY_TARGET: `http://127.0.0.1:${apiPort}`,
       },
     },
