@@ -73,6 +73,7 @@ def test_missing_ledger_never_builds_client_and_timeout_is_counted(repository):
 
 def test_usage_api_is_authenticated_private_and_cannot_select_another_actor(monkeypatch, repository):
     from hashlib import sha256
+
     from fastapi.testclient import TestClient
     from test_hosted_sessions import _production_app, _sign_in
 

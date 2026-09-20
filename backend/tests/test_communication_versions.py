@@ -78,6 +78,7 @@ def test_concurrent_same_version_edits_have_one_winner_and_one_audit(tmp_path):
 
 def test_api_requires_reviewed_version_and_rejects_stale_changes(monkeypatch, tmp_path):
     from hashlib import sha256
+
     from test_hosted_sessions import _production_app, _sign_in
 
     communications = service(tmp_path)
