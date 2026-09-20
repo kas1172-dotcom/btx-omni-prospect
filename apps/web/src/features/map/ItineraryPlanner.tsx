@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { importLibrary } from "@googlemaps/js-api-loader";
 import { api } from "../../api/client";
 import type { Itinerary, ItineraryStop } from "../../types/api";
@@ -48,6 +48,8 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
   const [failure, setFailure] = useState<string>();
   const [saved, setSaved] = useState<string>();
   const [dirty, setDirty] = useState(false);
+  const editRevision = useRef(0);
+  const markChanged = () => { editRevision.current += 1; setDirty(true); setSaved(undefined); };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,14 +72,13 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
       setDraft((current) => current.stops.some((stop) => stop.facility_id === marker.facilityId)
         ? current
         : { ...current, stops: [...current.stops, { id: `stop-${marker.facilityId}`, account_id: marker.accountId!, facility_id: marker.facilityId!, site_name: marker.siteName ?? marker.label, organization_name: marker.organizationName ?? marker.label, address: marker.address ?? "", latitude: String(marker.latitude), longitude: String(marker.longitude), purpose: "", contact_name: "", meeting_status: "NOT_REQUESTED", visit_brief: "", travel_distance_miles: null, travel_duration_minutes: null, route_provider: null, route_retrieved_at: null }] });
-      setSaved(undefined);
-      setDirty(true);
+      markChanged();
       setOpen(true);
     },
   }), []);
 
-  const editStop = (id: string, patch: Partial<ItineraryStop>) => { setDirty(true); setSaved(undefined); setDraft((current) => ({ ...current, stops: current.stops.map((stop) => stop.id === id ? { ...stop, ...patch, travel_distance_miles: patch.travel_distance_miles ?? (patch.latitude || patch.longitude ? null : stop.travel_distance_miles), travel_duration_minutes: patch.travel_duration_minutes ?? (patch.latitude || patch.longitude ? null : stop.travel_duration_minutes), route_provider: patch.latitude || patch.longitude ? null : stop.route_provider, route_retrieved_at: patch.latitude || patch.longitude ? null : stop.route_retrieved_at } : stop) })); };
-  const move = (index: number, by: number) => { setDirty(true); setSaved(undefined); setDraft((current) => {
+  const editStop = (id: string, patch: Partial<ItineraryStop>) => { markChanged(); setDraft((current) => ({ ...current, stops: current.stops.map((stop) => stop.id === id ? { ...stop, ...patch, travel_distance_miles: patch.travel_distance_miles ?? (patch.latitude || patch.longitude ? null : stop.travel_distance_miles), travel_duration_minutes: patch.travel_duration_minutes ?? (patch.latitude || patch.longitude ? null : stop.travel_duration_minutes), route_provider: patch.latitude || patch.longitude ? null : stop.route_provider, route_retrieved_at: patch.latitude || patch.longitude ? null : stop.route_retrieved_at } : stop) })); };
+  const move = (index: number, by: number) => { markChanged(); setDraft((current) => {
     const target = index + by;
     if (target < 0 || target >= current.stops.length) return current;
     const stops = [...current.stops];
@@ -97,12 +98,13 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
         origin = { lat: Number(stop.latitude), lng: Number(stop.longitude) };
       }
       setDraft((current) => ({ ...current, stops }));
-      setDirty(true); setSaved(undefined);
+      markChanged();
     } catch (error) {
       setFailure(routeFailureMessage(error));
     } finally { setRouting(false); }
   };
   const save = async () => {
+    const submittedRevision = editRevision.current;
     setFailure(undefined); setSaving(true);
     try {
       const itinerary = await api.saveItinerary({
@@ -114,9 +116,15 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
         expected_version: draft.version,
         idempotency_key: crypto.randomUUID(),
       });
-      setDraft({ title: itinerary.title, origin_label: itinerary.origin_label, origin_latitude: itinerary.origin_latitude, origin_longitude: itinerary.origin_longitude, stops: itinerary.stops, version: itinerary.version });
-      setSaved(`Saved version ${itinerary.version}`);
-      setDirty(false);
+      if (editRevision.current === submittedRevision) {
+        setDraft({ title: itinerary.title, origin_label: itinerary.origin_label, origin_latitude: itinerary.origin_latitude, origin_longitude: itinerary.origin_longitude, stops: itinerary.stops, version: itinerary.version });
+        setSaved(`Saved version ${itinerary.version}`);
+        setDirty(false);
+      } else {
+        setDraft(current => ({ ...current, version: itinerary.version }));
+        setSaved(undefined);
+        setDirty(true);
+      }
     } catch (error) { setFailure(error instanceof Error ? error.message : "Itinerary could not be saved."); }
     finally { setSaving(false); }
   };
@@ -127,12 +135,12 @@ export const ItineraryPlanner = forwardRef<ItineraryPlannerHandle>(function Itin
       {failure && <Notice tone="warning" title="Itinerary needs attention">{failure}</Notice>}
       {saved && <Notice title="Itinerary saved">{saved}. The plan is private to the signed-in seller.</Notice>}
       <div className="itinerary-state"><StatusBadge value={saving ? "Saving" : dirty ? "Pending changes" : draft.version ? "Saved" : "Not saved"} tone={saving || dirty ? "warning" : draft.version ? "success" : "neutral"} /><span>{draft.version ? `Version ${draft.version}` : "Private seller plan"}</span></div>
-      <TextInput label="Itinerary name" value={draft.title} onChange={(event) => { setDirty(true); setSaved(undefined); setDraft({ ...draft, title: event.target.value }); }} />
-      <TextInput id="itinerary-origin" label="Origin" placeholder="BTX facility or departure point" value={draft.origin_label} onChange={(event) => { setDirty(true); setSaved(undefined); setDraft({ ...draft, origin_label: event.target.value }); }} helper="Name the departure point. Driving estimates require provider-ready coordinates in Route details." />
-      <Disclosure title="Route-provider details"><div className="itinerary-origin"><TextInput label="Origin latitude" inputMode="decimal" value={draft.origin_latitude ?? ""} onChange={(event) => { setDirty(true); setSaved(undefined); setDraft({ ...draft, origin_latitude: event.target.value || null }); }} /><TextInput label="Origin longitude" inputMode="decimal" value={draft.origin_longitude ?? ""} onChange={(event) => { setDirty(true); setSaved(undefined); setDraft({ ...draft, origin_longitude: event.target.value || null }); }} /></div><p>Coordinates are used only by the configured route-provider contract. Straight-line proximity is never substituted for driving distance.</p></Disclosure>
+      <TextInput label="Itinerary name" value={draft.title} onChange={(event) => { markChanged(); setDraft({ ...draft, title: event.target.value }); }} />
+      <TextInput id="itinerary-origin" label="Origin" placeholder="BTX facility or departure point" value={draft.origin_label} onChange={(event) => { markChanged(); setDraft({ ...draft, origin_label: event.target.value }); }} helper="Name the departure point. Driving estimates require provider-ready coordinates in Route details." />
+      <Disclosure title="Route-provider details"><div className="itinerary-origin"><TextInput label="Origin latitude" inputMode="decimal" value={draft.origin_latitude ?? ""} onChange={(event) => { markChanged(); setDraft({ ...draft, origin_latitude: event.target.value || null }); }} /><TextInput label="Origin longitude" inputMode="decimal" value={draft.origin_longitude ?? ""} onChange={(event) => { markChanged(); setDraft({ ...draft, origin_longitude: event.target.value || null }); }} /></div><p>Coordinates are used only by the configured route-provider contract. Straight-line proximity is never substituted for driving distance.</p></Disclosure>
       <div className="itinerary-heading"><div><span className="eyebrow">Ordered stops</span><h3>{draft.stops.length} selected</h3></div><Button onClick={estimate} loading={routing} disabled={!draft.stops.length}>Estimate drive route</Button></div>
       {draft.stops.length ? <ol className="itinerary-stops">{draft.stops.map((stop, index) => <li key={stop.id}>
-        <div className="itinerary-stop-head"><span>{index + 1}</span><div><strong>{stop.organization_name || stop.site_name}</strong><small>{stop.site_name}</small><small>{stop.address ? `${stop.address} · complete street address unavailable` : "Complete street address unavailable; verified map location retained."}</small></div><div><Button size="icon" aria-label={`Move ${stop.site_name} earlier`} disabled={index === 0} onClick={() => move(index, -1)}>↑</Button><Button size="icon" aria-label={`Move ${stop.site_name} later`} disabled={index === draft.stops.length - 1} onClick={() => move(index, 1)}>↓</Button><Button size="icon" aria-label={`Remove ${stop.site_name}`} onClick={() => { setDirty(true); setSaved(undefined); setDraft((current) => ({ ...current, stops: current.stops.filter((item) => item.id !== stop.id) })); }}>×</Button></div></div>
+        <div className="itinerary-stop-head"><span>{index + 1}</span><div><strong>{stop.organization_name || stop.site_name}</strong><small>{stop.site_name}</small><small>{stop.address ? `${stop.address} · complete street address unavailable` : "Complete street address unavailable; verified map location retained."}</small></div><div><Button size="icon" aria-label={`Move ${stop.site_name} earlier`} disabled={index === 0} onClick={() => move(index, -1)}>↑</Button><Button size="icon" aria-label={`Move ${stop.site_name} later`} disabled={index === draft.stops.length - 1} onClick={() => move(index, 1)}>↓</Button><Button size="icon" aria-label={`Remove ${stop.site_name}`} onClick={() => { markChanged(); setDraft((current) => ({ ...current, stops: current.stops.filter((item) => item.id !== stop.id) })); }}>×</Button></div></div>
         {stop.route_provider ? <p className="itinerary-route"><strong>{stop.travel_distance_miles} miles · {stop.travel_duration_minutes} minutes driving</strong><span>Provider route retrieved {new Date(stop.route_retrieved_at!).toLocaleString()}</span></p> : <p className="itinerary-route"><strong>Route timing unavailable</strong><span>No route-provider result is stored. The stop remains saved; straight-line proximity is not driving distance.</span></p>}
         <TextInput label="Visit purpose" value={stop.purpose} onChange={(event) => editStop(stop.id, { purpose: event.target.value })} />
         <TextInput label="Contact or role target" value={stop.contact_name} onChange={(event) => editStop(stop.id, { contact_name: event.target.value })} />
