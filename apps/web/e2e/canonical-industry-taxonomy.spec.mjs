@@ -12,11 +12,11 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByLabel('Customer scope').selectOption('ALL')
   for (const industry of ['Defense', 'Commercial Aerospace', 'Space', 'Robotics', 'Semiconductor', 'Medical', 'Energy']) {
-    await expect(page.getByRole('button', { name: industry, exact: true })).toBeVisible()
+    await expect(page.getByLabel('Industry', { exact: true }).getByRole('option', { name: industry, exact: true })).toHaveCount(1)
   }
-  await expect(page.getByRole('button', { name: 'Aerospace', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Space Exploration', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Robotics', exact: true }).click()
+  await expect(page.getByLabel('Industry', { exact: true }).getByRole('option', { name: 'Aerospace', exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('Industry', { exact: true }).getByRole('option', { name: 'Space Exploration', exact: true })).toHaveCount(0)
+  await page.getByLabel('Industry', { exact: true }).selectOption('Robotics')
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Symbotic', exact: true })).toBeVisible()
 
   await navigate(page, 'Intelligence')

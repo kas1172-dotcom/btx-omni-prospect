@@ -243,7 +243,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   expect(filtered.request.context.active_filters.market).toBe('Defense')
   expect(filtered.body.context_used.status).toBe('DEGRADED')
   await closeOmni(page)
-  await page.getByRole('button', { name: 'All industries', exact: true }).click()
+  await page.getByLabel('Industry', { exact: true }).selectOption('ALL')
   await openOmni(page)
   const global = await ask(page, 'Which Defense accounts have the highest scores?')
   expect(global.request.context.active_filters?.market).toBeUndefined()

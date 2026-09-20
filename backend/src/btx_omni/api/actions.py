@@ -36,7 +36,7 @@ router = APIRouter(prefix="/actions", tags=["actions"])
 
 
 class CreateAction(BaseModel):
-    account_id: str
+    account_id: str | None = None
     title: str = Field(min_length=1, max_length=300)
     description: str | None = None
     owner_id: str | None = None
@@ -49,6 +49,7 @@ class CreateAction(BaseModel):
 
 
 class EditAction(BaseModel):
+    account_id: str | None = None
     title: str | None = Field(default=None, min_length=1, max_length=300)
     description: str | None = None
     owner_id: str | None = None
@@ -59,12 +60,29 @@ class EditAction(BaseModel):
 
 class StatusChange(BaseModel):
     status: ActionStatus
+    complete_open_subtasks: bool = False
     expected_version: int | None = Field(default=None, ge=1)
 
 
 class ApprovalDecision(BaseModel):
     decision: ApprovalStatus
+    comment: str | None = Field(default=None, max_length=2000)
     expected_version: int | None = Field(default=None, ge=1)
+
+
+class ApprovalRequest(BaseModel):
+    expected_version: int = Field(ge=1)
+
+
+class SubtaskMutation(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    expected_version: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=8, max_length=128)
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    done: bool = False
+    due_date: date | None = None
+    owner_id: str | None = None
+    removed: bool = False
 
 
 class SuggestionReview(BaseModel):
@@ -230,7 +248,7 @@ def create(
     current: Principal = Depends(principal),
 ):
     sample = runtime.environment()
-    if body.account_id not in {item.id for item in sample.accounts}:
+    if body.account_id is not None and body.account_id not in {item.id for item in sample.accounts}:
         raise HTTPException(404, "Canonical Customer not found.")
     assessment_ids = [value for kind, value in body.context_referents if kind == "intelligence_assessment"]
     if assessment_ids:
@@ -266,7 +284,7 @@ def create(
             raise HTTPException(422, "The proposal must preserve the governed federal validation step.")
     try:
         return runtime.work.create(
-            **body.model_dump(), principal=current, occurred_at=runtime.observed_at()
+            **body.model_dump(), principal=current, occurred_at=datetime.now(UTC)
         )
     except (ActionForbiddenError, ActionConflictError, ValueError) as error:
         raise _handle(error) from error
@@ -306,7 +324,7 @@ def convert_suggestion(
             due_date=body.due_date,
             priority=ActionPriority(suggestion["priority"]),
             principal=current,
-            occurred_at=runtime.observed_at(),
+            occurred_at=datetime.now(UTC),
         )
     except (ActionForbiddenError, ActionConflictError, ValueError) as error:
         raise _handle(error) from error
@@ -386,11 +404,18 @@ def edit_action(
     runtime: PocRuntime = Depends(get_runtime),
     current: Principal = Depends(principal),
 ):
+    if 'account_id' in body.model_fields_set:
+        if body.account_id is not None and body.account_id not in {item.id for item in runtime.environment().accounts}:
+            raise HTTPException(404, "Canonical Customer not found.")
+        existing = get_action(action_id, runtime, current)
+        evidence_context = any(not kind.startswith('source_') for kind, _ in existing.context_referents)
+        if (existing.evidence_ids or evidence_context or existing.source_suggestion_id) and body.account_id != existing.account_id:
+            raise HTTPException(409, "A sourced task must retain its evidence-linked customer.")
     try:
         return runtime.work.edit(
             action_id,
             principal=current,
-            occurred_at=runtime.observed_at(),
+            occurred_at=datetime.now(UTC),
             **body.model_dump(exclude_unset=True),
         )
     except (
@@ -411,7 +436,8 @@ def change_status(
 ):
     try:
         return runtime.work.transition(
-            action_id, body.status, principal=current, occurred_at=runtime.observed_at(), expected_version=body.expected_version
+            action_id, body.status, principal=current, occurred_at=datetime.now(UTC), expected_version=body.expected_version,
+            complete_open_subtasks=body.complete_open_subtasks,
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
@@ -429,10 +455,38 @@ def decide_approval(
             action_id,
             body.decision,
             principal=current,
-            occurred_at=runtime.observed_at(),
+            occurred_at=datetime.now(UTC),
             expected_version=body.expected_version,
+            comment=body.comment,
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
+        raise _handle(error) from error
+
+
+@router.post("/{action_id}/approval/request")
+def request_approval(action_id: str, body: ApprovalRequest, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+    try:
+        return runtime.work.request_approval(action_id, principal=current, occurred_at=datetime.now(UTC), expected_version=body.expected_version)
+    except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
+        raise _handle(error) from error
+
+
+@router.post("/{action_id}/subtasks")
+def add_subtask(action_id: str, body: SubtaskMutation, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+    if not body.title:
+        raise HTTPException(422, "Subtask title is required.")
+    return mutate_subtask(action_id, None, body, runtime, current)
+
+
+@router.patch("/{action_id}/subtasks/{subtask_id}")
+def mutate_subtask(action_id: str, subtask_id: str, body: SubtaskMutation, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+    try:
+        changes = body.model_dump(exclude_unset=True, exclude={'expected_version', 'idempotency_key'})
+        if 'title' in changes and changes['title'] is None:
+            raise ValueError("Subtask title is required.")
+        return runtime.work.change_subtask(action_id, subtask_id=subtask_id, principal=current, occurred_at=datetime.now(UTC),
+                                           expected_version=body.expected_version, idempotency_key=body.idempotency_key, **changes)
+    except (ActionNotFoundError, ActionForbiddenError, ActionConflictError, ValueError) as error:
         raise _handle(error) from error
 
 

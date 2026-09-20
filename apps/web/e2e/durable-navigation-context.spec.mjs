@@ -52,7 +52,9 @@ async function installAssessmentFixture(page) {
 async function openSelectedAssessmentFromToday(page) {
   await installAssessmentFixture(page)
   await page.goto('/#/today')
-  await page.getByRole('button', { name: 'Public intelligence' }).click()
+  await page.getByLabel('Today filters').waitFor()
+  if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
+    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
   const priority = page.locator('[data-priority-id="priority-navigation"]')
   await priority.getByText('Evidence and next action').click()
   await priority.getByRole('button', { name: 'Use in Omni' }).click()
@@ -113,7 +115,7 @@ test('federal route, Relationship Intelligence, governed Action, Omni and Back s
   await page.route(/\/api\/actions(?:\?.*)?$/, async route => {
     if (route.request().method() === 'POST') {
       const input = route.request().postDataJSON()
-      action = { ...input, id: 'action-federal-navigation', status: 'OPEN', approval_status: 'NOT_REQUIRED', version: 1, created_by: 'seller-1', created_at: '2026-09-16T12:00:00Z', updated_at: '2026-09-16T12:00:00Z' }
+      action = { ...input, subtasks: [], allowed_transitions: ['IN_PROGRESS', 'COMPLETED', 'CANCELED'], id: 'action-federal-navigation', status: 'OPEN', approval_status: 'NOT_REQUIRED', version: 1, created_by: 'seller-1', created_at: '2026-09-16T12:00:00Z', updated_at: '2026-09-16T12:00:00Z' }
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(action) })
     }
     const response = await route.fetch(); const body = await response.json()

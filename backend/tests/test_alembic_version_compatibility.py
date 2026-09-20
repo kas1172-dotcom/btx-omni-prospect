@@ -4,7 +4,8 @@ from types import SimpleNamespace
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
+import pytest
 
 from alembic import command
 from btx_omni.core.config import get_settings
@@ -12,7 +13,7 @@ from btx_omni.core.config import get_settings
 BACKEND_ROOT = Path(__file__).parents[1]
 REVISION_0009 = "0009_btx_facility_location_metadata"
 REVISION_0008 = "0008_commercial_and_edges"
-HEAD_REVISION = "0041_omni_conversations"
+HEAD_REVISION = "0042_merge_actions_network_chat"
 
 
 def _config(database_url: str) -> Config:
@@ -74,8 +75,11 @@ def test_revision_ids_fit_0009_postgresql_version_capacity_and_keep_topology() -
     )
 
     assert script.get_heads() == [HEAD_REVISION]
-    assert script.get_revision(HEAD_REVISION).down_revision == "0040_network_visibility"
-    assert script.get_revision("0040_network_visibility").down_revision == "0039_network_connections"
+    assert script.get_revision(HEAD_REVISION).down_revision == ("0039_actions_pm_workspace", "0041_omni_conversations")
+    assert script.get_revision("0039_actions_pm_workspace").down_revision == "0038_federal_opportunity_pipeline"
+    assert script.get_revision("0041_omni_conversations").down_revision == "0040_network_visibility"
+    assert script.get_revision("0039_network_connections").down_revision == "0038_federal_opportunity_pipeline"
+    assert script.get_revision("0038_federal_opportunity_pipeline").down_revision == "0037_monitor_technical_hierarchy"
     assert (
         script.get_revision("0037_monitor_technical_hierarchy").down_revision
         == "0036_monitor_business_briefings"
@@ -189,3 +193,22 @@ def test_sqlite_0008_to_0009_downgrade_and_reupgrade_are_valid(
     assert _version(database_url) == REVISION_0008
     _upgrade(config, "head")
     assert _version(database_url) == HEAD_REVISION
+
+
+@pytest.mark.parametrize("parent", ["0039_actions_pm_workspace", "0041_omni_conversations"])
+def test_existing_feature_head_upgrades_to_shared_head_without_losing_rows(tmp_path, monkeypatch, parent):
+    database_url = f"sqlite:///{tmp_path / 'feature.db'}"
+    monkeypatch.setenv("BTX_DATABASE_URL", database_url)
+    config = _config(database_url)
+    _upgrade(config, parent)
+    engine = create_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(text("CREATE TABLE migration_retention_probe (id INTEGER PRIMARY KEY, value TEXT NOT NULL)"))
+        connection.execute(text("INSERT INTO migration_retention_probe VALUES (1, 'retained local fixture')"))
+    _upgrade(config, "head")
+    assert _version(database_url) == HEAD_REVISION
+    assert {"action_subtasks", "network_people", "omni_conversations"} <= set(inspect(engine).get_table_names())
+    assert {"previous_status", "approval_requested_by", "approval_comment"} <= {column["name"] for column in inspect(engine).get_columns("work_items")}
+    with engine.connect() as connection:
+        assert connection.execute(text("SELECT value FROM migration_retention_probe WHERE id = 1")).scalar_one() == "retained local fixture"
+    engine.dispose()

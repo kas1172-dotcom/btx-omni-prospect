@@ -53,15 +53,12 @@ def test_action_is_durable_across_service_restart_with_structured_history(
     assert restarted.audit(action.id)[0].metadata == {"status": "OPEN"}
 
 
-def test_action_state_machine_rejects_arbitrary_or_terminal_transitions() -> None:
+def test_action_state_machine_supports_completion_and_only_explicit_reopen() -> None:
     service = WorkService()
     action = service.create(
         account_id="boeing", title="Prepare review", principal=SELLER, occurred_at=NOW
     )
-    with pytest.raises(ActionConflictError):
-        service.transition(
-            action.id, ActionStatus.COMPLETED, principal=SELLER, occurred_at=NOW
-        )
+    assert ActionStatus.COMPLETED in action.allowed_transitions
     active = service.transition(
         action.id, ActionStatus.IN_PROGRESS, principal=SELLER, occurred_at=NOW
     )
@@ -72,6 +69,8 @@ def test_action_state_machine_rejects_arbitrary_or_terminal_transitions() -> Non
         service.transition(
             completed.id, ActionStatus.OPEN, principal=SELLER, occurred_at=NOW
         )
+    reopened = service.transition(completed.id, ActionStatus.IN_PROGRESS, principal=SELLER, occurred_at=NOW)
+    assert reopened.status is ActionStatus.IN_PROGRESS and reopened.completed_at is None
 
 
 def test_assignment_and_approval_are_manager_authorized_and_orthogonal() -> None:
@@ -123,6 +122,7 @@ def test_salesperson_scope_and_external_write_boundary_are_enforced() -> None:
     workflow = CrmProposalWorkflow(service, adapter(), commercial_revision='test-revision')
     with pytest.raises(ActionConflictError):
         workflow.execute_sample(action.id, 'not-previewed', expected_decision_id='missing', idempotency_key='not-approved', principal=MANAGER, now=NOW)
+    service.request_approval(action.id, principal=OTHER, occurred_at=NOW, expected_version=action.version)
     service.decide_approval(
         action.id, ApprovalStatus.APPROVED, principal=MANAGER, occurred_at=NOW
     )

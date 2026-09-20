@@ -66,6 +66,16 @@ def test_salesperson_and_manager_sessions_preserve_role_policy(monkeypatch) -> N
     seller_client = TestClient(manager_client.app, base_url="https://backend.test")
     seller = _sign_in(seller_client, "hosted-seller-access")
     assert seller["principal"]["role"] == "SALESPERSON"
+    # A manager cannot approve their own request. Assign to the seller and
+    # record an explicit owner request before exercising the manager decision.
+    assert manager_client.post(f"/api/actions/{created.json()['id']}/approval",
+        headers={"X-CSRF-Token": manager["csrf_token"]}, json={"decision": "APPROVED"}).status_code == 403
+    assigned = manager_client.patch(f"/api/actions/{created.json()['id']}",
+        headers={"X-CSRF-Token": manager["csrf_token"]}, json={"owner_id": seller["principal"]["user_id"], "expected_version": created.json()['version']})
+    assert assigned.status_code == 200
+    requested = seller_client.post(f"/api/actions/{created.json()['id']}/approval/request",
+        headers={"X-CSRF-Token": seller["csrf_token"]}, json={"expected_version": assigned.json()['version']})
+    assert requested.status_code == 200
     assert (
         seller_client.post(
             f"/api/actions/{created.json()['id']}/approval",

@@ -1,3 +1,5 @@
+import { FilterBar } from '../../components/FilterBar';
+import type { WorkspaceLocation } from '../../app/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api/client";
 import {
@@ -25,6 +27,8 @@ import "./communications.css";
 import { actorDisplayName, presentationLabel } from "../../components/presentation";
 
 type Props = {
+  location: WorkspaceLocation;
+  onLocationChange: (next: WorkspaceLocation, mode?: "push" | "replace") => void;
   accounts: Account[];
   principal?: Principal;
   items: CommunicationDraft[];
@@ -34,14 +38,19 @@ type Props = {
 const humanize = (value: string) => presentationLabel(value, "communication");
 
 export function Communications({
+  location, onLocationChange,
   accounts,
   principal,
   items,
   onItem,
   onAccount,
 }: Props) {
-  const [query, setQuery] = useState("");
-  const [state, setState] = useState("ALL");
+  const query = String(location.filters?.query ?? '');
+  const state = String(location.filters?.status ?? 'ALL');
+  const sort = location.sort ?? 'UPDATED';
+  const setQuery = (query: string) => onLocationChange({ ...location, filters: { ...location.filters, query } }, 'replace');
+  const setState = (status: string) => onLocationChange({ ...location, filters: { ...location.filters, status } }, 'replace');
+  const clear = () => onLocationChange({ ...location, filters: {} }, 'replace');
   const [selectedId, setSelectedId] = useState<string>();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<CommunicationDraft>();
@@ -70,8 +79,8 @@ export function Communications({
           (state === "ALL" ||
             item.status === state ||
             item.approval_status === state),
-      ),
-    [customer, items, query, state],
+      ).sort((a, b) => (sort === "SUBJECT" ? a.subject.localeCompare(b.subject) : sort === "CUSTOMER" ? customer(a.account_id).localeCompare(customer(b.account_id)) : b.updated_at.localeCompare(a.updated_at)) || a.id.localeCompare(b.id)),
+    [customer, items, query, state, sort],
   );
   const selected = items.find((item) => item.id === selectedId) ?? visible[0];
   const historyId = selected?.id;
@@ -175,13 +184,14 @@ export function Communications({
           {notice}
         </p>
       )}
-      <div className="communications-toolbar">
-        <SearchInput
+      <FilterBar label="Communications filters" search={<SearchInput
           aria-label="Search communications"
           placeholder="Search Customer or draft"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-        />
+        />} count={visible.length} onClear={clear}
+        filters={[...(query ? [{ key: 'query', label: `Search: ${query}`, remove: () => setQuery('') }] : []), ...(state !== 'ALL' ? [{ key: 'status', label: `Status: ${state}`, remove: () => setState('ALL') }] : [])]}
+        sort={<SelectInput aria-label="Sort communications" value={sort} onChange={event => onLocationChange({ ...location, sort: event.target.value }, 'replace')}><option value="UPDATED">Recently updated</option><option value="SUBJECT">Subject A–Z</option><option value="CUSTOMER">Customer A–Z</option></SelectInput>}>
         <SelectInput
           aria-label="Filter communications"
           value={state}
@@ -193,18 +203,7 @@ export function Communications({
           <option value="READY">Ready</option>
           <option value="SENT">Sent</option>
         </SelectInput>
-        {(query || state !== "ALL") && (
-          <FilterChip
-            selected
-            onClear={() => {
-              setQuery("");
-              setState("ALL");
-            }}
-          >
-            Clear filters
-          </FilterChip>
-        )}
-      </div>
+      </FilterBar>
       <div className="communications-workbench">
         <Panel
           title="Customer communications"
@@ -239,7 +238,7 @@ export function Communications({
                 </button>
               ))
             ) : (
-              <Empty>No communication drafts match these filters.</Empty>
+              <Empty>No communication drafts match these filters. <Button onClick={clear}>Clear filters</Button></Empty>
             )}
           </div>
         </Panel>

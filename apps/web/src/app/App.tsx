@@ -60,6 +60,7 @@ export default function App() {
   const [todayFilters, setTodayFilters] = useState<TodayFilters>(() => todayFiltersFromLocation(initialLocation.location))
   const [location, setLocation] = useState<WorkspaceLocation>(initialLocation.location)
   const locationRef = useRef(location)
+  const filterLocations = useRef(new globalThis.Map<Surface, Pick<WorkspaceLocation, 'filters' | 'sort' | 'subview'>>([[location.surface, { filters: location.filters, sort: location.sort, subview: location.subview }]]))
   const surface = location.surface
   const [linkRecovery, setLinkRecovery] = useState(initialLocation.recovery ? 'This link could not be restored completely. A safe workspace view is shown instead.' : '')
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
@@ -77,6 +78,18 @@ export default function App() {
   const [mapFilterOptions, setMapFilterOptions] = useState<MapFilterOptions>({ business_units: [], capabilities: [] })
   const [detail, setDetail] = useState<Account360>()
   const [items, setItems] = useState<WorkItem[]>([])
+  const actionEditSequence = useRef(0)
+  const actionEdits = useRef(new globalThis.Map<string, number>())
+  const updateAction = useCallback((item: WorkItem) => {
+    actionEdits.current.set(item.id, ++actionEditSequence.current)
+    setItems(current => [...current.filter(value => value.id !== item.id), item])
+  }, [])
+  const receiveActions = useCallback((snapshot: WorkItem[], startedAt: number) => {
+    setItems(current => {
+      const newer = current.filter(item => (actionEdits.current.get(item.id) ?? 0) > startedAt)
+      return [...snapshot.filter(item => !newer.some(value => value.id === item.id)), ...newer]
+    })
+  }, [])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [communications, setCommunications] = useState<CommunicationDraft[]>([])
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>()
@@ -104,6 +117,7 @@ export default function App() {
   const [viewContext, setViewContext] = useState<OmniViewContext>({})
   useEffect(() => { locationRef.current = location }, [location])
   const commitLocation = useCallback((next: WorkspaceLocation, mode: NavigationMode = 'push') => {
+    if (!next.accountId) filterLocations.current.set(next.surface, { filters: next.filters, sort: next.sort, subview: next.subview })
     if (sameWorkspaceLocation(locationRef.current, next)) return
     const update = historyUpdate(window.location.hash, next, mode)
     if (update.method === 'none' && update.hash === decodeWorkspaceLocation(window.location.hash).canonicalHash) return
@@ -197,7 +211,10 @@ export default function App() {
       clearViewContext()
       setDetail(undefined)
     }
-    commitLocation({ surface: id }, recordHistory ? 'push' : 'none')
+    const remembered = filterLocations.current.get(id)
+    const destination = { surface: id, ...remembered }
+    if (id === 'today') setTodayFilters(todayFiltersFromLocation(destination))
+    commitLocation(destination, recordHistory ? 'push' : 'none')
   }, [authState, workspaceSettings?.capabilities.view_source_health, surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
   const backFromAccount = useCallback(() => {
     accountRequest.current?.abort()
@@ -223,7 +240,7 @@ export default function App() {
         description: `${brief.why_it_may_matter}${brief.action_rationale ? ` ${brief.action_rationale}` : ''}`,
         priority: brief.commercial_relevance_state === 'ESTABLISHED_ACCOUNT_REVIEW' ? 'HIGH' : 'MEDIUM',
         evidence_ids: [brief.assessment_id, ...brief.evidence_ids],
-        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id]],
+        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id], ['source_screen', 'Intelligence'], ['source_route', workspaceHash({ ...locationRef.current, surface: 'intelligence', subview: 'brief', recordId: brief.context_id ?? brief.id, eventId: brief.id, assessment: brief.assessment_version ? { assessmentId: brief.assessment_id, assessmentVersion: brief.assessment_version, eventId: brief.id, accountId } : undefined, returnTo: undefined })]],
         approval_required: false,
         idempotency_key: `monitor-${brief.assessment_id.slice(0, 56)}`,
       })
@@ -245,6 +262,8 @@ export default function App() {
       ['federal_assessment', assessment.assessment_id],
       ['federal_assessment_version', String(assessment.assessment_version)],
       ['federal_route_type', route.route_type],
+      ['source_screen', 'Federal opportunities'],
+      ['source_route', workspaceHash({ ...locationRef.current, returnTo: undefined })],
     ]
     if (route.route_type === 'STRATEGIC_PARTNER') referents.push(['strategic_partnership', route.account_id])
     try {
@@ -329,11 +348,19 @@ export default function App() {
     if (!requested || requested === 'today') load('today', api.today(signal), value => { setAlerts(value.commercial_alerts); setCommandCenter(value.command_center); setTodayState('loaded') }, () => setTodayState(previous => previous === 'loaded' ? previous : 'unavailable'))
     if (!requested || requested === 'intelligence') load('intelligence', api.intelligence(signal), value => setSignals(value.signals))
     if (!requested || requested === 'map') load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers); setMapFilterOptions(value.filter_options ?? { business_units: [], capabilities: [] }) })
-    if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
+    const actionReadSequence = actionEditSequence.current
+    if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { receiveActions(value.items, actionReadSequence); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
     if (!requested || requested === 'communications') load('communications', api.communications(signal), value => setCommunications(value.items))
     if (!requested || requested === 'settings') load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
     return () => controller.abort()
-  }, [applyWorkspaceSettings, authState, resourceRefresh])
+  }, [applyWorkspaceSettings, authState, resourceRefresh, receiveActions])
+  useEffect(() => {
+    if (authState !== 'authenticated' || location.surface !== 'actions') return
+    const controller = new AbortController()
+    const startedAt = actionEditSequence.current
+    void api.actions(controller.signal).then(value => { if (!controller.signal.aborted) { receiveActions(value.items, startedAt); setSuggestions(value.suggestions) } }).catch(() => { if (!controller.signal.aborted) setActionWarning('Actions could not refresh. Previously displayed work may be outdated.') })
+    return () => controller.abort()
+  }, [authState, location.surface, receiveActions])
   useEffect(() => {
     if (authState !== 'authenticated' || !workspaceSettings?.capabilities.view_source_health) return
     if (resourceRefresh && resourceRefresh.key !== 'monitor') return
@@ -390,9 +417,9 @@ export default function App() {
         onOmniContext={setViewContext}
       />
     ) : surface === 'actions' ? (
-      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={location.actionId ?? selectedActionId} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} location={location} onLocationChange={commitLocation} />
+      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={location.actionId ?? selectedActionId} onItem={updateAction} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} location={location} onLocationChange={commitLocation} />
     ) : surface === 'communications' ? (
-      <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
+      <Communications location={location} onLocationChange={commitLocation} accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
       <Settings accounts={accounts} location={location} settings={workspaceSettings} state={settingsState} onSettings={applyWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { applyWorkspaceSettings(value); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => { Object.keys(sessionStorage).filter(key => key.startsWith('btx-private-')).forEach(key => sessionStorage.removeItem(key)); window.location.reload() })} />
     ) : surface === 'monitor' ? (
