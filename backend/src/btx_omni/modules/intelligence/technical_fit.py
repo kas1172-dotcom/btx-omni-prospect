@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from enum import StrEnum
 
 from btx_omni.ai.contracts import (
@@ -18,6 +18,7 @@ from btx_omni.ai.contracts import (
     TechnicalDecompositionResult,
     TechnicalEvidenceLayer,
 )
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.domain.btx import BtxBusinessUnit
 from btx_omni.domain.capabilities import Capability
 from btx_omni.domain.programs import ComponentClass
@@ -162,7 +163,7 @@ class TechnicalDecompositionService:
         now: datetime | None = None,
         retry_policy: TechnicalRetryPolicy | None = None,
     ) -> TechnicalProcessOutcome:
-        clock = now or datetime.now(UTC)
+        clock = now or as_of_datetime()
         model = self.provider_model(provider)
         key = self.cache_key(request, model=model)
         attempts = int(cached.get("attempt_count", 0)) if cached else 0

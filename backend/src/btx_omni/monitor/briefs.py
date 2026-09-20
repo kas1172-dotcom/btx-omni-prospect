@@ -104,6 +104,7 @@ class SignalBrief:
     assessment_version: int | None = None
     geographic_scope: str = "ACCOUNT"
     context_id: str | None = None
+    seed_context: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -146,7 +147,8 @@ def publication_freshness(
     threshold_hours: int,
     now: datetime | None = None,
 ) -> str:
-    clock = now or datetime.now(UTC)
+    from btx_omni.core.clock import as_of_datetime
+    clock = as_of_datetime(now)
     if published_at is None:
         return "PUBLICATION_DATE_UNAVAILABLE"
     if published_at > clock:
@@ -167,7 +169,8 @@ def signal_brief(
     now: datetime | None = None,
     target_reasons: tuple[TargetReason, ...] = (),
 ) -> SignalBrief:
-    clock = now or datetime.now(UTC)
+    from btx_omni.core.clock import as_of_datetime
+    clock = as_of_datetime(now)
     subjects = tuple(
         item.canonical_account_id
         for item in event.subject_entities
@@ -181,8 +184,9 @@ def signal_brief(
         event.resolution_state is ResolutionState.RESOLVED
         and event.seller_relevance_state is SellerRelevanceState.RESOLVED_ELIGIBLE
     )
+    from btx_omni.modules.scoring.public_rules import freshness_window_hours
     freshness = publication_freshness(
-        published, collected_at=collected, threshold_hours=freshness_hours, now=clock
+        published, collected_at=collected, threshold_hours=freshness_window_hours(event.event_type.value), now=clock
     )
     event_timing = (
         "UNKNOWN"
@@ -207,6 +211,7 @@ def signal_brief(
         missing.append("source summary")
     headline = EVENT_LABELS.get(event.event_type.value, "Public update reported")
     deterministic_summary = f"{headline}. {title}" if title else headline
+    seed = json.loads(observation.structured_payload) if observation and observation.structured_payload and event.provenance.source_system in {'curated_monitor_style', 'fictional_rubric_fixture'} else None
     return SignalBrief(
         id=event.id,
         context_id=None,
@@ -257,6 +262,7 @@ def signal_brief(
         risk_severity=public_risk_assessment(event, observation, now=clock),
         event_type=event.event_type.value,
         geographic_scope="FACILITY" if event.canonical_facility_id else "ACCOUNT",
+        seed_context=seed,
     )
 
 
@@ -533,7 +539,9 @@ def signal_briefs_for_monitor(
     before the window is applied, preventing unrelated recent events from
     displacing the selected account's assessment.
     """
+    from btx_omni.core.clock import as_of_datetime
     from btx_omni.monitor.service import current_event_contexts
+    now = now or as_of_datetime(getattr(getattr(monitor, 'settings', None), 'demo_as_of_date', None))
 
     repository = getattr(monitor, "repository", None)
     selected_assessments: tuple[dict, ...] = ()

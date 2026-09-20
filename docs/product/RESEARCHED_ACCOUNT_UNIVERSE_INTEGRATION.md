@@ -1,14 +1,16 @@
 # Researched Account Universe Integration
 
+**Historical integration checkpoint, superseded for current counts.** The numeric counts below describe the original input, not today's catalog. Use [generated catalog counts](SAMPLE_ENHANCEMENT_REPORT.md#generated-catalog-counts) and [Rubric v2.0](BTX_Omni_Scoring_Rubric_v2.0.md). The enhancement adds explicitly fictional organizations without promoting them to verified public identities.
+
 ## Inputs and validation
 
 The supplied research directory contains `btx_researched_account_universe.json`, `btx_researched_contacts.json`, and `btx_research_integration_manifest.json`. The manifest references `_v2` filenames, but the supplied files omit that suffix. Their schema versions are 2.0, 2.0, and 1.0 respectively; the declared join key is `research_account_id`.
 
-The ingestion loader rejects unsupported schemas, absent or duplicate research IDs, and contacts that reference an unknown research account. The current input has 78 unique researched accounts, 80 named public contacts, 12 public contact channels, and no duplicate research IDs.
+The ingestion loader rejects unsupported schemas, absent or duplicate research IDs, and contacts that reference an unknown research account. The historical input had 78 researched accounts, 80 named public contacts and 12 public contact channels; these are not current counts.
 
 ## Canonical mapping
 
-The 78 researched identities are the canonical POC universe. Each canonical ID
+The original researched identities formed that checkpoint's POC universe. Each canonical ID
 is its `research_account_id`; no generated `Market Target` records, synthetic
 public identities, synthetic coordinates, or simulated external ranks remain.
 Curated scenarios attach simulated PRISM, Paperless, CRM, matching, alerts, and
@@ -27,7 +29,7 @@ Public identity and relationship evidence never convert the account's BTX relati
 
 The canonical Contact Research section exposes 80 `NAMED_PUBLIC_CONTACT` records and 12 `PUBLIC_CONTACT_CHANNEL` records. Current verification totals are 21 `VERIFIED_OFFICIAL` and 71 `PUBLIC_PROFILE_VERIFIED`; all remain `RESEARCH_ONLY` and distinct from SAMPLE CRM and future HubSpot contacts. Role targets remain present for accounts without a named contact.
 
-78 generic Monitor watch profiles are activated from supplied public identity data only. They carry legal name, supplied aliases, domain, and industry; missing CIK, ticker, newsroom, IR, facilities, and other identifiers remain absent. Exact legal-name resolution is enabled; alias, ambiguous, and unresolved resolution remain governed by the common resolver.
+Generic Monitor profiles derive from supplied identities; see the generated current count in the enhancement report. Missing identifiers remain absent. The enhancement does not activate live monitors for its fictional organizations.
 
 ## Remaining work
 

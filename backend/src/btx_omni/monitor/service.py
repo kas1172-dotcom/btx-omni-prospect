@@ -9,6 +9,7 @@ from time import monotonic
 from uuid import uuid4
 
 from btx_omni.core.config import Settings
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.monitor.candidates import (
     organization_candidate_for,
     program_candidate_for,
@@ -48,7 +49,7 @@ from btx_omni.providers.research.deadline import bounded_public_read
 def current_event_contexts(monitor):
     """Read one immutable canonical snapshot; never cache a worker's public writes."""
     if getattr(monitor, "repository", None):
-        return monitor.repository.event_contexts()
+        return monitor.repository.event_contexts() + tuple(getattr(monitor, 'curated_contexts', ()))
     observations = {
         item.raw_evidence.id: item
         for item in getattr(monitor, "observations", {}).values()
@@ -66,7 +67,7 @@ def current_event_contexts(monitor):
             ),
         )
         for event in tuple(monitor.events.values())
-    )
+    ) + tuple(getattr(monitor, 'curated_contexts', ()))
 
 
 def current_source_observations(monitor):
@@ -99,6 +100,7 @@ class MonitorService:
     watch_profiles: tuple[AccountWatchProfile, ...] = ()
     catalog: MonitorCatalog = field(default_factory=MonitorCatalog)
     watch_targets: dict[str, tuple[WatchTarget, ...]] = field(default_factory=dict)
+    # Collection receipts are operational timestamps, not scoring observations.
     clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     entity_candidate_resolver: EntityCandidateResolver | None = None
 
@@ -552,7 +554,7 @@ class MonitorService:
         durable_health: dict | None = None,
         last_run: dict | None = None,
     ) -> SourceOperationalStatus:
-        clock = now or datetime.now(UTC)
+        clock = now or as_of_datetime()
         adapter = self.registry[source_id]
         available, unavailable_reason = adapter.available(self.settings)
         health = durable_health or self.health.get(source_id)

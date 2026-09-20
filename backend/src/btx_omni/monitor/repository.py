@@ -284,6 +284,9 @@ class MonitorRepository:
 
             heartbeat = None
             if acquired:
+                # Validate the retained session before yielding; a very short
+                # cycle may finish before the heartbeat thread is scheduled.
+                connection.execute(text("SELECT 1"))
                 heartbeat = Thread(
                     target=keep_lock_connection_alive,
                     name="monitor-operational-lock-heartbeat",

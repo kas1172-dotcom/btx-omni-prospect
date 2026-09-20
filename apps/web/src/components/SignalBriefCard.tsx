@@ -33,6 +33,14 @@ export function SignalBriefCard({ brief, priority, accountName, onAccount, onUse
       <span>{brief.event_timing === 'UPCOMING' ? 'Event' : 'Published'}: {dateLabel(eventDate)}</span>
     </div>
     <div className="seller-signal-decision">
+      {brief.seed_context && <section aria-label="Curated sample provenance">
+        <span>{brief.seed_context.seed_type} — not a live monitor run</span>
+        <p>{brief.seed_context.publisher}; retrieved {brief.seed_context.retrieval_date}. Site: {brief.seed_context.entity.site} ({brief.seed_context.entity.site_status.replaceAll('_', ' ')}).</p>
+        <p>Need: {brief.seed_context.gates.need}. Publication: {brief.seed_context.gates.publication}. Contact gap: {brief.seed_context.contact_gap.role} ({brief.seed_context.contact_gap.state}).</p>
+        <p><strong>{brief.seed_context.fit_hypothesis.label}:</strong> {brief.seed_context.fit_hypothesis.reasoning}</p>
+        <ul>{brief.seed_context.routes.map(edge => <li key={`${edge.from}:${edge.to}`}><strong>{edge.state.replaceAll('_', ' ')}</strong>: {edge.from} → {edge.to}. {edge.reason}</li>)}</ul>
+        <p>What would change the result: {brief.seed_context.what_would_change_result.join(' ')}</p>
+      </section>}
       <section><span>What changed</span><p>{brief.what_happened}</p></section>
       <section><span>Why it may matter</span><p>{brief.why_it_may_matter} <WhyThis>{brief.action_rationale ?? brief.what_to_watch}</WhyThis></p></section>
       <section className="seller-signal-action" aria-label="Recommended next action"><span>Next decision</span><p>{brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p></section>

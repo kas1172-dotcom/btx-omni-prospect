@@ -84,7 +84,10 @@ def test_source_change_invalidates_decision_and_old_publication_loses_freshness(
     assert changed['decision_id'] != baseline['decision_id']
     assert score(event, observation, NOW + timedelta(days=3))['score'] == baseline['score']
     stale = score(event, observation, NOW + timedelta(days=31))
-    assert stale['score'] == Decimal('49.11')
+    # Rubric v2.0 R1/R2: expired observations are Unknown, not a reduced point score.
+    assert stale['score'] is None
+    assert stale['score_range'] == {'low': Decimal(0), 'high': Decimal(90)}
+    assert stale['evidence_state'] == 'STALE'
     assert stale['score_range']['low'] < baseline['score_range']['low']
 
 

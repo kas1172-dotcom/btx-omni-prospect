@@ -1,3 +1,4 @@
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -12,6 +13,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api"
     data_mode: str = "SAMPLE"
+    sample_enhancement_enabled: bool = False
+    demo_as_of_date: date = Field(default=date(2026, 9, 20), validation_alias=AliasChoices("DEMO_AS_OF_DATE", "BTX_DEMO_AS_OF_DATE"))
     release_sha: str = ""
     release_tree: str = ""
     release_worktree: str = "unknown"

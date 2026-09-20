@@ -77,7 +77,7 @@ def today(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         monitor_snapshot=monitor_snapshot,
         curated_signals=intelligence,
         generated_at=observed_at,
-        public_as_of=datetime.now(UTC),
+        public_as_of=observed_at,
     )
     return {
         "data_mode": "SAMPLE",

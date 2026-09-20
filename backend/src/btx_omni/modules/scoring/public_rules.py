@@ -66,7 +66,7 @@ def risk_points(key, facts):
         return None if days is None or days < 0 else 75 if days > 365 else 50 if days >= 91 else 25 if days > 0 else 0
     if key == 'breadth':
         return {'ENTERPRISE': 100, 'MULTIPLE_BUSINESS_UNITS': 75, 'MULTIPLE_SITES_ONE_BU': 50, 'FACILITY': 25, 'PROGRAM': 25, 'ISOLATED_COMPONENT': 0}.get(facts.get('risk_breadth'))
-    if key == 'reversibility':
+    if key == 'mitigation':
         return {'REMEDY_UNAVAILABLE': 100, 'CONFIRMED_NO_PLAN': 75, 'PLAN_NOT_STARTED': 50, 'UNDERWAY_DATED_MILESTONES': 25, 'FULLY_MITIGATED': 0}.get(facts.get('risk_mitigation'))
     return None
 
@@ -75,5 +75,5 @@ RISK_FIELDS = {
     'impact': ('risk_condition', 'program_reduction_percent', 'delay_days'),
     'materiality': ('affected_revenue_share_percent', 'affected_backlog_share_percent', 'affected_pursuit_share_percent', 'subject_kind'),
     'imminence': ('days_until_effect',), 'persistence': ('permanent_effect', 'remaining_effect_days'),
-    'breadth': ('risk_breadth',), 'reversibility': ('risk_mitigation',),
+    'breadth': ('risk_breadth',), 'mitigation': ('risk_mitigation',),
 }

@@ -252,6 +252,9 @@ def test_persisted_assessment_is_identical_across_bounded_product_reads(
             return NOW if tz is not None else NOW.replace(tzinfo=None)
 
     monkeypatch.setattr("btx_omni.monitor.briefs.datetime", FrozenDateTime)
+    # Clock amendment / R1: freeze the business clock, not datetime.now.
+    from types import SimpleNamespace
+    monkeypatch.setattr('btx_omni.core.clock.get_settings', lambda: SimpleNamespace(demo_as_of_date=NOW))
     database_url = f"sqlite:///{tmp_path / 'cross-surface.db'}"
     setup_engine = create_engine(database_url)
     metadata.create_all(setup_engine)

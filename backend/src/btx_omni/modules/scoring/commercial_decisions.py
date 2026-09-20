@@ -1,6 +1,7 @@
 """Commercial decision inputs from canonical transactions, never scenario scores."""
 from datetime import UTC, date, datetime
 
+from btx_omni.core.clock import evidence_state
 from btx_omni.domain.work import Action
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
@@ -9,13 +10,21 @@ from btx_omni.modules.scoring.account_attractiveness import (
     seller_attractiveness_projection,
 )
 from btx_omni.modules.scoring.action_priority import VERSION as ACTION_PRIORITY_VERSION
-from btx_omni.modules.scoring.action_priority import rank_actions
+from btx_omni.modules.scoring.action_priority import action_sort_key, rank_actions
 from btx_omni.modules.scoring.commercial_inputs import commercial_attractiveness_inputs
 from btx_omni.modules.scoring.customer_health import health_inputs
 from btx_omni.modules.scoring.families import FactorInput, assess
 from btx_omni.modules.scoring.internal_risk import risk_inputs
 from btx_omni.modules.scoring.opportunity_gates import opportunity_gates
 from btx_omni.modules.scoring.pursuit_inputs import pursuit_inputs
+
+
+def critical_risk_evidence(account):
+    """An explicit current confirmed block, not inferred from a risk score."""
+    return tuple(row['service_event_id'] for row in account.get('service_events', ())
+        if row.get('confirmed') is True and row.get('issue_type') in {'LEGAL_PROHIBITION', 'SAFETY_SHUTDOWN'}
+        and row.get('status') not in {'RESOLVED', 'CLOSED'}
+        and evidence_state(account.get('snapshot_observed_as_of'), as_of=account['as_of'], window_days=2) == 'CURRENT')
 
 
 def customer_decisions(account: dict, *, account_id: str, revision: str, current_customer: bool, work_items: tuple[Action, ...] = (), facility_ids: frozenset[str] = frozenset()) -> dict:
@@ -63,7 +72,16 @@ def opportunity_decisions(account: dict, *, account_id: str, revision: str, faci
                           and buyer in r.get("real_person_ids", []) and opportunity["opportunity_id"] in r.get("related_record_ids", [])]
         specified_lines = [r for r in account["quote_lines"] if r["quote_revision_id"] == opportunity["quote_revision_id"]
                            and r["component_id"] == cid and r.get("technical_requirements")]
-        pursuit_qualified = bool(gates['qualified'] == 'YES' and buyer and buyer_evidence and specified_lines and opportunity["stage"] in {"QUALIFIED", "NEGOTIATION", "PROPOSAL_APPROVED"})
+        role_id = opportunity.get('qualified_buyer_role_id')
+        verified_role = next((r for r in account['role_targets'] if r['role_target_id'] == role_id and r.get('contact_verified') is True), None)
+        role_proof = any(r['interaction_id'] in opportunity.get('buyer_qualification_evidence_ids', [])
+            and role_id in r.get('participant_role_ids', []) and r.get('buyer_role_verified') is True
+            and opportunity['opportunity_id'] in r.get('related_record_ids', [])
+            and evidence_state(r.get('date'), as_of=account['as_of'], window_days=30) == 'CURRENT'
+            and resolve_commercial_evidence(account, r.get('source_document_id', '')) for r in account['interactions'])
+        # Section 11 explicitly permits a verified role contact without interaction.
+        pursuit_qualified = bool(gates['qualified'] == 'YES' and ((buyer and buyer_evidence) or (verified_role and role_proof))
+            and specified_lines and opportunity["stage"] in {"QUALIFIED", "NEGOTIATION", "PROPOSAL_APPROVED"})
         pwin_inputs, pwin_blocks, pwin_missing = pursuit_inputs(account, opportunity, 'pwin')
         pwin = assess('pwin', subject_id=opportunity['opportunity_id'], as_of=account['as_of'], revision=revision,
                       inputs=pwin_inputs, eligible=pursuit_qualified and not pwin_missing,
@@ -111,6 +129,9 @@ def action_decisions(account: dict, *, account_id: str, revision: str, fulfillme
             and item['record'].get('confirmed') is True
             and item['record'].get('issue_type') in {'SAFETY_SHUTDOWN', 'LEGAL_PROHIBITION', 'STOPPED_SHIPMENT'}
             for item in resolved)
+        public = account.get('public_event_assessments', {}).get(action.get('underlying_event_id'))
+        if public and public.get('as_of') == account['as_of'] and public.get('family') == 'risk_severity':
+            underlying = public
         rows.append({'id': action['action_id'], 'action_id': action['action_id'], 'account_id': account_id,
             'title': action['title'], 'status': status, 'valid': valid,
             'due_date': work.due_date if work else action.get('due_date'),
@@ -126,6 +147,9 @@ def action_decisions(account: dict, *, account_id: str, revision: str, fulfillme
             'decision_id': f"action-order:{revision}:{row['action_id']}:{row['priority_rank']}",
             'family': 'action_priority', 'subject_id': row['action_id'], 'as_of': account['as_of'], 'revision': revision,
             'configuration_version': ACTION_PRIORITY_VERSION, 'score': None, 'status': 'RANKED',
+            'rule_version': 'BTX_SCORING_RUBRIC_V2.0',
+            'calculation_trace': {'sort_key': [str(v) for v in action_sort_key(row)]},
+            'what_would_change_result': ['A confirmed block, changed risk disposition, completed assessment, due date or work status changes queue order.'],
             'priority_rank': row['priority_rank'], 'priority_class': row['priority_class'],
             'underlying_decision_id': underlying.get('decision_id'), 'factors': [],
             'eligibility_reasons': (), 'blocking_constraints': (),

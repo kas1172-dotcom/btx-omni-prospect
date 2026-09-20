@@ -1,6 +1,7 @@
 """Evidence-backed selections for the unchanged Account Attractiveness rubric."""
 from datetime import date, timedelta
 
+from btx_omni.core.clock import evidence_state
 from btx_omni.modules.commercial.evidence import evidence_supports_opportunity
 from btx_omni.modules.scoring.account_attractiveness import AccountAttractivenessInputs
 
@@ -45,7 +46,7 @@ def commercial_attractiveness_inputs(account: dict) -> AccountAttractivenessInpu
     opportunity = next((item for item in account.get('opportunities', []) if item['opportunity_id'] == account.get('scoring_opportunity_id')), None)
     for row in account.get('opportunity_score_observations', []):
         if (row.get('opportunity_id') != account.get('scoring_opportunity_id') or not row.get('opportunity_id')
-                or row.get('reviewed_as_of') != account['as_of'] or not row.get('evidence_ids')
+                or evidence_state(row.get('reviewed_as_of'), as_of=account['as_of'], window_days=30) != 'CURRENT' or not row.get('evidence_ids')
                 or not opportunity or not all(evidence_supports_opportunity(account, eid, opportunity) for eid in row['evidence_ids'])):
             continue
         selections[row['path']] = row['bin']

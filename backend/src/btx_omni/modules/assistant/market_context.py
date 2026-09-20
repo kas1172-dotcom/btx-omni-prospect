@@ -34,6 +34,8 @@ def selected_market_context(service, filters, environment):
         content += ' The latest refresh failed; these are retained prior observations, not newly verified data.'
     return {'content': content, 'metadata': metadata, 'points': points, 'vintage_id': vintage_id,
             'retrieved_at': result['retrieved_at'], 'last_verified_at': result['last_verified_at'],
+            'retrieval_kind': result.get('retrieval_kind'),
+            'curated_public_context': list(getattr(service, 'curated_public_context', ())) if market == 'Medical' else [],
             'source_sha256': result['source_sha256'], 'release_date': result['release_date'],
             'transformation': kind, 'moving_average_months': result['moving_average_months'],
             'source_url': result['source_url'], 'exposed_accounts': accounts[:20], 'exposed_account_count': len(accounts),

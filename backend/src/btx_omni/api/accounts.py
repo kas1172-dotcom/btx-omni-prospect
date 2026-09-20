@@ -61,6 +61,7 @@ def _seller_attractiveness(projection: SellerAttractivenessProjection) -> dict:
         "status": projection.status,
         "score_unit": projection.score_unit,
         "configuration_version": projection.configuration_version,
+        "rule_version": projection.rule_version,
         "hypothesis": projection.hypothesis,
         "data_mode": projection.data_mode,
         "interpretation_note": projection.interpretation_note,
@@ -134,7 +135,7 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
                 "btx_top_100_provenance": item.btx_top_100_provenance,
                 "is_rich_scenario": item.id in sample.rich_scenarios
                 or item.id in sample.priority_scenarios or item.id in sample.commercial_ledgers,
-                "truth_state": "PUBLICLY_VERIFIED"
+                "truth_state": "FICTIONAL_SAMPLE" if item.public_research_state == 'FICTIONAL_SAMPLE' else "PUBLICLY_VERIFIED"
                 if item.id in sample.rich_scenarios
                 else (
                     "REFERENCE_SOURCE"
@@ -243,6 +244,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         },
         "commercial_source_states": commercial.source_states,
         "commercial_ledger": commercial.ledger_summary,
+        "sample_context": sample.commercial_ledgers.get(account_id, {}).get('commercial_case') if runtime.settings.sample_enhancement_enabled else None,
         "public_contacts": account.public_contacts,
         "public_facilities": public_facilities,
         "prism_commercial_context": contexts,

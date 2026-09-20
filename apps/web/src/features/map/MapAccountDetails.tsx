@@ -45,7 +45,9 @@ export function MapAccountDetails({ record }: { record: MapRecord }) {
       <p><strong>Organization:</strong> {record.name}</p>
       <p><strong>Facility:</strong> {record.location_name ?? "Canonical facility"}</p>
       <p><strong>Site role:</strong> {presentationLabel(record.location_type ?? "Role unavailable")}</p>
-      <p><strong>Verified location:</strong> {verifiedLocation || "Location details unavailable"} · {presentationLabel(record.location_truth_state)}</p>
+      <p><strong>{record.sample_context ? 'Fictional demonstration location:' : 'Verified location:'}</strong> {verifiedLocation || "Location details unavailable"} · {presentationLabel(record.location_truth_state)}</p>
+      {record.sample_context && <section aria-label="Synthetic site context"><p>SAMPLE: this organization and pin are fictional. No meeting, travel time or introduction is confirmed.</p><CanonicalRecord value={record.sample_context} /></section>}
+      {currentDetail?.sample_context && <details><summary>SAMPLE commercial narrative and calculated evidence</summary><CanonicalRecord value={currentDetail.sample_context} /></details>}
       <p><strong>Market and industry:</strong> {record.primary_markets.join(" · ") || record.industry || "Unavailable"}</p>
       {Boolean(record.naics_assignments?.length) && <p><strong>Account NAICS:</strong> {record.naics_assignments?.map((item) => `${item.code} (${item.taxonomy_version})`).join(" · ")} · POC classification</p>}
       {record.candidate_capabilities?.length ? <p><strong>Candidate BTX capability fit:</strong> {record.candidate_capabilities.map(item => item.name).join(" · ")}. Derived from account-level business-unit context and requires site qualification.</p> : <p><strong>Candidate BTX capability fit:</strong> No supported account-level capability match is available.</p>}

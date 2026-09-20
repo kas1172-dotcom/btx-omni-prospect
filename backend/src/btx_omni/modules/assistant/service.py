@@ -6,6 +6,7 @@ import json
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
+from types import SimpleNamespace
 
 from btx_omni.ai.contracts import (
     ConversationTurn,
@@ -286,6 +287,8 @@ class OmniService:
                 work_items=work_items,
                 selected_relationship=deterministic.structured_relationship,
                 selected_market=deterministic.structured_market,
+                signal_briefs=tuple(SimpleNamespace(**dict(item['business_briefing']))
+                    for item in intelligence_events if isinstance(item.get('business_briefing'), Mapping)),
             ).run(self.provider, question)
             deterministic = replace(
                 deterministic,

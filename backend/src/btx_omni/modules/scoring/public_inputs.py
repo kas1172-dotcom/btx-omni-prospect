@@ -9,6 +9,7 @@ from datetime import UTC
 from decimal import Decimal
 from hashlib import sha256
 
+from btx_omni.core.clock import evidence_state
 from btx_omni.modules.scoring.families import FactorInput, assess
 from btx_omni.modules.scoring.public_rules import (
     GOVERNMENT_SOURCES,
@@ -57,6 +58,8 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
                 and all(item.state is ResolutionState.RESOLVED and item.canonical_account_id for item in event.subject_entities))
     # Parent identity is not subsidiary/site resolution.
     entity_points = 50 if resolved else 0
+    if facts.get('identity_resolution_scope') == 'PARENT_CONFIRMED_SITE_UNRESOLVED':
+        entity_points = 50
     if resolved and facts.get('site_identity_verified') == 'true':
         if facts.get('authoritative_identifier_verified') == 'true':
             entity_points = 100
@@ -76,7 +79,7 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
 
     def factor(points, ids, reason, raw=None):
         return FactorInput(Decimal(points) if points is not None and ids else None, ids, reason,
-                           raw_value=raw, period=now.date().isoformat(), truth_class='PUBLIC_SOURCE')
+                           raw_value=raw, period=now.date().isoformat(), truth_class='POC_SCENARIO' if event.provenance.synthetic else 'PUBLIC_SOURCE')
 
     inputs = {
         'source_reliability': factor(source_points, source_evidence, 'Reliability follows the authenticated source category, not commercial relevance.', tier),
@@ -88,6 +91,12 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
         'freshness': factor(freshness, source_evidence,
             f'Fact freshness uses the rubric’s {window // 24}-day window; collection time does not reset publication age.', published.isoformat() if published else None),
     }
+    # R1/R2: retain the explicit section-4 zero freshness band, but do not
+    # present expired source observations as a current High confidence score.
+    if age is not None and age > window:
+        from dataclasses import replace
+        inputs = {key: replace(value, evidence_state='STALE') if key != 'freshness' else value
+                  for key, value in inputs.items()}
     # Persistence may reorder payload keys. Hash scoring inputs canonically,
     # not repr(event/observation), so worker and API reads share one identity.
     revision = sha256(json.dumps({'version': VERSION, 'event': event.id,
@@ -96,11 +105,14 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
         'inputs': {key: asdict(value) for key, value in inputs.items()}},
         sort_keys=True, default=str, separators=(',', ':')).encode()).hexdigest()
     result = assess('signal_confidence', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
-                    revision=revision, inputs=inputs, eligible=bool(evidence) and not event.provenance.synthetic)
+                    revision=revision, inputs=inputs, eligible=bool(evidence) and (not event.provenance.synthetic or
+                        (event.provenance.source_system == 'fictional_rubric_fixture' and event.provenance.data_mode.value == 'SAMPLE' and facts.get('fictional_scenario') == 'true')))
     result.update({'input_configuration_version': VERSION, 'freshness_threshold_hours': window,
+                   'evidence_state': 'STALE' if age is not None and age > window else 'CURRENT' if freshness is not None else 'UNKNOWN',
                    'collection_freshness_hours': freshness_hours, 'specificity_required_fields': required,
                    'specificity_missing_fields': tuple(name for name in required if name not in observed),
-                   'seller_recommendation_eligible': bool(source_points is not None and source_points >= 50 and entity_points >= 75 and count and freshness not in {None, 0})})
+                   'seller_recommendation_eligible': bool(not event.provenance.synthetic and source_points is not None and source_points >= 50 and entity_points >= 75 and count and freshness not in {None, 0}),
+                   'synthetic': event.provenance.synthetic, 'data_mode': event.provenance.data_mode.value})
     result['band'] = ('HIGH' if result['score'] >= 70 else 'MEDIUM' if result['score'] >= 40 else 'LOW') if result['score'] is not None else 'INSUFFICIENT_EVIDENCE'
     return result
 
@@ -113,13 +125,15 @@ def public_risk_assessment(event, observation, *, now):
     if event.event_type not in RISK_EVENT_TYPES and facts.get('risk_direction') != 'NEGATIVE':
         return None
     inputs = {}
+    published = observation.source_published_at if observation else event.source_published_at
+    state = evidence_state(published, as_of=now, window_days=freshness_window_hours(event.event_type.value) // 24)
     for key, fields in RISK_FIELDS.items():
         points = risk_points(key, facts)
         ids = tuple(sorted({eid for field in fields if field in claims for eid in claims[field].evidence_ids}))
         inputs[key] = FactorInput(Decimal(points) if points is not None and ids else None, ids,
-            f'{key.replace("reversibility", "mitigation").capitalize()}: source-scoped observations follow rubric v2.' if points is not None
-            else f'{key.replace("reversibility", "mitigation").capitalize()}: quantified, scoped evidence is missing.',
-            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='PUBLIC_SOURCE')
+            f'{key.capitalize()}: source-scoped observations follow rubric v2; evidence is {state}.' if points is not None
+            else f'{key.capitalize()}: quantified, scoped evidence is missing.',
+            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='POC_SCENARIO' if event.provenance.synthetic else 'PUBLIC_SOURCE', evidence_state=state)
     revision = sha256(repr((RISK_INPUT_VERSION, event.id, sorted(facts.items()), observation.source_version if observation else None)).encode()).hexdigest()
     result = assess('risk_severity', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
                     revision=revision, inputs=inputs, eligible=True)
@@ -131,6 +145,8 @@ def public_risk_assessment(event, observation, *, now):
                    else 'VALIDATE_IMMEDIATELY' if score >= 70 else 'ACT_OR_MONITOR' if score >= 40 and confirmed
                    else 'RESEARCH_FURTHER' if score >= 40 else 'MONITOR' if confirmed else 'FEED_ONLY')
     result.update({'input_configuration_version': RISK_INPUT_VERSION, 'band': severity_band,
+                   'evidence_state': state,
+                   'synthetic': event.provenance.synthetic, 'data_mode': event.provenance.data_mode.value,
                    'evidence_confidence_band': 'HIGH' if confirmed else 'MEDIUM' if confidence is not None and confidence >= 40 else 'LOW',
                    'disposition': disposition})
     return result

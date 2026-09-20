@@ -3,9 +3,9 @@
 The existing commercial payload owns these optional observations. No model or
 caller supplies points, weights, or a replacement scoring policy.
 """
-from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from btx_omni.core.clock import evidence_state
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.scoring.families import FAMILIES, FactorInput
 
@@ -74,8 +74,11 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
         if family == 'delivery_feasibility':
             scoped = scoped and bool(opportunity.get('delivery_facility_id')) and raw.get('facility_id') == opportunity['delivery_facility_id']
         try:
-            current = date.fromisoformat(raw.get('reviewed_as_of', '')) == date.fromisoformat(account['as_of'])
+            state = evidence_state(raw.get('reviewed_as_of'), as_of=account['as_of'], window_days=2 if family == 'delivery_feasibility' else 30)
+            state = 'CONFLICTING' if raw.get('evidence_state') == 'CONFLICTING' else state
+            current = state == 'CURRENT'
         except (ValueError, TypeError):
+            state = 'UNKNOWN'
             current = False
         resolved = [resolve_commercial_evidence(account, eid) for eid in ids]
         def related(item):
@@ -87,7 +90,8 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
                     or opportunity['opportunity_id'] in record.get('related_record_ids', [])
                     or (record.get('component_id') == opportunity['component_id']
                         and record.get('quote_revision_id') == opportunity['quote_revision_id']))
-        valid = scoped and current and bool(ids) and all(related(item) for item in resolved)
+        linked = scoped and bool(ids) and all(related(item) for item in resolved)
+        valid = linked and current
         points = factor_points(key, raw) if valid else None
         if key == 'requirement_fit':
             if valid and raw.get('critical_requirements_pass') is False:
@@ -101,8 +105,8 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
                 blocks.append('Capacity mitigation is required before committing the work.')
             if key == 'material_readiness' and points == 0:
                 blocks.append('A critical material is late; confirm an approved substitute or revised plan.')
-        inputs[key] = FactorInput(points, ids if valid else (),
+        inputs[key] = FactorInput(points, ids if linked else (),
             f"{key.replace('_', ' ').capitalize()}: reviewed evidence for this pursuit." if points is not None else f"{key.replace('_', ' ').capitalize()}: current, linked pursuit evidence is still required.",
-            raw_value=str({k: v for k, v in raw.items() if k not in {'evidence_ids', 'opportunity_id'}}) if valid else None,
-            period=account['as_of'])
+            raw_value=str({k: v for k, v in raw.items() if k not in {'evidence_ids', 'opportunity_id'}}) if linked else None,
+            period=account['as_of'], evidence_state=state)
     return inputs, tuple(blocks), tuple(missing)

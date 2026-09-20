@@ -80,6 +80,8 @@ export function MarketIntelligence({ accounts, onAccount, onOmniContext, locatio
       <label><input type="checkbox" checked={selection.average} onChange={event => choose({ ...selection, average: event.target.checked })} /> Three-month moving average</label>
       <Button disabled={pending} onClick={() => setRefresh(value => value + 1)}>Refresh saved observations</Button>
     </div>
+    {selection.market === 'Medical' && overview?.sample_coverage && <Disclosure title="Medical Device SAMPLE coverage, separate from public market data"><CanonicalRecord value={overview.sample_coverage} /></Disclosure>}
+    {selection.market === 'Medical' && overview?.curated_public_context && <Disclosure title="Curated public regulatory context — not customer evidence"><CanonicalRecord value={overview.curated_public_context} /></Disclosure>}
     {selected && decision ? <>
       {selection.comparison && (!comparison || !compatibility?.compatible) && <StatusMessage state="not-applicable" title="Comparison unavailable">{comparison && compatibility ? compatibility.reason : 'The selected market has no collected series. No proxy comparison was invented.'}</StatusMessage>}
       {numeric.length > 0 && <figure className="market-trend"><svg viewBox="0 0 640 200" role="img" aria-label={`${selection.market} trend for the latest ${chartPoints.length} reporting periods. ${decision.direction}. Exact values are in the table.`}>

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.session import principal
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.domain.work import Principal
 from btx_omni.persistence.itineraries import ItineraryConflict
 
@@ -78,7 +79,12 @@ class SaveItinerary(BaseModel):
 
 @router.get("/current")
 def current_itinerary(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
-    return {"itinerary": runtime.itineraries.get(current.user_id)}
+    result = runtime.itineraries.get(current.user_id)
+    settings = getattr(runtime, 'settings', None)
+    if result is None and getattr(settings, 'sample_enhancement_enabled', False) and settings.data_mode.upper() == 'SAMPLE':
+        from btx_omni.providers.sample.regional import itinerary
+        result = itinerary(runtime.environment(), anchor=settings.demo_as_of_date)
+    return {"itinerary": result}
 
 
 @router.post("/current")
@@ -99,7 +105,7 @@ def save_itinerary(body: SaveItinerary, runtime: PocRuntime = Depends(get_runtim
             payload=payload,
             idempotency_key=body.idempotency_key,
             expected_version=body.expected_version,
-            now=datetime.now(UTC),
+            now=getattr(runtime, 'observed_at', as_of_datetime)(),
         )
     except ItineraryConflict as error:
         raise HTTPException(409, str(error)) from error

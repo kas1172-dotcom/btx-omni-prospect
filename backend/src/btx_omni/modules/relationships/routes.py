@@ -32,6 +32,7 @@ TEMPLATES = {
         ("ACCOUNT_COMPONENT", "PRODUCED_ACCEPTED_COMPONENT:inverse"),
         ("ACCOUNT_PROGRAM", "PROGRAM_COMPONENT", "PLAUSIBLE_CAPABILITY_FIT:inverse"),
         ("ACCOUNT_PROGRAM", "PROGRAM_COMPONENT", "PRODUCED_ACCEPTED_COMPONENT:inverse"),
+        ("ACCOUNT_PROGRAM", "PROGRAM_COMPONENT", "PRODUCED_ACCEPTED_COMPONENT:inverse", "COORDINATED_HANDOFF"),
     ),
     "contact_candidates": (("PUBLISHED_ROLE_AT:inverse",), ("WORKS_AT:inverse",)),
     "documented_access": (*tuple(("EXPLICIT_INTRODUCTION",) * n for n in range(1, 7)), ("WORKS_AT:inverse", "KNOWS:inverse")),

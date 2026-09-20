@@ -103,3 +103,6 @@ Migration required: one additive `0008_commercial_and_edges.py` for programs, co
 Tests required: schema-version and foreign-key validation for every loader; explicit scenario-ID integrity; provenance/SAMPLE assertions; loader-to-runtime integration across all accounts; unchanged scoring determinism/missingness; alerts/matching/Omni smoke coverage; connected-mode 503; and human-confirmed CRM-write seam tests.
 
 Explicit non-goals: scoring redesign; LLM extraction; live Prism/Paperless/HubSpot; Gemini migration; relationship frontend; Figma/mobile; deployment/compliance work; or deletion before parity.
+# Historical reconciliation notice
+
+The August checkpoint below is retained as history. [Rubric v2.0](../product/BTX_Omni_Scoring_Rubric_v2.0.md) now supersedes the unchanged working-draft DOCX and any conflicting scoring behavior. Current catalog counts and behavior are in the SAMPLE enhancement report.
