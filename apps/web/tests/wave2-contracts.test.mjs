@@ -11,7 +11,7 @@ const memory = read('../src/features/settings/OmniMemory.tsx')
 const ui = read('../src/components/UI.tsx')
 
 test('Wave 2 queues bound rendering after whole-result filtering and stable sorting', () => {
-  assert.match(today, /priority\.slice\(0, 3\)\.map/)
+  assert.match(today, /allPriority\.slice\(0, 3\)\.map/)
   assert.match(today, /pageSlice\(sortedPriority/)
   assert.match(today, /missingLastDate/)
   assert.match(actions, /pageSlice\(visible/)

@@ -2,11 +2,52 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from btx_omni.api.today import (
+    _development_public_fixtures,
+    _development_public_fixtures_enabled,
+)
 from btx_omni.modules.command_center import build_command_center
 from btx_omni.monitor.briefs import SignalBrief
 from btx_omni.monitor.targeting import TargetReason, WatchTarget
 
 NOW = datetime(2026, 8, 28, 12, tzinfo=UTC)
+
+
+def test_development_today_fixtures_cover_current_and_upcoming_public_signals() -> None:
+    current, upcoming = _development_public_fixtures(NOW)
+
+    assert current.event_timing == "OBSERVED"
+    assert upcoming.event_timing == "UPCOMING"
+    assert current.priority_eligible is True
+    assert current.source_url
+    assert upcoming.relevant_event_timestamp == NOW + timedelta(days=5)
+    assert current.data_mode == upcoming.data_mode == "SAMPLE"
+    assert _development_public_fixtures(NOW) == (current, upcoming)
+
+
+def test_development_today_fixtures_are_never_enabled_in_production() -> None:
+    enabled = SimpleNamespace(
+        settings=SimpleNamespace(
+            today_public_fixture_mode=True,
+            environment="development",
+        )
+    )
+    production = SimpleNamespace(
+        settings=SimpleNamespace(
+            today_public_fixture_mode=True,
+            environment="production",
+        )
+    )
+    default_off = SimpleNamespace(
+        settings=SimpleNamespace(
+            today_public_fixture_mode=False,
+            environment="development",
+        )
+    )
+
+    assert _development_public_fixtures_enabled(enabled) is True
+    assert _development_public_fixtures_enabled(production) is False
+    assert _development_public_fixtures_enabled(default_off) is False
 
 
 def brief(
@@ -241,6 +282,9 @@ def test_priority_projection_is_ordered_and_self_describing() -> None:
     def alert(alert_id: str, severity: str, observed_at: datetime):
         return SimpleNamespace(
             id=alert_id,
+            type="BOOKINGS_DECLINE",
+            status="OPEN",
+            provenance_state="CONFIRMED",
             account_id="acct-1",
             severity=severity,
             trigger_reason=f"Reason {alert_id}",
@@ -256,24 +300,27 @@ def test_priority_projection_is_ordered_and_self_describing() -> None:
         alert("high-new", "HIGH", NOW),
     )
     result = projection(
-        brief("public", event_at=NOW - timedelta(minutes=5)), alerts=alerts
+        replace(brief("public", event_at=NOW - timedelta(minutes=5)),
+                event_type="FACILITY_EXPANSION", signal_confidence={"score": 80},
+                evidence_package={"deterministic_scores": {"opportunity_priority": {"score": 95}}}),
+        alerts=alerts
     )
 
     assert [item["id"] for item in result["priority_briefing"]] == [
-        "high-new",
         "high-old",
+        "high-new",
+        "public",
         "medium",
         "low",
-        "public",
     ]
     assert [item["data_mode"] for item in result["priority_briefing"]] == [
         "SAMPLE",
         "SAMPLE",
-        "SAMPLE",
-        "SAMPLE",
         "LIVE_PUBLIC",
+        "SAMPLE",
+        "SAMPLE",
     ]
-    public = result["priority_briefing"][-1]
+    public = result["priority_briefing"][2]
     assert public["signal_brief"]["id"] == "public"
     assert public["signal_brief"]["evidence_ids"] == ("evidence-1",)
     defense = next(

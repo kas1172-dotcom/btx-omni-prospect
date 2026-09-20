@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test'
-import { streamAnswer } from './omni-stream-helpers.mjs'
 
 const score = {
   score: 84.71,
@@ -94,19 +93,17 @@ for (const width of [390, 1440]) {
       await route.fulfill({ response, json: payload })
     })
     let omniRequest
-    await page.route('**/api/omni/chat/stream', async route => {
+    await page.route('**/api/omni', async route => {
       omniRequest = route.request().postDataJSON()
-      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamAnswer({ content: 'The Javelin announcement is verified. Potential BTX relevance requires internal validation.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['lockheed-javelin'], citation_links: [{ label: 'Lockheed Martin', url: validationBrief.source_url }], provenance: ['STORED_INTELLIGENCE'], missingness: validationBrief.material_uncertainties, recommended_action: validationBrief.recommended_action, context_used: { assessment_id: validationBrief.assessment_id, assessment_version: 4 }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: 'The Javelin announcement is verified. Potential BTX relevance requires internal validation.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['lockheed-javelin'], citation_links: [{ label: 'Lockheed Martin', url: validationBrief.source_url }], provenance: ['STORED_INTELLIGENCE'], missingness: validationBrief.material_uncertainties, recommended_action: validationBrief.recommended_action, context_used: { assessment_id: validationBrief.assessment_id, assessment_version: 4 }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
     })
 
     await page.goto('/#/today')
-    await page.getByLabel('Today filters').waitFor()
-    if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
-    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
+    await page.getByRole('group', { name: 'Priority source' }).getByRole('button', { name: /^Public/ }).click()
     await expect(page.locator('.today-lane-summary')).toContainText('1 filtered · 1 displayed · 1 total needs validation · 1 filtered')
     await expect(page.locator('[data-priority-id]')).toHaveCount(1)
     await expect(page.locator('[data-validation-id]')).toHaveCount(1)
-    const accountFilter = page.getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+    const accountFilter = page.getByRole('combobox', { name: 'Customer or prospect' })
     await accountFilter.fill('Lockheed Martin')
     await page.getByRole('option', { name: /Lockheed Martin/ }).click()
     await expect(page.locator('.today-lane-summary')).toContainText('0 filtered · 0 displayed · 1 total needs validation · 1 filtered')

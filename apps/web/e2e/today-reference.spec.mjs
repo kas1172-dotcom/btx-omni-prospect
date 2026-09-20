@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 for (const width of [390, 1440]) {
-  test(`Today reference cards and briefing share filtered order and navigation state at ${width}px`, async ({ page }) => {
+  test(`Today cards preserve canonical order while filtered briefing retains navigation state at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/#/today')
     const payload = await (await page.request.get('/api/today')).json()
@@ -12,23 +12,19 @@ for (const width of [390, 1440]) {
       const displayed = expected.slice(0, 10)
       await expect(page.locator('[data-priority-id]')).toHaveCount(displayed.length)
       expect(await read('data-priority-id')).toEqual(ids(displayed))
-      expect(await read('data-summary-id')).toEqual(ids(expected).slice(0, 3))
+      expect(await read('data-summary-id')).toEqual(ids(source).slice(0, 3))
       await expect(page.locator('.today-lane-summary')).toContainText(`${expected.length} filtered`)
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
     }
     await parity(source)
-    await page.getByLabel('Today filters').waitFor()
-    if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
-    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
+    await page.getByRole('group', { name: 'Priority source' }).getByRole('button', { name: /^Public/ }).click()
     await parity(source.filter(item => item.kind === 'PUBLIC_SIGNAL'))
-    await page.getByLabel('Today filters').waitFor()
-    if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
-    await page.getByLabel('Priority source', { exact: true }).selectOption('COMMERCIAL_REVIEW')
+    await page.getByRole('group', { name: 'Priority source' }).getByRole('button', { name: /^Internal/ }).click()
     const item = source.find(item => item.kind === 'COMMERCIAL_REVIEW' && item.business_unit_ids?.length)
     expect(item).toBeTruthy()
     const accountPayload = await (await page.request.get('/api/accounts')).json()
     const accountName = accountPayload.accounts.find(account => account.id === item.account_id)?.name
-    const accountFilter = page.getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+    const accountFilter = page.getByRole('combobox', { name: 'Customer or prospect' })
     await accountFilter.fill(accountName)
     await page.getByRole('option', { name: new RegExp(accountName) }).click()
     await page.getByLabel('Filter priorities by business unit').selectOption(item.business_unit_ids[0])
@@ -41,9 +37,8 @@ for (const width of [390, 1440]) {
     await expect(page.locator('[data-priority-id]').first()).toContainText(item.evidence_ids[0])
     await page.locator('[data-priority-id]').first().locator('.today-customer-link').click()
     await expect(page).toHaveURL(new RegExp(`#/accounts/${item.account_id}(?:\\?|$)`))
+    await expect(page.getByRole('heading', { name: accountName, level: 1, exact: true })).toBeVisible()
     await page.goBack()
-    await page.getByLabel('Today filters').waitFor()
-    if (width <= 760) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click()
     await expect(accountFilter).toHaveValue(accountName)
     await expect(page.getByLabel('Filter priorities by business unit')).toHaveValue(item.business_unit_ids[0])
     await parity(expected)
@@ -54,8 +49,7 @@ for (const width of [390, 1440]) {
     const actions = await (await page.request.get('/api/actions')).json()
     const recommendation = actions.suggestions.find(suggestion => suggestion.source_alert_id === expected[0].id)
     expect(recommendation).toBeTruthy()
-    if (width <= 760) await page.getByLabel('Suggested filters').locator('.filter-mobile-trigger').click()
-    await page.getByLabel('Visibility', { exact: true }).selectOption('ALL')
+    await page.getByLabel('Visibility').selectOption('ALL')
     const row = page.locator(`[data-suggestion-id="${recommendation.id}"]`)
     await expect(row).toHaveCount(1)
     await row.click()

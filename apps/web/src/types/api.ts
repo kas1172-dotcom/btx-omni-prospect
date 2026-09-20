@@ -100,6 +100,18 @@ export interface MonitorHealth { collection_enabled: boolean; worker_runtime_sta
 export interface CommandPriorityItem { id: string; kind: 'COMMERCIAL_REVIEW' | 'PUBLIC_SIGNAL'; outcome_lane?: 'ACTION_PRIORITIES' | 'NEEDS_VALIDATION'; account_id?: string; severity?: string; reason: string; recommended_action?: string; evidence_ids: string[]; observed_at?: string; data_mode: string; lifecycle_state?: 'CURRENT' | 'SAVED_RECENT'; watchlist_eligible?: boolean; priority_reasons?: MonitorSignalBrief['priority_reasons']; signal_brief?: MonitorSignalBrief }
 export interface CommandPriorityItem { business_unit_ids?: string[] }
 export interface CommandPriorityItem { event_id?: string }
+export interface CommandPriorityItem {
+  triage_class?: 0 | 1 | 2 | 3
+  nature?: 'RISK' | 'OPPORTUNITY' | 'UNKNOWN'
+  underlying_score?: number | null
+  score_kind?: 'OPPORTUNITY_PRIORITY' | 'RISK_SEVERITY' | 'CUSTOMER_HEALTH' | 'TIER_ONLY' | 'NONE'
+  assessment_complete?: boolean
+  high_importance?: boolean
+  hard_stop?: boolean
+  alert_kind?: string
+  status?: string
+  triage_reason?: string
+}
 export interface Suggestion { source_alert_id?: string }
 export interface CommandMarketHub { market: string; current_signal_ids: string[]; upcoming_signal_ids: string[]; watched_account_ids: string[]; watched_program_ids: string[]; source_ids: string[]; source_coverage: Array<{ source_id: string; source_name: string; state: string; last_success_at?: string }>; gaps: string[] }
 export interface CommandWatchedAccount { account_id: string; name: string; relationship: Relationship; markets: string[]; watch_type: 'SYSTEM_RECOMMENDED'; reasons: MonitorSignalBrief['priority_reasons'] }

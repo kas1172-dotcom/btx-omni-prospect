@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     monitor_brief_quota_retry_seconds: int = 21600
     monitor_brief_unavailable_retry_seconds: int = 900
     federal_procurement_fixture_mode: bool = False
+    today_public_fixture_mode: bool = False
     monitor_schedule_configured: bool = False
     action_salesperson_token: str = "development-salesperson"
     action_manager_token: str = "development-manager"

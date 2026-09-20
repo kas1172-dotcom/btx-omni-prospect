@@ -38,6 +38,7 @@ class CommercialAlert:
     provenance_state: str = "CONFIRMED"
     order_data_required: bool = False
     subject_id: str | None = None
+    hard_stop: bool = False
 
     def __post_init__(self) -> None:
         require_aware(self.observed_at, "observed_at")

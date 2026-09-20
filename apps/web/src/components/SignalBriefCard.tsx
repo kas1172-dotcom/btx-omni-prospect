@@ -1,4 +1,4 @@
-import type { MonitorSignalBrief, OmniAssessmentSelection } from '../types/api'
+import type { CommandPriorityItem, MonitorSignalBrief, OmniAssessmentSelection } from '../types/api'
 import { Button, Disclosure, EvidenceSource, State } from './UI'
 import { GovernedExplanationDisclosure } from './GovernedExplanationDisclosure'
 import { EvidencePassages } from './EvidencePassages'
@@ -9,18 +9,19 @@ import { ScoreSummary } from './ScoreSummary'
 import { commercialDecisionSummary } from './scoreSummaryModel'
 import { AttentionBadge } from './AttentionBadge'
 import { assessmentAttention } from './attentionModel'
+import { attentionFor } from '../features/today/todayModel'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
 const display = (value: string) => value.replaceAll('_', ' ').toLocaleLowerCase().replace(/^./, letter => letter.toUpperCase())
-export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, selected = false }: { brief: MonitorSignalBrief; accountName?: (id: string) => string; onAccount?: (id: string, assessment?: OmniAssessmentSelection) => void; onUseInOmni?: (brief: MonitorSignalBrief) => void; selected?: boolean }) {
+export function SignalBriefCard({ brief, priority, accountName, onAccount, onUseInOmni, selected = false }: { brief: MonitorSignalBrief; priority?: CommandPriorityItem; accountName?: (id: string) => string; onAccount?: (id: string, assessment?: OmniAssessmentSelection) => void; onUseInOmni?: (brief: MonitorSignalBrief) => void; selected?: boolean }) {
   const accountId = brief.canonical_account_ids[0]
   const eventDate = brief.relevant_event_timestamp ?? brief.publication_timestamp
   const records = brief.evidence_package?.commercial_records ?? []
   const evidenceCount = new Set([...(brief.evidence_ids ?? []), ...(brief.references ?? []).map(item => item.evidence_id), ...records.map(item => item.record_id)]).size
   const coverage = brief.signal_confidence?.data_coverage
   const knowledgeLabel = !coverage ? 'Still being assessed' : Number(coverage.ratio) >= .8 ? 'Substantial' : Number(coverage.ratio) >= .5 ? 'Partial' : 'Limited'
-  const attention = assessmentAttention(brief)
+  const attention = priority ? attentionFor(priority) : assessmentAttention(brief)
   return <article className={`seller-signal-brief attention-${attention.toLocaleLowerCase()}`}>
     <div className="seller-signal-head">
       <div><span className="eyebrow">{brief.event_timing === 'UPCOMING' ? 'Upcoming radar' : 'Signal brief'}</span><h3>{brief.headline}</h3></div>
@@ -37,7 +38,8 @@ export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, se
       <section className="seller-signal-action" aria-label="Recommended next action"><span>Next decision</span><p>{brief.recommended_action ?? 'Keep this informational; no seller action is supported yet.'}</p></section>
     </div>
     {!!brief.material_uncertainties?.length && <p className="seller-signal-uncertainty"><strong>Material uncertainty — still unconfirmed:</strong> {brief.material_uncertainties[0]}</p>}
-    {brief.analysis_status && brief.analysis_status !== 'READY' && <p className="notice">Analysis is incomplete. The source remains available, but no completed commercial recommendation is shown.</p>}
+    {brief.analysis_status === 'PENDING_ANALYSIS' && <p className="notice">Analysis pending{brief.missing_fields.length ? `: ${brief.missing_fields.join(', ')}` : ''}</p>}
+    {brief.analysis_status === 'INCOMPLETE' && <p className="notice">Analysis incomplete: no public evidence attached yet{brief.missing_fields.length ? `. Missing: ${brief.missing_fields.join(', ')}` : ''}</p>}
     {brief.commercial_relevance_state === 'INFORMATIONAL' && <small>Informational update · no established commercial priority</small>}
     <SupportingEvidence count={evidenceCount} investigationKey={`${brief.assessment_id ?? brief.id}:${brief.assessment_version ?? 0}`}>
       <section><h4>What we know: {knowledgeLabel}</h4><p>{coverage ? `${coverage.present} of ${coverage.applicable} applicable evidence fields are supported. Coverage describes completeness, not opportunity quality.` : 'Evidence completeness has not been calculated.'}</p></section>
