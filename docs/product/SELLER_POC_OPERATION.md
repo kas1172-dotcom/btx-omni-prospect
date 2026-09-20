@@ -25,10 +25,14 @@ remain usable.
 ## Truthful POC boundaries
 
 - Development authentication is labelled as development-only.
-- Actions and audit events are held only in API process memory and reset on a
-  restart; they are not durable PostgreSQL workflow records yet.
-- Omni retains browser-session conversation history. Its fallback is bounded
-  deterministic retrieval, not fabricated model output, and is read-only.
+- Actions use SQL-backed repositories and durable audit history, with owner,
+  due-date, approval and concurrency controls. They do not reset on API restart.
+- Omni v2 saves private conversations per server actor and tenant, with configurable
+  retention and explicit deletion. Hosted POC access codes still represent shared
+  role identities, not individual corporate accounts. Business data stays read-only.
+- With Gemini configured, Omni chooses bounded read tools, can use public search
+  grounding and answer general questions. Without it, Omni explicitly offers only
+  basic deterministic lookups. Public findings never become scoring evidence.
 - Monitor does not collect from the public UI. A protected manual operational
   run requires durable state, an operator token, and `BTX_MONITOR_MODE=live`.
   “LIVE PUBLIC” is reserved for successful collection output. There is no
@@ -56,29 +60,28 @@ remain usable.
 2. Add one decision to the queue, then use priority, industry, status, or company
    search to focus the workbench.
 3. Select the queued action to show why it is recommended, the public evidence
-   where available, and the compact session-only workflow boundary.
+   where available, and the durable, reviewed workflow boundary.
 4. Use a workflow transition to demonstrate the queue state, then open **Preview
    demo CRM action**. Explain that preview creates no production record and that
    execution requires a separate explicit confirmation.
-5. Close by noting that owner, due date, durable audit history, and production
-   CRM execution remain unavailable until approved BTX/CRM inputs are connected.
+5. Show owner, due date and durable audit history. Production CRM execution still
+   requires the existing separately approved connection and workflow; Omni does
+   not execute it.
 
 ## Omni demo flow
 
-1. Open **Ask Omni** with no Account 360 record selected. Ask **What should I
-   review today?** Omni returns deterministic guidance from the curated company
-   universe and sourced public events, plus clearly marked simulated workflow
-   context.
-2. Ask a follow-up or choose **Compare these researched companies.** The
-   conversation remains visible only for the current browser session; it is not
-   a saved transcript or source of record.
-3. Open an Account 360 record, then ask **Explain this score and its gaps.**
-   Point out the selected-account ribbon, cited public evidence links, and the
-   distinct missing/simulated-context notices.
-4. Close by explaining: **Deterministic fallback—not model-generated advice.**
-   Omni uses local governed POC read models only, cannot perform CRM writes, and
-   would require approved connected data, access controls, retrieval governance,
-   model-provider approval, and durable conversation policy before production use.
+1. Open **Ask Omni** and ask **Does Lockheed Martin have quote history?** The
+   answer must stay scoped to that organization and label commercial sample data.
+2. Ask a follow-up, then reload and resume it from **Conversations**. Rename and
+   delete controls affect the private transcript, never business records or memory.
+3. With Gemini configured, ask about assessments or mixed public news/internal
+   orders. Inspect **Sources** and the closed **Details** expander. Without Gemini,
+   expect the explicit AI-unavailable sentence and only basic lookup behavior.
+4. Try a write request. Omni refuses it and may offer **Propose an Action**, which
+   opens the existing form for review. Nothing is saved until the user submits it.
+5. Corporate individual identity, full tenant partitioning, live-provider evaluation
+   and production policy review remain prerequisites. See `OMNI_CHAT_V2_DESIGN.md`
+   and `OMNI_CHAT_V2_REPORT.md`; do not treat a demo or fake-provider test as live proof.
 
 ## Phase 7 seller-scenario acceptance matrix
 
