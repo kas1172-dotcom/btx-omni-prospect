@@ -175,8 +175,15 @@ function SellerRelationshipCard({ path }: { path: SellerRelationshipPath }) {
 
 
 function RelationshipIntelligence({ accountId, federal, location, onLocationChange, onOmniContext }: { accountId: string; federal?: { assessment: FederalAssessment; selection: OmniFederalSelection }; location: WorkspaceLocation; onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void; onOmniContext: (context: Pick<OmniContext, 'relationship_selection'>) => void }) {
-  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(false); const [view, setView] = useState<'validated' | 'needs_validation'>('validated')
-  useEffect(() => { let active = true; void api.relationships(accountId).then(result => { if (active) setRelationships(result) }).catch(() => { if (active) setError(true) }); return () => { active = false } }, [accountId])
+  const [relationships, setRelationships] = useState<AccountRelationships>(); const [error, setError] = useState(''); const [retry, setRetry] = useState(0); const [view, setView] = useState<'validated' | 'needs_validation'>('validated')
+  useEffect(() => {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort('relationship request timed out'), 20_000)
+    void api.relationships(accountId, controller.signal).then(result => setRelationships(result)).catch(() => {
+      if (!controller.signal.aborted || controller.signal.reason === 'relationship request timed out') setError('Relationship records could not be loaded within 20 seconds.')
+    }).finally(() => window.clearTimeout(timeout))
+    return () => { window.clearTimeout(timeout); controller.abort() }
+  }, [accountId, retry])
   const projection = relationships?.seller_projection; const validated = projection?.validated ?? []; const needsValidation = projection?.needs_validation ?? []
   const shown = view === 'validated' ? validated : needsValidation
   const best = validated[0] ?? needsValidation[0]
@@ -185,7 +192,7 @@ function RelationshipIntelligence({ accountId, federal, location, onLocationChan
     <div className="relationship-intelligence-header"><div><span className="eyebrow">How this organization is connected</span><p>Recorded and evidence-backed paths show the connection, why it may matter, and what still needs validation.</p></div>{projection && <div className="relationship-counts"><span><strong>{projection.validated_count}</strong> validated</span><span><strong>{projection.needs_validation_count}</strong> to review</span></div>}</div>
     <Notice>Public professional contact research remains separate and does not establish a BTX relationship, introduction path, or relationship strength.</Notice>
     {!relationships && !error && <LoadingStatus className="relationship-intelligence-loading">Mapping recorded relationships…</LoadingStatus>}
-    {error && <Empty>Canonical relationship records could not be loaded for this Customer. No relationship conclusion is shown.</Empty>}
+    {error && <Notice tone="warning" title="Relationship records unavailable"><p>{error} No relationship conclusion is shown.</p><Button onClick={() => { setRelationships(undefined); setError(''); setRetry(value => value + 1) }}>Retry</Button></Notice>}
     {best ? <section className="relationship-decision-summary" aria-label="Best supported relationship route"><span className="eyebrow">Best supported route</span><SellerRelationshipCard path={best} /></section> : relationships && <Empty>No eligible recorded route is currently available. This does not establish a real-world absence.</Empty>}
     <Disclosure title="Open full Relationship Intelligence workspace" open={location.subview === 'relationships'} onOpenChange={open => onLocationChange({ ...location, subview: open ? 'relationships' : 'overview', relationship: open ? location.relationship : undefined }, 'push')}>
       <RankedRelationships accountId={accountId} initialMode={location.relationship?.mode} initialPathId={location.relationship?.pathId} onSelection={(pathId, mode) => onLocationChange({ ...location, subview: 'relationships', relationship: { pathId, mode, startAccountId: accountId } }, pathId ? 'push' : 'replace')} onOmniContext={onOmniContext} />

@@ -34,7 +34,7 @@ export const api = {
   accounts: (signal?: AbortSignal) => request<{ accounts: Account[] }>('/accounts', { signal }),
   workbookFields: (accountId: string, offset: number, signal?: AbortSignal) => actionRequest<WorkbookPage>(`/accounts/${encodeURIComponent(accountId)}/workbook-fields?offset=${offset}`, { signal }),
   account: (id: string, signal?: AbortSignal) => request<Account360>(`/accounts/${encodeURIComponent(id)}`, { signal }),
-  relationships: (accountId: string) => request<AccountRelationships>(`/accounts/${accountId}/relationships?depth=2`),
+  relationships: (accountId: string, signal?: AbortSignal) => request<AccountRelationships>(`/accounts/${accountId}/relationships?depth=2`, { signal }),
   rankedRelationships: (body: RelationshipQuery, signal?: AbortSignal) => actionRequest<RankedRelationships>('/relationships/query', { method: 'POST', body: JSON.stringify(body), signal }),
   commercialEvidence: (accountId: string, recordId: string, signal?: AbortSignal) => actionRequest<{ account_id: string; revision: string; as_of: string; kind: string; truth_class: string; record: Record<string, unknown> }>(`/accounts/${encodeURIComponent(accountId)}/commercial/evidence?record_id=${encodeURIComponent(recordId)}`, { signal }),
   commercialDecisions: (accountId: string, signal?: AbortSignal) => actionRequest<CommercialDecisions>(`/accounts/${encodeURIComponent(accountId)}/commercial/decisions`, { signal }),

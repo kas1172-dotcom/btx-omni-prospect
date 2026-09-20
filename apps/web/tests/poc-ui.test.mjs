@@ -134,13 +134,13 @@ test('Customers and Prospects uses one semantic sortable table with bounded mobi
 })
 
 test('Customer 360 renders deterministic seller-facing canonical relationship paths', () => {
-  assert.match(client, /relationships: \(accountId: string\) => request<AccountRelationships>\(`\/accounts\/\$\{accountId\}\/relationships\?depth=2`\)/)
+  assert.match(client, /relationships: \(accountId: string, signal\?: AbortSignal\) => request<AccountRelationships>\(`\/accounts\/\$\{accountId\}\/relationships\?depth=2`, \{ signal \}\)/)
   assert.match(accounts, /People and relationship paths/)
   assert.match(accounts, /How this organization is connected/)
   assert.match(accounts, /Public professional contact research remains separate/)
   assert.match(accounts, /does not establish a BTX relationship, introduction path, or relationship strength/)
   assert.match(accounts, /No eligible recorded relationship is currently available/)
-  assert.match(accounts, /api\.relationships\(accountId\)/)
+  assert.match(accounts, /api\.relationships\(accountId, controller\.signal\)/)
   assert.match(accounts, /Recorded relationships/)
   assert.match(accounts, /Needs validation/)
   assert.match(accounts, /<RankedRelationships accountId=/)
