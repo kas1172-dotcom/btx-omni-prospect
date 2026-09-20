@@ -410,6 +410,17 @@ def change_status(
     current: Principal = Depends(principal),
 ):
     try:
+        if body.status.value == 'COMPLETED':
+            action = runtime.work.get(action_id)
+            ledger = runtime.environment().commercial_ledgers.get(action.account_id, {})
+            sources = [r for r in ledger.get('actions', []) if ('commercial_action', r['action_id']) in action.context_referents]
+            if sources:
+                from btx_omni.providers.sample.enhancement import completion_gaps
+                from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
+                resolved = [resolve_commercial_evidence(ledger, eid) for eid in action.evidence_ids]
+                gaps = completion_gaps(sources[0], [r['record'] for r in resolved if r])
+                if gaps:
+                    raise ActionConflictError('Completion requires verified evidence: ' + ', '.join(gaps))
         return runtime.work.transition(
             action_id, body.status, principal=current, occurred_at=runtime.observed_at(), expected_version=body.expected_version
         )

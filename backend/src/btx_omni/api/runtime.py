@@ -77,6 +77,9 @@ class PocRuntime:
     network_imports: NetworkImportRepository = field(init=False)
 
     def __post_init__(self) -> None:
+        if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+            from btx_omni.providers.sample.enhancement import enhance_environment
+            self.sample = enhance_environment(self.sample, anchor=self.settings.demo_as_of_date)
         self._curated_sample = self.sample
         self._original_sample = self.sample
         self.sessions = SessionStore(self.settings)

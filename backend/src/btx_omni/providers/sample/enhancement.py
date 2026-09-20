@@ -5,6 +5,28 @@ from btx_omni.modules.commercial.ledger import KEYS, validate_commercial_account
 VERSION = 'sample-enhancement-2026-09-20-v1'
 
 
+def enhance_environment(base, *, anchor=None):
+    """Opt-in SAMPLE view; old fixture files and all canonical IDs remain intact."""
+    from dataclasses import replace
+    from btx_omni.modules.commercial.projection import project_commercial_records
+    records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor)}
+    projected = project_commercial_records(base, records, revision=VERSION)
+    # Preserve shared graph identity even when a selected commercial scenario changes.
+    preserve = {}
+    for key in ('programs', 'component_classes', 'crm_contacts'):
+        current = getattr(projected, key)
+        ids = {item.id for item in current}
+        preserve[key] = current + tuple(item for item in getattr(base, key) if item.id not in ids)
+    return replace(projected, **preserve)
+
+
+def completion_gaps(source, evidence):
+    """A proposed plan or existing order cannot masquerade as completion proof."""
+    kinds = {item.get('completion_kind') for item in evidence if item.get('verified') is True
+             and source['action_id'] in item.get('related_record_ids', [])}
+    return tuple(kind for kind in source.get('required_completion_evidence', []) if kind not in kinds)
+
+
 def synthetic_record(**values):
     return {**values, 'synthetic': True, 'data_mode': 'SAMPLE',
             'provenance': {'truth_class': 'POC_SCENARIO', 'source_system': VERSION,

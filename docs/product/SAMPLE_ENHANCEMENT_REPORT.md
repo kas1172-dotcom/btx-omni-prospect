@@ -8,12 +8,20 @@ Status: implementation in progress; no tier certified complete yet.
 2. Imported the complete supplied Downloads rubric DOCX to Markdown, preserving the original text and tables. The DOCX lacks the promised R1–R10 preamble; explicit user amendments are recorded separately and override its erroneous examples. R9–R10 text is NOT FOUND and has not been invented.
 3. Kept the earlier preflight checkpoint as historical evidence, with a superseding status section. The nine-day Signal Confidence target is now 86.25, not 85.75.
 4. Baseline backend execution uses the existing Python interpreter with this worktree's `src` first on the import path, an ephemeral SQLite URL, disabled monitor/AI configuration and an audit hook prohibiting socket connections. Existing app/test code can load protected reference files; their contents are not logged or used as new fixture source material.
+5. Added opt-in `BTX_SAMPLE_ENHANCEMENT_ENABLED=true` for the new scenario view. This preserves the old release fixture/hash and keeps fixture selection out of CONNECTED mode. No seed/import command or database write is required to select this view. Existing IDs and shared graph catalog remain present; original commercial scenarios remain available with the flag off.
+6. Created a separate Docker Desktop PostgreSQL 16 container `btx-sample-enhancement-pg`, bound only to `127.0.0.1:57379`, database `btx_omni_e2e_sample_enhancement`. Applied the existing migration chain through 0040 locally. No new migration was created and no existing database was contacted. This resolves tests that require PostgreSQL rather than SQLite.
 
 ## Specification precedence
 
 [Rubric v2.0](BTX_Omni_Scoring_Rubric_v2.0.md), including explicit user amendments, supersedes `docs/scoring/BTX_Account_Scoring_Working_Draft (1).docx`. Historical docs describing proportional reweighting do not specify current behavior. Executive deck slide 15's Action Priority weights and inverse-resilience internal risk formula are superseded by sections 8 and 13.
 
 ## Validation
+
+### Items 1.2 and 1.3
+
+New source: `providers/sample/enhancement.py:boeing_recovery`. Two quote revisions, one order/line (292 units at $980), two partial dispatches (100 + 46), 146 remaining and exactly $143,080 open. Dates are relative to the configured anchor. Recovery is as-of +6, PENDING, not buyer accepted; includes owner role, due date, inspection dependency, alternatives and detailed narrative. Every new commercial record is synthetic/SAMPLE. There are no invented people, emails or introductions.
+
+The selected ledger flows through the existing commercial projection, fulfillment, evidence API and Omni read service. API completion is guarded by verified, action-scoped inspection release and buyer-acceptance evidence; the proposed plan alone is insufficient. Four fixture tests pass, covering arithmetic, referential integrity, shifting dates, evidence requirements and preserving canonical IDs. Historical monthly rows are derived from transactions and are not independent invented totals.
 
 ### Scoring alignment (amendment 2)
 
