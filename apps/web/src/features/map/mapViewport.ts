@@ -3,6 +3,7 @@ export type ViewBounds = { north: number; south: number; east: number; west: num
 export type ViewPadding = { top: number; right: number; bottom: number; left: number }
 export type CurrentView = { center: ViewPoint; zoom: number }
 export type ViewportRequest = {
+  reset?: boolean
   points?: ViewPoint[]
   viewport?: ViewBounds
   origin?: ViewPoint
@@ -63,6 +64,7 @@ const radiusBounds = (origin: ViewPoint, radiusMiles: number): ViewBounds => {
 
 export function computeViewport(request: ViewportRequest): ViewportPlan {
   const padding = normalizedPadding(request.padding)
+  if (request.reset) return { kind: 'center', center: DEFAULT_US_VIEW.center, zoom: DEFAULT_US_VIEW.zoom }
   if (validBounds(request.viewport)) return { kind: 'bounds', bounds: request.viewport, padding, maxZoom: MAX_BOUNDS_ZOOM }
   if (validViewPoint(request.origin) && Number.isFinite(request.radiusMiles) && Number(request.radiusMiles) > 0) {
     return { kind: 'bounds', bounds: radiusBounds(request.origin, Number(request.radiusMiles)), padding, maxZoom: MAX_BOUNDS_ZOOM }

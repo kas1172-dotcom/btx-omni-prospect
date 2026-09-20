@@ -4,7 +4,7 @@ import { markersForZoom, type MapMarker } from './mapModel'
 import { computeViewport, DEFAULT_US_VIEW, type ViewBounds } from './mapViewport'
 import './map.css'
 
-export type MapCameraRequest = { key: string; points?: Array<{ latitude: number; longitude: number }>; viewport?: ViewBounds; origin?: { latitude: number; longitude: number }; radiusMiles?: number }
+export type MapCameraRequest = { key: string; reset?: boolean; points?: Array<{ latitude: number; longitude: number }>; viewport?: ViewBounds; origin?: { latitude: number; longitude: number }; radiusMiles?: number }
 type Props = { markers: MapMarker[]; selectedMarkerId?: string; cameraRequest?: MapCameraRequest; onSelect: (marker: MapMarker) => void; onVisibleMarkers?: (markers: MapMarker[]) => void }
 let configuredKey: string | undefined
 const markerZIndex = (marker: MapMarker, selected = false) => selected ? 4 : marker.kind === 'cluster' ? 3 : marker.kind === 'customer' || marker.kind === 'prospect' ? 2 : 1

@@ -55,3 +55,8 @@
 - Preserved the existing provenance-backed `btx_top_100` SAMPLE membership flag. It exists in canonical data, API responses and frontend records, so deriving a different revenue rank would change established data semantics and is neither necessary nor permitted.
 - The Map labels membership as SAMPLE. Added a test that sends mixed membership records through the real Top 100 filter and marker builder, then verifies filtered-record, marker and synchronized-list counts agree.
 - No names, coordinates or expected counts are hardcoded to force production-shaped data. No dependency added; no test removed or modified.
+
+## 2026-09-20 — Acceptance hardening
+
+- Added an explicit Reset view intent so returning to the default US view is user-driven and still passes through the pure camera planner. It does not react to data refetches.
+- No dependency added; no test removed or modified.

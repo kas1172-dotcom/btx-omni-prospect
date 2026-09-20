@@ -13,6 +13,10 @@ test('zero points keeps current view or uses the default US view', () => {
   assert.deepEqual(computeViewport({ points: [], current: { center: point(40, -90), zoom: 7 } }), { kind: 'keep', center: point(40, -90), zoom: 7 })
 })
 
+test('explicit reset returns the default US view even when a current view exists', () => {
+  assert.deepEqual(computeViewport({ reset: true, current: { center: point(47, -122), zoom: 15 } }), { kind: 'center', ...DEFAULT_US_VIEW })
+})
+
 test('one point, duplicates, and clusters under two kilometers use fixed site zoom', () => {
   assert.deepEqual(computeViewport({ points: [point(39, -90)] }), { kind: 'center', center: point(39, -90), zoom: 12 })
   assert.equal(computeViewport({ points: [point(39, -90), point(39, -90)] }).kind, 'center')
