@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
+import json
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -23,6 +25,20 @@ from btx_omni.providers.sample.environment import build_sample_environment
 SOURCE_KIND = "linkedin_connections_csv"
 TIE_SOURCE = "linkedin_connection_export"
 WORKTREE = Path(__file__).resolve().parents[4]
+MAX_FILE_BYTES = 10 * 1024 * 1024
+
+
+def _file_bytes(path: Path) -> bytes:
+    with path.open("rb") as handle:
+        data = handle.read(MAX_FILE_BYTES + 1)
+    if len(data) > MAX_FILE_BYTES:
+        raise ValueError("Network file exceeds the 10 MiB limit")
+    return data
+
+
+def spreadsheet_safe(value: str) -> str:
+    # Applies to TSV as well as CSV, including formula prefixes after whitespace.
+    return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
 
 
 @dataclass(frozen=True)
@@ -44,16 +60,35 @@ class LinkedInConnectionsCsvAdapter:
     required_headers = frozenset(("First Name", "Last Name", "Company", "Position", "Connected On"))
 
     def records(self, path: Path) -> tuple[NormalizedConnectionRecord, ...]:
-        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        with io.StringIO(_file_bytes(path).decode("utf-8-sig"), newline="") as handle:
+            # Official exports may prepend a Notes block. Never treat it as data.
+            for _ in range(100):
+                offset = handle.tell()
+                line = handle.readline()
+                if not line:
+                    raise ValueError("LinkedIn Connections.csv headers are incomplete")
+                if self.required_headers <= set(next(csv.reader([line]))):
+                    handle.seek(offset)
+                    break
+            else:
+                raise ValueError("LinkedIn Connections.csv headers are incomplete")
             reader = csv.DictReader(handle)
             if not reader.fieldnames or not self.required_headers <= set(reader.fieldnames):
                 raise ValueError("LinkedIn Connections.csv headers are incomplete")
             output = []
+            seen = set()
             for row in reader:
+                if None in row or any(value is None for value in row.values()):
+                    raise ValueError("Network CSV row has an invalid column count")
                 full_name = " ".join(filter(None, (row.get("First Name", "").strip(), row.get("Last Name", "").strip())))
                 company = row.get("Company", "").strip()
-                if not full_name or not company:
+                if not full_name:
                     continue
+                title = row.get("Position", "").strip() or None
+                url = row.get("URL", "").strip() or None
+                if any(len(value or "") > limit for value, limit in
+                       ((full_name, 300), (company, 500), (title, 500), (url, 2048))):
+                    raise ValueError("Network CSV field exceeds its length limit")
                 raw_connected = row.get("Connected On", "").strip()
                 connected = None
                 for fmt in ("%d %b %Y", "%m/%d/%Y", "%Y-%m-%d"):
@@ -62,8 +97,10 @@ class LinkedInConnectionsCsvAdapter:
                         break
                     except ValueError:
                         continue
-                output.append(NormalizedConnectionRecord(full_name, company, row.get("Position", "").strip() or None,
-                                                         connected, row.get("URL", "").strip() or None))
+                record = NormalizedConnectionRecord(full_name, company, title, connected, url)
+                if record not in seen:
+                    seen.add(record)
+                    output.append(record)
             return tuple(output)
 
 
@@ -92,7 +129,11 @@ class NetworkImportRepository:
             raise ValueError("A unique server-configured owner is required")
         source = adapter or LinkedInConnectionsCsvAdapter()
         safe_path = _outside_worktree(path)
-        digest = hashlib.sha256(safe_path.read_bytes()).hexdigest()
+        if not tenant_id.strip() or len(tenant_id) > 100 or len(owner_user_id) > 128 or len(owner_name) > 300:
+            raise ValueError("Invalid import ownership metadata")
+        if exported_at.tzinfo is None:
+            raise ValueError("Export date must include a timezone")
+        digest = hashlib.sha256(_file_bytes(safe_path)).hexdigest()
         rows = source.records(safe_path)
         batch_id = _id("network-batch", tenant_id, source.source_kind, digest)
         owner_id = _id("network-person", tenant_id, batch_id, "owner")
@@ -115,6 +156,20 @@ class NetworkImportRepository:
                 if existing["owner_user_id"] != owner_user_id:
                     raise ValueError("File already belongs to another owner; ownership cannot be reassigned")
                 return {**report, "status": "UNCHANGED"}
+            previous = connection.execute(select(models.network_import_batches).where(
+                models.network_import_batches.c.tenant_id == tenant_id,
+                models.network_import_batches.c.source_kind == source.source_kind,
+                models.network_import_batches.c.owner_user_id == owner_user_id,
+                models.network_import_batches.c.status == "IMPORTED",
+            ).with_for_update()).mappings().all()
+            if any(exported_at <= item["exported_at"].replace(tzinfo=UTC) for item in previous):
+                raise ValueError("A different export must be newer than the active owner export")
+            # Snapshot semantics: retain historical batches for audit/purge, never
+            # double-count them or inherit an older snapshot's sharing permission.
+            if previous:
+                connection.execute(update(models.network_import_batches).where(
+                    models.network_import_batches.c.id.in_([item["id"] for item in previous])
+                ).values(status="SUPERSEDED"))
             connection.execute(insert(models.network_import_batches).values(
                 id=batch_id, tenant_id=tenant_id, source_kind=source.source_kind, file_sha256=digest,
                 exported_at=exported_at, imported_at=now, owner_person_id=owner_id, status="IMPORTED",
@@ -184,6 +239,7 @@ class NetworkImportRepository:
                  .join(models.network_affiliations, models.network_affiliations.c.person_id == models.network_people.c.id)
                  .join(models.network_ties, models.network_ties.c.external_person_id == models.network_people.c.id)
                  .where(permitted,
+                        models.network_import_batches.c.status == "IMPORTED",
                         models.network_import_batches.c.data_mode == "IMPORTED",
                         models.network_people.c.tenant_id == principal.tenant_id,
                         owners.c.tenant_id == principal.tenant_id,
@@ -247,7 +303,9 @@ class NetworkImportRepository:
     def unresolved_company_report(self, *, tenant_id: str) -> tuple[dict[str, object], ...]:
         query = (select(models.network_unresolved_companies.c.raw_company_string.label("company"),
                         func.sum(models.network_unresolved_companies.c.occurrence_count).label("contact_count"))
-                 .where(models.network_unresolved_companies.c.tenant_id == tenant_id)
+                 .join(models.network_import_batches, models.network_import_batches.c.id == models.network_unresolved_companies.c.batch_id)
+                 .where(models.network_unresolved_companies.c.tenant_id == tenant_id,
+                        models.network_import_batches.c.status == "IMPORTED")
                  .group_by(models.network_unresolved_companies.c.raw_company_string)
                  .order_by(func.sum(models.network_unresolved_companies.c.occurrence_count).desc(),
                            models.network_unresolved_companies.c.raw_company_string))
@@ -264,16 +322,32 @@ def main() -> int:
     importer.add_argument("--exported-at", required=True); importer.add_argument("--apply", action="store_true")
     purge = commands.add_parser("purge")
     purge.add_argument("batch_id"); purge.add_argument("--tenant-id", required=True); purge.add_argument("--apply", action="store_true")
+    purge.add_argument("--confirm", help="Type the exact batch ID to authorize deletion")
+    share = commands.add_parser("share-batch")
+    share.add_argument("batch_id"); share.add_argument("--tenant-id", required=True)
+    share.add_argument("--owner-user-id", required=True); share.add_argument("--apply", action="store_true")
+    share.add_argument("--confirm", help="Type the exact batch ID to authorize sharing")
     unresolved = commands.add_parser("report-unresolved")
     unresolved.add_argument("--tenant-id", required=True)
     args = parser.parse_args()
+    if args.command in {"purge", "share-batch"} and args.apply and args.confirm != args.batch_id:
+        parser.error("--apply requires --confirm with the exact batch ID")
+    if getattr(args, "owner_user_id", "").strip() == "shared-access":
+        parser.error("A unique server-configured owner is required")
+    from btx_omni.persistence.seed_network_sample import assert_local_database
+    settings = Settings()
+    assert_local_database(settings.database_url)
     environment = build_sample_environment()
-    repository = NetworkImportRepository(create_database_engine(Settings()), environment.watch_profiles)
+    repository = NetworkImportRepository(create_database_engine(settings), environment.watch_profiles)
     if args.command == "purge":
         print("network purge:", repository.purge_batch(args.batch_id, tenant_id=args.tenant_id, apply=args.apply))
     elif args.command == "report-unresolved":
         for row in repository.unresolved_company_report(tenant_id=args.tenant_id):
-            print(f"{row['company']}\t{row['contact_count']}")
+            # JSON avoids row/column injection; also neutralize spreadsheet formulas.
+            print(json.dumps({"company": spreadsheet_safe(str(row['company'])), "contact_count": row['contact_count']}, ensure_ascii=True))
+    elif args.command == "share-batch":
+        changed = args.apply and repository.share_batch(args.batch_id, tenant_id=args.tenant_id, owner_user_id=args.owner_user_id)
+        print("network share:", {"changed_batches": int(changed), "dry_run": not args.apply})
     else:
         report = repository.import_file(args.path, tenant_id=args.tenant_id, owner_user_id=args.owner_user_id,
                                         owner_name=args.owner_name, exported_at=datetime.fromisoformat(args.exported_at), apply=args.apply)
@@ -282,4 +356,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception:
+        # Driver/parser exceptions can contain input. Never emit their payloads.
+        raise SystemExit("Network operation rejected; check local configuration and input format (details masked).") from None
