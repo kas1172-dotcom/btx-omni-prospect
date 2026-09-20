@@ -1,6 +1,9 @@
 import pytest
 
-from btx_omni.modules.relationships.network_classifier import CLASSIFIER_VERSION, classify_title
+from btx_omni.modules.relationships.network_classifier import (
+    CLASSIFIER_VERSION,
+    classify_title,
+)
 
 
 @pytest.mark.parametrize(("title", "role", "seniority"), (

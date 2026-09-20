@@ -77,12 +77,14 @@ def test_concurrent_same_version_edits_have_one_winner_and_one_audit(tmp_path):
 
 
 def test_api_requires_reviewed_version_and_rejects_stale_changes(monkeypatch, tmp_path):
+    from hashlib import sha256
     from test_hosted_sessions import _production_app, _sign_in
 
     communications = service(tmp_path)
     draft = create(communications)
-    client = _production_app(monkeypatch, database_url=str(communications.repository.engine.url))
-    session = _sign_in(client, 'hosted-seller-access')
+    client = _production_app(monkeypatch, database_url=str(communications.repository.engine.url),
+                             user_access_code_hashes={"seller-1": sha256(b"unique-fixture-seller").hexdigest()})
+    session = _sign_in(client, 'unique-fixture-seller')
     headers = {'X-CSRF-Token': session['csrf_token']}
     path = f'/api/communications/{draft.id}'
     assert client.patch(path, headers=headers, json={'body': 'No version'}).status_code == 422

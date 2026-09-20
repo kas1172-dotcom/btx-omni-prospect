@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Protocol
 
 from sqlalchemy import Engine, and_, delete, func, insert, or_, select, update
+from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.config import Settings
 from btx_omni.domain.work import Principal, PrincipalRole
@@ -110,7 +111,7 @@ def _id(prefix: str, *parts: str) -> str:
 
 def _outside_worktree(path: Path) -> Path:
     resolved = path.resolve(strict=True)
-    if resolved == WORKTREE or WORKTREE in resolved.parents:
+    if resolved == WORKTREE or WORKTREE in resolved.parents or any((parent / ".git").exists() for parent in resolved.parents):
         raise ValueError("Import files inside the git worktree are refused")
     if not resolved.is_file():
         raise ValueError("Import path must be a file")
@@ -121,7 +122,9 @@ class NetworkImportRepository:
     def __init__(self, engine: Engine, profiles: tuple[AccountWatchProfile, ...]):
         # SQLAlchemy diagnostics must not serialize imported personal parameters.
         engine.hide_parameters = True
-        self.engine, self.profiles = engine, profiles
+        # SQLAlchemy compiled statements can retain their first bound values.
+        # Network statements must not put personal parameters in that cache.
+        self.engine, self.profiles = engine.execution_options(compiled_cache=None), profiles
 
     def import_file(self, path: Path, *, tenant_id: str, owner_user_id: str, owner_name: str, exported_at: datetime,
                     adapter: ConnectionAdapter | None = None, apply: bool = False) -> dict[str, object]:
@@ -145,7 +148,9 @@ class NetworkImportRepository:
         if not apply:
             return report
         now = datetime.now(UTC)
-        unresolved = Counter(row.company for row, resolution, _ in resolutions if resolution.canonical_account_id is None)
+        unresolved = Counter(row.company.casefold().strip() for row, resolution, _ in resolutions if resolution.canonical_account_id is None)
+        unresolved_labels = {row.company.casefold().strip(): row.company for row, resolution, _ in reversed(resolutions)
+                             if resolution.canonical_account_id is None}
         with self.engine.begin() as connection:
             existing = connection.execute(select(models.network_import_batches).where(
                 models.network_import_batches.c.tenant_id == tenant_id,
@@ -195,7 +200,8 @@ class NetworkImportRepository:
                     external_person_id=person_id,
                     connected_on=datetime.combine(row.connected_on, datetime.min.time(), UTC) if row.connected_on else None,
                     batch_id=batch_id, tie_source=TIE_SOURCE, evidence_state="INFERRED", data_mode="IMPORTED", synthetic=False))
-            for company, count in unresolved.items():
+            for normalized_company, count in unresolved.items():
+                company = unresolved_labels[normalized_company]
                 fingerprint = hashlib.sha256(company.casefold().strip().encode()).hexdigest()
                 resolution = resolve_entity(company, self.profiles)
                 connection.execute(insert(models.network_unresolved_companies).values(
@@ -358,6 +364,15 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except Exception:
+    except (SQLAlchemyError, OSError, ValueError, csv.Error) as error:
         # Driver/parser exceptions can contain input. Never emit their payloads.
+        if str(error) in {
+            "LinkedIn Connections.csv headers are incomplete", "Network file exceeds the 10 MiB limit",
+            "Network CSV row has an invalid column count", "Network CSV field exceeds its length limit",
+            "Import files inside the git worktree are refused", "A unique server-configured owner is required",
+            "A different export must be newer than the active owner export",
+            "File already belongs to another owner; ownership cannot be reassigned",
+            "Export date must include a timezone", "Invalid import ownership metadata",
+        }:
+            raise SystemExit("Network operation rejected: " + str(error)) from None
         raise SystemExit("Network operation rejected; check local configuration and input format (details masked).") from None

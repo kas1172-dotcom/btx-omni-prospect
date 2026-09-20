@@ -72,15 +72,17 @@ def test_missing_ledger_never_builds_client_and_timeout_is_counted(repository):
 
 
 def test_usage_api_is_authenticated_private_and_cannot_select_another_actor(monkeypatch, repository):
+    from hashlib import sha256
     from fastapi.testclient import TestClient
     from test_hosted_sessions import _production_app, _sign_in
 
     receipt = repository.reserve(environment_id='btx-omni-prospect', actor_id='seller-1', purpose='omni',
                                  model='fixture-model', now=datetime.now(UTC))
     repository.complete(receipt, now=datetime.now(UTC), status='RESPONSE_RECEIVED', usage={'total_tokens': 45})
-    client = _production_app(monkeypatch, database_url=str(repository.engine.url))
+    client = _production_app(monkeypatch, database_url=str(repository.engine.url),
+                             user_access_code_hashes={"seller-1": sha256(b"unique-fixture-seller").hexdigest()})
     assert client.get('/api/settings/ai-usage').status_code == 401
-    _sign_in(client, 'hosted-seller-access')
+    _sign_in(client, 'unique-fixture-seller')
     response = client.get('/api/settings/ai-usage')
     assert response.status_code == 200 and response.headers['cache-control'] == 'private, no-store'
     assert response.json()['your_measured_total_tokens'] == 45

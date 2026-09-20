@@ -44,6 +44,16 @@ def test_size_limit_before_parsing(tmp_path, monkeypatch):
         module.LinkedInConnectionsCsvAdapter().records(path)
 
 
+def test_paths_in_another_worktree_are_refused(tmp_path):
+    other = tmp_path / "other-worktree"
+    other.mkdir()
+    (other / ".git").write_text("gitdir: fake", encoding="utf-8")
+    path = other / "fake.csv"
+    path.write_text(HEADER, encoding="utf-8")
+    with pytest.raises(ValueError, match="worktree"):
+        module._outside_worktree(path)
+
+
 @pytest.mark.parametrize("cell", ["=1+1", "+1", "-1", "@SUM(A1)", "  =1", "\t+1"])
 def test_spreadsheet_formula_cells_are_neutralized(cell):
     assert module.spreadsheet_safe(cell) == "'" + cell
@@ -55,7 +65,7 @@ def test_newer_snapshot_supersedes_without_inheriting_share_and_purge_is_idempot
     repo = module.NetworkImportRepository(engine, ())
     path = tmp_path / "fake.csv"
     path.write_text(HEADER + "Fake,One,,Unknown Works,Engineer,\n", encoding="utf-8")
-    args = dict(tenant_id="fake-tenant", owner_user_id="fake-owner", owner_name="Fake Owner", apply=True)
+    args = {"tenant_id": "fake-tenant", "owner_user_id": "fake-owner", "owner_name": "Fake Owner", "apply": True}
     old = repo.import_file(path, exported_at=datetime(2026, 1, 1, tzinfo=UTC), **args)
     repo.share_batch(old["batch_id"], tenant_id="fake-tenant", owner_user_id="fake-owner")
     path.write_text(HEADER + "Fake,Two,,Unknown Works,Director,\n", encoding="utf-8")
@@ -112,3 +122,16 @@ def test_shared_access_cannot_import_even_dry_run(tmp_path):
         module.NetworkImportRepository(create_engine("sqlite://"), ()).import_file(
             tmp_path / "absent.csv", tenant_id="fake", owner_user_id="shared-access", owner_name="Fake",
             exported_at=datetime(2026, 1, 1, tzinfo=UTC))
+
+
+def test_case_variants_share_review_queue_without_losing_raw_affiliations(tmp_path):
+    engine = create_engine("sqlite://")
+    models.metadata.create_all(engine)
+    repo = module.NetworkImportRepository(engine, ())
+    path = tmp_path / "fake.csv"
+    path.write_text(HEADER + "Fake,One,,Unknown Works,Engineer,\nFake,Two,,UNKNOWN WORKS,Engineer,\n", encoding="utf-8")
+    repo.import_file(path, tenant_id="fake", owner_user_id="unique", owner_name="Fake",
+                     exported_at=datetime(2026, 1, 1, tzinfo=UTC), apply=True)
+    assert repo.unresolved_company_report(tenant_id="fake") == ({"company": "Unknown Works", "contact_count": 2},)
+    with engine.connect() as conn:
+        assert set(conn.scalars(select(models.network_affiliations.c.raw_company_string))) == {"Unknown Works", "UNKNOWN WORKS"}
