@@ -125,7 +125,7 @@ class NetworkImportRepository:
 
     def import_file(self, path: Path, *, tenant_id: str, owner_user_id: str, owner_name: str, exported_at: datetime,
                     adapter: ConnectionAdapter | None = None, apply: bool = False) -> dict[str, object]:
-        if not owner_user_id.strip() or owner_user_id.strip() == "shared-access":
+        if not owner_user_id.strip() or owner_user_id.strip().startswith("shared-access"):
             raise ValueError("A unique server-configured owner is required")
         source = adapter or LinkedInConnectionsCsvAdapter()
         safe_path = _outside_worktree(path)
@@ -210,7 +210,7 @@ class NetworkImportRepository:
         permitted = and_(
             models.network_import_batches.c.tenant_id == principal.tenant_id,
             or_(models.network_import_batches.c.visibility == "tenant_shared",
-                and_(principal.user_id != "shared-access",
+                and_(not principal.user_id.startswith("shared-access"),
                      models.network_import_batches.c.owner_user_id == principal.user_id)),
         )
         owners = models.network_people.alias("network_owners")
@@ -257,7 +257,7 @@ class NetworkImportRepository:
             return tuple(dict(row) for row in connection.execute(query).mappings())
 
     def share_batch(self, batch_id: str, *, tenant_id: str, owner_user_id: str) -> bool:
-        if owner_user_id.strip() == "shared-access":
+        if owner_user_id.strip().startswith("shared-access"):
             return False
         with self.engine.begin() as connection:
             result = connection.execute(update(models.network_import_batches).where(
@@ -332,7 +332,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.command in {"purge", "share-batch"} and args.apply and args.confirm != args.batch_id:
         parser.error("--apply requires --confirm with the exact batch ID")
-    if getattr(args, "owner_user_id", "").strip() == "shared-access":
+    if getattr(args, "owner_user_id", "").strip().startswith("shared-access"):
         parser.error("A unique server-configured owner is required")
     from btx_omni.persistence.seed_network_sample import assert_local_database
     settings = Settings()

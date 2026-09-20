@@ -58,7 +58,7 @@ class SessionStore:
         elif seller and (self.settings.environment == "development" or access_code != "development-salesperson"):
             principal = server_principal(self.settings, "shared-access", "POC Salesperson", PrincipalRole.SALESPERSON)
         elif manager and (self.settings.environment == "development" or access_code != "development-manager"):
-            principal = server_principal(self.settings, "shared-access", "POC Manager", PrincipalRole.MANAGER)
+            principal = server_principal(self.settings, "shared-access-manager", "POC Manager", PrincipalRole.MANAGER)
         if principal is None:
             return None
         return self._create(principal, now=now)

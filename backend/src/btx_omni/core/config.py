@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     @field_validator("user_access_code_hashes")
     @classmethod
     def validate_user_codes(cls, value: dict[str, str]) -> dict[str, str]:
-        if any(not key.strip() or key != key.strip() or key == "shared-access"
+        if any(not key.strip() or key != key.strip() or key.startswith("shared-access")
                or len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest)
                for key, digest in value.items()):
             raise ValueError("Invalid server access-code mapping")

@@ -29,6 +29,10 @@ def test_distinct_server_users_and_shared_access_visibility():
     assert len(repo.visible_rows(first)) == 1
     assert repo.visible_rows(second) == ()
     assert shared.user_id == "shared-access"
+    config.action_manager_token = "fake-shared-manager-code"
+    shared_manager = store.exchange("fake-shared-manager-code").principal
+    assert shared_manager.user_id == "shared-access-manager"
+    assert repo.visible_rows(shared_manager) == ()
     with repo.engine.begin() as conn:
         conn.execute(update(models.network_import_batches).values(owner_user_id="shared-access"))
     assert repo.visible_rows(shared) == ()
