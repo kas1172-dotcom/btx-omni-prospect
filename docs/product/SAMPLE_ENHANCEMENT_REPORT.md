@@ -17,6 +17,16 @@ Status: implementation in progress; no tier certified complete yet.
 
 ## Validation
 
+### Items 1.4 and 1.4a
+
+Kratos source event date **2026-08-24**, retrieved **2026-09-20**, publisher **Kratos Defense & Security Solutions**. Required investor URL: https://ir.kratosdefense.com/news-releases/news-release-details/kratos-providing-spartan-j85-engines-support-boeing-jdam-lr (403 on this retrieval). Verified primary corporate mirror: https://www.kratosdefense.com/newsroom/kratos-providing-spartan-j85-engines-to-support-boeing-jdam-lr-production-contract (date and J85 production at Auburn Hills explicitly stated). The company mirror and syndicated release are one origin, not independent corroboration.
+
+Official-source SAM.gov/DLA/USAspending/SBIR CAGE/UEI searches yielded no verified record. Secondary directories surfaced candidates but were not accepted as official proof; IDs stay null. Oxford is retained as superseded stale history, not Conflicting. The older trade and entity URLs supplied by the user remain labeled user-supplied history, not newly verified research. No contact names were imported.
+
+Computed Signal Confidence: source 22.5 + parent identity 12.5 + specificity 20 + one origin 3.75 + 27-day freshness 5 = **63.75 Medium**. No numeric confidence was hand-set. Exact site address/coordinates and authoritative entity ID remain unresolved, so publication stays research-only; no premature canonical prospect or map marker. Need stays Unknown. A separate reviewed parent-identity observation is now usable by the scoring service without pretending the app already has a canonical prospect.
+
+The visible brief labels `curated_monitor_style`, the sourcing-role gap, fit hypothesis and unsupported BTX→JDAM-LR link. Raw source metadata and narrative travel with `seed_context`; the source brief can be inspected without Gemini. Two Kratos fixture assertions pass. Public brief freshness now uses the event's rubric window, not a collector's 48-hour polling policy (R1).
+
 ### Items 1.2 and 1.3
 
 New source: `providers/sample/enhancement.py:boeing_recovery`. Two quote revisions, one order/line (292 units at $980), two partial dispatches (100 + 46), 146 remaining and exactly $143,080 open. Dates are relative to the configured anchor. Recovery is as-of +6, PENDING, not buyer accepted; includes owner role, due date, inspection dependency, alternatives and detailed narrative. Every new commercial record is synthetic/SAMPLE. There are no invented people, emails or introductions.

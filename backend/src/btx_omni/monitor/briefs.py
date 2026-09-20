@@ -104,6 +104,7 @@ class SignalBrief:
     assessment_version: int | None = None
     geographic_scope: str = "ACCOUNT"
     context_id: str | None = None
+    seed_context: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -183,8 +184,9 @@ def signal_brief(
         event.resolution_state is ResolutionState.RESOLVED
         and event.seller_relevance_state is SellerRelevanceState.RESOLVED_ELIGIBLE
     )
+    from btx_omni.modules.scoring.public_rules import freshness_window_hours
     freshness = publication_freshness(
-        published, collected_at=collected, threshold_hours=freshness_hours, now=clock
+        published, collected_at=collected, threshold_hours=freshness_window_hours(event.event_type.value), now=clock
     )
     event_timing = (
         "UNKNOWN"
@@ -209,6 +211,7 @@ def signal_brief(
         missing.append("source summary")
     headline = EVENT_LABELS.get(event.event_type.value, "Public update reported")
     deterministic_summary = f"{headline}. {title}" if title else headline
+    seed = json.loads(observation.structured_payload) if observation and observation.structured_payload and event.provenance.source_system == 'curated_monitor_style' else None
     return SignalBrief(
         id=event.id,
         context_id=None,
@@ -259,6 +262,7 @@ def signal_brief(
         risk_severity=public_risk_assessment(event, observation, now=clock),
         event_type=event.event_type.value,
         geographic_scope="FACILITY" if event.canonical_facility_id else "ACCOUNT",
+        seed_context=seed,
     )
 
 
