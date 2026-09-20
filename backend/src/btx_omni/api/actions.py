@@ -284,7 +284,7 @@ def create(
             raise HTTPException(422, "The proposal must preserve the governed federal validation step.")
     try:
         return runtime.work.create(
-            **body.model_dump(), principal=current, occurred_at=datetime.now(UTC)
+            **body.model_dump(), principal=current, occurred_at=runtime.observed_at()
         )
     except (ActionForbiddenError, ActionConflictError, ValueError) as error:
         raise _handle(error) from error
@@ -324,7 +324,7 @@ def convert_suggestion(
             due_date=body.due_date,
             priority=ActionPriority(suggestion["priority"]),
             principal=current,
-            occurred_at=datetime.now(UTC),
+            occurred_at=runtime.observed_at(),
         )
     except (ActionForbiddenError, ActionConflictError, ValueError) as error:
         raise _handle(error) from error
@@ -415,7 +415,7 @@ def edit_action(
         return runtime.work.edit(
             action_id,
             principal=current,
-            occurred_at=datetime.now(UTC),
+            occurred_at=runtime.observed_at(),
             **body.model_dump(exclude_unset=True),
         )
     except (
@@ -449,7 +449,7 @@ def change_status(
                 if gaps:
                     raise ActionConflictError('Completion requires verified evidence: ' + ', '.join(gaps))
         return runtime.work.transition(
-            action_id, body.status, principal=current, occurred_at=datetime.now(UTC), expected_version=body.expected_version,
+            action_id, body.status, principal=current, occurred_at=runtime.observed_at(), expected_version=body.expected_version,
             complete_open_subtasks=body.complete_open_subtasks,
         )
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
@@ -468,7 +468,7 @@ def decide_approval(
             action_id,
             body.decision,
             principal=current,
-            occurred_at=datetime.now(UTC),
+            occurred_at=runtime.observed_at(),
             expected_version=body.expected_version,
             comment=body.comment,
         )
@@ -479,7 +479,7 @@ def decide_approval(
 @router.post("/{action_id}/approval/request")
 def request_approval(action_id: str, body: ApprovalRequest, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
     try:
-        return runtime.work.request_approval(action_id, principal=current, occurred_at=datetime.now(UTC), expected_version=body.expected_version)
+        return runtime.work.request_approval(action_id, principal=current, occurred_at=runtime.observed_at(), expected_version=body.expected_version)
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError) as error:
         raise _handle(error) from error
 
@@ -497,7 +497,7 @@ def mutate_subtask(action_id: str, subtask_id: str, body: SubtaskMutation, runti
         changes = body.model_dump(exclude_unset=True, exclude={'expected_version', 'idempotency_key'})
         if 'title' in changes and changes['title'] is None:
             raise ValueError("Subtask title is required.")
-        return runtime.work.change_subtask(action_id, subtask_id=subtask_id, principal=current, occurred_at=datetime.now(UTC),
+        return runtime.work.change_subtask(action_id, subtask_id=subtask_id, principal=current, occurred_at=runtime.observed_at(),
                                            expected_version=body.expected_version, idempotency_key=body.idempotency_key, **changes)
     except (ActionNotFoundError, ActionForbiddenError, ActionConflictError, ValueError) as error:
         raise _handle(error) from error

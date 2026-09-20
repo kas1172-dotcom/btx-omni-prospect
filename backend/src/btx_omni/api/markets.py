@@ -20,7 +20,9 @@ def markets(kind: Literal['LEVEL', 'MOM_PERCENT', 'YOY_PERCENT'] = 'LEVEL', movi
         if runtime.settings.sample_enhancement_enabled and runtime.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.medical_market import coverage_context
             result['sample_coverage'] = coverage_context(runtime.environment())
-            from btx_omni.providers.sample.public_research import medical_regulatory_context
+            from btx_omni.providers.sample.public_research import (
+                medical_regulatory_context,
+            )
             result['curated_public_context'] = [medical_regulatory_context(anchor=runtime.settings.demo_as_of_date)]
         return result
     except SQLAlchemyError:

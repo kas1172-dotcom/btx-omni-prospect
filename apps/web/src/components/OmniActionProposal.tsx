@@ -3,7 +3,7 @@ import { api } from '../api/client'
 import type { Account, Principal } from '../types/api'
 import { Button } from './UI'
 
-const ExistingActionEditor = lazy(() => import('../features/actions/Actions').then(module => ({ default: module.ActionEditor })))
+const ExistingActionEditor = lazy(() => import('../features/actions/ActionEditor').then(module => ({ default: module.ActionEditor })))
 
 export function OmniActionProposal({ accountId, title }: { accountId: string; title: string }) {
   const [review, setReview] = useState<{ accounts: Account[]; principal: Principal }>()

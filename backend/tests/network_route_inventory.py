@@ -74,3 +74,16 @@ OPERATIONS = {
     "POST /api/session/sign-in": "b: non-data/session",
     "POST /api/session/sign-out": "b: non-data/session",
 }
+
+OPERATIONS.update({
+    "DELETE /api/omni/conversations/{identifier}": "a: local fixture",
+    "GET /api/omni/conversations": "a: local fixture",
+    "GET /api/omni/conversations/{identifier}": "a: local fixture",
+    "PATCH /api/actions/{action_id}/subtasks/{subtask_id}": "a: local fixture",
+    "PATCH /api/omni/conversations/{identifier}": "a: local fixture",
+    "POST /api/actions/{action_id}/approval/request": "a: local fixture",
+    "POST /api/actions/{action_id}/subtasks": "a: local fixture",
+    "POST /api/omni/chat": "a: local fixture",
+    "POST /api/omni/chat/stream": "a: local fixture",
+    "POST /api/omni/conversations/{identifier}/feedback": "a: local fixture",
+})

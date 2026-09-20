@@ -41,7 +41,7 @@ def test_route_inventory_is_complete():
     actual = {f"{method.upper()} {path}" for path, methods in app.openapi()["paths"].items()
               for method in methods if method in {"get", "post", "patch", "put", "delete"}}
     assert actual == set(OPERATIONS)
-    assert len(actual) == 69
+    assert len(actual) == 79
     def flattened(routes, prefix=""):
         for route in routes:
             if hasattr(route, "original_router"):
@@ -138,7 +138,7 @@ def test_all_classified_operations_with_real_requests(tmp_path, monkeypatch, cap
             if route == "/api/actions" and method == "POST":
                 body = {"account_id": "honeywell", "title": "Fake privacy action"}
             if "{action_id}" in url and "/commercial/" not in url:
-                action = runtime.work.create(account_id="honeywell", title=f"Fake privacy action {ordinal}", principal=manager,
+                action = runtime.work.create(account_id="honeywell", title=f"Fake privacy action {ordinal}", principal=replace(manager, user_id="fake-requester") if route.endswith("/approval") else manager,
                                              approval_required=route.endswith("/approval"), occurred_at=NOW)
                 url = url.replace("{action_id}", action.id)
                 body = {"expected_version": action.version}
@@ -156,6 +156,23 @@ def test_all_classified_operations_with_real_requests(tmp_path, monkeypatch, cap
                         decision = workflow.decide(action.id, proposal["proposal_id"], decision="APPROVED", expected_decision_id=None, principal=manager, now=NOW)
                         body = {"proposal_id": proposal["proposal_id"], "expected_decision_id": decision["decision_id"], "idempotency_key": "fake-execute"}
                         params["confirmed"] = True
+            if "/subtasks" in route:
+                if "{subtask_id}" in url:
+                    action = runtime.work.change_subtask(action.id, title="Fake subtask", principal=manager,
+                        occurred_at=NOW, expected_version=action.version, idempotency_key=f"fake-child-{ordinal}")
+                    url = url.replace("{subtask_id}", action.subtasks[0].id)
+                body = {"expected_version": action.version, "title": "Fake subtask edit", "idempotency_key": f"fake-edit-{ordinal}"}
+            if route in {"/api/omni/chat", "/api/omni/chat/stream"}:
+                body = {"account_id": "honeywell", "question": "Explain contacts and relationships"}
+            if "{identifier}" in url:
+                from btx_omni.api.omni_chat import repository
+                chat = repository(runtime)
+                now = datetime.now(UTC)
+                thread = chat.create(actor, now)
+                run_id = runtime.omni_runs.start(actor_id=actor.user_id, request={"question": "Fake"}, now=now)
+                chat.append(thread["id"], actor, now, version=thread["version"], turns=[{"role": "assistant", "response": {"run_id": run_id, "content": "Fake answer"}}])
+                url = url.replace("{identifier}", thread["id"])
+                body = {"title": "Fake renamed conversation"} if method == "PATCH" else {"run_id": run_id, "rating": "up"}
             if "/suggestions/" in route or "{receipt_id}" in url:
                 suggestions = actions._suggestions(runtime, actor)
                 suggestion = next(item for item in suggestions if not item["dismissed"] and not item["conversion_blocked"])

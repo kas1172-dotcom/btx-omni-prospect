@@ -1,7 +1,12 @@
 from btx_omni.modules.markets.service import MarketService
 from btx_omni.providers.sample.enhancement import enhance_environment
 from btx_omni.providers.sample.environment import build_sample_environment
-from btx_omni.providers.sample.medical_market import CuratedMarketReadRepository, SERIES_ID, coverage_context, snapshot
+from btx_omni.providers.sample.medical_market import (
+    SERIES_ID,
+    CuratedMarketReadRepository,
+    coverage_context,
+    snapshot,
+)
 
 
 class EmptyRepository:

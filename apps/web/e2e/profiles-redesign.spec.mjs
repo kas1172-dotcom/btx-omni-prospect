@@ -1,7 +1,19 @@
 import { test, expect } from '@playwright/test'
 
+test.beforeEach(async ({ page }) => {
+  await page.goto('/#/accounts')
+  const access = page.getByLabel('Access code', { exact: true })
+  await expect(access.or(page.getByRole('heading', { level: 1, name: 'Accounts', exact: true }))).toBeVisible()
+  if (await access.isVisible()) {
+    await access.fill('development-salesperson')
+    await page.getByRole('button', { name: /Enter Project Beacon/ }).click()
+  }
+})
+
 test('Relationships keeps ranked routes visible and the full graph secondary', async ({ page }) => {
-  await page.goto('/#/accounts/boeing')
+  // The enhanced demo authors manufacturing routes on the fictional defense account.
+  const accountId = process.env.E2E_RELATIONSHIP_ACCOUNT ?? 'boeing'
+  await page.goto(`/#/accounts/${accountId}`)
   await page.getByRole('tab', { name: 'Relationships', exact: true }).click()
   const relationships = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
   await expect(relationships).toHaveAttribute('aria-busy', 'false')
@@ -11,6 +23,10 @@ test('Relationships keeps ranked routes visible and the full graph secondary', a
   await expect(relationships.locator('.ranked-network')).toBeHidden()
   await relationships.getByRole('button', { name: 'Explore network', exact: true }).click()
   await expect(relationships.locator('.ranked-network')).toBeVisible()
+  if (accountId !== 'boeing') {
+    await page.goto('/#/accounts/boeing')
+    await page.getByRole('tab', { name: 'Relationships', exact: true }).click()
+  }
   await expect(page.getByRole('heading', { name: 'Contacts', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Research', exact: true }).first()).toBeVisible()
 })
@@ -54,3 +70,4 @@ test('account views persist, filter canonical rows and support keyboard navigati
   await row.press('Enter')
   await expect(page.getByRole('heading', { level: 1, name: 'Boeing', exact: true })).toBeVisible()
 })
+

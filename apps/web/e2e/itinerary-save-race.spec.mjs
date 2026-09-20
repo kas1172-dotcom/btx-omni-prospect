@@ -15,7 +15,7 @@ test('late itinerary save preserves edits and added stops, then saves with the r
     await route.fulfill({ json: response })
   })
   await page.goto('/#/map')
-  const results = page.getByRole('region', { name: 'Map results', exact: true })
+  const results = page.getByRole('region', { name: 'Map site table', exact: true })
   const dialog = page.getByRole('dialog', { name: 'Itinerary', exact: true })
   const add = async name => {
     await results.getByRole('button').filter({ hasText: new RegExp(`^${name}`) }).first().click()

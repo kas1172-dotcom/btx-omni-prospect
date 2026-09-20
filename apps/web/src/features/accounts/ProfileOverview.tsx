@@ -12,7 +12,7 @@ const decimal = (value: string | null | undefined) => value == null ? 'Unknown' 
 
 export function ProfileOverview({ detail, location }: { detail: Account360; location: WorkspaceLocation }) {
   const profile = detail.profile
-  const ledger = detail.commercial_ledger
+  const ledger = detail.commercial_ledger?.ttm ? detail.commercial_ledger : null
   const customer = detail.organization_360.mode === 'CUSTOMER'
   const name = detail.account.name ?? detail.account.legal_name ?? detail.account.id
   const currency = ledger?.currency ?? 'USD'

@@ -9,8 +9,8 @@ from btx_omni.modules.accounts.customer_360 import customer_360_projection
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
 from btx_omni.modules.commercial.read import CommercialReadService
 from btx_omni.modules.scoring.customer_health import health_inputs
-from btx_omni.modules.scoring.internal_risk import risk_inputs
 from btx_omni.modules.scoring.families import assess, customer_risk_projection
+from btx_omni.modules.scoring.internal_risk import risk_inputs
 
 
 def profile_projection(sample, account, *, alerts, signal_briefs, monitoring_complete):

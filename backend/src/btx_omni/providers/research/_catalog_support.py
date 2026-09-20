@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import json
-from btx_omni.core.clock import as_of_datetime
 from pathlib import Path
 
 from btx_omni.core.classification import Classification
+from btx_omni.core.clock import as_of_datetime
 from btx_omni.core.provenance import Provenance
 from btx_omni.domain.common import DataMode, EvidenceState
 

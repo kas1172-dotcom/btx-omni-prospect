@@ -2,10 +2,10 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
-import pytest
 
 from alembic import command
 from btx_omni.core.config import get_settings

@@ -14,7 +14,10 @@ from btx_omni.domain.work import PrincipalRole
 from btx_omni.modules.accounts.customer_360 import organization_360_projection
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.assistant.chat_web import PublicTopic, public_query, search
-from btx_omni.modules.assistant.commercial_tools import CommercialToolSession
+from btx_omni.modules.assistant.commercial_tools import (
+    CommercialToolSession,
+    model_payload,
+)
 from btx_omni.modules.commercial.money import model_money_projection
 from btx_omni.modules.commercial.read import CommercialReadService
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
@@ -30,6 +33,11 @@ class Find(Empty):
 
 class AccountInput(Empty):
     account_id: str = Field(min_length=1, max_length=64)
+
+
+class Decision(AccountInput):
+    family: str = Field(min_length=1, max_length=80)
+    subject_id: str = Field(min_length=1, max_length=220)
 
 
 class OptionalAccount(Empty):
@@ -64,6 +72,7 @@ INPUTS = {
     "get_customer_360": (AccountInput, "Organization identity and relationship context."),
     "get_commercial_history": (History, "Sample orders, quote rows and revisions, shipments, backlog and periods."),
     "get_intelligence_events": (OptionalAccount, "Stored visible public developments and sources."),
+    "get_decision": (Decision, "Exact factor trace for a family and subject_id listed by get_assessments, scoped to the same account."),
     "get_assessments": (AccountInput, "Separate deterministic score families, factors, Data Coverage, eligibility and rule versions."),
     "get_relationship_routes": (AccountInput, "Documented relationships, constraints and contact candidates; never assumed access."),
     "get_nearby_sites": (AccountInput, "Verified sites and straight-line distances, never route times."),
@@ -215,13 +224,19 @@ class ChatTools:
                     result["quote_comparison"] = session.read("compare_quote_revisions", {"quote_id": params["quote_id"]})
                 return model_money_projection(jsonable_encoder(result), currency=self.sample.commercial_ledgers[aid]["currency"])
             return result
+        if name == "get_decision":
+            if aid not in self.sample.commercial_ledgers:
+                return {"status": "unavailable", "message": "Detailed assessment inputs are not loaded for this organization."}
+            return CommercialToolSession(self.sample, aid, work_items=self.work).read("read_decision", {"family": params["family"], "subject_id": params["subject_id"]})
         if name == "get_assessments":
             if aid not in self.sample.commercial_ledgers:
                 return {"status": "unavailable", "message": "Detailed assessment inputs aren't loaded for this organization. Open its profile to inspect available public fit information."}
             decisions = CommercialToolSession(self.sample, aid, work_items=self.work).read("read_decisions", {})
             # Action execution detail is available separately from get_actions.
             decisions.pop("action_priorities", None)
-            return decisions
+            result = model_payload("read_decisions", decisions)
+            result["detail_policy"] = "Opportunity factors are indexed. Call get_decision with this account_id and the listed family and subject_id for the exact trace."
+            return result
         if name == "get_relationship_routes":
             result = RelationshipIntelligenceService(self.sample).account_relationships(aid, depth=2, max_paths=6)
             # Legacy graph projection has no private imported network records.

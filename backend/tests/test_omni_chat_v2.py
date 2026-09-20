@@ -35,6 +35,8 @@ def tools(sample, **kwargs):
 def test_every_tool_is_bounded_and_scoped(sample, tool):
     t = tools(sample)
     args = {'name': 'Boeing'} if tool == 'find_organization' else {'account_ids': ['boeing', 'lockheed-martin']} if tool == 'compare_organizations' else {} if tool == 'get_screen_context' else {'account_id': 'boeing'}
+    if tool == 'get_decision':
+        args.update(family='customer_health', subject_id='boeing')
     if tool == 'web_search':
         args['topic'] = 'latest company news'
     result = t.execute(tool, args)

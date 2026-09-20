@@ -18,8 +18,8 @@ def test_j7_completion_requires_scoped_verified_proof():
 
 
 def test_j7_opt_in_runtime_view_preserves_existing_canonical_ids():
-    from btx_omni.providers.sample.environment import build_sample_environment
     from btx_omni.providers.sample.enhancement import enhance_environment
+    from btx_omni.providers.sample.environment import build_sample_environment
     base = build_sample_environment()
     result = enhance_environment(base)
     assert {a.id for a in base.accounts} <= {a.id for a in result.accounts}

@@ -1,12 +1,15 @@
 from fastapi.encoders import jsonable_encoder
 
-from btx_omni.api.accounts import accounts, account_360
+from btx_omni.api.accounts import account_360, accounts
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.core.config import Settings
 from btx_omni.modules.accounts.profile_projection import LIST_PROFILE_FIELDS
-from btx_omni.modules.scoring.commercial_decisions import customer_decisions
 from btx_omni.modules.commercial.projection import project_commercial_records
-from btx_omni.persistence.import_commercial_sample import ACCOUNT_CROSSWALK, load_release_sample
+from btx_omni.modules.scoring.commercial_decisions import customer_decisions
+from btx_omni.persistence.import_commercial_sample import (
+    ACCOUNT_CROSSWALK,
+    load_release_sample,
+)
 from btx_omni.providers.sample.environment import build_sample_environment
 
 

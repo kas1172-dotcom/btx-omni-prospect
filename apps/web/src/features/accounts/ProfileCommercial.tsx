@@ -15,7 +15,7 @@ export function ProfileCommercial({ detail, onWorkChanged }: { detail: Account36
   const [retry, setRetry] = useState(0)
   const [expanded, setExpanded] = useState<string>()
   const accountId = detail.account.id
-  const available = Boolean(detail.commercial_ledger)
+  const available = Boolean(detail.commercial_ledger?.ttm)
   useEffect(() => {
     if (!available) return
     const controller = new AbortController()

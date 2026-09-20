@@ -5,7 +5,10 @@ from sqlalchemy import create_engine
 
 from btx_omni.persistence import models
 from btx_omni.persistence.commercial_import import CommercialImportRepository
-from btx_omni.persistence.import_commercial_sample import ACCOUNT_CROSSWALK, load_release_sample
+from btx_omni.persistence.import_commercial_sample import (
+    ACCOUNT_CROSSWALK,
+    load_release_sample,
+)
 from btx_omni.persistence.reference_fields import ReferenceFieldRepository
 from btx_omni.providers.research.reference_data import load_private_reference_fields
 from btx_omni.providers.sample.environment import build_sample_environment

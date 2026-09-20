@@ -8,8 +8,8 @@ from datetime import UTC, datetime, timedelta
 from time import monotonic
 from uuid import uuid4
 
-from btx_omni.core.config import Settings
 from btx_omni.core.clock import as_of_datetime
+from btx_omni.core.config import Settings
 from btx_omni.monitor.candidates import (
     organization_candidate_for,
     program_candidate_for,

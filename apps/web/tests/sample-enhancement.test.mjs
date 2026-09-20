@@ -15,7 +15,7 @@ test('golden delivery and incomplete cases retain their governed primary display
 })
 
 test('directory and map expose the same three explicit partnership scopes', () => {
-  for (const path of ['../src/features/accounts/Accounts.tsx', '../src/features/map/MapFilterPanel.tsx']) {
+  for (const path of ['../src/features/accounts/Portfolio.tsx', '../src/features/map/MapFilterPanel.tsx']) {
     const source = read(path)
     for (const label of ['All (Customers &amp; Prospects)', 'Exclude strategic partnerships', 'Strategic partnerships only']) assert.ok(source.includes(label))
   }

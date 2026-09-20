@@ -49,7 +49,7 @@ test('a stale customer selection stays available until explicit retry', async ({
 test('Customer 360 creates a task that appears in Actions with its source link', async ({ page }) => {
   const title = `Customer follow-up ${crypto.randomUUID()}`
   await page.goto('/#/accounts/boeing')
-  await page.locator('.account-detail-surface').getByRole('button', { name: /^Actions/ }).click()
+  await page.getByRole('tablist', { name: 'Profile sections' }).getByRole('tab', { name: 'Actions', exact: true }).click()
   await page.getByLabel('Create internal Action').fill(title)
   await page.getByRole('button', { name: 'Create Action', exact: true }).click()
   await expect(page.getByText('Internal Action created. No external system was changed.')).toBeVisible()
