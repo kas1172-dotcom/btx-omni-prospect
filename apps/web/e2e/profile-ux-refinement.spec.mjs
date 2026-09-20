@@ -15,6 +15,13 @@ for (const width of [1440, 390]) test(`profile tabs, score explanation and inves
   await why.click()
   const dialog = page.getByRole('dialog', { name: 'Why this?' })
   await expect(dialog).toBeVisible()
+  await expect(dialog).toHaveCSS('background-color', 'rgb(255, 255, 255)')
+  const dialogPaint = await dialog.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    const top = document.elementFromPoint(rect.left + 12, rect.top + 12)
+    return { onTop: top === element || element.contains(top), fits: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight }
+  })
+  expect(dialogPaint).toEqual({ onTop: true, fits: true })
   await expect(dialog).toContainText('Calculated result:')
   await expect(dialog).toContainText('Data Coverage')
   await page.keyboard.press('Escape')
