@@ -23,3 +23,11 @@
 - Cluster clicks remain an explicit camera intent and now receive the same small-spread and max-zoom behavior.
 - Added `map-viewport.test.mjs` for zero/one/duplicate/near cluster/US-wide/invalid/viewport/radius/idempotence cases.
 - Assumption: “under ~2 km” is represented by 1.25 miles. No dependency added; no test removed or weakened.
+
+## 2026-09-20 — Step 2 search
+
+- Moved search above the Map as a keyboard-operable combobox over the canonical marker array. Local results prioritize BTX sites, then organizations/sites and their stored city/region address text.
+- Arrow Up/Down, Enter and Escape are handled; no-match copy is announced as status.
+- Selecting a result uses the same explicit marker-selection intent, opens its detail panel, and requests fixed site camera framing.
+- No Places provider is configured in this repository beyond the basemap key, so no external prediction request is made. This avoids making local acceptance depend on a key and does not fabricate provider viewports.
+- No dependency added; no test removed or modified.
