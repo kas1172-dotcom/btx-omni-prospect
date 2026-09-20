@@ -14,3 +14,10 @@ test('imported network contacts stay unvalidated and expose bounded inspector fi
   assert.match(source, /resolution_method/)
   assert.match(source, /width="184" height="136"/)
 })
+
+test('transient breakpoint events cannot leave loading active without a request', () => {
+  const mediaEffect = source.split("media.addEventListener('change', update)")[0].split('const update = () =>')[1]
+  assert.ok(mediaEffect)
+  assert.doesNotMatch(mediaEffect, /setPending/)
+  assert.match(source, /queueMicrotask\(\(\) => \{ if \(!controller.signal.aborted\) setPending\(true\) \}\)/)
+})

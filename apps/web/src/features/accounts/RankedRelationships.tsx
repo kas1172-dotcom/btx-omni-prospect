@@ -56,9 +56,12 @@ export function RankedRelationships({ accountId, initialMode, initialPathId, onS
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches)
   const [layout, setLayout] = useState<{ key: string; positions: Map<string, Point> }>({ key: '', positions: new Map() })
   const stageRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { const media = window.matchMedia('(max-width: 760px)'); const update = () => { setMobile(media.matches); setContextPage(0); setPending(true) }; media.addEventListener('change', update); return () => media.removeEventListener('change', update) }, [])
+  useEffect(() => { const media = window.matchMedia('(max-width: 760px)'); const update = () => { setMobile(media.matches); setContextPage(0) }; media.addEventListener('change', update); return () => media.removeEventListener('change', update) }, [])
   useEffect(() => {
     const controller = new AbortController()
+    // Loading follows an actual request, not transient media-query events that
+    // can return to the same breakpoint without changing the query inputs.
+    queueMicrotask(() => { if (!controller.signal.aborted) setPending(true) })
     void api.rankedRelationships({ source_account_id: accountId, mode, depth, source_component_id: component || undefined, target_component_id: mode === 'cross_account_experience' ? targetComponent || undefined : undefined, target_account_id: mode === 'cross_account_experience' ? target || undefined : undefined, selected_path_id: selectedId, node_budget: (mobile ? [12, 24, 48] : [24, 48, 80])[budgetLevel], edge_budget: (mobile ? [20, 40, 80] : [40, 80, 160])[budgetLevel], expanded_node_ids: expansions, context_page: contextPage, expected_graph_revision: revisionGuard, include_record_context: includeRecords }, controller.signal).then(value => {
       if (!controller.signal.aborted) {
         const valueRoutes = value.evaluated_routes ?? []
