@@ -140,6 +140,17 @@ def commercial_evidence(
     from btx_omni.modules.commercial.ledger import KEYS
     key = KEYS.get(collection, {"contacts": "contact_id", "supply_relationships": "relationship_id"}.get(collection))
     records = sorted(ledger[collection], key=lambda r: r[key])
+    if collection == "contacts":
+        # Imported identities are an explicit contact-list read only. Never
+        # mutate the shared ledger consumed by briefings, Omni, or scoring.
+        records = [*records, *({
+            "contact_id": row["person_id"], "display_name": row["display_name"],
+            "profile_url": row["profile_url"], "raw_title": row["raw_title"],
+            "role_family": row["role_family"], "seniority_tier": row["seniority_tier"],
+            "as_of": row["as_of"], "resolution_method": row["resolution_method"],
+            "source_person": row["owner_display_name"], "data_mode": "IMPORTED",
+            "provenance": f"LinkedIn connection from {row['owner_display_name']}'s export dated {row['exported_at'].date()}, not validated",
+        } for row in runtime.network_imports.visible_rows(actor) if row["account_id"] == account_id)]
     if record_id:
         records = [r for r in records if r[key] == record_id]
         if not records:

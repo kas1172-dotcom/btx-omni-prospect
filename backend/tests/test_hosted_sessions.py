@@ -127,7 +127,7 @@ def test_sample_demo_bypass_issues_only_a_normal_salesperson_session(monkeypatch
     session = client.get("/api/session")
     assert session.status_code == 200
     assert session.json()["principal"] == {
-        "user_id": "seller-1",
+        "user_id": "shared-access",
         "display_name": "POC Salesperson",
         "role": "SALESPERSON",
         "tenant_id": None,

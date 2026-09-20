@@ -19,7 +19,8 @@ def _day(value: object) -> date | None:
     return value if isinstance(value, date) else None
 
 
-def project_network_graph(sample: SampleEnvironment, rows: tuple[dict[str, object], ...], *, tenant_id: str) -> tuple[CanonicalRouteGraph, dict]:
+def project_network_graph(sample: SampleEnvironment, rows: tuple[dict[str, object], ...], *, tenant_id: str,
+                          queried_account_id: str) -> tuple[CanonicalRouteGraph, dict]:
     """Project only rows already authorized by NetworkImportRepository."""
     scope = f"TENANT:{tenant_id}"
     grouped: dict[str, list[dict[str, object]]] = defaultdict(list)
@@ -42,7 +43,8 @@ def project_network_graph(sample: SampleEnvironment, rows: tuple[dict[str, objec
                          source_people=sources, unvalidated=bool(contacts))
         nodes[node.id] = node
     seniority_order = {"executive": 0, "director": 1, "manager": 2, "individual": 3, "unclassified": 4}
-    projected_rows = sorted(rows, key=lambda item: (
+    scoped_rows = [row for row in rows if row.get("account_id") == queried_account_id]
+    projected_rows = sorted(scoped_rows, key=lambda item: (
         seniority_order.get(str(item["seniority_tier"]), 5), str(item["role_family"]), str(item["person_id"])
     ))[:250]
     owners: dict[str, RouteNode] = {}
@@ -86,7 +88,7 @@ def project_network_graph(sample: SampleEnvironment, rows: tuple[dict[str, objec
     return CanonicalRouteGraph(tuple(nodes.values()), tuple(edges), revision), {
         "constraints": {}, "temporal_limits": {}, "record_projection": {"unresolved_references": []},
         "scope": "Tenant-scoped imported network rows", "account_names": account_names,
-        "network_contact_count": len(rows), "network_projected_contact_count": len(projected_rows),
+        "network_contact_count": len(scoped_rows), "network_projected_contact_count": len(projected_rows),
     }
 
 

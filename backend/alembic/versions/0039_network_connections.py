@@ -61,4 +61,7 @@ def upgrade():
 
 
 def downgrade():
-    raise RuntimeError("Retain imported network lineage; restore a reviewed compatible backup instead.")
+    # Explicit downgrade removes only this revision's imported-network tables.
+    for table in ("network_unresolved_companies", "network_ties", "network_affiliations",
+                  "network_people", "network_import_batches"):
+        op.drop_table(table)

@@ -140,7 +140,8 @@ def relationship_query(
     network_rows = runtime.network_imports.visible_rows(actor) if body.mode in {"contact_candidates", "documented_access"} else ()
     network_projection = None
     if network_rows and actor.tenant_id:
-        network_projection = project_network_graph(sample, network_rows, tenant_id=actor.tenant_id)
+        network_projection = project_network_graph(sample, network_rows, tenant_id=actor.tenant_id,
+                                                   queried_account_id=body.source_account_id)
         network_graph = network_projection[0]
         if body.mode == "contact_candidates":
             target_ids = {node.id for node in network_graph.nodes.values()

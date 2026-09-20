@@ -550,8 +550,8 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
     payload = response.json()
     assert response.status_code == 200
     assert (
-        "No scoped opportunities in this selection have complete Attractiveness inputs"
-        in payload["content"]
+        payload["content"]
+        == "No scoped opportunities in this selection have complete Attractiveness inputs. Organization-level scores are not a substitute."
     )
     assert "Organization-level scores are not a substitute" in payload["content"]
     assert payload["context_used"] == {"filters": {"market": "Defense"}}

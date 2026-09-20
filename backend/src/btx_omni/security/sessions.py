@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from hmac import compare_digest
 from secrets import token_urlsafe
 from threading import Lock
@@ -32,7 +33,7 @@ class SessionStore:
 
     @property
     def production_configured(self) -> bool:
-        return all(
+        return bool(self.settings.user_access_code_hashes) or all(
             (
                 self.settings.action_salesperson_token,
                 self.settings.action_manager_token,
@@ -44,10 +45,20 @@ class SessionStore:
 
     def exchange(self, access_code: str, *, now: datetime | None = None) -> Session | None:
         principal = None
-        if compare_digest(access_code, self.settings.action_salesperson_token):
-            principal = server_principal(self.settings, "seller-1", "POC Salesperson", PrincipalRole.SALESPERSON)
-        elif compare_digest(access_code, self.settings.action_manager_token):
-            principal = server_principal(self.settings, "manager-1", "POC Manager", PrincipalRole.MANAGER)
+        digest = sha256(access_code.encode("utf-8")).hexdigest()
+        # Scan every configured hash; client identity fields are never consulted.
+        matches = [user for user, expected in self.settings.user_access_code_hashes.items()
+                   if compare_digest(digest, expected)]
+        seller = compare_digest(access_code.encode(), self.settings.action_salesperson_token.encode())
+        manager = compare_digest(access_code.encode(), self.settings.action_manager_token.encode())
+        if (matches and (seller or manager)) or len(matches) > 1 or (seller and manager):
+            return None  # Ambiguous credentials must never choose an identity.
+        if matches:
+            principal = server_principal(self.settings, matches[0], "Configured user", PrincipalRole.SALESPERSON)
+        elif seller and (self.settings.environment == "development" or access_code != "development-salesperson"):
+            principal = server_principal(self.settings, "shared-access", "POC Salesperson", PrincipalRole.SALESPERSON)
+        elif manager and (self.settings.environment == "development" or access_code != "development-manager"):
+            principal = server_principal(self.settings, "shared-access-manager", "POC Manager", PrincipalRole.MANAGER)
         if principal is None:
             return None
         return self._create(principal, now=now)
@@ -57,7 +68,7 @@ class SessionStore:
         if not self.settings.hosted_demo_access_bypass_enabled:
             return None
         return self._create(
-            server_principal(self.settings, "seller-1", "POC Salesperson", PrincipalRole.SALESPERSON),
+            server_principal(self.settings, "shared-access", "POC Salesperson", PrincipalRole.SALESPERSON),
             now=now,
         )
 

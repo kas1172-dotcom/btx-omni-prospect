@@ -14,6 +14,12 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+# Defense in depth: import paths are still refused inside every task worktree.
+data-drop/
+network-import-drop/
+artifacts/
+screenshots/
+Connections.csv
 .DS_Store
 
 # Build and test output
