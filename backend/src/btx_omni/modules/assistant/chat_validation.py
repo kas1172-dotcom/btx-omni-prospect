@@ -62,7 +62,23 @@ def violations(answer, question, reads):
 def plain_fallback(reads):
     history = next((r['result']['data'] for r in reads if r['tool'] == 'get_commercial_history' and 'quote_count' in r['result']['data']), None)
     if history:
-        return f"{history['name']} has {history['quote_count']} recorded quotes and {history['order_count']} orders in the sample data. Open the profile to inspect the rows."
+        summary = f"{history['name']} has {history['quote_count']} recorded quotes and {history['order_count']} orders in the sample data."
+        fulfillment = history.get('fulfillment') or {}
+        lines = fulfillment.get('lines') or []
+        for line in lines[:3]:
+            quantities = (line.get('ordered_quantity'), line.get('shipped_quantity'), line.get('remaining_quantity'))
+            if all(isinstance(value, (int, float)) for value in quantities):
+                summary += f"\n\nOrder {line['order_id']}: {quantities[0]} units ordered, {quantities[1]} shipped and {quantities[2]} remaining."
+                # Reuse scoped service explanations: never turn a proposed date
+                # into a commitment or infer acceptance from a shipment.
+                for constraint in (line.get('constraints') or [])[:3]:
+                    if constraint.get('reason'):
+                        summary += ' ' + constraint['reason']
+                if line.get('next_action'):
+                    summary += ' ' + line['next_action']
+        if len(lines) > 3:
+            summary += '\n\nAdditional order lines are available in the profile.'
+        return summary + ' Open the profile to inspect the rows.'
     identity = next((r['result']['data'] for r in reads if r['tool'] == 'get_customer_360'), None)
     if identity and identity.get('name'):
         return f"I found {identity['name']} in this workspace. The BTX commercial information is sample data. I couldn't verify a fuller answer from the available records."

@@ -173,3 +173,16 @@ async def test_chat_api_records_private_receipt_without_business_write(monkeypat
         recorded = receipt.json()['result']
         assert recorded['execution']['work_writes'] == 0
         assert recorded['retrieval']['steps'][0]['argument_hash']
+
+
+def test_recovery_fallback_preserves_quantities_and_unaccepted_proposal():
+    from btx_omni.modules.assistant.chat_validation import plain_fallback
+    from btx_omni.providers.sample.enhancement import enhance_environment
+
+    enhanced = enhance_environment(build_sample_environment(), anchor=NOW)
+    result = tools(enhanced).execute('get_commercial_history', {'account_id': 'boeing'})
+    answer = plain_fallback([{'tool': 'get_commercial_history', 'result': result}])
+    assert '292 units ordered, 146 shipped and 146 remaining' in answer
+    assert 'has not been accepted by the buyer' in answer
+    assert 'sample data' in answer
+    assert 'obtain buyer acceptance' in answer
