@@ -37,7 +37,7 @@ test('Intelligence presents the research library without duplicating Today prior
   await expect(page.getByRole('heading', { name: "Today's Priority Signals" })).toHaveCount(0)
   await expect(page.getByText('Action priorities', { exact: true })).toHaveCount(0)
   await expect(page.getByText(/No fresh collection in this session · saved intelligence remains available/)).toBeVisible()
-  await expect(page.getByRole('button', { name: /Tracked Customers & Prospects/ })).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByRole('button', { name: /Tracked Profiles/ })).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByRole('heading', { name: 'Intelligence Feed' })).toBeVisible()
   const applied = page.locator('.intelligence-card').filter({ hasText: 'Applied Materials receives $100 million advanced-packaging award' })
   await expect(applied).toContainText('The funded silicon-core substrate work could create precision hardware, tooling, or equipment-support demand')

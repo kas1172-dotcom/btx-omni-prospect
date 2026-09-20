@@ -16,8 +16,8 @@ async function inspectCanonicalNetwork(ranked) {
 }
 
 async function openAccount(page, query) {
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
-  await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
+  await expect(page.locator('.page-title h1')).toHaveText('Profiles')
   await page.getByPlaceholder('Search Customer, industry, or location').fill(query)
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(query, 'i') }).first().click()
   await expect(page.getByRole('heading', { name: new RegExp(query, 'i'), level: 1 })).toBeVisible()
@@ -100,8 +100,8 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
   await switcher.fill('Symbotic')
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
-  await page.getByRole('button', { name: /Customers & Prospects/ }).first().click()
-  await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
+  await page.getByRole('button', { name: /Profiles/ }).first().click()
+  await expect(page.locator('.page-title h1')).toHaveText('Profiles')
 })
 
 test('Relationship Intelligence remains non-overflowing at 320px', async ({ page }) => {

@@ -14,6 +14,7 @@ from btx_omni.api.map import router as map_router
 from btx_omni.api.markets import router as markets_router
 from btx_omni.api.monitor import router as monitor_router
 from btx_omni.api.omni import router as omni_router
+from btx_omni.api.omni_chat import router as omni_chat_router
 from btx_omni.api.omni_memory import router as omni_memory_router
 from btx_omni.api.reference_fields import router as reference_fields_router
 from btx_omni.api.relationships import router as relationships_router
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
         communications_router,
         settings_router,
         omni_router,
+        omni_chat_router,
         omni_memory_router,
         monitor_router,
     ):

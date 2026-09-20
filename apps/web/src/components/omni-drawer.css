@@ -65,6 +65,13 @@
   overflow: auto;
   padding: 14px;
 }
+.quick-omni > .ui-disclosure,
+.omni-conversation-pane > .ui-disclosure {
+  flex: 0 0 auto;
+  max-height: 32%;
+  overflow: auto;
+  padding-inline: 14px;
+}
 .message {
   max-width: 92%;
   padding: 12px 14px;

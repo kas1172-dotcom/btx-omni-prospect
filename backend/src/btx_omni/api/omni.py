@@ -215,11 +215,14 @@ def omni(
 
 @router.get('/runs/{run_id}')
 def omni_run(run_id: str, response: Response, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
+    from btx_omni.persistence.omni_conversations import owner_key
     response.headers['Cache-Control'] = 'private, no-store'
     if len(run_id) != 36:
         raise HTTPException(404, 'Omni run unavailable.')
     try:
-        result = runtime.omni_runs.get(run_id, actor_id=current.user_id, now=datetime.now(UTC))
+        result = runtime.omni_runs.get(run_id, actor_id=owner_key(current), now=datetime.now(UTC))
+        if result is None:
+            result = runtime.omni_runs.get(run_id, actor_id=current.user_id, now=datetime.now(UTC))
     except SQLAlchemyError:
         raise HTTPException(503, 'Omni run recording is unavailable.') from None
     if result is None:
@@ -230,11 +233,16 @@ def omni_run(run_id: str, response: Response, runtime: PocRuntime = Depends(get_
 @router.post('/chat')
 def chat(body: OmniQuestion, response: Response, runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
     """V2 entry point; the original endpoint remains a compatibility read path."""
+    response.headers['Cache-Control'] = 'private, no-store'
+    return answer_chat(body, runtime, current)
+
+
+def answer_chat(body, runtime, current, *, progress=None, canceled=None):
     from btx_omni.modules.assistant.chat_agent import ChatAgent, ChatLimits
     from btx_omni.modules.assistant.chat_tools import ChatTools
     from btx_omni.modules.federal_procurement import federal_assessments_for_account
+    from btx_omni.persistence.omni_conversations import owner_key
 
-    response.headers['Cache-Control'] = 'private, no-store'
     config = AiConfig.from_settings(runtime.settings, actor_id=current.user_id, purpose='omni-chat-v2')
     config = replace(config, model=runtime.settings.omni_chat_model or config.model,
                      daily_actor_limit=min(config.daily_actor_limit, runtime.settings.omni_chat_daily_calls))
@@ -246,15 +254,15 @@ def chat(body: OmniQuestion, response: Response, runtime: PocRuntime = Depends(g
                       events=intelligence_signals(runtime), work=runtime.work.list(current),
                       federal_reader=lambda aid: {'assessments': federal_assessments_for_account(runtime, aid)} if aid else {'status': 'unavailable', 'message': 'Select an organization to inspect its federal opportunities.'})
     try:
-        run_id = runtime.omni_runs.start(actor_id=current.user_id, request=body.model_dump(mode='json'), now=datetime.now(UTC))
+        run_id = runtime.omni_runs.start(actor_id=owner_key(current), request=body.model_dump(mode='json'), now=datetime.now(UTC))
     except SQLAlchemyError:
         raise HTTPException(503, "Omni's private history is unavailable. Please try again.") from None
-    answer = ChatAgent(provider, tools, limits=ChatLimits(steps=runtime.settings.omni_chat_steps,
+    answer = ChatAgent(provider, tools, progress=progress, canceled=canceled, limits=ChatLimits(steps=runtime.settings.omni_chat_steps,
                                                         output_tokens=runtime.settings.omni_chat_output_tokens)).answer(
         body.question, account_id=body.account_id, recent_turns=OmniService._recent_turns(context.get('prior_turns')))
     answer = replace(answer, run_id=run_id, provider_usage=tuple(getattr(provider, 'usage_log', ())))
     try:
-        runtime.omni_runs.finish(run_id, actor_id=current.user_id, result=answer_receipt(answer, build=build_identity(runtime.settings)), now=datetime.now(UTC))
+        runtime.omni_runs.finish(run_id, actor_id=owner_key(current), result=answer_receipt(answer, build=build_identity(runtime.settings)), now=datetime.now(UTC))
     except SQLAlchemyError:
         raise HTTPException(503, "Omni couldn't save this answer. Please try again.") from None
     return answer

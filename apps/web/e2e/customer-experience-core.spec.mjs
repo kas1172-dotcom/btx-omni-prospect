@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 
 async function openPortfolio(page) {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
-  await expect(page.getByRole('heading', { name: 'Customers & Prospects', level: 1 })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
+  await expect(page.getByRole('heading', { name: 'Profiles', level: 1 })).toBeVisible()
 }
 
 test('desktop Portfolio composes accessible search, filters, sorting, and canonical Customer navigation', async ({ page }) => {
@@ -39,7 +39,7 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await page.getByRole('searchbox', { name: 'Switch organization' }).fill('Symbotic')
   await page.getByRole('option', { name: /Symbotic/ }).click()
   await expect(page.getByRole('heading', { name: 'Symbotic', level: 1 })).toBeVisible()
-  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
+  await page.getByRole('button', { name: '← Profiles' }).click()
   await page.goto('/#/accounts')
   await expect(table).toBeVisible()
 
@@ -133,7 +133,7 @@ test('Portfolio sorts the complete filtered result set before pagination and kee
   await page.getByRole('button', { name: /Customer \/ Prospect/ }).click()
   const selectedName = (await names())[0]
   await table.getByRole('link', { name: selectedName, exact: true }).click()
-  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
+  await page.getByRole('button', { name: '← Profiles' }).click()
   await expect(table.getByRole('columnheader', { name: /Customer \/ Prospect/ })).toHaveAttribute('aria-sort', 'descending')
   await expect(table.locator('tbody th[scope="row"] a').first()).toHaveText(selectedName)
 })

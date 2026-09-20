@@ -8,7 +8,7 @@ async function navigate(page, name) {
 
 test('sanitized reference Customers, provenance, and BTX Top 100 flow through canonical surfaces', async ({ page }) => {
   await page.goto('/')
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByLabel('Customer scope').selectOption('ALL')
   await page.getByRole('button', { name: 'BTX Top 100', exact: true }).click()
@@ -44,7 +44,7 @@ test('sanitized reference Customers, provenance, and BTX Top 100 flow through ca
 for (const width of [390, 320]) test(`expanded reference filters remain usable at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 844 })
   await page.goto('/')
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('button', { name: 'BTX Top 100', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('HUXWRX')

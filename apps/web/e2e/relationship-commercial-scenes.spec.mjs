@@ -63,7 +63,7 @@ for (const viewport of viewports) {
       await expect(section.getByRole('group', { name: 'Canonical relationship network', exact: true })).toBeVisible()
       if (scene === 'D1' && viewport.width === 1440) {
         await page.getByRole('button', { name: 'Open Omni assistant' }).click()
-        const omniResponse = page.waitForResponse(response => response.url().endsWith('/api/omni') && response.request().method() === 'POST')
+        const omniResponse = page.waitForResponse(response => response.url().endsWith('/api/omni/chat/stream') && response.request().method() === 'POST')
         await page.locator('#omni-message').fill('Explain this selected relationship route.')
         await page.getByRole('button', { name: 'Send', exact: true }).click()
         const response = await omniResponse
@@ -102,7 +102,7 @@ test('Omni waits for an in-flight selected relationship before answering', async
   await section.getByRole('combobox', { name: 'Compared component', exact: true }).selectOption('C2-SPACEX-01')
   await page.getByRole('button', { name: 'Open Omni assistant' }).click()
   await page.locator('#omni-message').fill('Explain the selected relationship route between KLA and SpaceX.')
-  const omniRequest = page.waitForRequest(request => request.url().endsWith('/api/omni') && request.method() === 'POST')
+  const omniRequest = page.waitForRequest(request => request.url().endsWith('/api/omni/chat/stream') && request.method() === 'POST')
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   const request = await omniRequest
   expect(request.postDataJSON().context.relationship_selection).toMatchObject({

@@ -3,7 +3,7 @@ import { openCustomerSection, openOrganizationEvidence } from './helpers.mjs'
 
 test('retained reference fields and paginated lifecycle records use canonical API identity', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Profiles', exact: true }).click()
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
   await openOrganizationEvidence(page)
   await page.getByText('Full commercial records & retained input fields', { exact: true }).click()
@@ -33,7 +33,7 @@ test('retained reference fields and paginated lifecycle records use canonical AP
 
 test('customer risk view keeps public severity separate and preserves missingness', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Profiles', exact: true }).click()
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Boeing', exact: true }).click()
   await openCustomerSection(page, /Commercial decisions & follow-ups/)
   const decision = page.locator('.commercial-decision').filter({ hasText: /^overall customer risk/ })

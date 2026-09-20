@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openProfileSection } from './profile-section-helpers.mjs'
 
 test('mobile secondary navigation and controls expose keyboard and selected-state contracts', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -17,7 +18,7 @@ test('mobile secondary navigation and controls expose keyboard and selected-stat
   await expect(page.getByRole('dialog', { name: 'More' })).toBeHidden()
 
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
   const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects' })
   await search.focus()
   await expect(search).toBeFocused()
@@ -82,7 +83,7 @@ test('decision notices give the trigger and next step a full-width reading order
   const contentBox = await notice.locator('.ui-notice-content').boundingBox()
   expect(contentBox?.width ?? 0).toBeGreaterThan((noticeBox?.width ?? 0) * 0.85)
   const workspace = page.locator('.account-workspace')
-  await page.getByRole('button', { name: /Programs, components & capabilities/ }).click()
+  await openProfileSection(page, /Programs, components & capabilities/, 'Opportunities')
   await expect(workspace).toContainText('This section connects Applied Materials')
   await expect(workspace).not.toContainText(/Governed operational relevance|Governed connections|Governed paths|Best governed route|Governed next action/i)
 

@@ -24,7 +24,8 @@ def violations(answer, question, reads):
         issues.append('Unsupported name or capitalized entity')
     if re.search(r"\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+(?:successfully\s+)?(?:sent|updated|deleted|saved|created|approved|marked|changed|paid|emailed)\b", answer, re.IGNORECASE):
         issues.append('Claim of completed business write')
-    if re.search(r'\bPWIN\b', answer, re.IGNORECASE) and re.search(r'probability|%\s*(?:likely|chance)|likely to win', answer, re.IGNORECASE):
+    probability_text = re.sub(r'(?:not|never) (?:a |an )?(?:win )?probability', '', answer, flags=re.IGNORECASE)
+    if re.search(r'\bPWIN\b', answer, re.IGNORECASE) and re.search(r'probability|%\s*(?:likely|chance)|likely to win', probability_text, re.IGNORECASE):
         issues.append('PWIN must be an index, not probability language')
     if re.search(r'canonical reads|governed answer|missingness|evidence IDs|run receipt', answer, re.IGNORECASE):
         issues.append('Internal jargon')

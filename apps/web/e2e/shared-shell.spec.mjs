@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const primaryDestinations = ['Today', 'Customers & Prospects', 'Intelligence', 'Map', 'Actions']
+const primaryDestinations = ['Today', 'Profiles', 'Intelligence', 'Map', 'Actions']
 
 async function expectSurface(page, name) {
   await expect(page.locator('.page-title h1')).toHaveText(name === 'Map' ? 'Tactical Map' : name)
@@ -31,7 +31,7 @@ test('desktop target shell preserves primary seller navigation and Omni access',
   await expect(page.getByRole('dialog', { name: 'Omni' })).toBeVisible()
 
   const shellCopy = `${await page.locator('.app-sidebar').innerText()} ${await page.locator('.topbar').innerText()}`
-  expect(shellCopy).toContain('Customers & Prospects')
+  expect(shellCopy).toContain('Profiles')
   expect(shellCopy).not.toMatch(/\b(Account|Accounts|Client|Clients|Company|Companies)\b/)
 })
 

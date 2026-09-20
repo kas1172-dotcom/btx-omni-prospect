@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, datetime
 from difflib import SequenceMatcher
 from typing import Literal
 
@@ -156,6 +157,8 @@ class ChatTools:
         encoded = jsonable_encoder(data)
         result = {"status": "ok", "as_of": self.observed_at.date().isoformat(),
                   "source_ids": sorted(source_ids(encoded))[:40], "data_mode": "PUBLIC_WEB" if name == "web_search" else "SAMPLE", "data": encoded}
+        if name == 'web_search':
+            result['as_of'] = datetime.now(UTC).date().isoformat()
         if len(json.dumps(result)) > 24000:
             return {**result, "status": "too_large", "data": {"message": "This result is too large. Ask about a specific record."}}
         return ReadResult.model_validate(result).model_dump()
@@ -167,7 +170,7 @@ class ChatTools:
             company = self.account(aid).legal_name if aid else None
             query = public_query(params["topic"], company)
             self.outbound_queries.append(query)
-            return search(self.provider, query, company, self.observed_at)
+            return search(self.provider, query, company, datetime.now(UTC))
         if name == "find_organization":
             return self.find(params["name"])
         if name == "get_screen_context":
@@ -200,7 +203,14 @@ class ChatTools:
                 history = session.read("read_history", {})
                 history.pop("case_briefing", None)  # Free-text briefing repeats the underlying records.
                 history.pop("monthly_history", None)
-                result.update(history=history, fulfillment=session.read("read_fulfillment", {}))
+                fulfillment = session.read("read_fulfillment", {})
+                recorded_lines = {line['order_line_id']: line for line in self.sample.commercial_ledgers[aid]['order_lines']}
+                for line in fulfillment['lines']:
+                    recorded = recorded_lines[line['order_line_id']]
+                    # Same integer quantity x recorded unit price arithmetic as customer_health.
+                    # Presentation-only value; never a model calculation or scoring input.
+                    line['remaining_value_minor'] = line['remaining_quantity'] * recorded['unit_price_minor']
+                result.update(history=history, fulfillment=fulfillment)
                 if params.get("quote_id"):
                     result["quote_comparison"] = session.read("compare_quote_revisions", {"quote_id": params["quote_id"]})
                 return model_money_projection(jsonable_encoder(result), currency=self.sample.commercial_ledgers[aid]["currency"])
@@ -217,7 +227,8 @@ class ChatTools:
             # Legacy graph projection has no private imported network records.
             if self.allowed != frozenset(a.id for a in self.sample.accounts):
                 return {"status": "unavailable", "message": "Relationship context requires an authorized graph projection."}
-            return {"relationships": result, "limitation": "A hypothetical route is not established access. Leadership contacts do not imply buying authority or a confirmed meeting."}
+            contacts = CommercialToolSession(self.sample, aid).read('read_contact_candidates', {}) if aid in self.sample.commercial_ledgers else {'contacts': [], 'status': 'unavailable'}
+            return {"relationships": result, 'contact_candidates': contacts, "limitation": "A hypothetical route is not established access. Leadership contacts do not imply buying authority or a confirmed meeting."}
         if name == "get_nearby_sites":
             from btx_omni.api.map import haversine_miles
             origins = [f for f in self.sample.public_facilities if f.account_id == aid]

@@ -38,7 +38,7 @@ def test_every_tool_is_bounded_and_scoped(sample, tool):
     if tool == 'web_search':
         args['topic'] = 'latest company news'
     result = t.execute(tool, args)
-    assert result['as_of'] == '2026-08-31' and 'source_ids' in result
+    assert result['as_of'] == (datetime.now(UTC).date().isoformat() if tool == 'web_search' else '2026-08-31') and 'source_ids' in result
     assert result['status'] == 'ok'
     with pytest.raises(ValueError):
         t.execute(tool, {**args, 'actor_id': 'other-user'})

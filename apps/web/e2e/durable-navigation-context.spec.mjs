@@ -95,7 +95,7 @@ test('Map facility scope survives Organization 360 and is supplied when Omni ope
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   expect(page.url()).toContain('facility=public-hq-lockheed-martin'); expect(page.url()).toContain('scope=facility')
   await page.getByLabel('Open Omni assistant').click()
-  const request = page.waitForRequest(item => item.url().endsWith('/api/omni') && item.method() === 'POST')
+  const request = page.waitForRequest(item => item.url().endsWith('/api/omni/chat/stream') && item.method() === 'POST')
   await page.getByRole('textbox', { name: 'Ask Omni' }).fill('What facility context is selected?')
   await page.getByRole('button', { name: 'Send' }).click()
   const body = (await request).postDataJSON()

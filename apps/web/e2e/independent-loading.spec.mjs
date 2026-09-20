@@ -6,8 +6,8 @@ test('a held optional map read does not block the account journey', async ({ pag
   await page.route('**/api/map', async route => { await held; await route.continue().catch(() => {}) })
   try {
     await page.goto('/')
-    await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Customers & Prospects', exact: true })).toBeVisible()
+    await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Profiles', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Profiles', exact: true })).toBeVisible()
     await expect(page.getByRole('row', { name: /^KLA/ }).first()).toBeVisible()
     await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: 'Map', exact: true }).click()
     await expect(page.getByRole('status')).toContainText('Loading Map')
@@ -23,7 +23,7 @@ test('navigation cancels an unfinished account read without late context takeove
   try {
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: 'Primary navigation', exact: true })
-    await nav.getByRole('button', { name: 'Customers & Prospects', exact: true }).click()
+    await nav.getByRole('button', { name: 'Profiles', exact: true }).click()
     await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
     await expect(page.getByRole('status')).toContainText('Opening')
     await nav.getByRole('button', { name: 'Map', exact: true }).click()

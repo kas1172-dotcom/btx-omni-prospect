@@ -10,6 +10,10 @@ import type { CrmProposal, CrmDecision, CrmAttempt, CrmHistory } from '../types/
 import type { AiUsageSummary } from '../features/settings/AiUsage'
 import type { OmniRun } from '../types/omniRun'
 import type { PublicSourceEvidence } from '../types/publicEvidence'
+import { readChatStream } from '../components/omniText'
+
+export type ChatTurn = { role: 'user' | 'assistant'; text: string; response?: OmniResponse }
+export type ChatConversation = { id: string; title: string; turns: ChatTurn[]; version: number }
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -25,6 +29,16 @@ const developmentPrincipalHeaders: Record<string, string> = import.meta.env.DEV
 const actionRequest = <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, headers: { 'content-type': 'application/json', ...developmentPrincipalHeaders, ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}) } })
 
 export const api = {
+  chatHistory: () => actionRequest<{ items: Array<{ id: string; title: string }>; retention_days: number }>('/omni/conversations'),
+  chatResume: (id: string) => actionRequest<ChatConversation>(`/omni/conversations/${encodeURIComponent(id)}`),
+  chatRename: (id: string, title: string) => actionRequest<ChatConversation>(`/omni/conversations/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  chatDelete: (id: string) => actionRequest<{ deleted: boolean }>(`/omni/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  chatFeedback: (id: string, run_id: string, rating: 'up' | 'down', reason = '') => actionRequest(`/omni/conversations/${encodeURIComponent(id)}/feedback`, { method: 'POST', body: JSON.stringify({ run_id, rating, reason }) }),
+  chatStream: async (body: { question: string; account_id?: string; context?: OmniContext; conversation_id?: string }, signal: AbortSignal, receive: (event: string, data: Record<string, unknown>) => void) => {
+    const response = await fetch(`${apiBase}/omni/chat/stream`, { method: 'POST', credentials: 'include', signal, headers: { 'content-type': 'application/json', ...developmentPrincipalHeaders, ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}) }, body: JSON.stringify(body) })
+    if (!response.ok || !response.body) throw new Error('Omni is unavailable. Please retry.')
+    await readChatStream(response.body, signal, receive)
+  },
   opportunities: (signal?: AbortSignal) => actionRequest<{ opportunities: import('../types/opportunities').Opportunity[]; revision: string }>('/accounts/workspace/opportunities', { signal }),
   omniRun: (id: string, signal?: AbortSignal) => actionRequest<OmniRun>(`/omni/runs/${encodeURIComponent(id)}`, { signal }),
   aiUsage: (signal?: AbortSignal) => actionRequest<AiUsageSummary>('/settings/ai-usage', { signal }),

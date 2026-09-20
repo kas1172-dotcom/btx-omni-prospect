@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readOmniAnswer, streamAnswer } from './omni-stream-helpers.mjs'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -17,12 +18,12 @@ async function closeOmni(page) {
 }
 
 async function ask(page, question) {
-  const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/omni') && response.request().method() === 'POST')
+  const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/omni/chat/stream') && response.request().method() === 'POST')
   await page.locator('#omni-message').fill(question)
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   const response = await responsePromise
   expect(response.status()).toBe(200)
-  const body = await response.json()
+  const body = await readOmniAnswer(response)
   const request = response.request().postDataJSON()
   await expect(page.locator('.message.assistant').last()).toContainText(body.content.slice(0, 48))
   return { request, body }
@@ -75,7 +76,7 @@ test('Phase 6 Omni browser acceptance preserves typed context, continuity, and i
   await closeOmni(page)
 
   // Leaving Intelligence clears its passive event selection before an Accounts summary.
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await openOmni(page)
   const cleared = await ask(page, 'Summarize this screen.')
   expect(cleared.request.context.selected_event_id).toBeUndefined()
@@ -137,10 +138,10 @@ test('an immediately launched selected assessment reaches Omni before submission
     payload.command_center.priority_briefing = [item, ...payload.command_center.priority_briefing]
     await route.fulfill({ response, json: payload })
   })
-  await page.route('**/api/omni', async route => {
+  await page.route('**/api/omni/chat/stream', async route => {
     const request = route.request().postDataJSON()
     if (!request.question.includes('selected assessment')) return route.continue()
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: 'Signal Confidence: 84.71/100. Next step: Review the cited notice before changing any customer commitment.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['PUBLIC-EVIDENCE'], citation_links: [{ label: 'Official source', url: 'https://example.com/source' }], provenance: ['STORED_INTELLIGENCE'], missingness: [], recommended_action: assessment.recommended_action, context_used: { assessment_id: assessment.assessment_id, assessment_version: assessment.assessment_version }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamAnswer({ content: 'Signal Confidence: 84.71/100. Next step: Review the cited notice before changing any customer commitment.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['PUBLIC-EVIDENCE'], citation_links: [{ label: 'Official source', url: 'https://example.com/source' }], provenance: ['STORED_INTELLIGENCE'], missingness: [], recommended_action: assessment.recommended_action, context_used: { assessment_id: assessment.assessment_id, assessment_version: assessment.assessment_version }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
   })
   await page.goto('/')
   await waitForApp(page)

@@ -9,7 +9,7 @@ const priorityCustomers = [
 async function openPortfolio(page) {
   const navigationName = (await page.viewportSize())?.width <= 768 ? 'Mobile primary navigation' : 'Primary navigation'
   await page.goto('/')
-  await page.getByRole('navigation', { name: navigationName }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('navigation', { name: navigationName }).getByRole('button', { name: 'Profiles' }).click()
 }
 
 test('all priority Customers are discoverable and rich/reference scenarios remain truthful', async ({ page }) => {

@@ -26,7 +26,7 @@ for (const width of [1440, 390]) {
     await search.fill('HUXWRX')
     await page.getByRole('link', { name: 'HUXWRX', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'HUXWRX', exact: true, level: 1 })).toBeVisible()
-    await page.getByRole('button', { name: '← Customers & Prospects', exact: true }).click()
+    await page.getByRole('button', { name: '← Profiles', exact: true }).click()
     await expect(customers).toHaveAttribute('aria-selected', 'true')
     await expect(search).toHaveValue('HUXWRX')
     await search.fill('')

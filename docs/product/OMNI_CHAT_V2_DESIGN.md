@@ -160,3 +160,31 @@ characters are bounded on every turn. Tool calls use timed futures; cancellation
 stops subsequent steps and result delivery, but cannot forcibly terminate an already
 running SDK/network call. That call retains the existing transport timeout. Usage
 limits use durable actor/environment model-call accounting, not browser counters.
+
+### Conversation and UI decisions
+
+Migration `0041_omni_conversations` adds only private conversation and feedback
+tables. Ownership hashes the server's tenant and actor together; new v2 audit
+receipts use that same scope. The legacy endpoint retains its earlier actor scope.
+History is bounded to 100 turns / 600,000 serialized characters; list shows the
+50 latest threads. Default retention is 30 inactivity days, configurable through
+`BTX_OMNI_CHAT_RETENTION_DAYS`. Expired threads are inaccessible immediately and
+physically pruned on that actor's next list request. Explicit deletion removes
+turns, feedback and linked answer receipts, not accepted user memory or business data.
+Concurrent append uses version checking. A canceled request is not added to history;
+an already-running provider call may complete its private audit.
+
+SSE streams tool progress immediately and validated answer paragraphs only after
+validation and persistence. It does not stream raw model tokens. Resume uses stored
+turns and referents rather than trusting a browser-supplied history transcript.
+Markdown is rendered as escaped React nodes; only HTTP(S) and app links are allowed.
+The existing ActionEditor is reused, lazy-loaded and prefilled only. Its save/CRM
+paths are unchanged and require the existing user-reviewed submission.
+
+M4 checks: migration applied to task-owned PostgreSQL; full backend 857 passed;
+frontend typecheck/lint/build and 88 unit tests passed; three new browser checks
+passed (history/deletion, proposal-without-write, cancel/HTML safety). The broader
+186-case browser regression run is a separate still-open validation item: baseline
+tests predate Profiles naming, profile tabs, Customer Health and SSE. Label/transport
+updates preserve assertions, rather than disabling tests. New history and feedback
+do not alter personal-memory acceptance, inspection, editing or deletion.

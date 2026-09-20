@@ -1,16 +1,17 @@
 import { expect, test } from '@playwright/test'
+import { readOmniAnswer } from './omni-stream-helpers.mjs'
 
 for (const width of [390, 1440]) {
   test(`Omni records a private answer and retries receipt inspection at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
     await page.goto('/#/accounts/boeing')
     await page.getByLabel('Open Omni assistant').click()
-    const pending = page.waitForResponse(response => response.url().endsWith('/api/omni') && response.request().method() === 'POST')
+    const pending = page.waitForResponse(response => response.url().endsWith('/api/omni/chat/stream') && response.request().method() === 'POST')
     await page.locator('#omni-message').fill('Summarize Boeing commercial context.')
     await page.getByRole('button', { name: 'Send', exact: true }).click()
     const response = await pending
     expect(response.status()).toBe(200)
-    const answer = await response.json()
+    const answer = await readOmniAnswer(response)
     expect(answer.run_id).toMatch(/^[0-9a-f-]{36}$/)
     let attempts = 0
     let allowRead = false
@@ -20,6 +21,7 @@ for (const width of [390, 1440]) {
       return route.continue()
     })
     const message = page.locator('.message.assistant').last()
+    await message.getByRole('button', { name: 'Details', exact: true }).click()
     await message.getByRole('button', { name: 'Answer receipt', exact: true }).click()
     await expect(message.getByRole('alert')).toContainText('The displayed answer is unchanged')
     await expect(message).toContainText(answer.content.slice(0, 60))

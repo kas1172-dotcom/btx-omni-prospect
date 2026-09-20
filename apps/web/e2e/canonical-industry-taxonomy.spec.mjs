@@ -7,7 +7,7 @@ async function navigate(page, name) {
 
 test('canonical industries compose across Portfolio, Intelligence, and Map', async ({ page }) => {
   await page.goto('/')
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByLabel('Customer scope').selectOption('ALL')
   for (const industry of ['Defense', 'Commercial Aerospace', 'Space', 'Robotics', 'Semiconductor', 'Medical', 'Energy']) {
@@ -36,7 +36,7 @@ test('canonical industries compose across Portfolio, Intelligence, and Map', asy
 for (const width of [390, 320]) test(`canonical industry controls remain usable at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 844 })
   await page.goto('/')
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await page.getByRole('button', { name: /Filters/ }).click()
   await expect(page.getByRole('button', { name: 'Commercial Aerospace', exact: true })).toBeVisible()
   await navigate(page, 'Map')

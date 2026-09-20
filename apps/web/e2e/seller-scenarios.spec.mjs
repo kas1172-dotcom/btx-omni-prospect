@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readOmniAnswer } from './omni-stream-helpers.mjs'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -13,12 +14,12 @@ async function openOmni(page) {
 }
 
 async function ask(page, question) {
-  const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/omni') && response.request().method() === 'POST')
+  const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/omni/chat/stream') && response.request().method() === 'POST')
   await page.locator('#omni-message').fill(question)
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   const response = await responsePromise
   expect(response.status()).toBe(200)
-  const body = await response.json()
+  const body = await readOmniAnswer(response)
   const request = response.request().postDataJSON()
   await expect(page.locator('.message.assistant').last()).toContainText(body.content.slice(0, 48))
   return { request, body }
@@ -110,7 +111,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   await closeOmni(page)
 
   // The full curated scenario roster is discoverable through the actual Accounts UI.
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await page.locator('.filters select').selectOption('ALL')
   const search = page.getByPlaceholder('Search Customer, industry, or location')
   for (const [scenario, account] of scenarioAccounts) {
@@ -138,11 +139,11 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   }
 
   // Defense award + quote-history scenario: Account Detail and Omni use the same exact ID.
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await search.fill('Lockheed')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: /Lockheed/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
-  await expect(page.getByText(/Customers & Prospects \/ Customer 360/)).toBeVisible()
+  await expect(page.getByText(/Profiles \/ Customer 360/)).toBeVisible()
   await openOmni(page)
   const detail = await ask(page, 'Tell me about this account.')
   expect(detail.request.context.surface).toBe('ACCOUNT_DETAIL')
@@ -216,7 +217,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   await closeOmni(page)
 
   // A current filter is used only for the active view and disappears after the UI clears it.
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await page.getByRole('button', { name: 'Defense', exact: true }).click()
   await openOmni(page)
   const filtered = await ask(page, 'What matters most on this page?')

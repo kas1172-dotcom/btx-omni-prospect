@@ -14,7 +14,7 @@ from btx_omni.modules.assistant.chat_validation import (
     plain_fallback,
     violations,
 )
-from btx_omni.modules.assistant.orchestration import OmniResponse
+from btx_omni.modules.assistant.orchestration import OmniCitation, OmniResponse
 
 DEGRADED = "The AI service isn't available right now, so I can only do basic lookups."
 
@@ -34,7 +34,8 @@ def refusal(question):
         return "I can't scrape LinkedIn or access pages behind a login. I can help research publicly available company information."
     if re.search(r"\b(?:should we acquire|should we buy|value this acquisition|valuation|acquisition recommendation)\b", q):
         return "I can support acquisition research, but I can't recommend an acquisition or provide a valuation. I can help organize public facts and questions for review."
-    if re.search(r"\b(?:send|email|update|delete|create|approve|mark|set|change|pay|invoice|transfer|remember|save)\b", q) and re.search(r"\b(?:crm|hubspot|owner|score|attractiveness|won|payment|invoice|money|action|email|memory|preference|classification)\b", q):
+    email_command = re.search(r'(?:^|[.;]|\band)\s*(?:please\s+)?email\b', q)
+    if email_command or (re.search(r"\b(?:send|update|delete|create|approve|mark|set|change|pay|invoice|transfer|remember|save)\b", q) and re.search(r"\b(?:crm|hubspot|owner|score|attractiveness|won|payment|invoice|money|action|email|memory|preference|classification)\b", q)):
         return "I can't change CRM records or scores, send messages, or carry out transactions. I can draft an Action or message for you to review and save in the app."
     return None
 
@@ -112,7 +113,8 @@ class ChatAgent:
         if len(named) == 1:
             self.resolved = named[0]
         elif not named:
-            candidate = account_id or referent.get("account_id") or self.tools.context.get("selected_account_id") or self.tools.context.get("session_account_id")
+            followup = re.search(r'\b(?:it|its|that one|why)\b', question, re.IGNORECASE)
+            candidate = (referent.get("account_id") if followup else None) or account_id or referent.get("account_id") or self.tools.context.get("selected_account_id") or self.tools.context.get("session_account_id")
             if candidate in self.tools.accounts:
                 self.resolved = candidate
         if boundary:
@@ -209,10 +211,14 @@ class ChatAgent:
             return self.response(prefix + "I couldn't complete that lookup. Try one organization or a narrower question.", "LIMIT_OR_UNAVAILABLE")
 
     def response(self, content, status, *, model=False):
+        public = [f for read in self.reads if read['tool'] == 'web_search' for f in read['result']['data'].get('findings', [])]
         return OmniResponse(content=content, account_id=self.resolved or "",
                             account_name=self.tools.accounts[self.resolved].legal_name if self.resolved else None,
                             citations=tuple(dict.fromkeys(s for r in self.reads for s in r["result"].get("source_ids", []))),
-                            provenance=(), missingness=(), recommended_action=None,
+                            provenance=(), missingness=(),
+                            citation_links=tuple(OmniCitation(f['publisher'] + ': ' + f['title'], f['url']) for f in public),
+                            public_research_permitted=self.tools.web_enabled,
+                            recommended_action=f"Review the available records for {self.tools.accounts[self.resolved].legal_name}" if self.resolved and status not in {'CANCELED', 'USAGE_LIMIT'} else None,
                             conversation_referent={"account_id": self.resolved, "route": "ACCOUNT"} if self.resolved else None,
                             language_provider="gemini" if model else "deterministic",
                             language_model=getattr(getattr(self.provider, "config", None), "model", None) if model else None,

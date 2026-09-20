@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { streamAnswer } from './omni-stream-helpers.mjs'
 
 const score = {
   score: 84.71,
@@ -93,9 +94,9 @@ for (const width of [390, 1440]) {
       await route.fulfill({ response, json: payload })
     })
     let omniRequest
-    await page.route('**/api/omni', async route => {
+    await page.route('**/api/omni/chat/stream', async route => {
       omniRequest = route.request().postDataJSON()
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: 'The Javelin announcement is verified. Potential BTX relevance requires internal validation.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['lockheed-javelin'], citation_links: [{ label: 'Lockheed Martin', url: validationBrief.source_url }], provenance: ['STORED_INTELLIGENCE'], missingness: validationBrief.material_uncertainties, recommended_action: validationBrief.recommended_action, context_used: { assessment_id: validationBrief.assessment_id, assessment_version: 4 }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
+      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamAnswer({ content: 'The Javelin announcement is verified. Potential BTX relevance requires internal validation.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['lockheed-javelin'], citation_links: [{ label: 'Lockheed Martin', url: validationBrief.source_url }], provenance: ['STORED_INTELLIGENCE'], missingness: validationBrief.material_uncertainties, recommended_action: validationBrief.recommended_action, context_used: { assessment_id: validationBrief.assessment_id, assessment_version: 4 }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
     })
 
     await page.goto('/#/today')
