@@ -137,7 +137,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     )
     assert dormant_omni.json()["recommended_action"]
     assert stale_omni.json()["recommended_action"]
-    assert "CROSS_BU_COORDINATION" in cross_bu.json()["content"]
+    assert "Business-unit coordination" in cross_bu.json()["content"]
     assert external.json()["citations"] and conflict.json()["citations"]
 
 
@@ -550,8 +550,8 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
     payload = response.json()
     assert response.status_code == 200
     assert (
-        "Ranked by the existing canonical Account Attractiveness score"
-        in payload["content"]
+        payload["content"]
+        == "No scoped opportunities in this selection have complete Attractiveness inputs. Organization-level scores are not a substitute."
     )
     assert payload["context_used"] == {"filters": {"market": "Defense"}}
 
