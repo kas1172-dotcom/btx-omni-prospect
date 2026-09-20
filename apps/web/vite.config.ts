@@ -29,7 +29,12 @@ export default defineConfig({
       })
     },
   }],
-  define: { __BTX_BUILD__: identityJson },
+  define: {
+    __BTX_BUILD__: identityJson,
+    // Keep hosted cookies first-party, including when the Vercel project's
+    // older environment configuration still names the Fly origin directly.
+    ...(process.env.VERCEL === '1' ? { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('/api') } : {}),
+  },
   server: {
     proxy: {
       '/api': process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
