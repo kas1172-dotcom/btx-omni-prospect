@@ -103,7 +103,7 @@ def test_memory_api_requires_session_csrf_and_ignores_no_user_override(tmp_path,
     created = seller.post("/api/omni/memories", headers=headers, json=create_payload)
     assert created.status_code == 200
     record = created.json()
-    assert record["user_id"] == "seller-1"
+    assert record["user_id"] == "shared-access"
     replay = seller.post('/api/omni/memories', headers=headers, json=create_payload)
     assert replay.json()['id'] == record['id'] and replay.json()['create_replayed'] is True
     listing = seller.get("/api/omni/memories")
