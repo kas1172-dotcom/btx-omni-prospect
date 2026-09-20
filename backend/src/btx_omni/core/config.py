@@ -67,6 +67,10 @@ class Settings(BaseSettings):
         ),
     )
     gemini_model: str = "gemini-2.5-flash"
+    omni_chat_model: str | None = None
+    omni_chat_steps: int = Field(default=6, ge=1, le=12)
+    omni_chat_output_tokens: int = Field(default=1200, ge=256, le=4096)
+    omni_chat_daily_calls: int = Field(default=100, ge=1, le=1000)
     gemini_mode: str = "developer"
     google_cloud_project: str | None = None
     google_cloud_location: str = "global"

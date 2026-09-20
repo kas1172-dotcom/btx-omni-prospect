@@ -106,3 +106,25 @@ M3 validation/degradation; M4 persistence migration and frontend gates; M5 docum
 M6 at least 60 behavioral cases, fake provider in normal CI and optional live report.
 Tests use task-owned databases. No deployment or production writes.
 Final results, baseline differences and limitations belong in OMNI_CHAT_V2_REPORT.md.
+
+### Baseline repairs and compatibility
+
+The first PostgreSQL baseline was 752 passed / 55 failed. Most failures came from
+Git's Windows CRLF checkout conversion breaking byte-hashed research fixtures.
+Only unchanged fixture files were normalized back to their committed LF bytes;
+no fixture content or reviewed hash was changed. The first SQLite-only trial was
+not a valid full-suite baseline because PostgreSQL journal tests require PostgreSQL.
+
+Two legacy Omni acceptance assertions predated existing human-readable alert labels
+and opportunity-scoped ranking. They now assert plain labels and explicitly missing
+opportunity inputs; scoring behavior is unchanged. A Monitor persistence test now
+checks the failed run by ID, preserving its failure-persistence assertion without
+assuming distinct Windows timestamps. No tests are skipped or removed.
+The monitor heartbeat test now waits for its observed heartbeat event (up to two
+seconds) instead of assuming the Windows scheduler starts a thread within 10 ms.
+Six baseline Ruff findings were repaired with import formatting and a dictionary
+literal; these do not change network or migration behavior.
+
+The additive `/api/omni/chat` endpoint is the v2 entry point. `/api/omni` remains
+available for existing integrations and compatibility tests. The UI switches to v2
+in M4. Neither endpoint gains business writes.

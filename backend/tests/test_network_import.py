@@ -6,7 +6,11 @@ from sqlalchemy import create_engine, insert, select
 
 from btx_omni.monitor.resolution import AccountWatchProfile
 from btx_omni.persistence import models
-from btx_omni.persistence.network_import import LinkedInConnectionsCsvAdapter, NetworkImportRepository, WORKTREE
+from btx_omni.persistence.network_import import (
+    WORKTREE,
+    LinkedInConnectionsCsvAdapter,
+    NetworkImportRepository,
+)
 
 CSV = """First Name,Last Name,URL,Email Address,Company,Position,Connected On
 Ada,Example,https://example.invalid/ada,ignored@example.invalid,Acme Corporation,Director of Procurement,01 Sep 2026
@@ -44,7 +48,7 @@ def test_apply_is_idempotent_and_never_persists_email(tmp_path):
     with engine.begin() as connection:
         connection.execute(insert(models.accounts).values(id="acme", name="Acme", relationship="PROSPECT", domain=None))
     repo = NetworkImportRepository(engine, (AccountWatchProfile("acme", "Acme Corporation"),))
-    args = dict(tenant_id="tenant-a", owner_user_id="seller-1", owner_name="Owner Example", exported_at=datetime(2026, 9, 1, tzinfo=UTC), apply=True)
+    args = {"tenant_id": "tenant-a", "owner_user_id": "seller-1", "owner_name": "Owner Example", "exported_at": datetime(2026, 9, 1, tzinfo=UTC), "apply": True}
     assert repo.import_file(csv_file(tmp_path), **args)["status"] == "IMPORTED"
     assert repo.import_file(csv_file(tmp_path), **args)["status"] == "UNCHANGED"
     with engine.connect() as connection:

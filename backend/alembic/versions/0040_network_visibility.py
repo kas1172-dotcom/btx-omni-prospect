@@ -1,5 +1,6 @@
 """Add explicit imported-network visibility ownership."""
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0040_network_visibility"

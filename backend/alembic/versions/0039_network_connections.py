@@ -1,6 +1,7 @@
 """Add tenant-scoped imported professional network records."""
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0039_network_connections"
