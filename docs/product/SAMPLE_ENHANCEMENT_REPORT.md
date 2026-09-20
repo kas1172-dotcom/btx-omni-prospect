@@ -27,6 +27,12 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Validation
 
+### Item 2.3 external-risk exercises
+
+Added a clearly **UNCONFIRMED fictional** consolidation hypothesis (severity 76.25, confidence 37.75 Low, Validate immediately) alongside the fictional high-confidence exercise (76.25, confidence 88.75 High, Escalate now). Source locators, publisher, dates, scope, mitigation and applicability questions are retained; both carry `curated_monitor_style`, synthetic/SAMPLE and no real-person attribution. `test_sample_external_risk.py` verifies the two dispositions and unconfirmed wording.
+
+Decision: these quantitative adverse cases remain fictional rather than attaching invented affected-revenue/backlog percentages to a real SEC/WARN disclosure. No real adverse filing with the complete required quantitative inputs was verified. This is an explicit research gap, not a live external-risk monitor claim. The product can demonstrate the mechanics but cannot claim sourced adverse intelligence for these fictional subjects.
+
 ### Item 2.2 expansion
 
 `providers/sample/expansion.py` joins the verified Kratos/Boeing public development to Boeing's separate synthetic dispatch/program history, a current synthetic inspection-fixture quote and two BU scopes. `commercial_briefing` and the model's history read expose the joined context while explicitly retaining Unknown need and an unsupported BTX/JDAM-LR edge. Fixture assertion: `test_j5_public_signal_and_synthetic_history_join_without_inventing_supply`.

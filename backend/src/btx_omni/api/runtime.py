@@ -168,7 +168,8 @@ class PocRuntime:
             from btx_omni.providers.sample.kratos import context
             from btx_omni.providers.sample.risk_cases import risk_context
             from btx_omni.providers.sample.expansion import expansion_context
-            self.monitor.curated_contexts = (context(), risk_context(anchor=self.settings.demo_as_of_date), expansion_context())
+            self.monitor.curated_contexts = (context(), risk_context(anchor=self.settings.demo_as_of_date),
+                risk_context(confidence='LOW', anchor=self.settings.demo_as_of_date), expansion_context())
         if repository:
             try:
                 self.monitor.hydrate_events()

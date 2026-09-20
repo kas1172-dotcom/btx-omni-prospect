@@ -1,4 +1,5 @@
 """Explicitly fictional filing exercises, never allegations about real companies."""
+import json
 from dataclasses import replace
 from hashlib import sha256
 
@@ -16,7 +17,7 @@ from btx_omni.providers.sample.kratos import context
 
 def risk_context(*, confidence='HIGH', anchor=None):
     event, observation = context()
-    aid = 'demo-fictional-risk'
+    aid = 'demo-fictional-risk' if confidence == 'HIGH' else 'demo-fictional-at-risk'
     identity = aid + ':filing:' + confidence.lower()
     eid = identity + ':evidence'
     now = as_of_datetime(anchor)
@@ -28,7 +29,8 @@ def risk_context(*, confidence='HIGH', anchor=None):
     observation = replace(observation, id=identity + ':observation', source_identity=source, source_version=version,
         observed_at=now, raw_evidence=reference, source_published_at=now,
         source_tier='TIER_1_AUTHORITATIVE_STRUCTURED' if confidence == 'HIGH' else 'TIER_4_DISCOVERY',
-        structured_payload=None, title='Fictional consolidation exercise — not a public filing')
+        structured_payload=None, title=('Fictional consolidation exercise — not a public filing' if confidence == 'HIGH' else
+            'UNCONFIRMED fictional consolidation hypothesis — validate immediately; not a real allegation'))
     facts = {'fictional_scenario': 'true', 'source_title': observation.title,
         'legal_entity': 'Fictional Risk Manufacturing', 'record_id': identity, 'event_type': 'consolidation',
         'report_date': relative_date(anchor=anchor), 'affected_scope': 'two fictional business units',
@@ -36,6 +38,24 @@ def risk_context(*, confidence='HIGH', anchor=None):
         'risk_condition': 'FACILITY_CLOSURE', 'affected_revenue_share_percent': '30', 'affected_backlog_share_percent': '25',
         'days_until_effect': '0', 'remaining_effect_days': '400', 'risk_breadth': 'MULTIPLE_BUSINESS_UNITS',
         'risk_mitigation': 'PLAN_NOT_STARTED'}
+    if confidence != 'HIGH':
+        for key in ('legal_entity', 'record_id', 'event_type', 'report_date', 'site_identity_verified', 'authoritative_identifier_verified'):
+            facts.pop(key, None)
+    seed = {'seed_type': 'curated_monitor_style', 'fictional_scenario': True, 'synthetic': True, 'data_mode': 'SAMPLE',
+            'source_url': reference.locator, 'publisher': 'Authored fictional filing exercise',
+            'event_date': relative_date(anchor=anchor), 'retrieval_date': relative_date(anchor=anchor),
+            'affected_scope': 'Two fictional business units; applicability to an actual company is expressly denied.',
+            'mitigation_notes': 'An unstarted consolidation plan is assumed in this exercise. Validate milestones and customer coverage.',
+            'open_applicability_questions': ['Is the scenario evidence corroborated?', 'Which precise site and work package are affected?'],
+            'contacts': 'Sourcing and remediation role gaps; no named people.', 'routes': [],
+            'entity': {'site': 'Fictional demonstration site', 'site_status': 'FICTIONAL_SAMPLE'},
+            'gates': {'need': 'UNKNOWN', 'publication': 'FICTIONAL_SAMPLE_NOT_A_PUBLIC_ALLEGATION'},
+            'contact_gap': {'role': 'risk remediation owner', 'state': 'NO_NAMED_PERSON_RESEARCHED'},
+            'fit_hypothesis': {'label': 'Fit hypothesis', 'reasoning': 'No supply or sourcing need follows from this risk exercise.'},
+            'what_would_change_result': ['Verify entity, source record and affected scope before treating an allegation as confirmed.',
+                                       'A completed mitigation milestone changes severity, not source reliability.'],
+            'label': observation.title}
+    observation = replace(observation, structured_payload=json.dumps(seed, sort_keys=True))
     claims = tuple(NormalizedClaim(k, v, (eid,), 'reviewed_internal_record', 'fictional rubric exercise') for k, v in facts.items())
     return replace(event, id=identity, event_type=EventType.FINANCIAL_DISTRESS,
         subject_entities=(EntityResolution('Fictional Risk Manufacturing', aid, ResolutionState.RESOLVED,

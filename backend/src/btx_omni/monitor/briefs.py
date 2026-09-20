@@ -211,7 +211,7 @@ def signal_brief(
         missing.append("source summary")
     headline = EVENT_LABELS.get(event.event_type.value, "Public update reported")
     deterministic_summary = f"{headline}. {title}" if title else headline
-    seed = json.loads(observation.structured_payload) if observation and observation.structured_payload and event.provenance.source_system == 'curated_monitor_style' else None
+    seed = json.loads(observation.structured_payload) if observation and observation.structured_payload and event.provenance.source_system in {'curated_monitor_style', 'fictional_rubric_fixture'} else None
     return SignalBrief(
         id=event.id,
         context_id=None,
