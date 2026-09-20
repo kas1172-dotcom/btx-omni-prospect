@@ -1,5 +1,44 @@
 # Profiles redesign report
 
+## Completion verification — 2026-09-20
+
+Local implementation and deterministic verification are complete. The earlier partial-delivery report below is retained as historical evidence and is superseded by this section.
+
+| Check | Current result |
+|---|---|
+| Typecheck, lint, production build | PASS |
+| Frontend units | 84 passed, 0 failed |
+| Full backend | 824 passed, 1 timing-dependent test failure, 2 existing skips |
+| Backend failure closure | Exact failed-run identity replaces an assumption about ordering equal timestamps; all 31 Monitor persistence tests passed. No backend production logic changed during this closure. |
+| Full configured Chromium suite | 185 passed, 2 history-race failures, 0 skipped |
+| Browser failure closure | Both failures fixed; all 14 history/profile journeys passed. All 187 configured cases have passing coverage across the full and closure runs. |
+| Manual browser inspection | Account first page, Boeing Overview and retained decision context inspected; no browser errors |
+
+The full backend run covered all 825 executable tests. Its one failure was closed by the focused 31-test run; this is not represented as a second full 825-test run. The two existing backend skips and the existing hosted-demo/public-collection browser exclusions were retained.
+
+Completion changes:
+
+- Fixed first-page initialization, global alphabetical pagination, and retained sorting when returning from a profile.
+- Restored the saved private research shortlist filter and its typed Omni context.
+- Preserved the original list return location when switching between organizations and prevented unchanged profile effects from overwriting a browser Back destination; shared fix `0e17a19`.
+- Restored exact selected-assessment context, linked records, separate commercial scores, follow-up previews, and recorded decision evidence in their appropriate tabs and disclosures.
+- Disabled Action and Communication submission until their selected canonical account is loaded, retaining draft and retry behavior.
+- Preserved itinerary edits and added stops made while a save is in flight; shared fix `d5daa3a`.
+- Combined Actions selection and filter navigation updates to prevent an update loop after converting a suggestion; shared fix `9c7a756`. The seller journey now also rejects browser errors.
+- Updated legacy browser selectors to the accepted Profiles controls and explicitly opened retained disclosures. Canonical identity, permission, score, missingness, evidence, and retry assertions remain covered. Updated two stale API presentation assertions and made the persistence test inspect its exact run.
+
+Verification used task-owned loopback PostgreSQL databases `btx_omni_e2e_coordinator_profiles_final` (browser) and `btx_omni_e2e_coordinator_profiles_unit` (backend). The existing import replay verified 3,647 commercial records, 474 reference rows, and the pinned historical G17 excerpt. No canonical fixture, checksum, score definition, migration, production setting, or external provider was changed. The final browser run used API port 8163 and web port 5363.
+
+Receipts: [full browser run](completion/browser.txt), [browser history closure](completion/browser-history-closure.txt), [full backend run](completion/backend.txt), [backend closure](completion/backend-monitor-closure.txt), and [frontend checks](completion/frontend.txt). Screenshots: [first account page](completion/accounts-first-page.png), [Boeing Overview](completion/boeing-overview.png), [retained decision context](completion/boeing-recorded-context.png).
+
+The earlier broad-browser failure count is not a valid before/after baseline because initial setup failed before execution; the current browser failure set is closed by the 14-test follow-up run. Earlier attempts (including 165 passed / 16 failed / 6 not run, followed by 24 of 25 corrected cases) led to the Actions navigation fix and fresh-database run. That run's two Today-return failures were subsequently fixed and verified without weakening their Back-navigation assertions.
+
+Remaining release boundaries: hosted access, WebKit, real Google Maps/Gemini, and production behavior remain unverified. Missing health bands, person-level interaction dates, signal expiry timestamps, and incomplete relationship ranges remain explicitly unavailable because the current contracts do not supply approved values. This local completion does not introduce scoring policy or invent source data. Branch integration and deployment are separate.
+
+## Historical implementation handoff
+
+Everything below records the original six-step implementation and its then-current limitations. References below to an unchanged App.tsx, SQLite-only verification, outstanding Communications work, and a failing browser gate describe that earlier handoff, not the completed state above.
+
 ## Final summary — partial delivery, not release-qualified
 
 The six implementation steps are present in this branch, with baseline and per-step screenshots. The Profiles-focused checks pass, but the full browser suite is red and several requested values cannot be supplied under the no-invention/no-scoring-policy-change guardrails. **Do not treat this as a fully verified end-to-end release.** Backend and frontend-unit failures did not increase; full-E2E regression equivalence is UNVERIFIED because its initial baseline failed before execution. No deployment, production configuration/database write, dependency addition, fixture/hash edit, migration, history rewrite, or original-working-copy edit was performed.

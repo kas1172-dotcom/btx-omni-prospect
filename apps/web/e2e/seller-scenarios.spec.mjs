@@ -4,7 +4,7 @@ test.describe.configure({ mode: 'serial' })
 
 async function navigate(page, name) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name }).click()
-  await expect(page.locator('.page-title h1')).toHaveText(name === 'Map' ? 'Tactical Map' : name)
+  await expect(page.locator('.page-title h1')).toHaveText(name === 'Map' ? 'Tactical Map' : name === 'Profiles' ? 'Accounts' : name)
 }
 
 async function openOmni(page) {
@@ -86,6 +86,9 @@ test('Tactical Map composes canonical industry and SAMPLE commercial segment fil
 
 test('Phase 7 seller scenarios remain coherent across real product surfaces', async ({ page }) => {
   test.setTimeout(120_000)
+  const browserErrors = []
+  page.on('pageerror', error => browserErrors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') browserErrors.push(message.text()) })
   const scenarioAccounts = [
     ['Southwest geographic trip planning', 'Anduril', 'anduril-industries'],
     ['Southwest geographic trip planning', 'Rocket Lab', 'rocket-lab-usa'],
@@ -110,9 +113,9 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   await closeOmni(page)
 
   // The full curated scenario roster is discoverable through the actual Accounts UI.
-  await navigate(page, 'Customers & Prospects')
-  await page.locator('.filters select').selectOption('ALL')
-  const search = page.getByPlaceholder('Search Customer, industry, or location')
+  await navigate(page, 'Profiles')
+  await page.getByRole('button', { name: /^All \d/ }).click()
+  const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects' })
   for (const [scenario, account] of scenarioAccounts) {
     await search.fill(account)
     await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(account, 'i') }).first(), scenario).toBeVisible()
@@ -138,7 +141,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   }
 
   // Defense award + quote-history scenario: Account Detail and Omni use the same exact ID.
-  await navigate(page, 'Customers & Prospects')
+  await navigate(page, 'Profiles')
   await search.fill('Lockheed')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: /Lockheed/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
@@ -216,20 +219,21 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   await closeOmni(page)
 
   // A current filter is used only for the active view and disappears after the UI clears it.
-  await navigate(page, 'Customers & Prospects')
-  await page.getByRole('button', { name: 'Defense', exact: true }).click()
+  await navigate(page, 'Profiles')
+  await page.getByLabel('Market', { exact: true }).selectOption('Defense')
   await openOmni(page)
   const filtered = await ask(page, 'What matters most on this page?')
   expect(filtered.request.context.active_filters.market).toBe('Defense')
   expect(filtered.body.context_used.filters.market).toBe('Defense')
   await closeOmni(page)
-  await page.getByRole('button', { name: 'All industries', exact: true }).click()
+  await page.getByLabel('Market', { exact: true }).selectOption('ALL')
   await openOmni(page)
   const global = await ask(page, 'Which Defense accounts have the highest scores?')
   expect(global.request.context.active_filters?.market).toBeUndefined()
   expect(global.body.context_used.account_id).toBeUndefined()
   expect(global.body.context_used.filters?.market).toBeUndefined()
-  expect(global.body.content).toMatch(/Defense/i)
-  expect(global.body.content).toMatch(/SAMPLE|sample/i)
+  expect(global.body.content).toContain('No scoped opportunities in this selection have complete Attractiveness inputs')
+  expect(global.body.content).toContain('Organization-level scores are not a substitute')
   await closeOmni(page)
+  expect(browserErrors).toEqual([])
 })

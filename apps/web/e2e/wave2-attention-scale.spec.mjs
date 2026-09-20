@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }) })
+
 const cloneAccount = (base, index) => ({ ...base, id: `scale-account-${index}`, name: `Scale Account ${String(index).padStart(3, '0')}`, legal_name: `Scale Account ${String(index).padStart(3, '0')} Incorporated`, domain: `scale-${index}.example`, industries: index % 2 ? ['Aerospace'] : ['Industrial'], relationship: index % 3 ? 'PROSPECT' : 'CURRENT_CUSTOMER' })
 
 async function installScaleFixtures(page) {

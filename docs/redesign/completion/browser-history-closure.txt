@@ -1,0 +1,29 @@
+[WebServer] INFO:     Started server process [600]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8163 (Press CTRL+C to quit)
+[WebServer] (node:23928) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 14 tests using 1 worker
+
+(node:21124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 e2e\customer-experience-core.spec.mjs:9:1 › desktop Portfolio composes accessible search, filters, sorting, and canonical Customer navigation (4.8s)
+  ok  2 e2e\customer-experience-core.spec.mjs:40:1 › 390px Portfolio keeps a semantic scrollable table and accessible commercial details (3.9s)
+  ok  3 e2e\customer-experience-core.spec.mjs:61:1 › 320px Customer Experience remains navigable without horizontal overflow (2.7s)
+  ok  4 e2e\customer-experience-core.spec.mjs:72:1 › Portfolio sorts the complete result set before pagination and retains sort after navigation (3.8s)
+  ok  5 e2e\durable-navigation-context.spec.mjs:62:1 › Today assessment and related record retain the filtered return location through browser history (2.9s)
+  ok  6 e2e\durable-navigation-context.spec.mjs:80:1 › Intelligence briefing to Organization 360 refresh restores the exact assessment version (3.8s)
+  ok  7 e2e\durable-navigation-context.spec.mjs:96:1 › Map facility scope survives Organization 360 and is supplied when Omni opens (4.0s)
+  ok  8 e2e\durable-navigation-context.spec.mjs:111:1 › federal route, Relationship Intelligence, governed Action, Omni and Back share one version (4.6s)
+  ok  9 e2e\durable-navigation-context.spec.mjs:141:1 › Actions state, copied links, malformed links and permission denial recover safely on desktop and mobile (8.3s)
+  ok 10 e2e\navigation.spec.mjs:3:1 › portfolio search and sort survive a customer and another surface (3.9s)
+  ok 11 e2e\navigation.spec.mjs:18:1 › canonical account deep link survives refresh and browser back/forward (7.9s)
+  ok 12 e2e\navigation.spec.mjs:35:1 › malformed account links cannot become account API paths (2.4s)
+  ok 13 e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 390px (4.3s)
+  ok 14 e2e\today-reference.spec.mjs:4:3 › Today reference cards and briefing share filtered order and navigation state at 1440px (4.2s)
+
+  14 passed (1.2m)

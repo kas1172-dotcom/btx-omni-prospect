@@ -161,12 +161,12 @@ test('zero score and zero distance are readable values (projection edge-case fix
   await page.route('**/api/accounts/kla', async route => {
     const response = await route.fetch()
     const data = await response.json()
-    data.account_attractiveness.score = '0'
+    data.customer_health.score = '0'
     await route.fulfill({ response, json: data })
   })
   await page.goto('/#/map')
   await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
-  await expect(panel.getByLabel('Customer Attractiveness score summary')).toContainText('0')
+  await expect(panel.getByLabel('Customer health score summary')).toContainText('0')
   await expect(panel).toContainText('Coincident test facility · 0 miles straight-line')
 })

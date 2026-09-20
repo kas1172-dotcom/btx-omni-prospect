@@ -71,7 +71,7 @@ test('Settings and secondary mobile navigation are role-aware, safe, and non-ove
   await expect(page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Integrations' })).toHaveCount(0)
   await expect(page.getByText('Communication delivery')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Source Health', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(6)
+  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(7)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   await page.setViewportSize({ width: 320, height: 700 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)

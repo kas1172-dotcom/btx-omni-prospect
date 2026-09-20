@@ -1,0 +1,42 @@
+........................................................................ [  8%]
+........................................................................ [ 17%]
+........................................................................ [ 26%]
+........................................................................ [ 34%]
+........................................................................ [ 43%]
+...............................................F........................ [ 52%]
+..................................................................ss.... [ 60%]
+........................................................................ [ 69%]
+........................................................................ [ 78%]
+........................................................................ [ 87%]
+........................................................................ [ 95%]
+...................................                                      [100%]
+================================== FAILURES ===================================
+_______ test_durable_monitor_persists_runs_versions_events_and_failures _______
+tests\test_monitor_live.py:695: in test_durable_monitor_persists_runs_versions_events_and_failures
+    assert len(snapshot["runs"]) == 3 and snapshot["runs"][0]["failures"]
+E   AssertionError: assert (3 == 3 and [])
+E    +  where 3 = len(({'id': '220b2b2d-30ef-4f68-9bee-9e86e09b7a22', 'source_id': 'fda', 'started_at': datetime.datetime(2026, 9, 20, 18, 4...me.datetime(2026, 9, 20, 18, 45, 12, 558988), 'completed_at': datetime.datetime(2026, 9, 20, 18, 45, 12, 565557), ...}))
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\dev\btx-omni-prospect-redesign\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_alembic_version_compatibility.py::test_revision_ids_fit_0009_postgresql_version_capacity_and_keep_topology
+tests/test_alembic_version_compatibility.py::test_sqlite_fresh_base_to_head_uses_the_unchanged_chain
+tests/test_alembic_version_compatibility.py::test_sqlite_0008_to_0009_downgrade_and_reupgrade_are_valid
+tests/test_alembic_version_compatibility.py::test_sqlite_0008_to_0009_downgrade_and_reupgrade_are_valid
+tests/test_alembic_version_compatibility.py::test_sqlite_0008_to_0009_downgrade_and_reupgrade_are_valid
+tests/test_alembic_version_compatibility.py::test_sqlite_0008_to_0009_downgrade_and_reupgrade_are_valid
+tests/test_release_identity.py::test_required_revision_matches_actual_alembic_head
+  C:\dev\btx-omni-prospect-redesign\backend\.venv\Lib\site-packages\alembic\config.py:604: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+tests/test_network_behavioral_privacy.py::test_json_routes_do_not_expose_denied_network[actor2]
+  C:\dev\btx-omni-prospect-redesign\backend\.venv\Lib\site-packages\pydantic\type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Expected `enum` - serialized value may not be as expected [field_name='role', input_value='DENIED_TEST_ROLE', input_type=str])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_monitor_live.py::test_durable_monitor_persists_runs_versions_events_and_failures
+1 failed, 824 passed, 2 skipped, 9 warnings in 273.35s (0:04:33)

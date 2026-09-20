@@ -174,7 +174,7 @@ export default function App() {
         federal: federal && exactFederal ? { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } : undefined,
         partnershipId: federal?.partnership_id ?? undefined,
         subview,
-        returnTo: recordHistory ? { ...origin, returnTo: undefined } : origin.returnTo,
+        returnTo: origin.surface === 'accounts' && origin.accountId ? (origin.returnTo ?? { surface: 'accounts' }) : recordHistory ? { ...origin, returnTo: undefined } : origin.returnTo,
       }
       commitLocation(next, recordHistory ? 'push' : 'none')
     } catch (err) {

@@ -5,7 +5,7 @@ async function inspectCanonicalNetwork(ranked) {
   await ranked.getByRole('combobox', { name: 'Objective', exact: true }).selectOption('commercial_fit')
   await expect(ranked).toHaveAttribute('aria-busy', 'false')
   const toggle = ranked.getByRole('button', { name: 'Explore network', exact: true })
-  if (await toggle.isVisible()) await toggle.click()
+  if (!await ranked.getByRole('group', { name: 'Canonical relationship network', exact: true }).isVisible()) await toggle.click()
   await expect(ranked.getByRole('group', { name: 'Canonical relationship network', exact: true })).toBeVisible()
   const selected = await ranked.getByRole('heading', { name: /Selected route/ }).textContent()
   await ranked.locator('foreignObject button').first().click()
@@ -16,9 +16,9 @@ async function inspectCanonicalNetwork(ranked) {
 }
 
 async function openAccount(page, query) {
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
-  await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
-  await page.getByPlaceholder('Search Customer, industry, or location').fill(query)
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
+  await expect(page.locator('.page-title h1')).toHaveText('Accounts')
+  await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill(query)
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(query, 'i') }).first().click()
   await expect(page.getByRole('heading', { name: new RegExp(query, 'i'), level: 1 })).toBeVisible()
 }
@@ -36,6 +36,7 @@ test('Customer 360 presents canonical relationships in seller-facing language', 
   expect(lockheedRelationships.seller_direct_relationships.length).toBe(lockheedRelationships.direct_relationships.length)
 
   const relationshipPanel = page.locator('.account-workspace-relationship')
+  await relationshipPanel.getByText('Reference connections and retained evidence', { exact: true }).click()
   await expect(relationshipPanel).toContainText('How this organization is connected')
   await expect(relationshipPanel).toContainText('Public professional contact research remains separate')
   await expect(relationshipPanel).toContainText(lockheedRelationships.seller_direct_relationships[0].steps.at(-1).display_name)
@@ -80,6 +81,7 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
   const relationshipSection = page.locator('.account-workspace-relationship')
   await openCustomerSection(page, /People and relationship paths/)
   await openRelationshipWorkspace(page)
+  await relationshipSection.getByText('Reference connections and retained evidence', { exact: true }).click()
   await relationshipSection.getByRole('tab', { name: 'Recorded relationships' }).click()
 
   const firstPath = relationshipSection.locator('.seller-relationship-card').first()
@@ -101,7 +103,7 @@ test('mobile Relationship Intelligence uses readable vertical paths and disclosu
   await page.locator('.account-switch-result').filter({ hasText: 'Symbotic' }).click()
   await expect(page.locator('.account-workspace')).toContainText('Symbotic')
   await page.getByRole('button', { name: /Customers & Prospects/ }).first().click()
-  await expect(page.locator('.page-title h1')).toHaveText('Customers & Prospects')
+  await expect(page.locator('.page-title h1')).toHaveText('Accounts')
 })
 
 test('Relationship Intelligence remains non-overflowing at 320px', async ({ page }) => {
@@ -111,6 +113,7 @@ test('Relationship Intelligence remains non-overflowing at 320px', async ({ page
   const relationshipSection = page.locator('.account-workspace-relationship')
   await openCustomerSection(page, /People and relationship paths/)
   const ranked = await openRelationshipWorkspace(page)
+  await relationshipSection.getByText('Reference connections and retained evidence', { exact: true }).click()
   await relationshipSection.getByRole('tab', { name: 'Recorded relationships' }).click()
   await expect(relationshipSection.locator('.seller-relationship-card').first()).toContainText('Connection:')
   await inspectCanonicalNetwork(ranked)

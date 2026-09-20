@@ -1,0 +1,481 @@
+
+> web@0.0.0 typecheck
+> tsc -b
+
+
+> web@0.0.0 lint
+> eslint .
+
+
+> web@0.0.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: build identity verifies repository and exact provider SHA without leaking environment
+ok 1 - build identity verifies repository and exact provider SHA without leaking environment
+  ---
+  duration_ms: 2.5269
+  ...
+# Subtest: dirty, missing and untrusted build identities never become clean proof
+ok 2 - dirty, missing and untrusted build identities never become clean proof
+  ---
+  duration_ms: 0.3207
+  ...
+# Subtest: attention uses deterministic assessment outcomes and labeled high medium low states
+ok 3 - attention uses deterministic assessment outcomes and labeled high medium low states
+  ---
+  duration_ms: 1.2913
+  ...
+# Subtest: decision summaries separate change impact uncertainty and next decision
+ok 4 - decision summaries separate change impact uncertainty and next decision
+  ---
+  duration_ms: 0.8411
+  ...
+# Subtest: Intelligence owns the research library while Today exclusively owns priority queues
+ok 5 - Intelligence owns the research library while Today exclusively owns priority queues
+  ---
+  duration_ms: 0.3976
+  ...
+# Subtest: NAICS and commercial BU filters intersect without inventing missing assignments or geography
+ok 6 - NAICS and commercial BU filters intersect without inventing missing assignments or geography
+  ---
+  duration_ms: 1.6351
+  ...
+# Subtest: coordinates accept API Decimal strings but reject unknown and non-finite values; zero is real
+ok 7 - coordinates accept API Decimal strings but reject unknown and non-finite values; zero is real
+  ---
+  duration_ms: 0.5704
+  ...
+# Subtest: fulfillment filters require canonical states and retain unlocated matching accounts
+ok 8 - fulfillment filters require canonical states and retain unlocated matching accounts
+  ---
+  duration_ms: 0.2463
+  ...
+# Subtest: search and capability filters apply to the full canonical result set without changing coordinates
+ok 9 - search and capability filters apply to the full canonical result set without changing coordinates
+  ---
+  duration_ms: 0.3181
+  ...
+# Subtest: zoom-aware clustering preserves every member and is insertion-order stable
+ok 10 - zoom-aware clustering preserves every member and is insertion-order stable
+  ---
+  duration_ms: 13.4505
+  ...
+# Subtest: coincident sites remain selectable at high zoom without inventing positions
+ok 11 - coincident sites remain selectable at high zoom without inventing positions
+  ---
+  duration_ms: 0.3122
+  ...
+# Subtest: clusters cross cell boundaries and the date line without moving to Greenwich
+ok 12 - clusters cross cell boundaries and the date line without moving to Greenwich
+  ---
+  duration_ms: 0.2411
+  ...
+# Subtest: layer thresholds retain current intelligence once eligible
+ok 13 - layer thresholds retain current intelligence once eligible
+  ---
+  duration_ms: 0.1524
+  ...
+# Subtest: workspace locations round-trip the complete stable investigation context
+ok 14 - workspace locations round-trip the complete stable investigation context
+  ---
+  duration_ms: 15.5341
+  ...
+# Subtest: legacy hashes normalize without losing supported selection
+ok 15 - legacy hashes normalize without losing supported selection
+  ---
+  duration_ms: 0.2469
+  ...
+# Subtest: malformed and contradictory context is rejected without retaining unsafe identifiers
+ok 16 - malformed and contradictory context is rejected without retaining unsafe identifiers
+  ---
+  duration_ms: 0.4217
+  ...
+# Subtest: an event-only selection is valid without inventing assessment context
+ok 17 - an event-only selection is valid without inventing assessment context
+  ---
+  duration_ms: 0.1923
+  ...
+# Subtest: history decisions avoid render loops while preserving meaningful push and filter replace operations
+ok 18 - history decisions avoid render loops while preserving meaningful push and filter replace operations
+  ---
+  duration_ms: 1.0092
+  ...
+# Subtest: imported network contacts stay unvalidated and expose bounded inspector filters
+ok 19 - imported network contacts stay unvalidated and expose bounded inspector filters
+  ---
+  duration_ms: 1.5632
+  ...
+# Subtest: governed explanations are subordinate, truthful, and additive on seller detail surfaces
+ok 20 - governed explanations are subordinate, truthful, and additive on seller detail surfaces
+  ---
+  duration_ms: 3.014
+  ...
+# Subtest: canonical navigation and mobile core flow are present
+ok 21 - canonical navigation and mobile core flow are present
+  ---
+  duration_ms: 0.3487
+  ...
+# Subtest: frontend uses only canonical Omni Prospect API routes
+ok 22 - frontend uses only canonical Omni Prospect API routes
+  ---
+  duration_ms: 0.5548
+  ...
+# Subtest: mobile-first layout prevents horizontal overflow and exposes responsive Omni workspaces
+ok 23 - mobile-first layout prevents horizontal overflow and exposes responsive Omni workspaces
+  ---
+  duration_ms: 0.3637
+  ...
+# Subtest: asynchronous warning notices announce failures and wrap provider diagnostics
+ok 24 - asynchronous warning notices announce failures and wrap provider diagnostics
+  ---
+  duration_ms: 0.4005
+  ...
+# Subtest: live Monitor observations use the canonical intelligence and map surfaces
+ok 25 - live Monitor observations use the canonical intelligence and map surfaces
+  ---
+  duration_ms: 0.6382
+  ...
+# Subtest: Technical Opportunity disclosure preserves the model hypothesis and controlled-match boundary
+ok 26 - Technical Opportunity disclosure preserves the model hypothesis and controlled-match boundary
+  ---
+  duration_ms: 0.3602
+  ...
+# Subtest: adaptive Organization 360 distinguishes relationship mode and progressive evidence
+ok 27 - adaptive Organization 360 distinguishes relationship mode and progressive evidence
+  ---
+  duration_ms: 0.38
+  ...
+# Subtest: Customers and Prospects uses one semantic sortable table with bounded mobile overflow
+ok 28 - Customers and Prospects uses one semantic sortable table with bounded mobile overflow
+  ---
+  duration_ms: 2.5666
+  ...
+# Subtest: Customer 360 renders deterministic seller-facing canonical relationship paths
+ok 29 - Customer 360 renders deterministic seller-facing canonical relationship paths
+  ---
+  duration_ms: 1.0849
+  ...
+# Subtest: Customer 360 renders backend-owned commercial source states without zero inference
+ok 30 - Customer 360 renders backend-owned commercial source states without zero inference
+  ---
+  duration_ms: 0.3277
+  ...
+# Subtest: Omni shares governed conversation state across Quick and Full responsive workspaces
+ok 31 - Omni shares governed conversation state across Quick and Full responsive workspaces
+  ---
+  duration_ms: 1.7702
+  ...
+# Subtest: all intelligence launch surfaces pass the persisted assessment contract to Omni
+ok 32 - all intelligence launch surfaces pass the persisted assessment contract to Omni
+  ---
+  duration_ms: 0.3246
+  ...
+# Subtest: map and action interactions remain touch-accessible and confirmation-safe
+ok 33 - map and action interactions remain touch-accessible and confirmation-safe
+  ---
+  duration_ms: 0.7224
+  ...
+# Subtest: Actions workbench separates Suggestions from durable governed work
+ok 34 - Actions workbench separates Suggestions from durable governed work
+  ---
+  duration_ms: 0.3312
+  ...
+# Subtest: Actions creation and editing use canonical Customers and role-aware controls
+ok 35 - Actions creation and editing use canonical Customers and role-aware controls
+  ---
+  duration_ms: 0.1795
+  ...
+# Subtest: Intelligence distinguishes browser validation from publisher-blocked source checks
+ok 36 - Intelligence distinguishes browser validation from publisher-blocked source checks
+  ---
+  duration_ms: 0.2606
+  ...
+# Subtest: External Intelligence preserves governed priority, source modes, Radar, and procurement navigation
+ok 37 - External Intelligence preserves governed priority, source modes, Radar, and procurement navigation
+  ---
+  duration_ms: 0.5099
+  ...
+# Subtest: Federal opportunities preserve one governed context across seller workflows
+ok 38 - Federal opportunities preserve one governed context across seller workflows
+  ---
+  duration_ms: 0.339
+  ...
+# Subtest: Intelligence sends canonical selected event context to the shared Omni request and clears it on navigation
+ok 39 - Intelligence sends canonical selected event context to the shared Omni request and clears it on navigation
+  ---
+  duration_ms: 1.7274
+  ...
+# Subtest: Intelligence briefing uses canonical account context without substituting an unrelated account action
+ok 40 - Intelligence briefing uses canonical account context without substituting an unrelated account action
+  ---
+  duration_ms: 0.2661
+  ...
+# Subtest: Map selection sends canonical Customer and facility context without inventing BTX Customer identity
+ok 41 - Map selection sends canonical Customer and facility context without inventing BTX Customer identity
+  ---
+  duration_ms: 0.3073
+  ...
+# Subtest: Map test renderer accepts legacy and facility-scoped canonical account marker IDs
+ok 42 - Map test renderer accepts legacy and facility-scoped canonical account marker IDs
+  ---
+  duration_ms: 0.1291
+  ...
+# Subtest: Actions sends the selected canonical work-item ID without leaking other passive selections
+ok 43 - Actions sends the selected canonical work-item ID without leaking other passive selections
+  ---
+  duration_ms: 0.2682
+  ...
+# Subtest: list surfaces publish only their current filters and bounded canonical visible IDs to Omni
+ok 44 - list surfaces publish only their current filters and bounded canonical visible IDs to Omni
+  ---
+  duration_ms: 0.8868
+  ...
+# Subtest: shell clears stale list, detail, and passive entity context across surface changes
+ok 45 - shell clears stale list, detail, and passive entity context across surface changes
+  ---
+  duration_ms: 4.5789
+  ...
+# Subtest: curated public evidence is never labeled as synthetic demo
+ok 46 - curated public evidence is never labeled as synthetic demo
+  ---
+  duration_ms: 0.2287
+  ...
+# Subtest: Source Health leads with administrator decisions and keeps operational truth disclosed
+ok 47 - Source Health leads with administrator decisions and keeps operational truth disclosed
+  ---
+  duration_ms: 0.2702
+  ...
+# Subtest: Seller Command Center reuses governed Signal Briefs with market, Radar, and watch truth
+ok 48 - Seller Command Center reuses governed Signal Briefs with market, Radar, and watch truth
+  ---
+  duration_ms: 0.6913
+  ...
+# Subtest: target interaction primitives expose governed semantic and accessibility contracts
+ok 49 - target interaction primitives expose governed semantic and accessibility contracts
+  ---
+  duration_ms: 0.6933
+  ...
+# Subtest: Communications keeps drafting, review, and delivery explicitly governed
+ok 50 - Communications keeps drafting, review, and delivery explicitly governed
+  ---
+  duration_ms: 0.3626
+  ...
+# Subtest: Settings presents backend-managed role and gates administrator diagnostics
+ok 51 - Settings presents backend-managed role and gates administrator diagnostics
+  ---
+  duration_ms: 0.2662
+  ...
+# Subtest: target primitive CSS encodes focus, touch, responsive rows, and safe-area sheets
+ok 52 - target primitive CSS encodes focus, touch, responsive rows, and safe-area sheets
+  ---
+  duration_ms: 1.5148
+  ...
+# Subtest: shared search inputs use the full available mobile grid width
+ok 53 - shared search inputs use the full available mobile grid width
+  ---
+  duration_ms: 0.2814
+  ...
+# Subtest: sanitized reference classifications remain orthogonal and source-backed in Portfolio and Map
+ok 54 - sanitized reference classifications remain orthogonal and source-backed in Portfolio and Map
+  ---
+  duration_ms: 0.318
+  ...
+# Subtest: shared presentation language has controlled labels and a safe unknown fallback
+ok 55 - shared presentation language has controlled labels and a safe unknown fallback
+  ---
+  duration_ms: 1.2666
+  ...
+# Subtest: Intelligence prefers persisted assessments and distinguishes incomplete analysis
+ok 56 - Intelligence prefers persisted assessments and distinguishes incomplete analysis
+  ---
+  duration_ms: 0.3244
+  ...
+# Subtest: primary communication and relationship labels do not expose actor or edge IDs
+ok 57 - primary communication and relationship labels do not expose actor or edge IDs
+  ---
+  duration_ms: 0.1938
+  ...
+# Subtest: environment copy is singular and provenance details remain available
+ok 58 - environment copy is singular and provenance details remain available
+  ---
+  duration_ms: 0.1838
+  ...
+# Subtest: muted text token exceeds the audited failing value
+ok 59 - muted text token exceeds the audited failing value
+  ---
+  duration_ms: 0.2729
+  ...
+# Subtest: Project Beacon owns the secure hosted sign-in language without changing the session exchange
+ok 60 - Project Beacon owns the secure hosted sign-in language without changing the session exchange
+  ---
+  duration_ms: 1.5335
+  ...
+# Subtest: Project Beacon presentation is responsive, keyboard-visible and motion-safe
+ok 61 - Project Beacon presentation is responsive, keyboard-visible and motion-safe
+  ---
+  duration_ms: 0.2625
+  ...
+# Subtest: the authenticated shell and browser title use the Project Beacon product name
+ok 62 - the authenticated shell and browser title use the Project Beacon product name
+  ---
+  duration_ms: 0.2128
+  ...
+# Subtest: all six actual hops have non-overlapping labels; longer routes do not collapse onto one ring
+ok 63 - all six actual hops have non-overlapping labels; longer routes do not collapse onto one ring
+  ---
+  duration_ms: 1.0835
+  ...
+# Subtest: expansion preserves every existing canonical position and mobile keeps ordered steps distinct
+ok 64 - expansion preserves every existing canonical position and mobile keeps ordered steps distinct
+  ---
+  duration_ms: 1.0505
+  ...
+# Subtest: legacy relationship loading is abortable, times out, and offers retry
+ok 65 - legacy relationship loading is abortable, times out, and offers retry
+  ---
+  duration_ms: 3.2457
+  ...
+# Subtest: one exhaustive destination contract owns desktop and mobile discovery
+ok 66 - one exhaustive destination contract owns desktop and mobile discovery
+  ---
+  duration_ms: 1.3037
+  ...
+# Subtest: seller and administrator permissions filter the same destination contract
+ok 67 - seller and administrator permissions filter the same destination contract
+  ---
+  duration_ms: 0.9776
+  ...
+# Subtest: every authorized destination is discoverable at both viewport classes
+ok 68 - every authorized destination is discoverable at both viewport classes
+  ---
+  duration_ms: 0.1705
+  ...
+# Subtest: partial range is explicitly incomplete, never a midpoint or inflated point score
+ok 69 - partial range is explicitly incomplete, never a midpoint or inflated point score
+  ---
+  duration_ms: 20.4234
+  ...
+# Subtest: ineligible and blocked decisions cannot acquire a displayed score from a range
+ok 70 - ineligible and blocked decisions cannot acquire a displayed score from a range
+  ---
+  duration_ms: 0.5913
+  ...
+# Subtest: each score family retains its agreed primary display
+ok 71 - each score family retains its agreed primary display
+  ---
+  duration_ms: 0.305
+  ...
+# Subtest: color meaning separates risks, opportunity quality and evidence confidence
+ok 72 - color meaning separates risks, opportunity quality and evidence confidence
+  ---
+  duration_ms: 0.1799
+  ...
+# Subtest: Wave 2 queues bound rendering after whole-result filtering and stable sorting
+ok 73 - Wave 2 queues bound rendering after whole-result filtering and stable sorting
+  ---
+  duration_ms: 1.1934
+  ...
+# Subtest: Wave 2 selectors are bounded, identity preserving and explicit about zero matches
+ok 74 - Wave 2 selectors are bounded, identity preserving and explicit about zero matches
+  ---
+  duration_ms: 0.5122
+  ...
+# Subtest: shared resource grammar distinguishes the governed Wave 2 states
+ok 75 - shared resource grammar distinguishes the governed Wave 2 states
+  ---
+  duration_ms: 0.4574
+  ...
+# Subtest: Organization 360 replaces the decision brief with Overview and gates the full graph
+ok 76 - Organization 360 replaces the decision brief with Overview and gates the full graph
+  ---
+  duration_ms: 1.9033
+  ...
+# Subtest: relationship views share seller language and protect hypotheses
+ok 77 - relationship views share seller language and protect hypotheses
+  ---
+  duration_ms: 0.3057
+  ...
+# Subtest: relationship field separates route, type, evidence and hop depth without changing ranking
+ok 78 - relationship field separates route, type, evidence and hop depth without changing ranking
+  ---
+  duration_ms: 0.2992
+  ...
+# Subtest: shared score summary separates decision meaning, unavailable values and coverage
+ok 79 - shared score summary separates decision meaning, unavailable values and coverage
+  ---
+  duration_ms: 0.2985
+  ...
+# Subtest: provider fallback stays behind a secondary Omni disclosure
+ok 80 - provider fallback stays behind a secondary Omni disclosure
+  ---
+  duration_ms: 0.2824
+  ...
+# Subtest: market decision language remains series-specific and refuses account or regional claims
+ok 81 - market decision language remains series-specific and refuses account or regional claims
+  ---
+  duration_ms: 1.5795
+  ...
+# Subtest: market comparison rejects incompatible unit, cadence or geography without normalization
+ok 82 - market comparison rejects incompatible unit, cadence or geography without normalization
+  ---
+  duration_ms: 0.2119
+  ...
+# Subtest: Wave 4 surfaces use shared state grammar, bounded selectors and honest route language
+ok 83 - Wave 4 surfaces use shared state grammar, bounded selectors and honest route language
+  ---
+  duration_ms: 1.4762
+  ...
+# Subtest: semantic accents remain restrained, named and redundant with text
+ok 84 - semantic accents remain restrained, named and redundant with text
+  ---
+  duration_ms: 0.2799
+  ...
+1..84
+# tests 84
+# suites 0
+# pass 84
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 954.3607
+
+> web@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.1 building client environment for production...
+[2K
+transforming...✓ 107 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/build.json                                 0.25 kB │ gzip:  0.22 kB
+dist/workspace-modules.json                     0.57 kB │ gzip:  0.38 kB
+dist/index.html                                 0.86 kB │ gzip:  0.43 kB
+dist/assets/project-beacon-hero-C385gLfr.jpg  326.60 kB
+dist/assets/WorkbookFields-Bt5wJK-P.css         0.61 kB │ gzip:  0.30 kB
+dist/assets/Opportunities-BBCumU1Q.css          1.42 kB │ gzip:  0.54 kB
+dist/assets/Communications-Pun1B3-F.css         2.84 kB │ gzip:  0.80 kB
+dist/assets/Settings-D0wymUEz.css               3.34 kB │ gzip:  1.02 kB
+dist/assets/Monitor-BArfUQqv.css                3.80 kB │ gzip:  0.96 kB
+dist/assets/Actions-F9bBbhrm.css                6.82 kB │ gzip:  1.56 kB
+dist/assets/UI-BjaD5LDL.css                    14.14 kB │ gzip:  3.18 kB
+dist/assets/Intelligence-B0pT0AOb.css          15.42 kB │ gzip:  3.29 kB
+dist/assets/Map-CNOsMABl.css                   16.19 kB │ gzip:  3.43 kB
+dist/assets/Accounts-Uj0dq3Pl.css              34.37 kB │ gzip:  7.18 kB
+dist/assets/index-iRqYD_X2.css                 47.10 kB │ gzip:  9.48 kB
+dist/assets/CanonicalRecord-lViq0f-w.js         0.60 kB │ gzip:  0.33 kB
+dist/assets/CommercialEvidence-DtgSacGz.js      1.10 kB │ gzip:  0.63 kB
+dist/assets/WorkbookFields-CW9JTnhR.js          3.30 kB │ gzip:  1.32 kB
+dist/assets/Opportunities-RAFrDfNJ.js           6.90 kB │ gzip:  2.54 kB
+dist/assets/Monitor-D3oWBnEB.js                10.11 kB │ gzip:  3.27 kB
+dist/assets/Communications-B27qvT-z.js         13.18 kB │ gzip:  4.11 kB
+dist/assets/Settings-BAqXHXyk.js               18.46 kB │ gzip:  5.78 kB
+dist/assets/UI-CXP81mPG.js                     28.49 kB │ gzip:  9.82 kB
+dist/assets/Actions-BTkuORho.js                35.95 kB │ gzip: 10.96 kB
+dist/assets/Map-D8Nnh02w.js                    42.16 kB │ gzip: 12.32 kB
+dist/assets/Intelligence-kzmmsCR1.js           55.03 kB │ gzip: 15.15 kB
+dist/assets/Accounts-B2EykhMn.js              107.45 kB │ gzip: 29.41 kB
+dist/assets/index-CCxQMsLy.js                 304.06 kB │ gzip: 91.62 kB
+
+✓ built in 433ms

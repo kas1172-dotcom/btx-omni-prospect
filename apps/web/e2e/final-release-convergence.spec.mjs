@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const primary = ['Today', 'Customers & Prospects', 'Intelligence', 'Map', 'Actions']
+const primary = ['Today', 'Profiles', 'Intelligence', 'Map', 'Actions']
 
 const documentFitsViewport = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
 

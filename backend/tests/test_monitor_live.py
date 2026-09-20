@@ -690,9 +690,12 @@ def test_durable_monitor_persists_runs_versions_events_and_failures() -> None:
     )
     service.collect("fda")
     service.registry["fda"] = FdaAdapter(lambda _url, _headers: (500, b"{}", {}))
-    service.collect("fda")
+    failed_run = service.collect("fda")
     snapshot = repository.snapshot()
-    assert len(snapshot["runs"]) == 3 and snapshot["runs"][0]["failures"]
+    assert len(snapshot["runs"]) == 3
+    # A fast clock can give runs identical start times; inspect the exact run.
+    persisted_failure = next(run for run in snapshot["runs"] if run["id"] == failed_run.id)
+    assert persisted_failure["failures"]
     assert snapshot["events"][0]["data_mode"] == "LIVE_PUBLIC"
     assert (
         snapshot["events"][0]["publication_date"] is None
