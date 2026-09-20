@@ -30,7 +30,8 @@ test('Intelligence prefers persisted assessments and distinguishes incomplete an
 
 test('primary communication and relationship labels do not expose actor or edge IDs', () => {
   assert.match(communications, /actorDisplayName\(selected\.created_by, principal\)/)
-  assert.match(communications, /Actor ID \{event\.actor_id\}/)
+  assert.match(communications, /actorDisplayName\(event\.actor_id, principal\)/)
+  assert.match(communications, /Actor ID \$\{event\.actor_id\}/)
   assert.doesNotMatch(relationships, /aria-label=\{`Inspect \$\{label\(item\.predicate\)\} · \$\{item\.id\}`\}/)
   assert.match(relationships, /Supporting record \{index \+ 1\}/)
 })

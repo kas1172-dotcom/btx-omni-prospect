@@ -2,15 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api/client";
 import {
   Button,
-  Disclosure,
   Drawer,
   Empty,
-  FilterChip,
   LoadingStatus,
   Panel,
   SearchInput,
   SelectInput,
   StatusBadge,
+  StatusMessage,
   Textarea,
   TextInput,
 } from "../../components/UI";
@@ -24,10 +23,17 @@ import type {
 import "./communications.css";
 import { actorDisplayName, presentationLabel } from "../../components/presentation";
 
+import { canSend, defaultView, deliveryAvailable, inView, queueViews, viewCounts, workflowSteps, type DeliveryState, type QueueView } from "./communicationModel";
+
 type Props = {
   accounts: Account[];
   principal?: Principal;
   items: CommunicationDraft[];
+  delivery?: DeliveryState;
+  onDelivery: (delivery: DeliveryState) => void;
+  accountDetail?: Account360;
+  listState: 'loading' | 'loaded' | 'error';
+  onRetry: () => void;
   onItem: (item: CommunicationDraft) => void;
   onAccount: (id: string) => void;
 };
@@ -37,16 +43,25 @@ export function Communications({
   accounts,
   principal,
   items,
+  delivery,
+  onDelivery,
+  accountDetail,
+  listState,
+  onRetry,
   onItem,
   onAccount,
 }: Props) {
   const [query, setQuery] = useState("");
-  const [state, setState] = useState("ALL");
+  const [chosenView, setChosenView] = useState<QueueView>();
+  const view = chosenView ?? defaultView(principal);
+  const counts = viewCounts(items, principal);
+  const createButton = useRef<HTMLButtonElement>(null);
+  const [cachedAccount, setCachedAccount] = useState<Account360>();
   const [selectedId, setSelectedId] = useState<string>();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<CommunicationDraft>();
   const [notice, setNotice] = useState("");
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string>();
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const [loadedHistory, setLoadedHistory] = useState<{ id: string; version: number; events: CommunicationHistoryEvent[]; error: boolean }>();
   const accountById = useMemo(
@@ -67,29 +82,40 @@ export function Communications({
           `${customer(item.account_id)} ${item.subject} ${item.body}`
             .toLowerCase()
             .includes(query.toLowerCase()) &&
-          (state === "ALL" ||
-            item.status === state ||
-            item.approval_status === state),
+          inView(item, view, principal),
       ),
-    [customer, items, query, state],
+    [customer, items, query, view, principal],
   );
-  const selected = items.find((item) => item.id === selectedId) ?? visible[0];
+  const selected = visible.find((item) => item.id === selectedId) ?? visible[0];
   const historyId = selected?.id;
   const historyVersion = selected?.version;
   const currentHistory = loadedHistory?.id === historyId && loadedHistory?.version === historyVersion ? loadedHistory : undefined;
   useEffect(() => {
-    if (!historyOpen || !historyId || historyVersion === undefined) return;
+    if (!historyId || historyVersion === undefined) return;
     const controller = new AbortController();
     void api
       .communicationHistory(historyId, controller.signal)
       .then((result) => { if (!controller.signal.aborted) setLoadedHistory({ id: historyId, version: historyVersion, events: result.events, error: false }); })
       .catch(() => { if (!controller.signal.aborted) setLoadedHistory({ id: historyId, version: historyVersion, events: [], error: true }); });
     return () => controller.abort();
-  }, [historyOpen, historyId, historyVersion, historyRefresh]);
+  }, [historyId, historyVersion, historyRefresh]);
+  const history = [...(currentHistory?.events ?? [])].sort((a, b) => Date.parse(b.occurred_at) - Date.parse(a.occurred_at) || b.id - a.id);
+  const showAllHistory = expandedHistoryId === selected?.id;
+  const detailAccount = cachedAccount?.account.id === selected?.account_id ? cachedAccount : accountDetail?.account.id === selected?.account_id ? accountDetail : undefined;
+  const startDraft = () => { setEditing(undefined); setEditorOpen(true); };
+  const closeEditor = () => {
+    setEditorOpen(false);
+    // A saved edit can leave the current queue; give focus a stable fallback.
+    requestAnimationFrame(() => {
+      if (document.activeElement === document.body) createButton.current?.focus();
+    });
+  };
   const review = async (decision: "APPROVED" | "REJECTED") => {
     if (!selected) return;
     try {
       onItem(await api.approveCommunication(selected.id, decision, selected.version));
+      setSelectedId(selected.id);
+      setChosenView(decision === "APPROVED" ? "Approved" : "Rejected");
       setNotice(
         `Draft ${decision.toLowerCase()} by human review. No message was sent.`,
       );
@@ -110,7 +136,7 @@ export function Communications({
     }
   };
   const send = async () => {
-    if (!selected) return;
+    if (!selected || listState !== "loaded" || !canSend(selected, delivery)) return;
     try {
       onItem(
         await api.sendCommunication(
@@ -138,73 +164,26 @@ export function Communications({
         <Button
           variant="primary"
           size="touch"
-          onClick={() => {
-            setEditing(undefined);
-            setEditorOpen(true);
-          }}
+          ref={createButton}
+          onClick={startDraft}
         >
           Create draft
         </Button>
       </header>
-      <div className="communications-summary">
-        <Panel variant="subdued">
-          <span className="eyebrow">Drafts</span>
-          <strong>
-            {items.filter((item) => item.status === "DRAFT").length}
-          </strong>
-        </Panel>
-        <Panel variant="subdued">
-          <span className="eyebrow">Awaiting review</span>
-          <strong>
-            {items.filter((item) => item.approval_status === "PENDING").length}
-          </strong>
-        </Panel>
-        <Panel variant="subdued">
-          <span className="eyebrow">Ready</span>
-          <strong>
-            {items.filter((item) => item.status === "READY").length}
-          </strong>
-        </Panel>
-        <Panel variant="subdued">
-          <span className="eyebrow">Delivery</span>
-          <StatusBadge value="NOT_CONFIGURED" kind="integration" />
-        </Panel>
+      <div className="communications-views" role="group" aria-label="Communication views">
+        {queueViews.map(name => <Button key={name} aria-pressed={view === name} onClick={() => { setChosenView(name); setSelectedId(undefined); }}>
+          {name} <span className="communication-count">{listState === 'loaded' ? counts[name] : '—'}</span>
+        </Button>)}
       </div>
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-        </p>
-      )}
+      <p className="communication-notice" role="status" aria-live="polite">{notice}</p>
       <div className="communications-toolbar">
-        <SearchInput
-          aria-label="Search communications"
-          placeholder="Search Customer or draft"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <SelectInput
-          aria-label="Filter communications"
-          value={state}
-          onChange={(event) => setState(event.target.value)}
-        >
-          <option value="ALL">All states</option>
-          <option value="DRAFT">Draft</option>
-          <option value="PENDING">Awaiting review</option>
-          <option value="READY">Ready</option>
-          <option value="SENT">Sent</option>
-        </SelectInput>
-        {(query || state !== "ALL") && (
-          <FilterChip
-            selected
-            onClear={() => {
-              setQuery("");
-              setState("ALL");
-            }}
-          >
-            Clear filters
-          </FilterChip>
-        )}
+        <SearchInput aria-label="Search communications" placeholder="Search Customer or draft" value={query} onChange={event => setQuery(event.target.value)} />
+        {query && <Button variant="ghost" onClick={() => setQuery("")}>Clear search</Button>}
       </div>
+      {listState === 'loading' && <LoadingStatus>Loading communications…</LoadingStatus>}
+      {listState === 'error' && <StatusMessage state="error" title="Communications could not be loaded" action={<Button onClick={onRetry}>Retry communications</Button>}>
+        {items.length ? 'Previously loaded drafts remain visible. Refresh before sending.' : 'Try again to open your drafts.'}
+      </StatusMessage>}
       <div className="communications-workbench">
         <Panel
           title="Customer communications"
@@ -214,13 +193,22 @@ export function Communications({
         >
           <div className="communication-list" role="listbox" aria-label="Customer communications">
             {visible.length ? (
-              visible.map((item) => (
+              visible.map((item, index) => (
                 <button
                   type="button"
                   role="option"
                   key={item.id}
                   className={`communication-row ${selected?.id === item.id ? "selected" : ""}`}
                   aria-selected={selected?.id === item.id}
+                  tabIndex={selected?.id === item.id ? 0 : -1}
+                  onKeyDown={event => {
+                    const next = event.key === 'ArrowDown' ? Math.min(index + 1, visible.length - 1) : event.key === 'ArrowUp' ? Math.max(index - 1, 0) : event.key === 'Home' ? 0 : event.key === 'End' ? visible.length - 1 : undefined;
+                    if (next !== undefined) {
+                      event.preventDefault();
+                      setSelectedId(visible[next].id);
+                      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="option"]')[next]?.focus();
+                    } else if (event.key === 'Enter') { event.preventDefault(); setSelectedId(item.id); }
+                  }}
                   onClick={() => setSelectedId(item.id)}
                 >
                   <span>
@@ -239,7 +227,9 @@ export function Communications({
                 </button>
               ))
             ) : (
-              <Empty>No communication drafts match these filters.</Empty>
+              listState === 'loaded' ? <StatusMessage title={items.length ? 'No matching drafts' : 'No drafts yet'} action={
+                items.length ? <Button onClick={() => { setQuery(""); setChosenView("All"); }}>Show all drafts</Button> : <Button onClick={startDraft}>Create your first draft</Button>
+              }>{items.length ? 'Try another view or clear your search.' : 'Create a draft to prepare a Customer communication for review.'}</StatusMessage> : null
             )}
           </div>
         </Panel>
@@ -252,7 +242,15 @@ export function Communications({
               <div className="communication-detail">
                 <span className="eyebrow">{customer(selected.account_id)}</span>
                 <h2>{selected.subject}</h2>
-                <p className="communication-body">{selected.body}</p>
+                <ol className="communication-stepper" aria-label="Communication workflow">
+                  {workflowSteps(selected, delivery).map(step => <li key={step.label} data-complete={step.complete}>
+                    <strong>{step.label}</strong><span>{step.complete ? '✓ ' : ''}{step.detail}</span>
+                  </li>)}
+                </ol>
+                <div className="communication-reading">
+                  <p className="communication-body">{selected.body}</p>
+                  <DraftContext draft={selected} customer={customer(selected.account_id)} accountDetail={detailAccount} onAccount={() => onAccount(selected.account_id)} />
+                </div>
                 <dl>
                   <div>
                     <dt>Channel</dt>
@@ -282,10 +280,12 @@ export function Communications({
                       const saved = result.items.find(item => item.id === id);
                       if (!saved) throw new Error('This communication is no longer available in your permitted work.');
                       onItem(saved);
+                      onDelivery(result.delivery);
                       setNotice('Saved communication refreshed. Review its content before taking another action.');
                     } catch (error) { setNotice(error instanceof Error ? error.message : 'Refresh failed.'); }
                   }}>Refresh saved communication</Button>
                   <Button
+                    disabled={selected.status === "SENT" || selected.status === "CANCELED"}
                     onClick={() => {
                       setEditing(selected);
                       setEditorOpen(true);
@@ -293,17 +293,11 @@ export function Communications({
                   >
                     Edit draft
                   </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => onAccount(selected.account_id)}
-                  >
-                    View Customer
-                  </Button>
                   <Button variant="ghost" onClick={() => void preview()}>
                     Preview delivery
                   </Button>
                 </div>
-                {selected.approval_status === "PENDING" && (
+                {selected.approval_status === "PENDING" && selected.status === "DRAFT" && (
                   <Panel title="Human review" variant="subdued">
                     {principal?.role === "MANAGER" ? (
                       <div className="card-actions">
@@ -328,37 +322,30 @@ export function Communications({
                     )}
                   </Panel>
                 )}
-                {selected.status === "READY" && (
-                  <Panel title="Delivery confirmation" variant="subdued">
-                    <p>
-                      Delivery remains unavailable until an approved provider is
-                      configured. Human confirmation is still required.
-                    </p>
-                    <Button
-                      variant="primary"
-                      disabled={!selected.recipients.length}
-                      onClick={() => void send()}
-                    >
-                      Confirm send
-                    </Button>
-                  </Panel>
-                )}
-                <Disclosure title="Audit history" open={historyOpen} onOpenChange={setHistoryOpen}>
+                <footer className="communication-delivery">
+                  <p className="muted" id="communication-delivery-note">
+                    {delivery?.state === "NOT_CONFIGURED" ? "Delivery is not configured for this environment" : delivery?.label || "Delivery availability is not confirmed"}
+                  </p>
+                  {selected.status === "READY" && <>
+                    {deliveryAvailable(delivery) && <p>Review this draft and confirm before sending.{!selected.recipients.length && ' A verified recipient is required.'}</p>}
+                    <Button variant="primary" aria-describedby="communication-delivery-note" disabled={listState !== 'loaded' || !canSend(selected, delivery)} onClick={() => void send()}>Confirm send</Button>
+                  </>}
+                </footer>
+                <section aria-label="Audit history" className="communication-audit">
+                  <header><h3>Audit history</h3><Button variant="ghost" onClick={() => { setLoadedHistory(undefined); setHistoryRefresh(value => value + 1); }}>Refresh communication history</Button></header>
                   {!currentHistory && <LoadingStatus>Opening this communication’s history…</LoadingStatus>}
-                  {currentHistory?.error && <p role="alert">History could not be loaded. No other communication’s history is shown.</p>}
-                  <Button onClick={() => setHistoryRefresh(value => value + 1)}>Refresh communication history</Button>
+                  {currentHistory?.error && <p role="alert">History could not be loaded. Refresh communication history to try again.</p>}
+                  {currentHistory && !currentHistory.error && !history.length && <Empty>No history recorded.</Empty>}
                   <ol className="communication-history">
-                    {(currentHistory?.events ?? []).map((event) => (
-                      <li key={event.id}>
-                        <strong>{humanize(event.event)}</strong>
-                        <span>
-                          Actor ID {event.actor_id} ·{" "}
-                          {new Date(event.occurred_at).toLocaleString()}
-                        </span>
-                      </li>
-                    ))}
+                    {(showAllHistory ? history : history.slice(0, 5)).map(event => <li key={event.id}>
+                      <strong>{humanize(event.event)}</strong>
+                      <span title={`Actor ID ${event.actor_id}`}>{actorDisplayName(event.actor_id, principal)} · <time dateTime={event.occurred_at}>{new Date(event.occurred_at).toLocaleString()}</time></span>
+                    </li>)}
                   </ol>
-                </Disclosure>
+                  {history.length > 5 && <Button aria-expanded={showAllHistory} onClick={() => setExpandedHistoryId(showAllHistory ? undefined : selected?.id)}>
+                    {showAllHistory ? 'Show latest 5' : `Show all ${history.length} entries`}
+                  </Button>}
+                </section>
               </div>
             </Panel>
           ) : (
@@ -373,11 +360,16 @@ export function Communications({
         open={editorOpen}
         draft={editing}
         accounts={accounts}
-        onClose={() => setEditorOpen(false)}
+        onClose={closeEditor}
+        onAccountLoaded={setCachedAccount}
+        onDelivery={onDelivery}
+        onAccount={onAccount}
         onSaved={(draft) => {
           onItem(draft);
           setSelectedId(draft.id);
-          setEditorOpen(false);
+          if (!inView(draft, view, principal)) setChosenView("All");
+          if (!`${customer(draft.account_id)} ${draft.subject} ${draft.body}`.toLowerCase().includes(query.toLowerCase())) setQuery("");
+          closeEditor();
           setNotice(
             "Draft saved. It remains unsent and requires human review.",
           );
@@ -393,12 +385,18 @@ function CommunicationEditor({
   accounts,
   onClose,
   onSaved,
+  onAccountLoaded,
+  onDelivery,
+  onAccount,
 }: {
   open: boolean;
   draft?: CommunicationDraft;
   accounts: Account[];
   onClose: () => void;
   onSaved: (draft: CommunicationDraft) => void;
+  onAccountLoaded: (detail: Account360) => void;
+  onDelivery: (delivery: DeliveryState) => void;
+  onAccount: (id: string) => void;
 }) {
   const [accountSelection, setAccountId] = useState(draft?.account_id);
   const [baseDraft, setBaseDraft] = useState(draft);
@@ -419,14 +417,14 @@ function CommunicationEditor({
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
   useEffect(() => {
-    if (!accountId) return;
+    if (!open || !accountId) return;
     const controller = new AbortController();
     void api
       .account(accountId, controller.signal)
-      .then(detail => { if (!controller.signal.aborted) setLoadedAccount({ id: accountId, detail }); })
+      .then(detail => { if (!controller.signal.aborted) { setLoadedAccount({ id: accountId, detail }); onAccountLoaded(detail); } })
       .catch(() => { if (!controller.signal.aborted) setLoadedAccount(undefined); });
     return () => controller.abort();
-  }, [accountId]);
+  }, [open, accountId, onAccountLoaded]);
   const account = accounts.find((item) => item.id === accountId);
   const customer = account?.name ?? account?.legal_name ?? "Customer";
   const verifiedRecipients = useMemo(
@@ -512,6 +510,7 @@ function CommunicationEditor({
       const saved = result.items.find(item => item.id === draft.id);
       if (!saved) throw new Error('This draft is no longer available in your permitted work. Your local text is retained.');
       setSavedComparison(saved);
+      onDelivery(result.delivery);
       setError('Compare the saved version below. Your local text and recipients have not changed.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Saved version could not be refreshed.');
@@ -520,6 +519,9 @@ function CommunicationEditor({
       setWorking(false);
     }
   };
+  const unsaved = subject !== (baseDraft?.subject ?? "") || body !== (baseDraft?.body ?? "") ||
+    JSON.stringify(recipients) !== JSON.stringify(baseDraft?.recipients ?? []) ||
+    Boolean(accountSelection && accountSelection !== (baseDraft?.account_id ?? accounts[0]?.id));
   return (
     <Drawer
       open={open}
@@ -539,6 +541,7 @@ function CommunicationEditor({
             Close
           </Button>
         </header>
+        <p className="communication-save-state" aria-live="polite">{unsaved ? 'Unsaved changes' : draft ? 'Saved draft · no changes' : 'New draft · not saved'}</p>
         <SelectInput
           label="Customer"
           value={accountId}
@@ -588,6 +591,7 @@ function CommunicationEditor({
             <p>{`No verified deliverable email is currently available for ${customer}. A Customer-specific draft can still be reviewed.`}</p>
           </Panel>
         )}
+        <DraftContext draft={{ trigger: baseDraft?.trigger, evidence_ids: baseDraft?.evidence_ids ?? [], recipients }} customer={customer} accountDetail={accountDetail} onAccount={accountId ? () => { onClose(); onAccount(accountId); } : undefined} />
         <Panel title="Gemini draft assistance" variant="subdued">
             {draft && <>
               <p>Editing saved version {baseDraft?.version}. An edit requires fresh human review.</p>
@@ -622,6 +626,7 @@ function CommunicationEditor({
             {error}
           </p>
         )}
+        {(baseDraft?.approval_status === "APPROVED" || savedComparison?.approval_status === "APPROVED") && <p className="notice">Saving changes will remove approval and require review again.</p>}
         <footer>
           <Button type="button" onClick={onClose}>
             Cancel
@@ -633,4 +638,30 @@ function CommunicationEditor({
       </form>
     </Drawer>
   );
+}
+
+function DraftContext({ draft, customer, accountDetail, onAccount }: {
+  draft: Pick<CommunicationDraft, 'trigger' | 'evidence_ids' | 'recipients'>;
+  customer: string;
+  accountDetail?: Account360;
+  onAccount?: () => void;
+}) {
+  return <section className="communication-context" aria-label="Why this draft exists">
+    <h3>Why this draft exists</h3>
+    <dl>
+      <div><dt>Trigger</dt><dd>{draft.trigger || "No trigger recorded"}</dd></div>
+      <div><dt>Evidence</dt><dd>{draft.evidence_ids.length ? <ul>{draft.evidence_ids.map(id => {
+        const label = accountDetail?.intelligence.find(signal => signal.id === id)?.title;
+        return <li key={id}>{label || id}{label && <small>{id}</small>}</li>;
+      })}</ul> : "No evidence linked"}</dd></div>
+      <div><dt>Customer</dt><dd>{customer}</dd></div>
+      <div><dt>Recipient</dt><dd>{draft.recipients.length ? draft.recipients.map(email => {
+        const contact = accountDetail?.public_contacts.find(item => item.public_email?.toLowerCase() === email.toLowerCase());
+        return <p key={email}>{email}<small>{contact ? 'Public contact' : 'Public contact · source details unavailable'}
+          {contact?.provenance?.last_verified_at && <> · Last verified {new Date(contact.provenance.last_verified_at).toLocaleDateString()}</>}
+        </small></p>;
+      }) : "Recipient unavailable"}</dd></div>
+    </dl>
+    {onAccount && <Button type="button" variant="ghost" onClick={onAccount}>View Customer</Button>}
+  </section>;
 }
