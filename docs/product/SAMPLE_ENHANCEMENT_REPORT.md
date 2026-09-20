@@ -1,14 +1,18 @@
 # SAMPLE enhancement report
 
-Status: Tier 1 verified; Tiers 2 and 3 in progress.
+Status: Tiers 1 and 2 verified; Tier 3 in progress.
 
 ## Tier checkpoints
+
+Tier 2: **856 backend tests passed**, 8 dependency warnings, no deselection/xfail (202.94 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Ten more backend tests than Tier 1. Tag: `tier2-complete`.
 
 Tier 1: **846 backend tests passed**, 8 dependency deprecation warnings, no deselection/xfail (373.08 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Compared with the first valid local PostgreSQL checkpoint (829 passed / 3 failed), all failures are resolved and new fixture assertions are included. Tag: `tier1-complete`.
 
 Full backend command (from this worktree's `backend`, using the existing Python 3.11 interpreter): set `PYTHONDONTWRITEBYTECODE=1`, `BTX_DATABASE_URL` to the task-owned loopback PostgreSQL database, `BTX_MONITOR_MODE=disabled`, and an empty `BTX_GEMINI_API_KEY`; prepend the absolute local `src` to `sys.path`; install a Python audit hook rejecting non-loopback `socket.connect`; run `pytest.main(['-q', '--tb=short', '-p', 'no:cacheprovider'])`. Frontend commands: `npm run typecheck`, `npm run lint`, `npm run build`, `node --test --test-reporter=dot tests/*.test.mjs`. Existing reference JSON may be loaded by existing code, but was not printed, copied, edited or used to author additions.
 
 ## Decisions made without user input
+
+- Tier 2 full-suite verification exposed two timing-dependent monitor failures (both passed in the focused rerun). Fixed their causes without changing tests: validate the held PostgreSQL session synchronously before starting its keepalive thread; check remaining optional-stage budget before building the briefing environment. Previously a subsecond deadline could enter optional projection after a timed-out collection, and a short cycle could end before its first heartbeat. These are local verification fixes, not integration-stub changes.
 
 - Monitor collection receipts retain an operational timestamp so successive real collection attempts remain ordered. Business evidence age and operational-status evaluation use the configured as-of provider; a collection timestamp never refreshes a publication date.
 - The existing API acceptance test expected an internal alert enum while the existing workflow test explicitly prohibited it. Section 15's plain-language requirement resolves this: both now require the existing human label. No scenario or assertion is removed.

@@ -198,7 +198,7 @@ def run_worker(
                 return False
             return True
 
-        if runs and not deadline_exhausted and repository:
+        if runs and not deadline_exhausted and repository and can_start_optional('BRIEFING_PROJECTION'):
             environment = (
                 runtime.environment()
                 if callable(getattr(runtime, "environment", None))
