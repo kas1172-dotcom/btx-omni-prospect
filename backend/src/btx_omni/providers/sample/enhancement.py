@@ -22,6 +22,8 @@ def enhance_environment(base, *, anchor=None):
     )
     additions = [customer(case, anchor=anchor) for case in ('risk', 'watch', 'healthy', 'at-risk', 'critical')]
     add_expansion(additions[1], facility_id=base.btx_facilities[0].id)
+    from btx_omni.providers.sample.pursuit_cases import add_pursuit_cases
+    add_pursuit_cases(additions[1])
     add_queue_examples(additions[0], facility_id=base.btx_facilities[0].id)
     critical_case = additions[-1]
     critical_case['service_events'][0].update(confirmed=True, issue_type='SAFETY_SHUTDOWN',
@@ -41,6 +43,8 @@ def enhance_environment(base, *, anchor=None):
     add_boeing_expansion(records['boeing'])
     from btx_omni.providers.sample.relationship_cases import prepare_relationships
     prepare_relationships(records)
+    from btx_omni.providers.sample.rubric_examples import examples
+    records['demo-fictional-watch']['commercial_case']['rubric_examples'] = examples(anchor=anchor)
     projected = project_commercial_records(base, records, revision=VERSION)
     # Preserve shared graph identity even when a selected commercial scenario changes.
     preserve = {}

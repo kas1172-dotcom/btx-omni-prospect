@@ -1,6 +1,7 @@
 """Commercial decision inputs from canonical transactions, never scenario scores."""
 from datetime import UTC, date, datetime
 
+from btx_omni.core.clock import evidence_state
 from btx_omni.domain.work import Action
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
@@ -63,7 +64,16 @@ def opportunity_decisions(account: dict, *, account_id: str, revision: str, faci
                           and buyer in r.get("real_person_ids", []) and opportunity["opportunity_id"] in r.get("related_record_ids", [])]
         specified_lines = [r for r in account["quote_lines"] if r["quote_revision_id"] == opportunity["quote_revision_id"]
                            and r["component_id"] == cid and r.get("technical_requirements")]
-        pursuit_qualified = bool(gates['qualified'] == 'YES' and buyer and buyer_evidence and specified_lines and opportunity["stage"] in {"QUALIFIED", "NEGOTIATION", "PROPOSAL_APPROVED"})
+        role_id = opportunity.get('qualified_buyer_role_id')
+        verified_role = next((r for r in account['role_targets'] if r['role_target_id'] == role_id and r.get('contact_verified') is True), None)
+        role_proof = any(r['interaction_id'] in opportunity.get('buyer_qualification_evidence_ids', [])
+            and role_id in r.get('participant_role_ids', []) and r.get('buyer_role_verified') is True
+            and opportunity['opportunity_id'] in r.get('related_record_ids', [])
+            and evidence_state(r.get('date'), as_of=account['as_of'], window_days=30) == 'CURRENT'
+            and resolve_commercial_evidence(account, r.get('source_document_id', '')) for r in account['interactions'])
+        # Section 11 explicitly permits a verified role contact without interaction.
+        pursuit_qualified = bool(gates['qualified'] == 'YES' and ((buyer and buyer_evidence) or (verified_role and role_proof))
+            and specified_lines and opportunity["stage"] in {"QUALIFIED", "NEGOTIATION", "PROPOSAL_APPROVED"})
         pwin_inputs, pwin_blocks, pwin_missing = pursuit_inputs(account, opportunity, 'pwin')
         pwin = assess('pwin', subject_id=opportunity['opportunity_id'], as_of=account['as_of'], revision=revision,
                       inputs=pwin_inputs, eligible=pursuit_qualified and not pwin_missing,

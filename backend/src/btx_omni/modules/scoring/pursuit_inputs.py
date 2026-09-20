@@ -74,8 +74,11 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
         if family == 'delivery_feasibility':
             scoped = scoped and bool(opportunity.get('delivery_facility_id')) and raw.get('facility_id') == opportunity['delivery_facility_id']
         try:
-            current = evidence_state(raw.get('reviewed_as_of'), as_of=account['as_of'], window_days=2 if family == 'delivery_feasibility' else 30) == 'CURRENT'
+            state = evidence_state(raw.get('reviewed_as_of'), as_of=account['as_of'], window_days=2 if family == 'delivery_feasibility' else 30)
+            state = 'CONFLICTING' if raw.get('evidence_state') == 'CONFLICTING' else state
+            current = state == 'CURRENT'
         except (ValueError, TypeError):
+            state = 'UNKNOWN'
             current = False
         resolved = [resolve_commercial_evidence(account, eid) for eid in ids]
         def related(item):
@@ -104,5 +107,5 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
         inputs[key] = FactorInput(points, ids if valid else (),
             f"{key.replace('_', ' ').capitalize()}: reviewed evidence for this pursuit." if points is not None else f"{key.replace('_', ' ').capitalize()}: current, linked pursuit evidence is still required.",
             raw_value=str({k: v for k, v in raw.items() if k not in {'evidence_ids', 'opportunity_id'}}) if valid else None,
-            period=account['as_of'])
+            period=account['as_of'], evidence_state=state)
     return inputs, tuple(blocks), tuple(missing)

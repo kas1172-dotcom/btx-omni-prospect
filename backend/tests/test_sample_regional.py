@@ -11,6 +11,7 @@ from btx_omni.providers.sample.regional import IDS
 
 def test_j1_regional_cohort_has_exact_pins_and_directory_parity(tmp_path):
     from sqlalchemy import create_engine
+
     from btx_omni.api.runtime import PocRuntime
     from btx_omni.core.config import Settings
     from btx_omni.persistence.models import metadata

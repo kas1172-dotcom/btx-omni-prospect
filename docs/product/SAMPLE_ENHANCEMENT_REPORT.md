@@ -27,6 +27,26 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Validation
 
+### Item 2.5 remaining scoring vectors
+
+| Vector | Target | Computed / assertion |
+|---|---|---|
+| Prospect Fit | 80 | 80; `test_private_aerospace_prospect_fit_80_and_low_distribution` |
+| PWIN | 66.25 Developing | 66.25 Developing; qualified fictional procurement role, no named influencer |
+| Delivery | 72.5 B | 72.5 B |
+| Failed mandatory delivery | 78.75 weighted B+, Blocked | 78.75 B+, displayed Blocked; no eligible point score |
+| Incomplete | 68–83 | 68–83; requirement-fit 57/80, budget factor missing |
+| Data Coverage | 85 | 85; 10-point history and 5-point risk-history inputs missing |
+| Public / internal / legal floors | 75 / 80 / 85 | 75 / 80 / 85; legal case blocks execution |
+| Convergence | +5 only with linking evidence | 75/75 risks produce 80 with recorded link; 60/60 without link remains 60 |
+| Independent vs syndicated origins | 3 vs 1 | 100 vs 25 corroboration factor points; separate evidence IDs retain shared origin for copies |
+| Low distribution | Priority <50, Fit <50, Confidence Low | Complete low pursuit; Fit 31.25; confidence 37.75 |
+| Expired / contradictory evidence | Unknown, no reweighting | Stale and Conflicting capacity factors yield ranges, no point score |
+
+Assertions: `test_sample_golden_tier2.py` plus regional/external-risk tests. The live Fictional Watch ledger stores qualified, blocked, incomplete, low, stale and conflicting pursuit variants, and a separately labeled computed what-if lab. Floor examples are explicitly band-table teaching cases, **not measured customer conditions**. The lab includes its input bands, evidence, rule versions and computed receipts in the model's history context.
+
+Before/after (section 11): the old PWIN gate required a named real-person interaction even though the rubric allows a verified role contact without interaction. Now a role can qualify only with current, opportunity-scoped verification and a resolvable source document; removing that proof makes PWIN ineligible. Stale/conflicting pursuit observations now expose their evidence state rather than silently dropping into generic missingness. Tests cover both changes. Existing tests were not weakened.
+
 ### Item 2.4 relationship journeys
 
 `relationship_cases.py` authors one fictional manufacturing goal with two older accepted inspection orders and current machining/inspection coordination evidence. The live canonical graph/ranking service produces distinct 2-, 3- and 4-edge routes; the 4-edge route outranks the shorter older route. It stores its separate `BTX_RELATIONSHIP_POC_1` receipt, edge dates/source IDs, factor reasons and explicit weakest link. An unsupported fictional-company/Boeing link is excluded from the graph and displayed separately. `test_j8_j9_longer_evidenced_route_beats_shorter_older_route` verifies ordering, dates, stable IDs and no cycles/duplicates.

@@ -6,10 +6,20 @@ from decimal import Decimal
 from btx_omni.core.classification import Classification
 from btx_omni.core.clock import as_of_datetime, relative_date
 from btx_omni.core.provenance import Provenance
-from btx_omni.domain.accounts import AccountFacility, AccountRelationship, CanonicalAccount, ResearchProvenance
+from btx_omni.domain.accounts import (
+    AccountFacility,
+    AccountRelationship,
+    CanonicalAccount,
+    ResearchProvenance,
+)
 from btx_omni.domain.btx import BtxFacility
 from btx_omni.domain.common import DataMode, EvidenceState
-from btx_omni.providers.sample.enhancement import VERSION, empty_ledger, reconcile_months, synthetic_record
+from btx_omni.providers.sample.enhancement import (
+    VERSION,
+    empty_ledger,
+    reconcile_months,
+    synthetic_record,
+)
 from btx_omni.providers.sample.scoring_cases import customer
 
 COHORT = (
@@ -28,10 +38,10 @@ IDS = tuple('demo-regional-' + row[0] for row in COHORT)
 
 def prospect_evidence(aid, *, low=False, anchor=None):
     # Exact 80 without a fabricated named contact: 30+18.75+15+11.25+5+0.
-    states = dict(target_cohort_match='EXPLORATORY' if low else 'PRIMARY',
-        manufacturing_fit='COMPONENT_ADJACENCY' if low else 'ONE_MATCHING_SITE',
-        outsourcing_posture='HISTORICAL' if low else 'EXTERNAL_SUPPLIERS',
-        strategic_archetype='INTERMEDIARY' if low else 'COMPONENT_MANUFACTURER', existing_btx_access='RESEARCHED_NO_ACCESS')
+    states = {'target_cohort_match': 'EXPLORATORY' if low else 'PRIMARY',
+        'manufacturing_fit': 'COMPONENT_ADJACENCY' if low else 'ONE_MATCHING_SITE',
+        'outsourcing_posture': 'HISTORICAL' if low else 'EXTERNAL_SUPPLIERS',
+        'strategic_archetype': 'INTERMEDIARY' if low else 'COMPONENT_MANUFACTURER', 'existing_btx_access': 'RESEARCHED_NO_ACCESS'}
     rows = {key: {'state': value} for key, value in states.items()}
     rows['scale'] = {'organization_ttm_revenue_usd': 1_000_000 if low else 1_000_000_000}
     return {key: synthetic_record(**raw, account_id=aid, evidence_ids=[aid + ':profile'],
