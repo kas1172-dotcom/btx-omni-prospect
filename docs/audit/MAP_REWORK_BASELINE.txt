@@ -1,0 +1,99 @@
+Baseline captured 2026-09-20 before Map application changes.
+
+Frontend
+- npm run typecheck: PASS
+- npm run lint: PASS
+- npm run build: PASS
+- npm test: PASS (90 passed, 0 failed)
+
+Backend
+- Command: UV_PROJECT_ENVIRONMENT=/tmp/btx-venv UV_LINK_MODE=copy uv run pytest -q
+- Summary: 746 passed, 67 failed, 10 errors, 2 skipped
+- Baseline comparison rule: final run may retain these exact IDs but must introduce no new failing/erroring IDs.
+
+Environmental / unavailable locally
+- The 10 ERROR IDs suffixed [postgresql] below are NOT RUN because BTX_DATABASE_URL/local PostgreSQL is unavailable (KeyError during fixture setup).
+- PostgreSQL-dependent governed-explanation failures are also environment-associated, but remain listed as FAILED exactly as pytest classified them.
+
+Other pre-existing failures
+- The remaining failures are non-Map baseline failures, dominated by reviewed fixture/release hash drift and downstream commercial/scoring assertions. They are not waived; exact IDs are preserved for delta comparison.
+
+Exact failing and erroring IDs
+- FAILED tests/test_api_acceptance.py::test_canonical_poc_api_end_to_end_paths
+- FAILED tests/test_api_acceptance.py::test_omni_cross_account_score_ranking_uses_typed_market_filter
+- FAILED tests/test_business_evaluation_contract.py::test_frozen_business_cases_cover_cohort_and_keep_semantic_gates_explicit
+- FAILED tests/test_commercial_decisions.py::test_huxwrx_customer_uses_existing_imported_history_without_prospect_overlay
+- FAILED tests/test_customer_health_v2.py::test_exact_trajectory_boundaries[0.10-100]
+- FAILED tests/test_customer_health_v2.py::test_exact_trajectory_boundaries[0-75]
+- FAILED tests/test_customer_health_v2.py::test_exact_trajectory_boundaries[-0.099-50]
+- FAILED tests/test_customer_health_v2.py::test_exact_trajectory_boundaries[-0.10-25]
+- FAILED tests/test_customer_health_v2.py::test_exact_trajectory_boundaries[-0.25-25]
+- FAILED tests/test_customer_health_v2.py::test_exact_trajectory_boundaries[-0.251-0]
+- FAILED tests/test_customer_health_v2.py::test_health_has_its_own_weights_and_trace_not_invoice_or_quote_conversion
+- FAILED tests/test_customer_health_v2.py::test_unknown_contact_review_cannot_become_zero_and_notes_do_not_imply_engagement
+- FAILED tests/test_customer_health_v2.py::test_missing_months_or_zero_baseline_are_not_assumed_growth
+- FAILED tests/test_governed_explanation_adapters.py::test_customer_explanation_persists_without_changing_deterministic_projection
+- FAILED tests/test_governed_explanation_adapters.py::test_customer_360_read_attaches_persisted_projection_without_provider_call
+- FAILED tests/test_governed_explanation_adapters.py::test_federal_explanation_persists_and_projection_read_is_provider_free
+- FAILED tests/test_governed_explanation_adapters.py::test_technical_explanation_persists_without_changing_fit
+- FAILED tests/test_governed_explanation_adapters.py::test_relationship_explanation_persists_without_changing_path
+- FAILED tests/test_governed_explanation_lifecycle.py::test_available_projection_round_trips_through_postgresql
+- FAILED tests/test_governed_explanation_lifecycle.py::test_quota_cooldown_and_evidence_rejection_are_durable
+- FAILED tests/test_governed_explanation_lifecycle.py::test_unavailable_fallback_is_durably_reused_during_cooldown
+- FAILED tests/test_governed_explanation_lifecycle.py::test_not_configured_fallback_is_durably_reused_without_provider_calls
+- FAILED tests/test_governed_explanation_lifecycle.py::test_malformed_provider_output_persists_safe_unavailable_fallback
+- FAILED tests/test_governed_explanation_lifecycle.py::test_changed_governed_hash_starts_a_new_attempt_sequence
+- FAILED tests/test_governed_explanation_lifecycle.py::test_subject_and_explanation_type_records_are_isolated
+- FAILED tests/test_governed_explanation_lifecycle.py::test_provider_cannot_cross_explanation_contract_boundary
+- FAILED tests/test_graph_record_projection.py::test_full_source_records_have_typed_context_without_changing_route_strength
+- FAILED tests/test_graph_record_projection.py::test_context_ids_replay_stably_and_historical_cancellation_date_is_real
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[-0.251-100]
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[-0.25-75]
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[-0.10-75]
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[-0.099-50]
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[0-25]
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[0.099-25]
+- FAILED tests/test_internal_risk_v2.py::test_momentum_thresholds[0.10-0]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[36-100]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[35-75]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[20-75]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[10-50]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[6-25]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[5-0]
+- FAILED tests/test_internal_risk_v2.py::test_bu_concentration_not_customer_program_concentration[0-0]
+- FAILED tests/test_internal_risk_v2.py::test_invoice_share_cannot_substitute_for_confirmed_friction
+- FAILED tests/test_internal_risk_v2.py::test_pipeline_uses_open_quote_decision_dates[51-100]
+- FAILED tests/test_internal_risk_v2.py::test_pipeline_uses_open_quote_decision_dates[50-75]
+- FAILED tests/test_internal_risk_v2.py::test_pipeline_uses_open_quote_decision_dates[25-75]
+- FAILED tests/test_internal_risk_v2.py::test_pipeline_uses_open_quote_decision_dates[10-50]
+- FAILED tests/test_internal_risk_v2.py::test_pipeline_uses_open_quote_decision_dates[1-25]
+- FAILED tests/test_internal_risk_v2.py::test_production_adapter_uses_rubric_inputs_without_mutating_records
+- FAILED tests/test_profile_opportunity_scope.py::test_workspace_reuses_existing_pursuits_and_customer_identity
+- FAILED tests/test_profile_opportunity_scope.py::test_new_pursuit_does_not_inherit_old_component_commitment
+- FAILED tests/test_profile_opportunity_scope.py::test_customer_health_is_independent_of_new_opportunity_inputs
+- FAILED tests/test_profile_opportunity_scope.py::test_omni_ranks_complete_opportunities_not_customer_scores
+- FAILED tests/test_profile_opportunity_scope.py::test_hero_briefings_are_distinct_and_do_not_claim_new_public_participation
+- FAILED tests/test_profile_opportunity_scope.py::test_omni_keeps_selected_pursuit_on_simplification_and_rejects_wrong_scope
+- FAILED tests/test_pursuit_scoring_v2.py::test_scope_source_and_critical_checks_are_independent_of_factor_points
+- FAILED tests/test_pursuit_scoring_v2.py::test_complete_qualified_pursuit_uses_real_projection_and_blocks_override_score
+- FAILED tests/test_reference_fields.py::test_all_source_fields_replay_restart_and_corrected_versions
+- FAILED tests/test_reference_fields.py::test_invalid_references_cannot_mutate_canonical_state[identity]
+- FAILED tests/test_reference_fields.py::test_invalid_references_cannot_mutate_canonical_state[lineage]
+- FAILED tests/test_reference_fields.py::test_invalid_references_cannot_mutate_canonical_state[missing_column]
+- FAILED tests/test_reference_fields.py::test_invalid_references_cannot_mutate_canonical_state[formula]
+- FAILED tests/test_reference_fields.py::test_invalid_references_cannot_mutate_canonical_state[nonfinite]
+- FAILED tests/test_reference_fields.py::test_invalid_references_cannot_mutate_canonical_state[group]
+- FAILED tests/test_release_sample.py::test_release_runtime_input_retains_exact_eleven_identities_and_financial_invariants
+- FAILED tests/test_scoring_v2_completion.py::test_opportunity_gates_are_three_state_and_do_not_derive_from_score
+- FAILED tests/test_scoring_v2_completion.py::test_updated_reference_inputs_import_replay_and_scores_survive_reopen
+- ERROR tests/test_monitor_research_journal.py::test_completed_run_replay_reuses_steps_without_provider_call[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_completed_run_records_idempotent_deterministic_publication_outcome[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_active_lease_overlap_and_late_expired_completion_are_fenced[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_completed_steps_are_immutable_and_exact_ack_retry_is_idempotent[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_retry_and_step_budgets_survive_restart[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_source_revision_and_configuration_do_not_reuse_stale_research[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_invalid_bounds_and_output_size_fail_without_completion[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_invalid_revision_and_naive_finish_do_not_mutate_journal[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_independent_workers_cannot_both_admit_the_same_run[postgresql]
+- ERROR tests/test_monitor_research_journal.py::test_failed_investigation_cooldown_survives_restart[postgresql]
+

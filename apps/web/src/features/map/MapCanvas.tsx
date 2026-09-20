@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader'
 import { markersForZoom, type MapMarker } from './mapModel'
+import { computeViewport, DEFAULT_US_VIEW, type ViewBounds } from './mapViewport'
 import './map.css'
 
-type Props = { markers: MapMarker[]; selectedMarkerId?: string; selectionFrame?: MapMarker[]; onSelect: (marker: MapMarker) => void; onVisibleMarkers?: (markers: MapMarker[]) => void }
+export type MapCameraRequest = { key: string; reset?: boolean; points?: Array<{ latitude: number; longitude: number }>; viewport?: ViewBounds; origin?: { latitude: number; longitude: number }; radiusMiles?: number }
+type Props = { markers: MapMarker[]; selectedMarkerId?: string; cameraRequest?: MapCameraRequest; onSelect: (marker: MapMarker) => void; onVisibleMarkers?: (markers: MapMarker[]) => void }
 let configuredKey: string | undefined
 const markerZIndex = (marker: MapMarker, selected = false) => selected ? 4 : marker.kind === 'cluster' ? 3 : marker.kind === 'customer' || marker.kind === 'prospect' ? 2 : 1
 // Account markers may be legacy `account:<accountId>` or facility-scoped
@@ -24,10 +26,10 @@ function TestCanvas({ markers, selectedMarkerId, onSelect, onVisibleMarkers }: P
 }
 
 export function MapCanvas(props: Props) {
-  const { markers, selectedMarkerId, selectionFrame, onSelect, onVisibleMarkers } = props
+  const { markers, selectedMarkerId, onSelect, onVisibleMarkers } = props
   const testMode = import.meta.env.VITE_MAP_TEST_MODE === 'true'; const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'
   const testUnconfigured = testMode && new URLSearchParams(window.location.search).has('map-test-unconfigured')
-  const container = useRef<HTMLDivElement>(null); const mapRef = useRef<google.maps.Map | undefined>(undefined); const markerRefs = useRef(new Map<string, { advanced: google.maps.marker.AdvancedMarkerElement; signature: string }>()); const propsRef = useRef(props); const lastFramed = useRef<string | undefined>(undefined); const [zoom, setZoom] = useState(4); const [mapReady, setMapReady] = useState(0); const [failure, setFailure] = useState<string | null>(null); const [clusterMembers, setClusterMembers] = useState<string[]>([])
+  const container = useRef<HTMLDivElement>(null); const mapRef = useRef<google.maps.Map | undefined>(undefined); const markerRefs = useRef(new Map<string, { advanced: google.maps.marker.AdvancedMarkerElement; signature: string }>()); const propsRef = useRef(props); const lastCameraKey = useRef<string | undefined>(undefined); const [zoom, setZoom] = useState(DEFAULT_US_VIEW.zoom); const [mapReady, setMapReady] = useState(0); const [failure, setFailure] = useState<string | null>(null); const [clusterMembers, setClusterMembers] = useState<string[]>([])
   const visible = useMemo(() => markersForZoom(markers, zoom, selectedMarkerId), [markers, zoom, selectedMarkerId])
   useEffect(() => { propsRef.current = props }, [props])
   useEffect(() => onVisibleMarkers?.(visible), [onVisibleMarkers, visible])
@@ -40,7 +42,7 @@ export function MapCanvas(props: Props) {
       if (configuredKey !== apiKey) throw new Error('Conflicting Google Maps configuration')
       const { Map } = await importLibrary('maps')
       if (cancelled || !container.current) return
-      const map = new Map(container.current, { center: { lat: 38, lng: -98 }, zoom: 4, minZoom: 3, mapId,
+      const map = new Map(container.current, { center: { lat: DEFAULT_US_VIEW.center.latitude, lng: DEFAULT_US_VIEW.center.longitude }, zoom: DEFAULT_US_VIEW.zoom, minZoom: 3, mapId,
         mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
         // Weekly Maps now defaults to a camera menu. Keep direct keyboard/touch
         // zoom controls independent of that provider default and our detail panel.
@@ -52,7 +54,7 @@ export function MapCanvas(props: Props) {
       setMapReady(version => version + 1)
     } catch { if (!cancelled) setFailure('The Google Maps renderer could not load. Verify the browser key, API restrictions, billing, and quota configuration.') } }
     void load(); const observer = new ResizeObserver(() => { if (mapRef.current) google.maps.event.trigger(mapRef.current, 'resize') }); observer.observe(container.current)
-    return () => { cancelled = true; zoomListener?.remove(); observer.disconnect(); registry.forEach(({ advanced }) => { advanced.map = null }); registry.clear(); mapRef.current = undefined; lastFramed.current = undefined }
+    return () => { cancelled = true; zoomListener?.remove(); observer.disconnect(); registry.forEach(({ advanced }) => { advanced.map = null }); registry.clear(); mapRef.current = undefined; lastCameraKey.current = undefined }
   }, [apiKey, mapId, testMode])
   useEffect(() => {
     const map = mapRef.current
@@ -72,7 +74,9 @@ export function MapCanvas(props: Props) {
             // An explicit member list also works for coincident sites, where zoom
             // alone cannot separate markers. No artificial location offsets.
             setClusterMembers(marker.memberIds ?? [])
-            map.fitBounds(marker.bounds, 80)
+            const plan = computeViewport({ points: (marker.memberIds ?? []).flatMap(id => { const member = propsRef.current.markers.find(item => item.id === id); return member ? [member] : [] }), padding: { right: 80, left: 80, top: 80, bottom: 80 } })
+            if (plan.kind === 'center') { map.setCenter({ lat: plan.center.latitude, lng: plan.center.longitude }); map.setZoom(plan.zoom) }
+            else if (plan.kind === 'bounds') { map.fitBounds(plan.bounds, plan.padding); google.maps.event.addListenerOnce(map, 'idle', () => { if ((map.getZoom() ?? plan.maxZoom) > plan.maxZoom) map.setZoom(plan.maxZoom) }) }
           } else { setClusterMembers([]); propsRef.current.onSelect(marker) }
         }
         const advanced = previous?.advanced ?? new AdvancedMarkerElement({ map, gmpClickable: true })
@@ -84,22 +88,14 @@ export function MapCanvas(props: Props) {
     return () => { cancelled = true }
   }, [visible, selectedMarkerId, mapReady])
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !selectedMarkerId || lastFramed.current === selectedMarkerId) return
-    const selected = markers.find(marker => marker.id === selectedMarkerId)
-    if (!selected) return
-    lastFramed.current = selectedMarkerId
-    const frame = selectionFrame?.length ? selectionFrame : [selected]
-    if (frame.length > 1) {
-      const bounds = new google.maps.LatLngBounds()
-      frame.forEach(marker => bounds.extend({ lat: marker.latitude, lng: marker.longitude }))
-      const compact = (container.current?.clientWidth ?? 0) < 760
-      map.fitBounds(bounds, compact
-        ? { top: 90, left: 40, right: 40, bottom: Math.round((container.current?.clientHeight ?? 400) * 0.45) }
-        : { top: 70, left: 70, right: 360, bottom: 90 })
-    }
-    else { map.panTo({ lat: selected.latitude, lng: selected.longitude }); if ((map.getZoom() ?? 4) < 8) map.setZoom(8) }
-  }, [markers, selectedMarkerId, selectionFrame, mapReady])
+    const map = mapRef.current; const element = container.current; const request = props.cameraRequest
+    if (!map || !element || !request || lastCameraKey.current === request.key || element.clientWidth <= 0 || element.clientHeight <= 0) return
+    const compact = element.clientWidth < 760
+    const plan = computeViewport({ ...request, current: { center: { latitude: map.getCenter()?.lat() ?? DEFAULT_US_VIEW.center.latitude, longitude: map.getCenter()?.lng() ?? DEFAULT_US_VIEW.center.longitude }, zoom: map.getZoom() ?? DEFAULT_US_VIEW.zoom }, padding: compact ? { top: 90, left: 40, right: 40, bottom: Math.round(element.clientHeight * 0.45) } : { top: 70, left: 70, right: 380, bottom: 90 } })
+    lastCameraKey.current = request.key
+    if (plan.kind === 'center') { map.setCenter({ lat: plan.center.latitude, lng: plan.center.longitude }); map.setZoom(plan.zoom) }
+    else if (plan.kind === 'bounds') { map.fitBounds(plan.bounds, plan.padding); google.maps.event.addListenerOnce(map, 'idle', () => { if ((map.getZoom() ?? plan.maxZoom) > plan.maxZoom) map.setZoom(plan.maxZoom) }) }
+  }, [props.cameraRequest, mapReady])
   if (testUnconfigured) return <section className="map-unavailable" role="status"><h3>Interactive map unavailable in this build</h3><p>A permitted Google Maps browser configuration was not included when this frontend was built. The synchronized site list and verified details remain available.</p></section>
   if (testMode) return <TestCanvas {...props} />
   if (!apiKey) return <section className="map-unavailable" role="status"><h3>Interactive map unavailable in this build</h3><p>A permitted Google Maps browser configuration was not included when this frontend was built. The synchronized site list and verified details remain available.</p></section>

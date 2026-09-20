@@ -92,6 +92,8 @@ export default function App() {
   }, [])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [communications, setCommunications] = useState<CommunicationDraft[]>([])
+  const [communicationDelivery, setCommunicationDelivery] = useState<Awaited<ReturnType<typeof api.communications>>['delivery']>()
+  const [communicationPrincipal, setCommunicationPrincipal] = useState<Principal>()
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>()
   const [settingsState, setSettingsState] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [actionPrincipal, setActionPrincipal] = useState<Principal>()
@@ -350,7 +352,7 @@ export default function App() {
     if (!requested || requested === 'map') load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers); setMapFilterOptions(value.filter_options ?? { business_units: [], capabilities: [] }) })
     const actionReadSequence = actionEditSequence.current
     if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { receiveActions(value.items, actionReadSequence); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
-    if (!requested || requested === 'communications') load('communications', api.communications(signal), value => setCommunications(value.items))
+    if (!requested || requested === 'communications') load('communications', api.communications(signal), value => { setCommunications(value.items); setCommunicationDelivery(value.delivery); setCommunicationPrincipal(value.principal) })
     if (!requested || requested === 'settings') load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
     return () => controller.abort()
   }, [applyWorkspaceSettings, authState, resourceRefresh, receiveActions])
@@ -419,7 +421,7 @@ export default function App() {
     ) : surface === 'actions' ? (
       <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={location.actionId ?? selectedActionId} onItem={updateAction} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} location={location} onLocationChange={commitLocation} />
     ) : surface === 'communications' ? (
-      <Communications location={location} onLocationChange={commitLocation} accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
+      <Communications accounts={accounts} principal={communicationPrincipal} items={communications} delivery={communicationDelivery} onDelivery={setCommunicationDelivery} accountDetail={detail} listState={resourceState.communications ?? 'loading'} onRetry={() => { setResourceState(old => ({ ...old, communications: 'loading' })); setResourceRefresh(previous => ({ key: 'communications', version: (previous?.version ?? 0) + 1 })) }} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (
       <Settings accounts={accounts} location={location} settings={workspaceSettings} state={settingsState} onSettings={applyWorkspaceSettings} onRetry={() => { setSettingsState('loading'); void api.settings().then(value => { applyWorkspaceSettings(value); setResourceReady(previous => ({ ...previous, settings: true })); setResourceState(previous => ({ ...previous, settings: 'loaded' })) }).catch(() => setSettingsState('error')) }} onSignOut={() => void api.signOut().then(() => { Object.keys(sessionStorage).filter(key => key.startsWith('btx-private-')).forEach(key => sessionStorage.removeItem(key)); window.location.reload() })} />
     ) : surface === 'monitor' ? (
@@ -537,8 +539,8 @@ export default function App() {
         {linkRecovery && <div className="api-notice" role="alert">{linkRecovery} <button type="button" onClick={() => navigate(surface)}>Return to {surfaceLabels[surface]}</button></div>}
         {error && <div className="api-notice">{error}</div>}
         {accountOpening && <LoadingStatus className="api-notice">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'organization'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></LoadingStatus>}
-        {surface !== 'settings' && resourceState[surface] === 'error' && <StatusMessage state="error" title={`${surfaceLabels[surface]} could not refresh`} action={<Button onClick={() => setResourceRefresh(previous => ({ key: surface, version: (previous?.version ?? 0) + 1 }))}>Retry {surfaceLabels[surface]}</Button>}>{resourceReady[surface] ? 'Last-good content remains visible and is not labeled as freshly collected.' : 'This resource is unavailable. Other permitted workspace sections remain available.'}</StatusMessage>}
-        {surface === 'settings' || surface === 'opportunities' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
+        {surface !== 'settings' && surface !== 'communications' && resourceState[surface] === 'error' && <StatusMessage state="error" title={`${surfaceLabels[surface]} could not refresh`} action={<Button onClick={() => setResourceRefresh(previous => ({ key: surface, version: (previous?.version ?? 0) + 1 }))}>Retry {surfaceLabels[surface]}</Button>}>{resourceReady[surface] ? 'Last-good content remains visible and is not labeled as freshly collected.' : 'This resource is unavailable. Other permitted workspace sections remain available.'}</StatusMessage>}
+        {surface === 'settings' || surface === 'opportunities' || surface === 'communications' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
       </section>
       <nav className="mobile-primary-nav" aria-label="Mobile primary navigation">
         {mobilePrimaryDestinations.map(destination => (

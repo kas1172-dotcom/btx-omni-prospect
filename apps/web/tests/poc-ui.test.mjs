@@ -203,9 +203,7 @@ test('all intelligence launch surfaces pass the persisted assessment contract to
 
 test('map and action interactions remain touch-accessible and confirmation-safe', () => {
   assert.match(map, /Map controls/)
-  assert.match(map, /Layers &amp; filters/)
   assert.match(mapFilters, /Reset filters/)
-  assert.match(mapFilters, /Customer, Prospect or review state/)
   assert.match(mapPresentation, /Customers/)
   assert.match(mapPresentation, /Dormant customers/)
   assert.match(mapPresentation, /Relationship needs review/)
@@ -532,7 +530,6 @@ test('shared search inputs use the full available mobile grid width', () => {
 test('sanitized reference classifications remain orthogonal and source-backed in Portfolio and Map', () => {
   assert.match(accounts, /btx_top_100/)
   assert.match(accounts, /BTX Top 100/)
-  assert.match(mapFilters, /Strategic Partnership and shortlist/)
   assert.match(mapFilters, /Filters change the visible planning set only/)
   assert.match(map, /Added to your shortlist/)
   assert.match(mapModel, /!filters\.top100 \|\| record\.btx_top_100/)
