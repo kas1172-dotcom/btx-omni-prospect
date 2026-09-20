@@ -58,7 +58,7 @@ class LinkedInConnectionsCsvAdapter:
                 connected = None
                 for fmt in ("%d %b %Y", "%m/%d/%Y", "%Y-%m-%d"):
                     try:
-                        connected = datetime.strptime(raw_connected, fmt).date() if raw_connected else None
+                        connected = datetime.strptime(raw_connected, fmt).replace(tzinfo=UTC).date() if raw_connected else None
                         break
                     except ValueError:
                         continue
@@ -151,8 +151,29 @@ class NetworkImportRepository:
             or_(models.network_import_batches.c.visibility == "tenant_shared",
                 models.network_import_batches.c.owner_user_id == principal.user_id),
         )
-        query = (select(models.network_import_batches, models.network_people, models.network_affiliations, models.network_ties)
+        owners = models.network_people.alias("network_owners")
+        query = (select(
+                    models.network_import_batches.c.id.label("batch_id"),
+                    models.network_import_batches.c.exported_at,
+                    models.network_import_batches.c.owner_person_id,
+                    owners.c.display_name.label("owner_display_name"),
+                    models.network_people.c.id.label("person_id"),
+                    models.network_people.c.kind.label("person_kind"),
+                    models.network_people.c.display_name,
+                    models.network_people.c.profile_url,
+                    models.network_affiliations.c.raw_company_string,
+                    models.network_affiliations.c.raw_title,
+                    models.network_affiliations.c.account_id,
+                    models.network_affiliations.c.resolution_method,
+                    models.network_affiliations.c.role_family,
+                    models.network_affiliations.c.seniority_tier,
+                    models.network_affiliations.c.as_of,
+                    models.network_ties.c.internal_person_id,
+                    models.network_ties.c.connected_on,
+                    models.network_ties.c.tie_source,
+                 )
                  .join(models.network_people, models.network_people.c.batch_id == models.network_import_batches.c.id)
+                 .join(owners, owners.c.id == models.network_import_batches.c.owner_person_id)
                  .join(models.network_affiliations, models.network_affiliations.c.person_id == models.network_people.c.id)
                  .join(models.network_ties, models.network_ties.c.external_person_id == models.network_people.c.id)
                  .where(permitted, models.network_affiliations.c.data_mode == "IMPORTED",

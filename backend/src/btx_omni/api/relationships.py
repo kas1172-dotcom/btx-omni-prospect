@@ -11,6 +11,7 @@ from btx_omni.api.intelligence_projection import intelligence_signals
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.api.session import principal
 from btx_omni.domain.work import Principal
+from btx_omni.modules.relationships.network_projection import project_network_graph
 from btx_omni.modules.relationships.routes import RouteQuery
 from btx_omni.modules.relationships.service import RelationshipIntelligenceService
 from btx_omni.persistence.commercial_import import BU_CROSSWALK
@@ -136,9 +137,20 @@ def relationship_query(
     else:
         target_ids = set()
     response.headers["Cache-Control"] = "private, no-store"
+    network_rows = runtime.network_imports.visible_rows(actor) if body.mode in {"contact_candidates", "documented_access"} else ()
+    network_projection = None
+    if network_rows and actor.tenant_id:
+        network_projection = project_network_graph(sample, network_rows, tenant_id=actor.tenant_id)
+        network_graph = network_projection[0]
+        if body.mode == "contact_candidates":
+            target_ids = {node.id for node in network_graph.nodes.values()
+                          if node.kind == "external_contact" and node.account_id == body.source_account_id}
+        else:
+            target_ids = {edge.source for edge in network_graph.edges.values()
+                          if edge.predicate == "KNOWS" and edge.account_id == body.source_account_id}
     query = RouteQuery(
-        "SAMPLE",
-        f"SAMPLE:account:{body.source_account_id}",
+        f"TENANT:{actor.tenant_id}" if network_projection else "SAMPLE",
+        f"TENANT:{actor.tenant_id}:account:{body.source_account_id}" if network_projection else f"SAMPLE:account:{body.source_account_id}",
         frozenset(target_ids),
         body.mode,
         body.as_of or datetime.now(UTC).date(),
@@ -146,18 +158,21 @@ def relationship_query(
         body.source_component_id,
         body.target_component_id,
         body.depth,
+        deadline_seconds=1.0 if network_projection else .25,
     )
     try:
-        result = RelationshipIntelligenceService(sample).ranked_routes(
-            query,
-            selected_path_id=body.selected_path_id,
-            node_budget=body.node_budget,
-            edge_budget=body.edge_budget,
-            expanded_node_ids=body.expanded_node_ids,
-            context_page=body.context_page,
-            expected_graph_revision=body.expected_graph_revision,
-            include_record_context=body.include_record_context,
-        )
+        service = RelationshipIntelligenceService(sample)
+        options = {
+            "selected_path_id": body.selected_path_id,
+            "node_budget": body.node_budget,
+            "edge_budget": body.edge_budget,
+            "expanded_node_ids": body.expanded_node_ids,
+            "context_page": body.context_page,
+            "expected_graph_revision": body.expected_graph_revision,
+            "include_record_context": body.include_record_context,
+        }
+        result = (service.ranked_network_routes(*network_projection, query, **options)
+                  if network_projection else service.ranked_routes(query, **options))
         if not target_ids:
             result["reason"] = (
                 "No documented person-to-person introduction is established."

@@ -37,6 +37,7 @@ from btx_omni.persistence.durable_accounts import DurablePublicAccountRepository
 from btx_omni.persistence.durable_programs import DurableCanonicalProgramRepository
 from btx_omni.persistence.itineraries import ItineraryRepository
 from btx_omni.persistence.market_series import MarketSeriesRepository
+from btx_omni.persistence.network_import import NetworkImportRepository
 from btx_omni.persistence.omni_memory import OmniMemoryRepository
 from btx_omni.persistence.omni_runs import OmniRunRepository
 from btx_omni.persistence.reference_fields import ReferenceFieldRepository
@@ -73,6 +74,7 @@ class PocRuntime:
     _original_sample: SampleEnvironment = field(init=False, repr=False)
     commercial_repository: CommercialImportRepository | None = field(init=False, default=None)
     technical_decomposition: TechnicalDecompositionService = field(init=False)
+    network_imports: NetworkImportRepository = field(init=False)
 
     def __post_init__(self) -> None:
         self._curated_sample = self.sample
@@ -85,6 +87,7 @@ class PocRuntime:
             facilities=self.sample.facilities,
         )
         application_engine = create_database_engine(self.settings)
+        self.network_imports = NetworkImportRepository(application_engine, self.sample.watch_profiles)
         self.memory = OmniMemoryRepository(application_engine)
         self.omni_runs = OmniRunRepository(application_engine)
         self.reference_fields = ReferenceFieldRepository(application_engine)
