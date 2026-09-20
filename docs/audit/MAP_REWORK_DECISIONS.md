@@ -49,3 +49,9 @@
 - Removed only these Playwright tests because their sole purpose was to assert controls explicitly removed by scope: `persisted NAICS and BU facets filter the same canonical map and list scope`; `fulfillment attention filters use persisted obligations and clear without stale account context`.
 - Removed only these source-contract assertions because each asserted a removed Map control: `Layers & filters`; the old combined customer/review-state label; `Strategic Partnership and shortlist`; `HighCardinalitySelector`; and `Candidate BTX capability`. All remaining assertions in those tests are unchanged.
 - No dependency added and no assertion outside the explicitly removed-control assertions was deleted, skipped, weakened or modified.
+
+## 2026-09-20 — Step 5 Top 100
+
+- Preserved the existing provenance-backed `btx_top_100` SAMPLE membership flag. It exists in canonical data, API responses and frontend records, so deriving a different revenue rank would change established data semantics and is neither necessary nor permitted.
+- The Map labels membership as SAMPLE. Added a test that sends mixed membership records through the real Top 100 filter and marker builder, then verifies filtered-record, marker and synchronized-list counts agree.
+- No names, coordinates or expected counts are hardcoded to force production-shaped data. No dependency added; no test removed or modified.
