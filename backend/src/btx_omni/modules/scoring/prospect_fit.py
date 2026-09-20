@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from btx_omni.core.clock import as_of_date
+
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER
 
 CONFIGURATION_VERSION = "prospect-fit-v2.0"
@@ -76,7 +78,7 @@ def prospect_fit_projection(account, *, applicable: bool, as_of: date | None = N
     factors: list[ProspectFitFactor] = []
     for key, label, weight in _DEFINITIONS:
         raw = account.prospect_fit_evidence.get(key, {})
-        clock = as_of or (account.provenance.observed_at.date() if account.provenance else None)
+        clock = as_of_date(as_of)
         try:
             age = (clock - date.fromisoformat(raw.get('reviewed_as_of', ''))).days if clock else None
         except (ValueError, TypeError):

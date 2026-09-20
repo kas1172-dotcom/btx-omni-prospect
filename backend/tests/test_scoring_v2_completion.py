@@ -97,8 +97,9 @@ def test_public_policy_boundaries_and_missing_not_zero():
     assert risk_points('materiality', {'affected_revenue_share_percent': '50'}) is None
     assert risk_points('materiality', {'affected_revenue_share_percent': '0', 'affected_backlog_share_percent': '0'}) == 0
     assert risk_points('breadth', {'risk_breadth': 'PROGRAM'}) == 25
-    assert risk_points('reversibility', {'risk_mitigation': 'FULLY_MITIGATED'}) == 0
-    assert risk_points('reversibility', {'risk_mitigation': 'DIFFICULT'}) is None
+    # Rubric v2 section 7 / R3 retires the misleading reversibility key.
+    assert risk_points('mitigation', {'risk_mitigation': 'FULLY_MITIGATED'}) == 0
+    assert risk_points('mitigation', {'risk_mitigation': 'DIFFICULT'}) is None
 
 
 def test_monitoring_zero_requires_complete_current_sources():

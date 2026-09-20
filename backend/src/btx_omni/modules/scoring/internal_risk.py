@@ -2,6 +2,8 @@
 from datetime import date
 from decimal import Decimal
 
+from btx_omni.core.clock import evidence_state
+
 from btx_omni.modules.scoring.customer_health import health_inputs
 from btx_omni.modules.scoring.families import FactorInput
 
@@ -14,8 +16,9 @@ def risk_inputs(account: dict, fulfillment: dict) -> dict[str, FactorInput]:
     policy_ids = (profile['record_id'],) if profile.get('record_id') and profile.get('provenance') else ()
 
     def put(key, points, evidence, reason, raw=None):
+        state = evidence_state(account.get('snapshot_observed_as_of', account['as_of']), as_of=account['as_of'], window_days=30 if key == 'engagement' else 2)
         result[key] = FactorInput(Decimal(points) if points is not None else None,
-            tuple(sorted(set(evidence))), reason, raw_value=raw, period=account['as_of'])
+            tuple(sorted(set(evidence))), reason, raw_value=raw, period=account['as_of'], evidence_state=state)
 
     trajectory = health['commercial_trajectory']
     change = Decimal(trajectory.raw_value) if trajectory.raw_value is not None else None

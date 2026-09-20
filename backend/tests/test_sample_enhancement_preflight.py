@@ -1,8 +1,8 @@
-"""Preflight probes only; these do not certify the unavailable rubric document.
+"""Rubric v2.0 corrected examples; exact contributions, not model predictions.
 
 No fixture files, application startup, database or network access is needed.
 The same single-primary-source inputs yield 86.25 at nine days, not 85.75.
-Keep that requested target as a strict expected failure pending clarification.
+The amended user specification resolves the original nine-day target to 86.25.
 """
 from decimal import Decimal
 
@@ -43,10 +43,9 @@ def test_three_day_confidence_target():
     assert confidence(3)["score"] == Decimal("88.75")
 
 
-@pytest.mark.xfail(strict=True, reason="Requested erratum conflicts with arithmetic: 88.75 - (10 - 7.5) = 86.25; v2 source document unavailable.")
 def test_requested_nine_day_confidence_target():
-    """Nearest result for the unchanged leaf inputs is 86.25, deviation +0.50."""
-    assert confidence(9)["score"] == Decimal("85.75")
+    """Amended section 4: 30 + 25 + 20 + 3.75 + 7.5 = 86.25."""
+    assert confidence(9)["score"] == Decimal("86.25")
 
 
 def test_customer_rollup_erratum():
@@ -81,6 +80,5 @@ def test_delivery_erratum_from_raw_bins():
     assert result["score"] == Decimal("72.50")
 
 
-@pytest.mark.xfail(strict=True, reason="Public Event Risk still exposes reversibility; task requires mitigation, and scoring/API changes are outside this task.")
 def test_public_risk_factor_name():
     assert "mitigation" in dict(FAMILIES["risk_severity"].weights)

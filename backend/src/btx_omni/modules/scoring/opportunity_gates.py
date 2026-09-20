@@ -2,6 +2,8 @@
 from datetime import date
 from decimal import Decimal
 
+from btx_omni.core.clock import evidence_state
+
 from btx_omni.modules.commercial.evidence import evidence_supports_opportunity
 
 
@@ -12,7 +14,7 @@ def combine(values):
 def opportunity_gates(account: dict, opportunity: dict, inputs, priority: dict) -> dict:
     raw = opportunity.get('qualification_evidence', {})
     ids = raw.get('evidence_ids', [])
-    valid = (raw.get('opportunity_id') == opportunity['opportunity_id'] and raw.get('reviewed_as_of') == account['as_of']
+    valid = (raw.get('opportunity_id') == opportunity['opportunity_id'] and evidence_state(raw.get('reviewed_as_of'), as_of=account['as_of'], window_days=30) == 'CURRENT'
              and ids and all(evidence_supports_opportunity(account, identity, opportunity) for identity in ids))
     evidence = raw if valid else {}
     selections = inputs.selections

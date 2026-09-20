@@ -2,6 +2,8 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
+from btx_omni.core.clock import evidence_state
+
 from btx_omni.modules.scoring.families import FactorInput
 
 
@@ -12,8 +14,10 @@ def health_inputs(account: dict, fulfillment: dict) -> dict[str, FactorInput]:
     result = {}
 
     def put(key, points, evidence, reason, raw=None):
+        window = 2 if key in {'commercial_trajectory', 'backlog_coverage', 'attached_risk_history'} else 30 if key in {'relationship_coverage', 'engagement_cadence'} else 180
+        state = evidence_state(account.get('snapshot_observed_as_of', account['as_of']), as_of=account['as_of'], window_days=window)
         result[key] = FactorInput(Decimal(points) if points is not None else None,
-            tuple(sorted(set(evidence))), reason, raw_value=raw, period=account['as_of'])
+            tuple(sorted(set(evidence))), reason, raw_value=raw, period=account['as_of'], evidence_state=state)
 
     def contiguous(rows, count):
         nums = [int(r['period'][:4]) * 12 + int(r['period'][5:7]) for r in rows]

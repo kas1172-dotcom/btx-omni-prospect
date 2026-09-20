@@ -9,6 +9,8 @@ from datetime import UTC
 from decimal import Decimal
 from hashlib import sha256
 
+from btx_omni.core.clock import evidence_state
+
 from btx_omni.modules.scoring.families import FactorInput, assess
 from btx_omni.modules.scoring.public_rules import (
     GOVERNMENT_SOURCES,
@@ -98,6 +100,7 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
     result = assess('signal_confidence', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
                     revision=revision, inputs=inputs, eligible=bool(evidence) and not event.provenance.synthetic)
     result.update({'input_configuration_version': VERSION, 'freshness_threshold_hours': window,
+                   'evidence_state': 'STALE' if age is not None and age > window else 'CURRENT' if freshness is not None else 'UNKNOWN',
                    'collection_freshness_hours': freshness_hours, 'specificity_required_fields': required,
                    'specificity_missing_fields': tuple(name for name in required if name not in observed),
                    'seller_recommendation_eligible': bool(source_points is not None and source_points >= 50 and entity_points >= 75 and count and freshness not in {None, 0})})
@@ -113,13 +116,15 @@ def public_risk_assessment(event, observation, *, now):
     if event.event_type not in RISK_EVENT_TYPES and facts.get('risk_direction') != 'NEGATIVE':
         return None
     inputs = {}
+    published = observation.source_published_at if observation else event.source_published_at
+    state = evidence_state(published, as_of=now, window_days=freshness_window_hours(event.event_type.value) // 24)
     for key, fields in RISK_FIELDS.items():
         points = risk_points(key, facts)
         ids = tuple(sorted({eid for field in fields if field in claims for eid in claims[field].evidence_ids}))
         inputs[key] = FactorInput(Decimal(points) if points is not None and ids else None, ids,
-            f'{key.replace("reversibility", "mitigation").capitalize()}: source-scoped observations follow rubric v2.' if points is not None
-            else f'{key.replace("reversibility", "mitigation").capitalize()}: quantified, scoped evidence is missing.',
-            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='PUBLIC_SOURCE')
+            f'{key.capitalize()}: source-scoped observations follow rubric v2; evidence is {state}.' if points is not None
+            else f'{key.capitalize()}: quantified, scoped evidence is missing.',
+            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='PUBLIC_SOURCE', evidence_state=state)
     revision = sha256(repr((RISK_INPUT_VERSION, event.id, sorted(facts.items()), observation.source_version if observation else None)).encode()).hexdigest()
     result = assess('risk_severity', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
                     revision=revision, inputs=inputs, eligible=True)
@@ -131,6 +136,7 @@ def public_risk_assessment(event, observation, *, now):
                    else 'VALIDATE_IMMEDIATELY' if score >= 70 else 'ACT_OR_MONITOR' if score >= 40 and confirmed
                    else 'RESEARCH_FURTHER' if score >= 40 else 'MONITOR' if confirmed else 'FEED_ONLY')
     result.update({'input_configuration_version': RISK_INPUT_VERSION, 'band': severity_band,
+                   'evidence_state': state,
                    'evidence_confidence_band': 'HIGH' if confirmed else 'MEDIUM' if confidence is not None and confidence >= 40 else 'LOW',
                    'disposition': disposition})
     return result

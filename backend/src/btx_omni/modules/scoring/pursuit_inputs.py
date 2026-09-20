@@ -3,8 +3,9 @@
 The existing commercial payload owns these optional observations. No model or
 caller supplies points, weights, or a replacement scoring policy.
 """
-from datetime import date
 from decimal import Decimal, InvalidOperation
+
+from btx_omni.core.clock import evidence_state
 
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.scoring.families import FAMILIES, FactorInput
@@ -74,7 +75,7 @@ def pursuit_inputs(account: dict, opportunity: dict, family: str) -> tuple[dict,
         if family == 'delivery_feasibility':
             scoped = scoped and bool(opportunity.get('delivery_facility_id')) and raw.get('facility_id') == opportunity['delivery_facility_id']
         try:
-            current = date.fromisoformat(raw.get('reviewed_as_of', '')) == date.fromisoformat(account['as_of'])
+            current = evidence_state(raw.get('reviewed_as_of'), as_of=account['as_of'], window_days=2 if family == 'delivery_feasibility' else 30) == 'CURRENT'
         except (ValueError, TypeError):
             current = False
         resolved = [resolve_commercial_evidence(account, eid) for eid in ids]
