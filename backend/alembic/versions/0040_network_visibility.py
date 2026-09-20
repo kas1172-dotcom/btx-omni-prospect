@@ -1,5 +1,6 @@
 """Add explicit imported-network visibility ownership."""
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0040_network_visibility"
@@ -16,4 +17,7 @@ def upgrade():
 
 
 def downgrade():
-    raise RuntimeError("Retain imported network visibility lineage; restore a reviewed backup instead.")
+    with op.batch_alter_table("network_import_batches") as batch:
+        batch.drop_constraint("ck_network_batch_visibility", type_="check")
+        batch.drop_column("owner_user_id")
+        batch.drop_column("visibility")

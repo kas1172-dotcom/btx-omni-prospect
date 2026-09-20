@@ -251,6 +251,22 @@ def relationship_path_subject_key(customer_id: str, path_id: str) -> str:
 def relationship_path_request(
     path: Mapping[str, Any], *, customer_id: str
 ) -> GovernedExplanationRequest:
+    # Imported network presentation fields can contain private people and titles.
+    # Keep this boundary closed even if a caller passes a full ranked route.
+    if path.get("data_mode") == "IMPORTED" or any(
+        step.get("kind") in {"internal_person", "external_contact"}
+        for step in path.get("steps", ())
+    ):
+        return GovernedExplanationRequest(
+            ExplanationType.RELATIONSHIP_PATH,
+            "RELATIONSHIP_PATH",
+            "Imported professional-network route",
+            "LinkedIn export, not validated",
+            "needs_validation",
+            key_drivers=("An imported connection is an asserted relationship.",),
+            limiting_factors=("Validate the relationship before requesting an introduction.",),
+            data_mode="IMPORTED",
+        )
     evidence_ids = tuple(
         dict.fromkeys(
             source_id

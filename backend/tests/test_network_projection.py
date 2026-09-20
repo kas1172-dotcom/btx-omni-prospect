@@ -33,7 +33,7 @@ def row(index: int = 1) -> dict[str, object]:
 
 
 def test_network_projection_routes_and_aggregates_without_changing_rubric():
-    graph, _ = project_network_graph(sample(), (row(),), tenant_id="tenant-a")
+    graph, _ = project_network_graph(sample(), (row(),), tenant_id="tenant-a", queried_account_id="honeywell")
     account = graph.nodes["TENANT:tenant-a:account:honeywell"]
     assert (account.contact_count, account.senior_contact_count, account.unvalidated) == (1, 1, True)
     query = RouteQuery("TENANT:tenant-a", account.id,
@@ -61,3 +61,14 @@ def test_imported_pii_cannot_enter_allowlisted_model_context():
         "seniority_tier_counts": {"director": 1},
         "provenance": "LinkedIn export, not validated",
     })
+
+
+def test_projection_scopes_to_account_before_applying_250_person_cap():
+    rows = tuple({**row(index), "account_id": "honeywell" if index >= 2500 else "boeing"}
+                 for index in range(5000))
+    graph, metadata = project_network_graph(sample(), rows, tenant_id="tenant-a", queried_account_id="honeywell")
+    contacts = [node for node in graph.nodes.values() if node.kind == "external_contact"]
+    assert len(contacts) == 250
+    assert all(node.account_id == "honeywell" for node in contacts)
+    assert metadata["network_contact_count"] == 2500
+    assert graph.nodes["TENANT:tenant-a:account:honeywell"].contact_count == 2500

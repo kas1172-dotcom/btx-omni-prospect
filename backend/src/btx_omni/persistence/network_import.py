@@ -10,7 +10,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Protocol
 
-from sqlalchemy import Engine, and_, insert, or_, select, update
+from sqlalchemy import Engine, and_, delete, func, insert, or_, select, update
 
 from btx_omni.core.config import Settings
 from btx_omni.domain.work import Principal, PrincipalRole
@@ -82,6 +82,8 @@ def _outside_worktree(path: Path) -> Path:
 
 class NetworkImportRepository:
     def __init__(self, engine: Engine, profiles: tuple[AccountWatchProfile, ...]):
+        # SQLAlchemy diagnostics must not serialize imported personal parameters.
+        engine.hide_parameters = True
         self.engine, self.profiles = engine, profiles
 
     def import_file(self, path: Path, *, tenant_id: str, owner_user_id: str, owner_name: str, exported_at: datetime,
@@ -176,7 +178,19 @@ class NetworkImportRepository:
                  .join(owners, owners.c.id == models.network_import_batches.c.owner_person_id)
                  .join(models.network_affiliations, models.network_affiliations.c.person_id == models.network_people.c.id)
                  .join(models.network_ties, models.network_ties.c.external_person_id == models.network_people.c.id)
-                 .where(permitted, models.network_affiliations.c.data_mode == "IMPORTED",
+                 .where(permitted,
+                        models.network_import_batches.c.data_mode == "IMPORTED",
+                        models.network_people.c.tenant_id == principal.tenant_id,
+                        owners.c.tenant_id == principal.tenant_id,
+                        owners.c.batch_id == models.network_import_batches.c.id,
+                        owners.c.kind == "internal", models.network_people.c.kind == "external",
+                        models.network_affiliations.c.tenant_id == principal.tenant_id,
+                        models.network_ties.c.tenant_id == principal.tenant_id,
+                        models.network_ties.c.batch_id == models.network_import_batches.c.id,
+                        models.network_ties.c.internal_person_id == owners.c.id,
+                        models.network_affiliations.c.data_mode == "IMPORTED",
+                        models.network_ties.c.data_mode == "IMPORTED",
+                        models.network_ties.c.synthetic.is_(False),
                         models.network_affiliations.c.synthetic.is_(False)))
         with self.engine.connect() as connection:
             return tuple(dict(row) for row in connection.execute(query).mappings())
@@ -191,18 +205,72 @@ class NetworkImportRepository:
             ).values(visibility="tenant_shared"))
             return result.rowcount == 1
 
+    def purge_batch(self, batch_id: str, *, tenant_id: str, apply: bool = False) -> dict[str, object]:
+        with self.engine.begin() as connection:
+            batch = connection.execute(select(models.network_import_batches.c.id).where(
+                models.network_import_batches.c.id == batch_id,
+                models.network_import_batches.c.tenant_id == tenant_id,
+            ).with_for_update()).first()
+            if batch is None:
+                return {"status": "NOT_FOUND", "batches": 0, "people": 0, "affiliations": 0, "ties": 0, "review_queue": 0}
+            counts = {
+                "batches": int(batch is not None),
+                "people": connection.scalar(select(func.count()).select_from(models.network_people).where(models.network_people.c.batch_id == batch_id)) or 0,
+                "affiliations": connection.scalar(select(func.count()).select_from(models.network_affiliations).join(
+                    models.network_people, models.network_people.c.id == models.network_affiliations.c.person_id
+                ).where(models.network_people.c.batch_id == batch_id)) or 0,
+                "ties": connection.scalar(select(func.count()).select_from(models.network_ties).where(models.network_ties.c.batch_id == batch_id)) or 0,
+                "review_queue": connection.scalar(select(func.count()).select_from(models.network_unresolved_companies).where(
+                    models.network_unresolved_companies.c.batch_id == batch_id)) or 0,
+            }
+            report = {"status": "PURGED" if apply else "DRY_RUN", **counts}
+            if not apply:
+                return report
+            person_ids = select(models.network_people.c.id).where(models.network_people.c.batch_id == batch_id)
+            connection.execute(delete(models.network_affiliations).where(models.network_affiliations.c.person_id.in_(person_ids)))
+            connection.execute(delete(models.network_ties).where(models.network_ties.c.batch_id == batch_id))
+            connection.execute(delete(models.network_unresolved_companies).where(models.network_unresolved_companies.c.batch_id == batch_id))
+            connection.execute(delete(models.network_people).where(models.network_people.c.batch_id == batch_id))
+            connection.execute(delete(models.network_import_batches).where(
+                models.network_import_batches.c.id == batch_id,
+                models.network_import_batches.c.tenant_id == tenant_id,
+            ))
+        return report
+
+    def unresolved_company_report(self, *, tenant_id: str) -> tuple[dict[str, object], ...]:
+        query = (select(models.network_unresolved_companies.c.raw_company_string.label("company"),
+                        func.sum(models.network_unresolved_companies.c.occurrence_count).label("contact_count"))
+                 .where(models.network_unresolved_companies.c.tenant_id == tenant_id)
+                 .group_by(models.network_unresolved_companies.c.raw_company_string)
+                 .order_by(func.sum(models.network_unresolved_companies.c.occurrence_count).desc(),
+                           models.network_unresolved_companies.c.raw_company_string))
+        with self.engine.connect() as connection:
+            return tuple(dict(row) for row in connection.execute(query).mappings())
+
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Import an official LinkedIn Connections.csv export")
-    parser.add_argument("path", type=Path); parser.add_argument("--tenant-id", required=True)
-    parser.add_argument("--owner-name", required=True); parser.add_argument("--owner-user-id", required=True); parser.add_argument("--exported-at", required=True)
-    parser.add_argument("--apply", action="store_true")
+    parser = argparse.ArgumentParser(description="Governed professional-network import operations")
+    commands = parser.add_subparsers(dest="command", required=True)
+    importer = commands.add_parser("import-linkedin")
+    importer.add_argument("path", type=Path); importer.add_argument("--tenant-id", required=True)
+    importer.add_argument("--owner-name", required=True); importer.add_argument("--owner-user-id", required=True)
+    importer.add_argument("--exported-at", required=True); importer.add_argument("--apply", action="store_true")
+    purge = commands.add_parser("purge")
+    purge.add_argument("batch_id"); purge.add_argument("--tenant-id", required=True); purge.add_argument("--apply", action="store_true")
+    unresolved = commands.add_parser("report-unresolved")
+    unresolved.add_argument("--tenant-id", required=True)
     args = parser.parse_args()
     environment = build_sample_environment()
     repository = NetworkImportRepository(create_database_engine(Settings()), environment.watch_profiles)
-    report = repository.import_file(args.path, tenant_id=args.tenant_id, owner_user_id=args.owner_user_id, owner_name=args.owner_name,
-                                    exported_at=datetime.fromisoformat(args.exported_at), apply=args.apply)
-    print("network import:", {key: value for key, value in report.items() if key not in {"batch_id", "file_sha256"}})
+    if args.command == "purge":
+        print("network purge:", repository.purge_batch(args.batch_id, tenant_id=args.tenant_id, apply=args.apply))
+    elif args.command == "report-unresolved":
+        for row in repository.unresolved_company_report(tenant_id=args.tenant_id):
+            print(f"{row['company']}\t{row['contact_count']}")
+    else:
+        report = repository.import_file(args.path, tenant_id=args.tenant_id, owner_user_id=args.owner_user_id,
+                                        owner_name=args.owner_name, exported_at=datetime.fromisoformat(args.exported_at), apply=args.apply)
+        print("network import:", {key: value for key, value in report.items() if key not in {"batch_id", "file_sha256"}})
     return 0
 
 
