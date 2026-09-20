@@ -70,7 +70,7 @@
 .ranked-stage foreignObject button { transition: background-color 300ms,border-color 300ms,box-shadow 300ms,transform 300ms; }
 .ranked-stage foreignObject button:hover { transform: translateY(-2px); border-color: #fff; }
 .ranked-hop-badge { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 5px; border: 2px solid #0d1219; border-radius: 999px; color: #10141c; background: #fff; box-shadow: 0 0 12px #fff6; font-size: 11px; }
-.node-person .ranked-node-symbol,.node-role .ranked-node-symbol { border-radius: 50%; color: #ded1ff; border-color: #a78bfa; }
+.node-person .ranked-node-symbol,.node-role .ranked-node-symbol,.node-internal-person .ranked-node-symbol,.node-external-contact .ranked-node-symbol { border-radius: 50%; color: #ded1ff; border-color: #a78bfa; }
 .node-program .ranked-node-symbol,.node-component .ranked-node-symbol,.node-component-class .ranked-node-symbol,.node-capability .ranked-node-symbol,.node-certification .ranked-node-symbol { color: #ffe6a8; border-color: #f5b942; }
 .node-facility .ranked-node-symbol { color: #b9ffe9; border-color: #45d6a8; border-radius: 4px; }
 .node-public-event .ranked-node-symbol,.node-opportunity .ranked-node-symbol { color: #ffc1c1; border-color: #ff6b6b; }

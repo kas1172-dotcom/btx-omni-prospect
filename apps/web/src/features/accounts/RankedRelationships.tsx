@@ -10,11 +10,12 @@ import { relationshipDirectionLabel, relationshipEvidenceLabel, relationshipPred
 import { LoadingStatus } from '../../components/UI'
 
 const modes: Array<[RelationshipMode, string]> = [['cross_account_experience', 'Shared experience'], ['commercial_fit', 'Commercial fit'], ['contact_candidates', 'Contact candidates'], ['documented_access', 'Documented access']]
-const label = (value: string) => presentationLabel(value, 'relationship')
+const networkLabels: Record<string, string> = { internal_person: 'Internal person', external_contact: 'External contact', governed_name_exact: 'Exact governed name', governed_name_normalized: 'Normalized governed name' }
+const label = (value: string) => networkLabels[value] ?? presentationLabel(value, 'relationship')
 import { graphDepths, initialGraphPositions, type Point } from './relationshipLayout'
 type VisualRelation = 'commercial' | 'people' | 'technical' | 'facility' | 'risk' | 'context'
 
-const nodeSymbols: Record<string, string> = { account: 'CO', business_unit: 'BU', facility: 'FX', person: 'PR', role: 'RL', program: 'PG', component: 'CP', component_class: 'CP', capability: 'CA', certification: 'QC', public_event: 'IN', opportunity: 'OP' }
+const nodeSymbols: Record<string, string> = { account: 'CO', business_unit: 'BU', facility: 'FX', person: 'PR', internal_person: 'IP', external_contact: 'EC', role: 'RL', program: 'PG', component: 'CP', component_class: 'CP', capability: 'CA', certification: 'QC', public_event: 'IN', opportunity: 'OP' }
 const relationClass = (predicate: string): VisualRelation => {
   const value = predicate.toLocaleLowerCase()
   if (/risk|delay|issue|cancel|constraint/.test(value)) return 'risk'
