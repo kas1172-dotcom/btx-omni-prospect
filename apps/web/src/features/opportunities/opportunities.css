@@ -1,16 +1,162 @@
-.opportunity-workspace { min-width: 0; }
-.opportunity-workspace button { font: inherit; color: inherit; border: 1px solid #d4d7dc; border-radius: 6px; background: #fff; padding: 8px 12px; cursor: pointer; min-height: 44px; }
-.opportunity-workspace button:hover { background: #f3f4f6; }
-.opportunity-workspace button:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
-.opportunity-workspace [role=tablist] { display: flex; gap: 8px; border-bottom: 1px solid var(--border, #ddd); margin-block: 16px; }
-.opportunity-workspace [role=tab] { min-height: 44px; padding: 10px 16px; border: 0; background: transparent; }
-.opportunity-workspace [role=tab][aria-selected=true] { border-bottom: 3px solid #111; font-weight: 700; background: #f3f3f3; }
-.opportunity-workspace label { display: grid; gap: 6px; max-width: 480px; }
-.opportunity-workspace input { padding: 10px; min-height: 44px; }
-.opportunity-table-scroll { max-width: 100%; overflow: auto; }
-.opportunity-table-scroll table { width: 100%; border-collapse: collapse; min-width: 680px; }
-.opportunity-table-scroll th, .opportunity-table-scroll td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
-.opportunity-table-scroll tbody tr:nth-child(even) { background: #f7f7f7; }
-.opportunity-table-scroll button { min-height: 44px; text-align: left; }
-.opportunity-detail { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 12px; overflow-wrap: anywhere; }
-@media (max-width: 600px) { .opportunity-workspace [role=tab] { flex: 1; padding: 8px; } .opportunity-detail { padding: 12px; } }
+.opportunity-workspace { --opp-ink: #1a1a1a; --opp-secondary: #6b7280; --opp-border: #e5e7eb; color: var(--opp-ink); font-family: 'Opportunity Inter', sans-serif; background: #f3f4f6; width: calc(100% + 48px); max-width: none; padding: 24px; margin: -24px; min-height: calc(100vh - 110px); }
+.opportunity-workspace *, .opp-detail *, .opp-menu-sheet * { box-sizing: border-box; }
+.opportunity-workspace button, .opp-detail button, .opp-menu-sheet button { font: inherit; cursor: pointer; }
+.opportunity-workspace button:focus-visible, .opportunity-workspace tr:focus-visible, .opp-detail :focus-visible, .opp-menu-sheet :focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.opportunity-workspace button:disabled, .opp-detail button:disabled { opacity: .45; cursor: not-allowed; }
+.opp-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.opp-eyebrow { color: #6b7280; text-transform: uppercase; font-size: 10px; font-weight: 500; letter-spacing: 1px; }
+.opp-header h1 { font: 700 22px/1.3 'Opportunity Archivo', 'Opportunity Inter', sans-serif; margin: 6px 0; }
+.opp-header p { font-size: 12px; color: #6b7280; margin: 0; }
+.opp-header-actions { display: flex; align-items: center; gap: 12px; }
+.opp-search { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 10px; min-width: 0; }
+.opp-search img { width: 14px; height: 14px; }
+.opp-search input { font: 12px 'Opportunity Inter', sans-serif; min-width: 0; width: 100%; padding: 0; border: 0; background: transparent; color: #1a1a1a; }
+.opp-header-actions .opp-search { width: 160px; }
+.opportunity-workspace .opp-primary, .opp-detail .opp-primary, .opp-menu-sheet .opp-primary { border: 1px solid #1a1a1a; border-radius: 6px; background: #1a1a1a; color: white; padding: 9px 16px; font-size: 12px; white-space: nowrap; }
+.opp-fixture-notice { font-size: 11px; color: #6b7280; margin: -10px 0 14px; }
+.opp-tabs-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; }
+.opp-tabs { display: flex; align-self: stretch; gap: 24px; }
+.opp-tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 12px 0; background: transparent; display: flex; gap: 8px; align-items: center; color: #6b7280; font-size: 12px; white-space: nowrap; }
+.opp-tabs button[aria-selected=true] { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 600; }
+.opp-count { border-radius: 4px; padding: 2px 6px; font-size: 10px; line-height: 14px; background: #e5e7eb; color: #4b5563; font-weight: 600; }
+.opp-saved { display: flex; gap: 6px; }
+.opp-saved button { border: 1px solid #e5e7eb; background: white; border-radius: 4px; padding: 6px 9px; font-size: 11px; white-space: nowrap; }
+.opp-saved button[aria-pressed=true] { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+.opp-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+.opp-metrics section { padding: 18px 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; }
+.opp-metrics h2 { font-size: 11px; line-height: 16px; color: #6b7280; text-transform: uppercase; letter-spacing: .6px; margin: 0 0 8px; font-weight: 600; }
+.opp-metrics strong { font: 700 28px/1.2 'Opportunity Archivo', 'Opportunity Inter', sans-serif; }
+.opp-metrics p { color: #6b7280; font-size: 11px; margin: 6px 0 0; }
+.opp-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #e5e7eb; background: white; border-radius: 8px; margin-bottom: 16px; }
+.opp-toolbar > .opp-search { flex: 1 1 220px; max-width: 290px; }
+.opp-desktop-filters, .opp-toolbar-end { display: flex; align-items: center; gap: 8px; }
+.opp-toolbar-end { margin-left: auto; }
+.opp-menu { position: relative; }
+.opp-menu-trigger { display: flex; align-items: center; gap: 6px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 10px; background: white; font-size: 11px !important; color: #6b7280; white-space: nowrap; }
+.opp-menu-trigger strong { color: #1a1a1a; font-weight: 600; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+.opp-menu-trigger img { width: 10px; height: 10px; }
+.opp-popover { position: absolute; top: calc(100% + 7px); left: 0; width: 235px; z-index: 20; padding: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 8px 24px #00000018; max-height: 420px; overflow: auto; }
+.opp-toolbar-end .opp-popover { left: auto; right: 0; }
+.opp-menu-content h3, .opp-menu-content h4 { margin: 6px 8px 8px; font: 600 10px 'Opportunity Inter', sans-serif; text-transform: uppercase; color: #6b7280; letter-spacing: .7px; }
+.opp-menu-content h4 { margin-top: 12px; }
+.opp-menu-content label { display: flex; align-items: center; gap: 8px; padding: 9px 7px; font-size: 12px; }
+.opp-menu-content label span { margin-left: auto; color: #6b7280; font-size: 11px; }
+.opp-menu-content input { accent-color: #2563eb; }
+.opp-zero { opacity: .45; }
+.opp-menu-choice { width: 100%; text-align: left; display: flex; gap: 10px; align-items: center; padding: 9px 8px; border: 0; background: white; border-radius: 4px; font-size: 12px !important; }
+.opp-menu-choice span { color: #9ca3af; font-size: 9px; }
+.opp-menu-choice.selected { background: #eff6ff; color: #1e3a8a; font-weight: 600; }
+.opp-menu-choice.selected span { color: #2563eb; }
+.opp-clear { color: #2563eb; background: transparent; border: 0; font-size: 11px !important; padding: 8px; }
+.opp-filter-count { display: flex; align-items: center; gap: 5px; color: #6b7280; font-size: 11px; margin: -10px 0 6px; }
+.opp-table-wrap { border: 1px solid #e5e7eb; border-radius: 8px; overflow: auto; background: white; }
+.opp-table-wrap table { width: 100%; min-width: 944px; table-layout: fixed; border-collapse: collapse; text-align: left; font-size: 12px; }
+.opp-col-company { width: 14.4%; } .opp-col-opportunity { width: 23.5%; } .opp-col-market { width: 14%; } .opp-col-stage { width: 10.2%; } .opp-col-value { width: 7.6%; } .opp-col-priority { width: 14%; } .opp-col-status { width: 16.3%; }
+.opp-table-wrap th { background: #f9fafb; color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; padding: 12px 14px; }
+.opp-table-wrap th button { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; padding: 0; color: inherit; text-transform: inherit; font-size: inherit; font-weight: inherit; }
+.opp-table-wrap th[aria-sort=ascending] button, .opp-table-wrap th[aria-sort=descending] button { color: #1a1a1a; }
+.opp-table-wrap td { height: 46px; border-top: 1px solid #e5e7eb; padding: 10px 14px; overflow-wrap: anywhere; }
+.opp-table-wrap tbody tr:not(.opp-group) { cursor: pointer; }
+.opp-table-wrap tbody tr:not(.opp-group):hover { background: #f9fafb; }
+.opp-table-wrap tbody tr.selected { background: #eff6ff; }
+.opp-company { font-weight: 600; }
+.opp-table-wrap .opp-cell-stage { padding-left: 8px; }
+.opp-table-wrap .opp-cell-value { text-align: right; padding-left: 2px; padding-right: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.opp-table-wrap .opp-cell-priority { padding-left: 16px; padding-right: 8px; }
+.opp-table-wrap .opp-cell-status { padding-left: 12px; padding-right: 10px; }
+.opp-status { display: inline-block; width: fit-content; white-space: nowrap; border-radius: 4px; padding: 3px 10px; font: 600 11px/15px 'Opportunity Inter', sans-serif; }
+.opp-status-durable { color: #065f46; background: #d1fae5; } .opp-status-qualified { color: #1e3a8a; background: #dbeafe; } .opp-status-unknown { color: #4b5563; background: #f3f4f6; } .opp-status-no { color: #991b1b; background: #fee2e2; }
+.opp-priority { display: flex; align-items: center; gap: 0; font-variant-numeric: tabular-nums; }
+.opp-priority-number { flex: 0 0 52px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.opp-priority-incomplete .opp-priority-number { color: #6b7280; font-size: 11px; font-weight: 400; }
+.opp-priority-track { display: block; position: relative; width: 56px; height: 6px; flex-shrink: 0; background: #e5e7eb; border-radius: 3px; }
+.opp-priority-track > span { position: absolute; height: 100%; left: 0; border-radius: 3px; background: #9ca3af; }
+.opp-priority-high .opp-priority-track > span { background: #10b981; } .opp-priority-mid .opp-priority-track > span { background: #2563eb; }
+.opp-priority-track > .opp-range { background: #eff6ff; border: 1px dashed #6b7280; }
+.opp-group td { padding: 0; background: #f9fafb; height: 38px; }
+.opp-group-toggle { display: flex; width: 100%; align-items: center; gap: 8px; padding: 10px 14px; border: 0; background: #f9fafb; font-size: 12px !important; text-align: left; }
+.opp-group-subtotal { margin-left: auto; color: #6b7280; font-size: 11px; }
+.opp-footnote { color: #6b7280; font-size: 11px; margin-top: 12px; line-height: 1.6; }
+.opp-empty { text-align: center; padding: 48px 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; }
+.opp-empty h2 { font-size: 16px; } .opp-empty p { font-size: 12px; color: #6b7280; }
+.opp-empty button { background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px 12px; }
+.opp-mobile-list, .opp-mobile-label, .opp-mobile-filters, .opp-sheet-handle { display: none; }
+.ui-drawer-backdrop:has(> .opp-detail), .ui-drawer-backdrop:has(> .opp-menu-sheet) { padding: 0; z-index: 100; backdrop-filter: none; background: #1a1a1a33; }
+.ui-drawer.opp-detail { width: 480px; max-width: 100vw; height: 100dvh; max-height: 100dvh; padding: 0; display: flex; flex-direction: column; gap: 0; background: white; color: #1a1a1a; border-left: 1px solid #e5e7eb; box-shadow: -8px 0 30px #00000016; font-family: 'Opportunity Inter', sans-serif; }
+.opp-detail-header { padding: 24px; border-bottom: 1px solid #e5e7eb; }
+.opp-detail-header h2 { font: 700 18px/1.4 'Opportunity Archivo', 'Opportunity Inter', sans-serif; margin: 0 0 10px; padding-right: 90px; }
+.opp-detail-controls { float: right; display: flex; gap: 5px; }
+.opp-detail-controls button { background: white; border: 1px solid #e5e7eb; border-radius: 4px; width: 28px; height: 28px; padding: 0; font-size: 16px; }
+.opp-detail-header p { clear: both; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; color: #6b7280; font-size: 11px; }
+.opp-detail-header p strong { color: #1a1a1a; }
+.opp-stage { background: #f3f4f6; padding: 3px 6px; border-radius: 4px; }
+.ui-drawer > .opp-detail-body { overflow: auto; padding: 0 24px; flex: 1 1 0; min-height: 0; }
+.opp-detail-body section { border-bottom: 1px solid #e5e7eb; padding: 20px 0; }
+.opp-detail-body h3 { text-transform: uppercase; color: #6b7280; font: 600 10px 'Opportunity Inter', sans-serif; letter-spacing: .8px; margin: 0 0 14px; }
+.opp-detail-body p, .opp-detail-body li { color: #4b5563; font-size: 12px; line-height: 1.6; margin: 6px 0; }
+.opp-detail-body ul { padding-left: 18px; margin: 8px 0; }
+.opp-score-block > div { display: flex; align-items: center; gap: 14px; }
+.opp-score-block strong { font: 700 32px 'Opportunity Archivo', 'Opportunity Inter', sans-serif; }
+.opp-band { padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #f3f4f6; color: #4b5563; }
+.opp-band-high { background: #d1fae5; color: #065f46; } .opp-band-mid { background: #dbeafe; color: #1e3a8a; }
+.opp-score-block p { color: #6b7280; font-size: 11px; margin-top: 8px; }
+.opp-factor { display: grid; grid-template-columns: minmax(0, 1fr) 160px 55px; align-items: center; gap: 8px; margin: 12px 0; font-size: 11px; }
+.opp-factor strong { text-align: right; font-size: 10px; font-weight: 500; }
+.opp-factor-track { height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+.opp-factor-track span { display: block; height: 100%; background: #1a1a1a; }
+.opp-factor small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.opp-gate { display: grid; grid-template-columns: 1fr auto; margin-top: 12px; font-size: 12px; }
+.opp-gate ul, .opp-gate p { grid-column: 1 / -1; }
+.opp-evidence-trigger { display: flex; justify-content: space-between; align-items: center; width: 100%; background: none; border: 0; padding: 0; font-size: 12px !important; font-weight: 600 !important; }
+.opp-evidence-trigger span { color: #6b7280; font-size: 11px; font-weight: 400; }
+.opp-detail-footer { display: flex; gap: 10px; padding: 16px 24px; border-top: 1px solid #e5e7eb; background: white; }
+.opp-detail-footer > * { flex: 1; text-align: center; text-decoration: none; font-size: 12px; padding: 9px; border: 1px solid #e5e7eb; border-radius: 6px; color: #1a1a1a; background: white; }
+@media (max-width: 1120px) and (min-width: 701px) {
+  .opp-tabs-row { flex-wrap: wrap; padding-bottom: 10px; } .opp-toolbar { flex-wrap: wrap; } .opp-header-actions .opp-search { display: none; }
+}
+@media (max-width: 700px) {
+  .opportunity-workspace { width: calc(100% + 32px); margin: -16px; padding: 20px 16px; min-height: calc(100vh - 100px); }
+  .opp-header { align-items: flex-start; margin-bottom: 20px; gap: 8px; }
+  .opp-header h1 { font-size: 22px; } .opp-header p { line-height: 1.5; max-width: 275px; }
+  .opp-header-actions { display: none; } .opp-eyebrow { font-size: 9px; }
+  .opp-tabs-row { display: block; border-bottom: 0; margin-bottom: 14px; }
+  .opp-tabs { border-bottom: 1px solid #e5e7eb; gap: 22px; }
+  .opp-tabs button { font-size: 12px; }
+  .opp-saved { margin-top: 14px; gap: 5px; }
+  .opp-saved button { font-size: 10px; padding: 6px 8px; }
+  .opp-metrics, .opp-desktop-label, .opp-desktop-filters, .opp-table-wrap { display: none; }
+  .opp-mobile-label, .opp-mobile-filters { display: block; }
+  .opp-toolbar { display: flex; flex-wrap: wrap; background: transparent; border: 0; padding: 0; gap: 10px; }
+  .opp-toolbar > .opp-search { max-width: none; flex-basis: 100%; }
+  .opp-toolbar-end { margin: 0; width: 100%; justify-content: flex-end; }
+  .opp-toolbar-end > .opp-menu:last-child { order: -1; margin-right: auto; }
+  .opp-menu-trigger { min-height: 36px; font-size: 12px !important; }
+  .opp-filter-count { margin-top: 0; }
+  .opp-mobile-list { display: flex; flex-direction: column; gap: 10px; }
+  .opp-mobile-card { display: flex; flex-direction: column; gap: 9px; width: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; text-align: left; color: #1a1a1a; }
+  .opp-mobile-card.selected { background: #eff6ff; }
+  .opp-mobile-card-top { display: flex; align-items: center; justify-content: space-between; gap: 5px; width: 100%; }
+  .opp-mobile-card-top > strong { color: #6b7280; font-size: 12px; }
+  .opp-mobile-card .opp-status { padding: 3px 7px; font-size: 10px; }
+  .opp-mobile-title { font-size: 14px; } .opp-mobile-meta { font-size: 11px; color: #6b7280; }
+  .opp-mobile-card .opp-priority { margin-top: 3px; width: 100%; gap: 10px; }
+  .opp-mobile-card .opp-priority-number { flex-basis: auto; min-width: 25px; font-size: 16px; }
+  .opp-mobile-card .opp-priority-incomplete .opp-priority-number { font-size: 13px; }
+  .opp-mobile-card .opp-priority-track { width: 120px; flex-shrink: 1; }
+  .opp-mobile-card .opp-priority small { color: #6b7280; font-size: 10px; margin-left: auto; }
+  .opp-group-toggle { border-radius: 6px; }
+  .opp-footnote { font-size: 10px; }
+  .ui-drawer-backdrop:has(.opp-detail), .ui-drawer-backdrop:has(.opp-menu-sheet) { align-items: flex-end; }
+  .ui-drawer.opp-detail, .ui-drawer.opp-menu-sheet { width: 100%; max-width: 100%; height: auto; max-height: 92dvh; border-radius: 16px 16px 0 0; border: 0; align-self: flex-end; padding: 0; }
+  .ui-drawer.opp-detail { height: 92dvh; }
+  .opp-sheet-handle { display: block; width: 36px; height: 4px; border-radius: 2px; background: #d1d5db; margin: 10px auto 0; flex-shrink: 0; }
+  .opp-detail-header { padding: 16px; } .opp-detail-header h2 { font-size: 18px; padding-right: 85px; }
+  .opp-detail-body { padding: 0 16px; } .opp-detail-footer { padding: 14px 16px max(14px, env(safe-area-inset-bottom)); }
+  .opp-factor { grid-template-columns: minmax(0, 1fr) 110px 55px; }
+  .opp-menu-sheet .opp-menu-content { padding: 16px; overflow: auto; }
+  .opp-menu-sheet .opp-menu-choice, .opp-menu-sheet label { min-height: 44px; }
+  .opp-menu-sheet .opp-primary { width: 100%; margin-top: 12px; }
+}
+@font-face { font-family: 'Opportunity Inter'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('./assets/inter-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Opportunity Archivo'; font-style: normal; font-weight: 700; font-display: swap; src: url('./assets/archivo-bold-latin.woff2') format('woff2'); }
+.opportunity-workspace { --opp-inter-license: url('./assets/inter-OFL.txt'); --opp-archivo-license: url('./assets/archivo-OFL.txt'); }

@@ -11,6 +11,14 @@ def account_opportunities(sample, account_id: str) -> list[dict]:
             else "PROSPECT" if account.relationship.value in {"TARGET", "PROSPECT"} else "REVIEW_REQUIRED")
     records = {r['opportunity_id']: r for r in ledger['opportunities']}
     components = {r['component_id']: r for r in ledger.get('components', [])}
+    # One account market, never inferred from its name or the pursuit title.
+    assignments = ledger.get('market_assignments', [])
+    primary_markets = sorted({r['market'] for r in assignments
+                              if r.get('market') and (r.get('is_primary') is True or r.get('primary') is True)}, key=str.casefold)
+    markets = sorted(set(account.industries), key=str.casefold)
+    market = next(iter(primary_markets or markets), None)
+    deal_units = {deal.id: deal.business_unit for deal in sample.crm_deals
+                  if deal.account_id == account_id}
     results = []
     for decision in opportunity_decisions(ledger, account_id=account_id, revision=sample.commercial_revision,
                                          facility_ids=frozenset(f.id for f in sample.btx_facilities)):
@@ -18,6 +26,7 @@ def account_opportunities(sample, account_id: str) -> list[dict]:
         component = components.get(decision['component_id'], {})
         actions = sorted((a for a in ledger.get('actions', []) if decision['opportunity_id'] in a.get('evidence_record_ids', [])), key=lambda a: a['action_id'])
         results.append({**decision, 'account_name': account.legal_name, 'lane': lane,
+                        'market': market, 'bu': deal_units.get(decision['opportunity_id']),
                         'title': record.get('title') or component.get('name') or 'Component pursuit',
                         'next_action': actions[0]['title'] if actions else None,
                         'business_context': record.get('business_context'),
