@@ -7,6 +7,7 @@ import './omni-drawer.css'
 import { CanonicalRecord } from './CanonicalRecord'
 import { OmniMarkdown } from './OmniMarkdown'
 import { OmniActionProposal } from './OmniActionProposal'
+import { isPortfolioQuestion } from './omniText'
 
 type Message = { role: 'user' | 'assistant'; text: string; response?: OmniResponse }
 type SessionAccount = { id: string; name: string }
@@ -100,7 +101,8 @@ export function OmniDrawer({ accountId, accountName, context }: { accountId?: st
         setError('The selected Intelligence assessment is still refreshing. Reopen its evidence and choose Use in Omni, then send again.')
         return
       }
-      await api.chatStream({ account_id: activeAccount?.id, question: text, conversation_id: conversationId, context: { ...currentContext, relationship_selection: activeAccount ? currentContext.relationship_selection : undefined, session_account_id: sessionAccount?.id, prior_turns: history, conversation_referent: conversationReferent } }, controller.current.signal, (event, data) => {
+      const portfolioQuestion = isPortfolioQuestion(text)
+      await api.chatStream({ account_id: portfolioQuestion ? undefined : activeAccount?.id, question: text, conversation_id: conversationId, context: { ...currentContext, relationship_selection: !portfolioQuestion && activeAccount ? currentContext.relationship_selection : undefined, session_account_id: portfolioQuestion ? undefined : sessionAccount?.id, prior_turns: history, conversation_referent: portfolioQuestion ? undefined : conversationReferent } }, controller.current.signal, (event, data) => {
         if (event === 'conversation') setConversationId(String(data.id))
         if (event === 'progress') setProgress(String(data.text))
         if (event === 'delta') setPartial(old => old + String(data.text))

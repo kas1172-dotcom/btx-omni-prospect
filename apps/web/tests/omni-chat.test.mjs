@@ -5,7 +5,14 @@ import ts from 'typescript'
 
 const source = readFileSync(new URL('../src/components/omniText.ts', import.meta.url), 'utf8')
 const compiled = ts.transpile(source, { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.ES2022 })
-const { readChatStream, safeChatLink } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
+const { readChatStream, safeChatLink, isPortfolioQuestion } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
+
+test('portfolio questions clear passive account scope but pronouns keep it', () => {
+  assert.equal(isPortfolioQuestion('Which accounts have open quotes?'), true)
+  assert.equal(isPortfolioQuestion('Which Defense accounts have the highest scores?'), true)
+  assert.equal(isPortfolioQuestion('Does it have quotes?'), false)
+  assert.equal(isPortfolioQuestion('Compare it to Spirit'), false)
+})
 
 test('stream parser preserves split SSE events and unicode', async () => {
   const text = 'event: progress\ndata: {"text":"Checking…"}\n\nevent: answer\ndata: {"response":{"content":"Hello"}}\n\n'

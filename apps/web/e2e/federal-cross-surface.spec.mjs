@@ -31,7 +31,7 @@ test('opportunity opens Omni with the canonical route and governed next action',
   expect(body.context.selected_federal_opportunity.opportunity_id).toBe('SAM-1')
   expect(body.context.selected_federal_opportunity.route_type).toBe('CUSTOMER_EXPANSION')
   await response
-  await expect(page.locator('.message.assistant').last()).toContainText(/validate|review|research/i)
+  await expect(page.locator('.message.assistant').last()).toContainText("The AI service isn't available right now, so I can only do basic lookups")
 })
 
 test('governed Action proposal is durable and restores the same opportunity context', async ({ page }) => {

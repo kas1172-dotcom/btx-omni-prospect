@@ -76,6 +76,7 @@ async def test_stream_history_resume_actor_boundary_and_feedback(tmp_path, monke
         final = next(data for event, data in events if event == 'answer')
         identifier = final['conversation_id']
         history = await client.get('/api/omni/conversations/' + identifier)
+        assert history.headers['cache-control'] == 'private, no-store'
         assert len(history.json()['turns']) == 2
         assert history.json()['turns'][1]['response']['account_id'] == 'boeing'
         rating = await client.post(f'/api/omni/conversations/{identifier}/feedback', json={'run_id': final['response']['run_id'], 'rating': 'up'})

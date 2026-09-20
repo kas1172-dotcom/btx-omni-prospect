@@ -8,6 +8,7 @@ async function navigate(page, name) {
 test('canonical industries compose across Portfolio, Intelligence, and Map', async ({ page }) => {
   await page.goto('/')
   await navigate(page, 'Profiles')
+  await page.getByRole('button', { name: /Needs classification/ }).click()
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByLabel('Customer scope').selectOption('ALL')
   for (const industry of ['Defense', 'Commercial Aerospace', 'Space', 'Robotics', 'Semiconductor', 'Medical', 'Energy']) {

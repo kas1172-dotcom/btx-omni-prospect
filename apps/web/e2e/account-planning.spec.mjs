@@ -24,7 +24,7 @@ test('seller saves a dated private research shortlist and filters the same portf
   expect((await createShortlist).status()).toBe(200)
   await expect(page.getByText(/Saved for the signed-in user/)).toContainText('2026-10-15')
 
-  await page.getByRole('button', { name: '← Profiles' }).click()
+  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('button', { name: 'My growth & research shortlist' }).click()
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
@@ -58,7 +58,7 @@ test('manager creates an audited partnership designation and portfolio include/e
   await page.getByRole('button', { name: 'Designate strategic partnership' }).click()
   await expect(page.getByText('Strategic partnership designation')).toBeVisible()
 
-  await page.getByRole('button', { name: '← Profiles' }).click()
+  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('button', { name: 'Only partnerships' }).click()
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)

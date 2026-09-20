@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
 
+// Finish intercepted reads before Playwright disposes their responses.
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }) })
+
 test.use({ viewport: { width: 1440, height: 900 } })
 
 const accountId = 'lockheed-martin'
@@ -61,12 +64,14 @@ test('Today assessment and related record retain the filtered return location th
   await openSelectedAssessmentFromToday(page)
   expect(page.url()).toContain(`assessment=${assessmentId}`)
   expect(page.url()).toContain('return=%23%2Ftoday')
+  await page.getByRole('tab', { name: 'Commercial', exact: true }).click()
   const related = page.locator('.account-primary-grid .customer-section').filter({ hasText: 'Related BTX activity to review' })
   await related.getByRole('button', { name: /Related BTX activity to review/ }).click()
   await related.getByRole('button', { name: 'Inspect source record' }).first().click()
   await expect(page.getByRole('region', { name: 'Lockheed agreement quote source record' })).toBeVisible()
   expect(page.url()).toContain('view=record')
   await page.goBack(); await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
+  await page.goBack(); await expect(page.getByRole('tab', { name: 'Overview', exact: true })).toHaveAttribute('aria-selected', 'true')
   await page.goBack(); await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
   expect(page.url()).toContain('f.kind=PUBLIC_SIGNAL')
   expect(page.url()).toContain(`assessment=${assessmentId}`)

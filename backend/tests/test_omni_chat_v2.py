@@ -51,6 +51,22 @@ def test_loop_and_named_account_precedence(sample):
     assert answer.structured_reads['reads'][0]['result']['data']['quote_count'] > 0
     assert provider.calls[0]['resolved_account_id'] == 'lockheed-martin'
     assert answer.structured_reads['steps'][0]['argument_hash']
+    receipt = answer.structured_reads['steps'][0]
+    assert receipt['step'] == 1
+    assert len(receipt['result_checksum']) == 64
+    assert receipt['evidence_ids'] == answer.structured_reads['reads'][0]['result']['source_ids']
+
+
+@pytest.mark.parametrize('question', ['Which accounts have open quotes?', 'Which Defense accounts have the highest scores?', 'Compare all organizations'])
+def test_global_question_does_not_inherit_previous_account(sample, question):
+    provider = FakeChat()
+    provider.configured = False
+    t = tools(sample, context={'conversation_referent': {'account_id': 'boeing'}, 'selected_account_id': 'boeing'})
+    answer = ChatAgent(provider, t).answer(question, account_id='boeing')
+    assert not answer.account_id
+    assert answer.conversation_referent is None
+    assert not answer.structured_reads['steps']
+    assert 'basic lookups' in answer.content
 
 
 @pytest.mark.parametrize('name', ['Acme Quantum Widgets', 'Globex Space Systems'])
@@ -67,6 +83,13 @@ def test_actor_and_question_scope_enforced(sample):
     assert t.find('Lockheed Martin')['status'] == 'not_found'
     with pytest.raises(PermissionError):
         t.execute('get_customer_360', {'account_id': 'lockheed-martin'})
+    agent = ChatAgent(FakeChat(), t)
+    with pytest.raises(PermissionError):
+        agent.read('get_customer_360', {'account_id': 'lockheed-martin'})
+    assert agent.steps[0]['status'] == 'error'
+    assert agent.steps[0]['failure_class'] == 'PermissionError'
+    assert len(agent.steps[0]['argument_hash']) == 64
+    assert 'lockheed-martin' not in str(agent.reads)
     t = tools(sample)
     t.named_scope = frozenset({'boeing'})
     with pytest.raises(PermissionError):

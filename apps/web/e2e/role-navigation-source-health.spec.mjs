@@ -24,7 +24,7 @@ test('seller navigation is consistent and permission-safe on direct Source Healt
   await page.goto('/')
   await expect(page.getByLabel('Signed-in user')).toContainText('Development Salesperson')
   const desktop = await desktopDestinations(page)
-  expect(desktop).toEqual(sorted(['Today', 'Profiles', 'Intelligence', 'Map', 'Actions', 'Communications', 'Settings']))
+  expect(desktop).toEqual(sorted(['Today', 'Opportunities', 'Profiles', 'Intelligence', 'Map', 'Actions', 'Communications', 'Settings']))
   await expect(page.getByRole('button', { name: 'Source Health', exact: true })).toHaveCount(0)
 
   await page.setViewportSize({ width: 390, height: 844 })

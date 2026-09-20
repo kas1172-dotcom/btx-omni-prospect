@@ -188,3 +188,51 @@ passed (history/deletion, proposal-without-write, cancel/HTML safety). The broad
 tests predate Profiles naming, profile tabs, Customer Health and SSE. Label/transport
 updates preserve assertions, rather than disabling tests. New history and feedback
 do not alter personal-memory acceptance, inspection, editing or deletion.
+
+### Evaluation and regression decisions
+
+`tests/evals/omni_chat.yaml` is JSON-compatible YAML 1.2, so the existing Python
+standard library can load it without another dependency. The 72 cases execute real
+read-tool implementations against the release sample ledger with a scripted provider.
+`backend/tests/omni_eval_support.py` checks routing execution, account boundaries,
+refusals, privacy, citations and validation. Scripted tool selections do not prove
+that a live Gemini model will select those tools; this is an orchestration contract
+suite, not a claim of model intelligence. Existing CI discovers the pytest module.
+
+`backend/scripts/omni_live_eval.py` produces per-case full answers, tool calls,
+latency, usage, validation and category results. Without a Gemini API key it exits
+successfully with an explicit SKIPPED message and makes no calls or report writes.
+Live evaluation uses sample data and a report-local private usage ledger. Its
+automated behavior checks still require human review for tone and entailment.
+
+Legacy browser assertions that expected rich deterministic conversation without
+a configured model are intentionally updated to require the v2 degraded disclosure.
+Typed screen/event/relationship context must still be transported, but an unconfigured
+model does not fabricate a rich assessment or claim it used an event it did not read.
+Account follow-ups remain covered by new fake-provider and persisted-history tests.
+The old `/api/omni` compatibility implementation is retained; no old routing logic
+was deleted to manufacture a passing evaluation.
+
+Browser test maintenance also corrects existing Profiles navigation versus Customers
+page headings, separate profile tabs, Customer Health versus the older Attractiveness
+column, portable screenshot paths, and waits for asynchronously mounted profile tabs.
+Those changes do not modify scoring, profile rendering or workflow writes. The new
+tool audit steps retain the legacy receipt viewer's step/evidence/checksum fields in
+addition to argument hashes, result sizes and latency; a regression assertion covers
+that compatibility. Chromium occasionally evicts completed SSE bodies from its debug
+protocol: legacy receipt tests can inspect the identical persisted turn, without
+reissuing the question. Both legacy and new browser tests prefer actual SSE frames;
+the fallback carries the original actor header and reads the identical stored turn.
+The new browser test also requires SSE content type and actual rendered client output;
+API tests assert frame order and unit tests exercise split-byte stream decoding.
+
+Private history endpoints return `Cache-Control: private, no-store`. Conversation
+retention does not currently sweep orphaned audit receipts from canceled/concurrent
+requests; explicit deletion removes receipts linked to the stored transcript.
+
+Final regression corrections: portfolio-wide questions clear passive account/referent
+scope in the client and server, while an explicitly named account still wins. New
+unit tests cover that boundary and the existing UI source assertion now requires the
+portfolio guard instead of unconditionally forwarding the previous referent. Failed,
+denied and timed-out tool attempts are recorded with hashed arguments and a sanitized
+failure class; denied rows and exception text are never copied into the result.

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from threading import Event
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,7 +18,12 @@ from btx_omni.api.session import principal
 from btx_omni.domain.work import Principal
 from btx_omni.persistence.omni_conversations import ConversationRepository
 
-router = APIRouter(prefix='/omni', tags=['omni'])
+
+def private_response(response: Response):
+    response.headers['Cache-Control'] = 'private, no-store'
+
+
+router = APIRouter(prefix='/omni', tags=['omni'], dependencies=[Depends(private_response)])
 
 
 def repository(runtime):

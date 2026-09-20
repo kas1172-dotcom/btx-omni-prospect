@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readOmniResult } from './omni-stream-helpers.mjs'
 
 async function open(page) {
   await page.goto('/')
@@ -12,8 +13,8 @@ test('v2 scopes quote history, resumes after reload, and removes a deleted conve
   await page.getByRole('textbox', { name: 'Ask Omni', exact: true }).fill('Does Lockheed Martin have quote history?')
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   const response = await stream
-  const event = (await response.text()).split('\n\n').find(x => x.startsWith('event: answer\n'))
-  const result = JSON.parse(event.split('\ndata: ')[1])
+  expect(response.headers()['content-type']).toContain('text/event-stream')
+  const result = await readOmniResult(response, page)
   expect(result.response.account_id).toBe('lockheed-martin')
   await expect(page.locator('.message.assistant')).toContainText('Yes—Lockheed Martin')
   await expect(page.locator('.message.assistant')).toContainText('sample data')

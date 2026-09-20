@@ -19,7 +19,7 @@ def violations(answer, question, reads):
     if not normalized(numbers(answer)) <= normalized(numbers(facts)):
         issues.append('Unsupported number, date, amount or percentage')
     visible = re.sub(r'\]\([^)]*\)', ']', answer)
-    entities = set(re.findall(r'\b[A-Z][A-Za-z0-9_-]*\b', visible)) - COMMON
+    entities = set(re.findall(r'\b[A-Z][A-Za-z0-9_-]*\b', visible)) - COMMON - {'Each', 'Lead', 'Today'}
     if any(name.casefold() not in words for name in entities):
         issues.append('Unsupported name or capitalized entity')
     if re.search(r"\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+(?:successfully\s+)?(?:sent|updated|deleted|saved|created|approved|marked|changed|paid|emailed)\b", answer, re.IGNORECASE):

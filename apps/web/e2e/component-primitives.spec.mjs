@@ -22,7 +22,7 @@ test('mobile secondary navigation and controls expose keyboard and selected-stat
   const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects' })
   await search.focus()
   await expect(search).toBeFocused()
-  await search.fill('Intel')
+  await search.fill('Lockheed')
   await expect(page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('row')).toHaveCount(2)
 
   const defense = page.getByRole('button', { name: 'Defense', exact: true })
@@ -89,5 +89,6 @@ test('decision notices give the trigger and next step a full-width reading order
 
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click()
   await expect(notice).toBeVisible()
 })

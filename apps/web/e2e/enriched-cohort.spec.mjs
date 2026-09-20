@@ -25,8 +25,9 @@ test('all eleven persisted enriched accounts have distinct briefings and twelve-
     const briefings = account.customer_360.intelligence.map(item => item.business_briefing).filter(Boolean)
     const expansion = account.organization_360.expansion_pursuit
     const currentAssessment = expansion ? briefings.find(item => item.assessment_id === expansion.assessment_id) ?? briefings[0] : briefings[0]
-    await expect(decision).toContainText(currentAssessment?.headline ?? account.intelligence[0]?.title ?? account.commercial_briefing.summary)
-    await expect(decision).toContainText(expansion?.governed_action ?? currentAssessment?.recommended_action ?? account.recommended_next_step ?? account.commercial_briefing.next_action)
+    const readyAssessment = currentAssessment?.analysis_status === 'READY' ? currentAssessment : undefined
+    await expect(decision).toContainText(readyAssessment?.what_happened ?? account.commercial_briefing.summary)
+    await expect(decision).toContainText(expansion?.governed_action ?? readyAssessment?.recommended_action ?? account.recommended_next_step ?? account.commercial_briefing.next_action)
     evidence.push({ id, revision: history.revision, periods: history.records.map(row => row.period), briefing: account.commercial_briefing })
   }
   expect(new Set(evidence.map(item => item.briefing.summary)).size).toBe(accounts.length)

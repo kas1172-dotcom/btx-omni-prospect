@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-const primaryDestinations = ['Today', 'Profiles', 'Intelligence', 'Map', 'Actions']
+const primaryDestinations = ['Today', 'Opportunities', 'Profiles', 'Intelligence', 'Map', 'Actions']
 
 async function expectSurface(page, name) {
-  await expect(page.locator('.page-title h1')).toHaveText(name === 'Map' ? 'Tactical Map' : name)
+  const heading = name === 'Opportunities' ? page.getByRole('heading', { level: 1, name, exact: true }) : page.locator('.page-title h1')
+  await expect(heading).toHaveText(name === 'Map' ? 'Tactical Map' : name === 'Profiles' ? 'Customers' : name)
 }
 
 test('desktop target shell preserves primary seller navigation and Omni access', async ({ page }) => {
@@ -49,7 +50,7 @@ test('390 × 844 target shell keeps primary destinations and More safe without o
   await expect(page.getByRole('navigation', { name: 'Primary navigation', exact: true })).toBeHidden()
 
   const controls = navigation.getByRole('button')
-  await expect(controls).toHaveCount(6)
+  await expect(controls).toHaveCount(7)
   expect(await controls.allTextContents()).toEqual([...primaryDestinations, 'More'])
 
   for (const destination of primaryDestinations) {
@@ -86,7 +87,7 @@ test('390 × 844 target shell keeps primary destinations and More safe without o
 test('320px shell smoke check remains structurally contained', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 })
   await page.goto('/')
-  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(6)
+  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(7)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(1)
 })

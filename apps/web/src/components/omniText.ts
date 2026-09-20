@@ -2,6 +2,8 @@ export function safeChatLink(url: string): string | undefined {
   return /^(https?:\/\/|#\/)/i.test(url) && !/[\s<>"']/.test(url) ? url : undefined
 }
 
+export const isPortfolioQuestion = (question: string) => /\b(?:which|what|list|show|compare|rank|summarize)\b.*\b(?:accounts|organizations|companies|portfolio)\b/i.test(question)
+
 export async function readChatStream(body: ReadableStream<Uint8Array>, signal: AbortSignal, receive: (event: string, data: Record<string, unknown>) => void) {
   const reader = body.getReader(), decoder = new TextDecoder()
   let buffer = ''

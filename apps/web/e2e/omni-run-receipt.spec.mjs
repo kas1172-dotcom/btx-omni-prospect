@@ -11,7 +11,7 @@ for (const width of [390, 1440]) {
     await page.getByRole('button', { name: 'Send', exact: true }).click()
     const response = await pending
     expect(response.status()).toBe(200)
-    const answer = await readOmniAnswer(response)
+    const answer = await readOmniAnswer(response, page)
     expect(answer.run_id).toMatch(/^[0-9a-f-]{36}$/)
     let attempts = 0
     let allowRead = false

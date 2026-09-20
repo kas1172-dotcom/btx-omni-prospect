@@ -89,12 +89,28 @@ class ChatAgent:
             raise TimeoutError("The lookup limit was reached.")
         self.progress("Checking " + name.removeprefix("get_").replace("_", " ") + "…")
         start = monotonic()
-        result = self.bounded(lambda: self.tools.execute(name, arguments), self.limits.tool_seconds)
+        try:
+            result = self.bounded(lambda: self.tools.execute(name, arguments), self.limits.tool_seconds)
+        except (ValueError, TypeError, KeyError, PermissionError, TimeoutError, InterruptedError) as error:
+            # Failed and denied attempts belong in the private audit too; never
+            # copy exception text, arguments or denied business rows into it.
+            failure = {"status": "error", "data": {"message": "Lookup unavailable."}, "source_ids": [],
+                       "as_of": self.tools.observed_at.date().isoformat(), "data_mode": "UNAVAILABLE"}
+            encoded_failure = json.dumps(failure)
+            self.steps.append({"step": len(self.steps) + 1, "tool": name, "evidence_ids": [],
+                               "argument_hash": sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest(),
+                               "result_checksum": sha256(encoded_failure.encode()).hexdigest(),
+                               "result_characters": len(encoded_failure), "latency_ms": round((monotonic() - start) * 1000, 2),
+                               "status": "error", "failure_class": type(error).__name__})
+            self.reads.append({"tool": name, "result": failure})
+            raise
         elapsed = monotonic() - start
         if elapsed > self.limits.tool_seconds:
             result = {"status": "timeout", "data": {"message": "That lookup took too long. Try a narrower question."}, "source_ids": [], "as_of": self.tools.observed_at.date().isoformat(), "data_mode": "SAMPLE"}
         encoded = json.dumps(result, default=str)
-        self.steps.append({"tool": name, "argument_hash": sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest(),
+        self.steps.append({"step": len(self.steps) + 1, "tool": name,
+                           "evidence_ids": result.get("source_ids", []), "result_checksum": sha256(encoded.encode()).hexdigest(),
+                           "argument_hash": sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest(),
                            "result_characters": len(encoded), "latency_ms": round(elapsed * 1000, 2), "status": result["status"]})
         self.reads.append({"tool": name, "result": result})
         return result
@@ -104,6 +120,11 @@ class ChatAgent:
         self.resolved = None
         boundary = refusal(question)
         named = self.tools.named(question)
+        portfolio_question = bool(re.search(r'\b(?:which|what|list|show|compare|rank|summarize)\b.*\b(?:accounts|organizations|companies|portfolio)\b', question, re.IGNORECASE))
+        if portfolio_question and not named:
+            self.tools.context = {key: value for key, value in self.tools.context.items() if key not in {
+                'conversation_referent', 'selected_account_id', 'session_account_id', 'selected_event_id',
+                'selected_facility_id', 'selected_assessment', 'relationship_selection'}}
         referent = self.tools.context.get("conversation_referent") or {}
         if len(named) == 1 and re.search(r"\bcompare\s+(?:it|that one|this)\b", question, re.IGNORECASE):
             previous = referent.get("account_id") or self.tools.context.get("selected_account_id")
@@ -112,7 +133,7 @@ class ChatAgent:
         self.tools.named_scope = frozenset(named)
         if len(named) == 1:
             self.resolved = named[0]
-        elif not named:
+        elif not named and not portfolio_question:
             followup = re.search(r'\b(?:it|its|that one|why)\b', question, re.IGNORECASE)
             candidate = (referent.get("account_id") if followup else None) or account_id or referent.get("account_id") or self.tools.context.get("selected_account_id") or self.tools.context.get("session_account_id")
             if candidate in self.tools.accounts:

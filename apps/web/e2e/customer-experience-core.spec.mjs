@@ -3,14 +3,14 @@ import { expect, test } from '@playwright/test'
 async function openPortfolio(page) {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
-  await expect(page.getByRole('heading', { name: 'Profiles', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Customers', level: 1 })).toBeVisible()
 }
 
 test('desktop Portfolio composes accessible search, filters, sorting, and canonical Customer navigation', async ({ page }) => {
   await openPortfolio(page)
   const table = page.getByRole('table', { name: 'Customers and Prospects' })
   await expect(table).toBeVisible()
-  await expect(table.getByRole('columnheader', { name: /Customer/ })).toHaveAttribute('aria-sort', 'ascending')
+  await expect(table.getByRole('columnheader', { name: /Customer \/ Prospect/ })).toHaveAttribute('aria-sort', 'ascending')
 
   await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByLabel('Customer scope').selectOption('ALL')
@@ -20,7 +20,7 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   const activeDefense = active.getByRole('button', { name: 'Remove Defense filter' })
   await expect(activeDefense).toHaveAttribute('aria-pressed', 'true')
   await activeDefense.click()
-  await expect(active).toBeHidden()
+  await expect(active).not.toContainText('Defense')
 
   const search = page.getByRole('searchbox', { name: 'Search Customers and Prospects' })
   await search.fill('Lockheed')
@@ -34,19 +34,20 @@ test('desktop Portfolio composes accessible search, filters, sorting, and canoni
   await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('Why it may matter')
   await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
   await expect(page.getByLabel('Demonstration environment')).toHaveCount(1)
+  await page.getByRole('tab', { name: 'Relationships', exact: true }).click()
   await expect(page.getByRole('button', { name: /People and relationship paths/ })).toBeVisible()
 
   await page.getByRole('searchbox', { name: 'Switch organization' }).fill('Symbotic')
   await page.getByRole('option', { name: /Symbotic/ }).click()
   await expect(page.getByRole('heading', { name: 'Symbotic', level: 1 })).toBeVisible()
-  await page.getByRole('button', { name: '← Profiles' }).click()
+  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
   await page.goto('/#/accounts')
   await expect(table).toBeVisible()
 
-  await page.getByRole('button', { name: /Attractiveness/ }).click()
-  await expect(table.getByRole('columnheader', { name: /Attractiveness/ })).toHaveAttribute('aria-sort', 'descending')
+  await page.getByRole('button', { name: /Customer Health/ }).click()
+  await expect(table.getByRole('columnheader', { name: /Customer Health/ })).toHaveAttribute('aria-sort', 'descending')
   await search.fill('no canonical customer has this name')
-  await expect(page.getByText(/No Customers or Prospects match/)).toBeVisible()
+  await expect(page.getByText(/No customers match the current search and filters/i)).toBeVisible()
   await search.fill('Lockheed')
   await expect(table.getByRole('link', { name: 'Lockheed Martin' })).toBeVisible()
   await expect(page.locator('.accounts-surface')).not.toContainText(/\b(Account|Accounts|Client|Clients|Company|Companies)\b/)
@@ -64,9 +65,12 @@ test('390px Portfolio keeps a semantic internally scrollable table and Customer 
   await table.getByRole('link', { name: 'Lockheed Martin' }).click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
 
+  await page.getByRole('tab', { name: 'Commercial', exact: true }).click()
   const decision = page.getByRole('button', { name: /Decision panel/ })
   if (await decision.getAttribute('aria-expanded') !== 'true') await decision.click()
   const commercial = page.getByRole('button', { name: /Commercial context/ })
+  await expect(commercial).toHaveAttribute('aria-expanded', 'true')
+  await commercial.click()
   await expect(commercial).toHaveAttribute('aria-expanded', 'false')
   await commercial.click()
   await expect(commercial).toHaveAttribute('aria-expanded', 'true')
@@ -77,7 +81,7 @@ test('390px Portfolio keeps a semantic internally scrollable table and Customer 
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(1)
-  const lastDisclosure = page.locator('.account-workspace .ui-disclosure').last()
+  const lastDisclosure = page.locator('.account-workspace .ui-disclosure:visible').last()
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   const nav = await page.getByRole('navigation', { name: 'Mobile primary navigation' }).boundingBox()
   const disclosureBox = await lastDisclosure.boundingBox()
@@ -104,14 +108,14 @@ test('Portfolio sorts the complete filtered result set before pagination and kee
   const names = async () => table.locator('tbody th[scope="row"] a').allTextContents()
   const values = async (column) => table.locator(`tbody tr td:nth-child(${column})`).allTextContents()
 
-  await table.getByRole('button', { name: /Attractiveness/ }).click()
-  const descendingScores = (await values(4)).map(value => value.trim())
+  await table.getByRole('button', { name: /Customer Health/ }).click()
+  const descendingScores = (await values(4)).map(value => value.match(/([\d.]+)\/100/)?.[1] ?? 'Unavailable')
   const knownDescending = descendingScores.filter(value => value !== 'Unavailable').map(Number)
   expect(knownDescending).toEqual([...knownDescending].sort((a, b) => b - a))
   expect(descendingScores.slice(knownDescending.length).every(value => value === 'Unavailable')).toBeTruthy()
 
-  await table.getByRole('button', { name: /Attractiveness/ }).click()
-  const ascendingScores = (await values(4)).map(value => value.trim())
+  await table.getByRole('button', { name: /Customer Health/ }).click()
+  const ascendingScores = (await values(4)).map(value => value.match(/([\d.]+)\/100/)?.[1] ?? 'Unavailable')
   const knownAscending = ascendingScores.filter(value => value !== 'Unavailable').map(Number)
   expect(knownAscending).toEqual([...knownAscending].sort((a, b) => a - b))
   expect(ascendingScores.slice(knownAscending.length).every(value => value === 'Unavailable')).toBeTruthy()
@@ -123,8 +127,10 @@ test('Portfolio sorts the complete filtered result set before pagination and kee
   expect(knownPriorities.map(value => rank[value])).toEqual([...knownPriorities.map(value => rank[value])].sort((a, b) => b - a))
 
   await table.getByRole('button', { name: /Customer \/ Prospect/ }).click()
+  await page.getByRole('button', { name: /Needs classification/ }).click()
   const firstPageNames = await names()
-  if (await page.getByRole('button', { name: 'Next', exact: true }).isEnabled()) {
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeEnabled()
+  {
     await page.getByRole('button', { name: 'Next', exact: true }).click()
     const secondPageNames = await names()
     expect(firstPageNames.at(-1).localeCompare(secondPageNames[0], undefined, { sensitivity: 'base' })).toBeLessThanOrEqual(0)
@@ -133,7 +139,7 @@ test('Portfolio sorts the complete filtered result set before pagination and kee
   await page.getByRole('button', { name: /Customer \/ Prospect/ }).click()
   const selectedName = (await names())[0]
   await table.getByRole('link', { name: selectedName, exact: true }).click()
-  await page.getByRole('button', { name: '← Profiles' }).click()
+  await page.getByRole('button', { name: '← Customers & Prospects' }).click()
   await expect(table.getByRole('columnheader', { name: /Customer \/ Prospect/ })).toHaveAttribute('aria-sort', 'descending')
   await expect(table.locator('tbody th[scope="row"] a').first()).toHaveText(selectedName)
 })
