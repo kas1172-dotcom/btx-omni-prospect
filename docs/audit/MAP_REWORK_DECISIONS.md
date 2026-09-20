@@ -60,3 +60,10 @@
 
 - Added an explicit Reset view intent so returning to the default US view is user-driven and still passes through the pure camera planner. It does not react to data refetches.
 - No dependency added; no test removed or modified.
+
+## 2026-09-20 — Final verification
+
+- Frontend `npm run typecheck`, `npm run lint`, `npm run build` and `npm test` all pass. Unit coverage increased from the 90-test baseline to 100 passing tests, with no failures.
+- Full backend `UV_PROJECT_ENVIRONMENT=/tmp/btx-venv UV_LINK_MODE=copy uv run pytest -q` completed with 746 passed, 67 failed, 10 errors and 2 skipped. Exact-ID comparison found 0 new and 0 resolved failure/error IDs versus `MAP_REWORK_BASELINE.txt`; all 10 PostgreSQL cases remain not run because `BTX_DATABASE_URL`/local PostgreSQL is unavailable.
+- The local build intentionally has no permitted Google Maps browser key. Manual Vercel-preview checklist: verify cluster grouping/expansion at multiple zooms; one-site and dense-site camera feel; overlay padding with the detail panel and mobile sheet; radius-circle framing; provider marker shape/color/selection visuals; search-to-marker-to-row scrolling; table internal scrolling/sticky header; and visible map/list/filter count agreement.
+- No `STOPPED.md` was needed. No dependency, migration, production configuration, deployment or secret changed.
