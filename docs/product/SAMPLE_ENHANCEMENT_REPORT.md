@@ -4,6 +4,25 @@ Status: Tiers 1 and 2 verified; Tier 3 in progress.
 
 ## Tier checkpoints
 
+## Generated catalog counts
+
+Generated 2026-09-20 by existing `build_sample_environment()` and `enhance_environment(base)`; aggregate lengths only, no reference-record content exported. The base has **34 researched accounts**, not 78. Canonical totals include existing reference identities and are not counts of verified public companies.
+
+| Collection | Base | Enhancement enabled |
+|---|---:|---:|
+| Canonical accounts | 309 | 323 |
+| Account facilities (all truth classes) | 431 | 441 |
+| Public/facility projection, including explicitly fictional additions | 39 | 49 |
+| BTX facilities, including one fictional addition | 5 | 6 |
+| Watch profiles | 309 | 309 |
+| Selected commercial ledgers | 0 | 15 |
+| Programs | 32 | 47 |
+| Component classes | 30 | 47 |
+
+Reproduce with the local Python interpreter from `backend`: prepend `os.path.abspath('src')`; build both environments; print `{key: len(getattr(environment, key)) for key in ('accounts', 'facilities', 'public_facilities', 'btx_facilities', 'watch_profiles', 'commercial_ledgers', 'programs', 'component_classes')}`. Research count is `len(base.researched_accounts)`. No database or network command is needed.
+
+Item 3.4: stale current-count claims in WORKFLOW, research index and acceptance matrix now point here. Historical input reports are explicitly marked historical. `SampleRepository.seed()` in `backend/src/btx_omni/persistence/repository.py` is **dead code in the inspected repository**: `rg -n 'SampleRepository|\.seed\(' backend -g '*.py'` finds only its definition, no callers. It also expects a retired `environment.ranks` attribute. It was not executed or deleted; external callers cannot be ruled out. Runtime composition, not this method, selects the enhancement.
+
 Tier 2: **856 backend tests passed**, 8 dependency warnings, no deselection/xfail (202.94 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Ten more backend tests than Tier 1. Tag: `tier2-complete`.
 
 Tier 1: **846 backend tests passed**, 8 dependency deprecation warnings, no deselection/xfail (373.08 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Compared with the first valid local PostgreSQL checkpoint (829 passed / 3 failed), all failures are resolved and new fixture assertions are included. Tag: `tier1-complete`.

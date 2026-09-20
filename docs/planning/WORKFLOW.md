@@ -59,11 +59,11 @@ The workflow's job is to take one piece of public evidence (a contract award, a 
 - USAspending recipient-name mappings for the target companies
 - Source-native identifiers when available (CIK, ticker, UEI, CAGE)
 
-**Source.** BTX's normalized data lake will provide the eventual customer master. Today: `docs/research/btx_researched_account_universe.json` (78 researched public companies) plus `btx_usaspending_recipient_identities.json`.
+**Source.** BTX's normalized data lake will provide the eventual customer master. Current generated catalog counts, including researched identity versus fictional additions, are in [SAMPLE enhancement report](../product/SAMPLE_ENHANCEMENT_REPORT.md#generated-catalog-counts). Do not treat the historical research-file count as the full canonical universe.
 
 **Current state.** `monitor/resolution.py`, `EntityResolution` in `monitor/contracts.py`, `AccountWatchProfile` in `monitor/resolution.py`. Deterministic exact-name resolution is enabled; alias / ambiguous / unresolved are governed by the common resolver. `provenance.data_mode=CONNECTED` for researched public identity.
 
-**Gap for sample data.** The 78 researched accounts are public-market entities and not weighted toward BTX's actual target customers. When the lake extract lands, the customer master should replace or augment this set with BTX-relevant customers. **This is one of the drivers of the "overly general accounts" delete/replace decision in the code review step.**
+**Gap for connected data.** Public identity and fictional SAMPLE scenarios are not an approved BTX customer master. A governed lake extract must establish real commercial identities and relationships; sample data does not do so.
 
 ---
 
@@ -218,7 +218,7 @@ None of these are urgent code changes. They are candidates for the rubric revisi
 
 The reason to run this workflow spec even though most of the code exists is that it exposes what the sample data needs to look like for the workflow to feel real. Here's the extracted requirements list:
 
-1. **Customer master (~50-100 records, BTX-weighted).** Real companies BTX actually cares about, not a generic public-market universe. Replaces or heavily augments the 78 researched-only universe.
+1. **Customer master (BTX-weighted).** Approved real customer identities and relationships, not an inferred customer list from public-market or fictional SAMPLE membership. See generated counts in the enhancement report.
 2. **Program catalog (~20-40 real programs).** Real names: F-35, NGAD, NASA CLPS, NASA VADR, CHIPS-Intel, Starship, ATLAS-V, ITER, whatever medical device platforms matter. Currently mostly placeholder strings.
 3. **Component-class taxonomy (~20-50 classes).** Real machining families: precision-machined enclosures, structural brackets, tolerance-critical housings, etc. Currently empty.
 4. **BTX capability catalog (per BU: materials, processes, tolerances, certifications, volume range).** 5-10 BUs × 20-30 capability tags. Currently empty.

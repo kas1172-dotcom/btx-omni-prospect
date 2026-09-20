@@ -1,5 +1,7 @@
 # Public Facility, Geography and Official Feed Enrichment
 
+**Historical input checkpoint.** The table below is not the current environment's coverage. See [generated catalog counts](SAMPLE_ENHANCEMENT_REPORT.md#generated-catalog-counts). The enhancement separately labels fictional coordinates; they are not verified public geography.
+
 The supplied `docs/research/btx_public_facility_feed_enrichment.json` (schema 1.0) was validated against the 78-account researched universe by `research_account_id`. The loader rejects duplicate account rows, duplicate facility keys, invalid coordinate pairs, and unsupported schema versions.
 
 | Coverage | Count |

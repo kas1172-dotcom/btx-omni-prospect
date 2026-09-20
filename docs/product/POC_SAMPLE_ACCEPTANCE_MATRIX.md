@@ -1,13 +1,13 @@
 # POC acceptance matrix
 
-This POC uses researched public-company identity and clearly separated simulated
-BTX commercial context. It contains no generated placeholder companies,
-synthetic public events, synthetic public contacts, synthetic public locations,
-or simulated market ranks.
+The base POC separates researched identity from simulated commercial context.
+The opt-in enhancement also adds explicitly fictional organizations, locations
+and risk exercises; none are represented as researched public facts. Counts and
+current acceptance assertions are in [the enhancement report](SAMPLE_ENHANCEMENT_REPORT.md).
 
 | Requirement | Current POC proof | Truth boundary |
 | --- | --- | --- |
-| Account universe | 78 researched public-company records | Public identity, domain, industry, relationship evidence, contacts, and rationale are sourced research. |
+| Account universe | Generated catalog counts in the enhancement report | Researched identity, existing reference identities and fictional SAMPLE additions are distinct. |
 | Curated seller scenarios | 12 named real companies | Scenario framing is public; BTX context is simulated. |
 | Map | Only verified public headquarters/facility coordinates render | Unverified locations have no pin. |
 | Intelligence | Curated official or authoritative public source URLs | Collection is not live; a displayed event is stored, sourced public evidence. |

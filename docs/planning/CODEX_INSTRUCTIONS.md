@@ -93,7 +93,7 @@ These are legacy or superseded by the replacement. Delete cleanly.
 
 ## Phase 5 — Account ID transition table
 
-Some accounts in the current 78 will not appear in the new ~30 (they weren't BTX-relevant enough). Some new accounts will not exist in the old file. RichScenarios reference `research_account_id` values and will break if IDs disappear.
+Historical replacement proposal, superseded by additive enhancement: preserve every existing account ID. Current counts are generated in the SAMPLE enhancement report. RichScenarios reference `research_account_id` values and will break if IDs disappear.
 
 Codex mapping actions:
 - **Keep the ID as-is** (present in both files, still in RichScenarios): `boeing`, `lockheed-martin`, `northrop-grumman`, `ge-aerospace`, `anduril-industries`, `blue-origin`, `rocket-lab-usa`, `spacex` (add if missing), `intel`, `applied-materials`, `medtronic`, `symbotic`.

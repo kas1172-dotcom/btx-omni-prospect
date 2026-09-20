@@ -6,7 +6,7 @@
 
 ## Why this replacement matters
 
-The current `docs/research/` universe is 78 large public-market companies (Boeing, Lockheed, Intel, TSMC, Applied Materials, etc.). That set is **prospecting-oriented, not BTX-weighted**. Only one account (Boeing) carries an explicit BTX-supplier basis (via Chandler Industries' public defense page). Every other relationship is `NO_RELATIONSHIP_EVIDENCE`. Sellers cannot see themselves in this universe.
+The original proposal described a general public-market universe. That historical count is not the current canonical catalog. See [generated current counts](../product/SAMPLE_ENHANCEMENT_REPORT.md#generated-catalog-counts). Public identity is not proof of a BTX customer relationship; the opt-in enhancement adds explicitly fictional identities and synthetic transactions separately.
 
 The POC has no target account count. It uses a BTX-weighted set of researched real companies built from BTX Precision business-unit websites, industry pages, case studies, press releases, and third-party award profiles, with public contact channels sourced from official supplier portals. Coverage expands only when additional real entities are sufficiently researched.
 
@@ -50,7 +50,7 @@ MATCH platform (**M**achining **A**dditive **T**echnology and **C**apabilities *
 
 | File | Purpose | Replaces |
 |---|---|---|
-| `btx_researched_account_universe.json` | ~30 BTX-relevant customers with rich detail. | Existing 78-account file (schema preserved) |
+| `btx_researched_account_universe.json` | Researched identities; not an approved customer master. | Count generated from the loader in the enhancement report (schema preserved) |
 | `btx_researched_contacts.json` | Named contacts + public channels for the new customer set. | Existing 80-contact file (schema preserved) |
 | `btx_public_facility_feed_enrichment.json` | HQ and facility data for the new customer set. | Existing facility file (schema preserved) |
 | `btx_usaspending_recipient_identities.json` | USAspending recipient legal-name mappings for federal-contracting customers. | Existing 11-mapping file (schema preserved) |
