@@ -33,7 +33,7 @@ for (const width of [1440, 390]) test(`profile tabs, score explanation and inves
   const draft = page.getByLabel('Planning objective', { exact: true })
   await draft.fill('Review supported program demand')
   await tabs.getByRole('tab', { name: 'Commercial', exact: true }).click()
-  await expect(page.getByRole('button', { name: /Commercial decisions & follow-ups/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Commercial decision panel', exact: true })).toBeVisible()
   await tabs.getByRole('tab', { name: 'Overview', exact: true }).click()
   await expect(draft).toHaveValue('Review supported program demand')
   await tabs.getByRole('tab', { name: 'Intelligence', exact: true }).click()

@@ -21,6 +21,9 @@ try {
     if (await tab.count()) {
       await tab.click()
       await page.waitForLoadState('networkidle')
+      if (['step5', 'step6', 'final'].includes(phase) && name === 'Commercial') {
+        await page.getByRole('heading', { name: 'Commercial decision panel', exact: true }).waitFor({ timeout: 30000 })
+      }
       await page.screenshot({ path: resolve(directory, `boeing-${name.toLowerCase()}.png`), fullPage: true })
     } else console.log(`${phase}: ${name} tab absent; no screenshot fabricated`)
   }

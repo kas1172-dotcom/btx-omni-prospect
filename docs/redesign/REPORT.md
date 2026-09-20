@@ -105,6 +105,18 @@ Step4 tests: typecheck/lint/build PASS; frontend 84/84; focused backend profile/
 
 Step4 files: Accounts.tsx, ProfileOverview.tsx, profileTabs.ts; the four tests above; report/screenshots. No App.tsx changes. No DTO additions in this step. Header planning opens inline; it is not a new authorization path.
 
+## Step 5 — Commercial, Intelligence, Actions
+
+Commercial begins with late shipment commitments / open quote expiry / past decision dates, followed by order quantities/open value/due/status with expandable canonical lines, shipments and cancellations; table-first Quotes, RFQs, Agreements and Service events. All collections use existing paginated routes, with abort/timeout/retry and original evidence disclosures. Linked source actions reuse the existing preview/confirm component. Records without a canonical action explicitly say Create is unavailable; no unrelated action is attached. Existing related-record and commercial-source detail moved to More, not discarded.
+
+Intelligence now has only Recent, with source/date, backend Confidence band, severity/disposition, site/program and freshness. **Expiry timestamp is not in the DTO; displayed as not projected, not fabricated.** Actions has a compact table, original idempotent inline create, and full Actions link. No API signature or scoring-policy changes.
+
+Verification: typecheck/lint/build PASS; frontend 84/84; commercial/follow-up/planning/profile backend 12/12; focused E2E 6/6. Added Boeing order reconciliation/preview test. Existing profile-ux test now locates the replacement decision panel; no other assertions changed. New commercial test's expected external-write disclosure is now explicitly rendered from the preview's `external_write` field. Fixed duplicate generic table React keys and screenshot capture racing with deferred commercial load; recaptured Step5 after the decision panel is ready.
+
+Full backend rerun surfaced a genuine projection regression: legacy valid monthly rows inherit currency from the ledger rather than repeating it. Fixed the new projection to honor that existing representation; unchanged durable readback test plus parity tests now 3/3. No fixture or assertion changes. Also removed case-only duplicate function labels from the read projection, without changing source labels, scoring or ranking. Full suite recheck pending.
+
+Step5 files: Accounts.tsx, ProfileCommercial.tsx, CommercialDecisions.tsx (export/reuse existing Followup and explicit external-write disclosure), modules/accounts/profile_projection.py (legacy compatibility), profile-ux-refinement.spec.mjs, profiles-redesign.spec.mjs, redesign-capture.mjs, report/screenshots. No DTO additions beyond Step2. App.tsx unchanged.
+
 ## Unverified / remaining
 
 - Steps 1–6 are in progress, not complete.

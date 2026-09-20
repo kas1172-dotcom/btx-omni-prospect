@@ -46,7 +46,7 @@ def profile_projection(sample, account, *, alerts, signal_briefs, monitoring_com
         'health_band_state': 'NOT_CONFIGURED' if customer else 'NOT_APPLICABLE',
         'open_items': {'public': len(active), 'internal': len(internal_items)},
         'bookings_monthly': [{'period': row['period'], 'bookings_minor': row['bookings_minor'],
-                              'currency': row['currency'], 'snapshot_id': row['snapshot_id'],
+                              'currency': row.get('currency', ledger['currency']), 'snapshot_id': row['snapshot_id'],
                               'provenance': row.get('provenance')} for row in months],
         'bookings_delta_3m_vs_prior_3m': raw(health, 'commercial_trajectory'),
         'last_activity_at': canonical['crm']['last_activity_at'],
@@ -54,10 +54,13 @@ def profile_projection(sample, account, *, alerts, signal_briefs, monitoring_com
     coverage = []
     roles = (ledger or {}).get('role_targets', [])
     interactions = (ledger or {}).get('interactions', [])
-    functions = sorted({role.get('verified_function') for role in roles if role.get('verified_function')}
-                       | set(account.contact_role_families or ()))
+    # Case-only labels are the same function, not a second missing contact.
+    function_labels = {label.casefold(): label for label in account.contact_role_families or ()}
+    function_labels.update({role['verified_function'].casefold(): role['verified_function']
+                            for role in roles if role.get('verified_function')})
+    functions = sorted(function_labels.values())
     for function in functions:
-        matching = [role for role in roles if role.get('verified_function') == function]
+        matching = [role for role in roles if str(role.get('verified_function', '')).casefold() == function.casefold()]
         verified = [role for role in matching if role.get('contact_verified') is True]
         ids = {role['role_target_id'] for role in verified}
         touches = [row for row in interactions if row.get('two_way') is True

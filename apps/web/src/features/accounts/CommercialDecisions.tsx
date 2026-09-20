@@ -18,7 +18,7 @@ function Decision({ decision, onEvidence }: { decision: CommercialDecision; onEv
   </div>
 }
 
-function Followup({ accountId, actionId, onCreated }: { accountId: string; actionId: string; onCreated: () => void }) {
+export function Followup({ accountId, actionId, onCreated }: { accountId: string; actionId: string; onCreated: () => void }) {
   const [preview, setPreview] = useState<FollowupPreview>()
   const [pending, setPending] = useState(false)
   const [notice, setNotice] = useState('')
@@ -41,7 +41,7 @@ function Followup({ accountId, actionId, onCreated }: { accountId: string; actio
   return <div><Button type="button" loading={pending} loadingLabel="Preparing preview…" onClick={() => void inspect()}>Preview local follow-up</Button>
     {preview && <section aria-label="Local follow-up preview"><h4>{preview.destination}</h4><p><strong>{preview.proposal.title}</strong></p><p>{preview.proposal.description}</p>
       <dl><dt>Owner</dt><dd>{actorDisplayName(preview.proposal.owner_id)}</dd><dt>Due</dt><dd>{preview.proposal.due_date ?? 'Not set'}</dd><dt>Priority</dt><dd>{words(preview.proposal.priority)}</dd></dl>
-      <p>{preview.note}</p><p>Supporting records: {preview.proposal.evidence_ids.join(', ')}</p>
+      <p>{preview.note}</p><p>{preview.external_write ? 'External write requested; review destination before confirmation.' : 'No external system will be changed.'}</p><p>Supporting records: {preview.proposal.evidence_ids.join(', ')}</p>
       {preview.existing_work_id ? <p>Already linked: {preview.existing_work_id} · {words(preview.existing_work_status ?? '')}. Review it in Work; no duplicate will be created.</p> : <button type="button" disabled={pending} onClick={() => void confirm()}>Confirm local follow-up</button>}
       <button type="button" disabled={pending} onClick={() => setPreview(undefined)}>Close preview</button></section>}
     {notice && <p role="status">{notice}</p>}</div>
