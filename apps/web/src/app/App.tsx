@@ -57,6 +57,7 @@ export default function App() {
   const [todayFilters, setTodayFilters] = useState<TodayFilters>(() => todayFiltersFromLocation(initialLocation.location))
   const [location, setLocation] = useState<WorkspaceLocation>(initialLocation.location)
   const locationRef = useRef(location)
+  const filterLocations = useRef(new globalThis.Map<Surface, Pick<WorkspaceLocation, 'filters' | 'sort' | 'subview'>>([[location.surface, { filters: location.filters, sort: location.sort, subview: location.subview }]]))
   const surface = location.surface
   const [linkRecovery, setLinkRecovery] = useState(initialLocation.recovery ? 'This link could not be restored completely. A safe workspace view is shown instead.' : '')
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
@@ -113,6 +114,7 @@ export default function App() {
   const [viewContext, setViewContext] = useState<OmniViewContext>({})
   useEffect(() => { locationRef.current = location }, [location])
   const commitLocation = useCallback((next: WorkspaceLocation, mode: NavigationMode = 'push') => {
+    if (!next.accountId) filterLocations.current.set(next.surface, { filters: next.filters, sort: next.sort, subview: next.subview })
     if (sameWorkspaceLocation(locationRef.current, next)) return
     const update = historyUpdate(window.location.hash, next, mode)
     if (update.method === 'none' && update.hash === decodeWorkspaceLocation(window.location.hash).canonicalHash) return
@@ -205,7 +207,10 @@ export default function App() {
       clearViewContext()
       setDetail(undefined)
     }
-    commitLocation({ surface: id }, recordHistory ? 'push' : 'none')
+    const remembered = filterLocations.current.get(id)
+    const destination = { surface: id, ...remembered }
+    if (id === 'today') setTodayFilters(todayFiltersFromLocation(destination))
+    commitLocation(destination, recordHistory ? 'push' : 'none')
   }, [authState, workspaceSettings?.capabilities.view_source_health, surface, detail, clearSelectedEvent, clearMapSelection, clearSelectedAction, clearViewContext, commitLocation])
   const backFromAccount = useCallback(() => {
     accountRequest.current?.abort()

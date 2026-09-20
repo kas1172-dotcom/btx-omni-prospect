@@ -661,6 +661,7 @@ export function Intelligence({
         ) : (
           <Empty>
             No governed Intelligence matches the current search and filters.
+            <Button onClick={() => { setQuery(''); setFilters(empty) }}>Clear filters</Button>
           </Empty>
         )}
       </Panel>
@@ -692,6 +693,7 @@ export function Intelligence({
           <Empty>
             No upcoming source-supported events match the current filters.
             Undated signals are excluded.
+            <Button onClick={() => { setQuery(''); setFilters(empty) }}>Clear filters</Button>
           </Empty>
         )}
       </Panel>
