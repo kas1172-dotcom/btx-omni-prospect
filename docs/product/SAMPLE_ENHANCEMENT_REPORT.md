@@ -12,6 +12,12 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Decisions made without user input
 
+- Item 3.3 prioritizes already demonstrated Boeing/Kratos and Medical Device context. No additional real-company risk allegation was fabricated to satisfy the SEC/WARN wish list. The high/low-confidence risk exercises remain explicitly fictional. No SAM.gov, USAspending, SEC or WARN fact is claimed as newly verified for these scenarios.
+
+### Item 3.3 research sources
+
+FDA's September 17, 2026 CDRH update links a draft PMA electronic-submission template guidance, docket FDA-2026-D-9429. Verified https://www.fda.gov/medical-devices/medical-devices-news-and-events/cdrh-new-news-and-updates and https://www.fda.gov/regulatory-information/search-fda-guidance-documents/electronic-submission-template-premarket-approval-applications-pma on 2026-09-20. Publisher: US FDA. Stored as aggregate regulatory context, not an effective legal requirement, customer need, or risk allegation. Scope, report date, record ID, source tier, missing information and freshness are explicit. No direct quote is copied. Together with the Kratos release and Federal Reserve observations, these are the new verified public research records. The unverified historical Kratos references remain history; failed AIM-260/official-ID research is recorded above.
+
 - Item 3.2 adds a read-only fallback for the medical G.17 series only when no persisted series exists. Persisted observations always win. The curated vintage remains explicitly selectable; unknown vintages do not fall back. No refresh, import or database write is performed. Public dates stay historical when the demo clock moves.
 
 ### Item 3.2 Medical Device coverage
