@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Portfolio } from './Portfolio'
 import { api } from '../../api/client'
 import type { Account, Account360, AccountPlanning, AccountRelationships, Action, ActionPriority, Alert, FederalAssessment, OmniAssessmentSelection, OmniContext, OmniFederalSelection, SellerRelationshipEvidence, SellerRelationshipPath, Signal } from '../../types/api'
-import { Button, Disclosure, Empty, EvidenceSource, FilterChip, FilterTrigger, LoadingStatus, MetadataRow, Notice, Panel, SearchInput, SelectInput, State, StatTile, StatusBadge, TextInput } from '../../components/UI'
+import { Button, Disclosure, Empty, EvidenceSource, LoadingStatus, MetadataRow, Notice, SearchInput, SelectInput, State, StatusBadge, TextInput } from '../../components/UI'
 import { GovernedExplanationDisclosure } from '../../components/GovernedExplanationDisclosure'
 import './accounts.css'
 import { RankedRelationships } from './RankedRelationships'
@@ -15,7 +16,7 @@ import { SupportingEvidence, WhyThis } from '../../components/SupportingEvidence
 import { actorDisplayName, presentationLabel } from '../../components/presentation'
 import { workspaceHash, type WorkspaceLocation } from '../../app/navigation'
 import { ScoreSummary } from '../../components/ScoreSummary'
-import { commercialDecisionSummary, prospectFitSummary } from '../../components/scoreSummaryModel'
+import { prospectFitSummary } from '../../components/scoreSummaryModel'
 import { relationshipEvidenceLabel } from '../../components/relationshipPresentation'
 import { AttentionBadge } from '../../components/AttentionBadge'
 import { assessmentAttention, type AttentionLevel } from '../../components/attentionModel'
@@ -28,127 +29,11 @@ type PartnershipScope = 'ALL' | 'EXCLUDE' | 'ONLY'
 type SortKey = 'name' | 'classification' | 'industry' | 'attractiveness' | 'priority' | 'evidence'
 type SortDirection = 'ascending' | 'descending'
 export type PortfolioSnapshot = { query: string; scope: Scope; industry: string; entity: Classification; top100: boolean; partnershipScope?: PartnershipScope; shortlistOnly?: boolean; sortKey: SortKey; sortDirection: SortDirection; filtersOpen: boolean; page?: number }
-const priorityRank: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 }
 const humanize = (value: string) => presentationLabel(value)
 const accountName = (item: Account) => item.name ?? item.legal_name ?? item.id
-const primaryIndustry = (item: Account) => item.industries[0] ?? 'Industry unavailable'
-const classification = (item: Account): Exclude<Classification, 'ALL'> => item.relationship === 'CURRENT_CUSTOMER' || item.relationship === 'FORMER_CUSTOMER' ? 'CUSTOMER' : item.relationship === 'TARGET' || item.relationship === 'PROSPECT' ? 'PROSPECT' : 'UNAVAILABLE'
+const classification = (item: Account): Exclude<Classification, 'ALL'> => item.relationship === 'CURRENT_CUSTOMER' || item.relationship === 'FORMER_CUSTOMER' ? 'CUSTOMER' : ['TARGET', 'PROSPECT', 'PUBLIC_MARKET'].includes(item.relationship) ? 'PROSPECT' : 'UNAVAILABLE'
 const classificationLabel = (item: Account) => classification(item) === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(classification(item).toLowerCase())
 const alertRenderKey = (alert: Alert) => `${alert.id}:${[...alert.evidence_ids].sort().join('|')}`
-const score = (item: Account) => item.customer_health?.score == null ? null : Number(item.customer_health.score)
-// Coverage remains explicit in the attractiveness rationale metadata below.
-
-function compareKnown<T>(left: T | null | undefined, right: T | null | undefined, compare: (a: T, b: T) => number, direction: SortDirection) {
-  if (left == null && right == null) return 0
-  if (left == null) return 1
-  if (right == null) return -1
-  const result = compare(left, right)
-  return direction === 'ascending' ? result : -result
-}
-function evidenceLabel(item: Account) { return item.truth_state ? humanize(item.truth_state.toLowerCase()) : null }
-function compareAccounts(a: Account, b: Account, key: SortKey, direction: SortDirection) {
-  let result: number
-  if (key === 'attractiveness') {
-    const left = score(a); const right = score(b)
-    result = compareKnown(left, right, (x, y) => x - y, direction)
-  } else if (key === 'priority') {
-    const left = a.prospect_research_priority?.toUpperCase(); const right = b.prospect_research_priority?.toUpperCase()
-    result = compareKnown(left, right, (x, y) => (priorityRank[x] ?? 0) - (priorityRank[y] ?? 0), direction)
-  } else {
-    const left = key === 'name' ? accountName(a) : key === 'industry' ? (a.industries[0] ?? null) : key === 'classification' ? (classification(a) === 'UNAVAILABLE' ? null : classificationLabel(a)) : evidenceLabel(a)
-    const right = key === 'name' ? accountName(b) : key === 'industry' ? (b.industries[0] ?? null) : key === 'classification' ? (classification(b) === 'UNAVAILABLE' ? null : classificationLabel(b)) : evidenceLabel(b)
-    result = compareKnown(left, right, (x, y) => x.localeCompare(y, undefined, { sensitivity: 'base' }), direction)
-  }
-  if (result === 0) result = accountName(a).localeCompare(accountName(b), undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id)
-  return result
-}
-
-const PAGE_SIZE = 50
-
-function Portfolio({ accounts, initialSnapshot, onSnapshot, onSelect, onOmniContext }: { accounts: Account[]; initialSnapshot?: PortfolioSnapshot; onSnapshot?: (snapshot: PortfolioSnapshot) => void; onSelect: (id: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids'>) => void }) {
-  const [query, setQuery] = useState(initialSnapshot?.query ?? '')
-  const [scope, setScope] = useState<Scope>(initialSnapshot?.scope ?? 'RICH')
-  const [industry, setIndustry] = useState(initialSnapshot?.industry ?? 'ALL')
-  const [entity, setEntity] = useState<Classification>(initialSnapshot?.entity && initialSnapshot.entity !== 'ALL' ? initialSnapshot.entity : 'CUSTOMER')
-  const [top100, setTop100] = useState(initialSnapshot?.top100 ?? false)
-  const [partnershipScope, setPartnershipScope] = useState<PartnershipScope>(initialSnapshot?.partnershipScope ?? 'ALL')
-  const [shortlistOnly, setShortlistOnly] = useState(initialSnapshot?.shortlistOnly ?? false)
-  const [planning, setPlanning] = useState<AccountPlanning>()
-  const [planningError, setPlanningError] = useState(false)
-  const [sortKey, setSortKey] = useState<SortKey>(initialSnapshot?.sortKey ?? 'name')
-  const [sortDirection, setSortDirection] = useState<SortDirection>(initialSnapshot?.sortDirection ?? 'ascending')
-  const [filtersOpen, setFiltersOpen] = useState(initialSnapshot?.filtersOpen ?? false)
-  const [page, setPage] = useState(initialSnapshot?.page ?? 0)
-  const paginationInputsReady = useRef(false)
-  useEffect(() => { onSnapshot?.({ query, scope, industry, entity, top100, partnershipScope, shortlistOnly, sortKey, sortDirection, filtersOpen, page }) }, [query, scope, industry, entity, top100, partnershipScope, shortlistOnly, sortKey, sortDirection, filtersOpen, page, onSnapshot])
-  useEffect(() => { const controller = new AbortController(); void api.accountPlanning(controller.signal).then(result => { setPlanning(result); setPlanningError(false) }).catch(error => { if (error?.name !== 'AbortError') setPlanningError(true) }); return () => controller.abort() }, [])
-  const partnershipIds = useMemo(() => new Set(planning?.strategic_partnerships.map(item => item.account_id) ?? []), [planning])
-  const shortlistIds = useMemo(() => new Set(planning?.shortlist.map(item => item.account_id) ?? []), [planning])
-  const industries = useMemo(() => [...new Set(accounts.flatMap(item => item.industries))].sort(), [accounts])
-  const unclassifiedCount = accounts.filter(item => classification(item) === 'UNAVAILABLE').length
-  const viewTitle = entity === 'CUSTOMER' ? 'Customers' : entity === 'PROSPECT' ? 'Prospects' : 'Organizations needing classification'
-  const changeTab = (next: 'CUSTOMER' | 'PROSPECT') => { setEntity(next); setPage(0); if (next === 'PROSPECT' && scope === 'RICH') setScope('ALL') }
-  const shown = useMemo(() => accounts
-    .filter(item => scope === 'ALL' || item.is_rich_scenario)
-    .filter(item => industry === 'ALL' || item.industries.includes(industry))
-    .filter(item => entity === 'ALL' || classification(item) === entity)
-    .filter(item => !top100 || item.btx_top_100)
-    .filter(item => partnershipScope === 'ALL' || (partnershipScope === 'ONLY') === partnershipIds.has(item.id))
-    .filter(item => !shortlistOnly || shortlistIds.has(item.id))
-    .filter(item => `${accountName(item)} ${item.industries.join(' ')} ${item.location?.city ?? ''} ${item.location?.state ?? ''} ${item.prospect_research_priority ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => compareAccounts(a.item, b.item, sortKey, sortDirection) || a.index - b.index)
-    .map(({ item }) => item), [accounts, entity, industry, partnershipIds, partnershipScope, query, scope, shortlistIds, shortlistOnly, sortDirection, sortKey, top100])
-  useEffect(() => {
-    if (paginationInputsReady.current) setPage(0)
-    else paginationInputsReady.current = true
-  }, [entity, industry, partnershipScope, query, scope, shortlistOnly, sortDirection, sortKey, top100])
-  const activeFilters = useMemo(() => ({ ...(scope === 'RICH' ? { account_scope: 'RICH' } : {}), ...(industry === 'ALL' ? {} : { market: industry }), ...(entity === 'ALL' ? {} : { classification: entity }), ...(top100 ? { btx_top_100: 'true' } : {}), ...(partnershipScope === 'ALL' ? {} : { strategic_partnership: partnershipScope }), ...(shortlistOnly ? { saved_shortlist: 'true' } : {}) }), [entity, industry, partnershipScope, scope, shortlistOnly, top100])
-  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
-  const safePage = Math.min(page, pageCount - 1)
-  const paged = useMemo(() => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE), [safePage, shown])
-  const visibleRecordIds = useMemo(() => paged.map(account => account.id), [paged])
-  const hasFilters = scope !== 'ALL' || industry !== 'ALL' || entity !== 'ALL' || top100 || partnershipScope !== 'ALL' || shortlistOnly
-  const clearFilters = () => { setScope('ALL'); setIndustry('ALL'); setTop100(false); setPartnershipScope('ALL'); setShortlistOnly(false) }
-  const sortBy = (key: SortKey) => { setPage(0); if (sortKey === key) setSortDirection(value => value === 'ascending' ? 'descending' : 'ascending'); else { setSortKey(key); setSortDirection(key === 'name' || key === 'classification' || key === 'industry' || key === 'evidence' ? 'ascending' : 'descending') } }
-  const direction = (key: SortKey) => sortKey === key ? sortDirection : 'none'
-  useEffect(() => { onOmniContext({ active_filters: Object.keys(activeFilters).length ? activeFilters : undefined, visible_record_ids: visibleRecordIds }) }, [activeFilters, onOmniContext, visibleRecordIds])
-  useEffect(() => () => onOmniContext({}), [onOmniContext])
-  return <div className="surface accounts-surface">
-    <header className="page-title accounts-title"><span className="eyebrow">Customers &amp; Prospects</span><h1>{viewTitle}</h1><p>{entity === 'CUSTOMER' ? 'Review existing customer relationships, commercial activity and next steps.' : entity === 'PROSPECT' ? 'Explore classified prospects, research evidence and potential new business.' : 'Review relationship status before classifying these organizations as customers or prospects.'}</p></header>
-    <div className="portfolio-view-switch">
-      <div className="portfolio-tabs" role="tablist" aria-label="Organization lists">
-        {(['CUSTOMER', 'PROSPECT'] as const).map((value, index) => <button key={value} type="button" role="tab" id={`portfolio-tab-${value}`} aria-controls="portfolio-results" aria-selected={entity === value} tabIndex={entity === value || (entity === 'UNAVAILABLE' && index === 0) ? 0 : -1} onClick={() => changeTab(value)} onKeyDown={event => {
-          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-          event.preventDefault()
-          const next = event.key === 'Home' ? 'CUSTOMER' : event.key === 'End' ? 'PROSPECT' : value === 'CUSTOMER' ? 'PROSPECT' : 'CUSTOMER'
-          changeTab(next); document.getElementById(`portfolio-tab-${next}`)?.focus()
-        }}>{value === 'CUSTOMER' ? 'Customers' : 'Prospects'}</button>)}
-      </div>
-      {unclassifiedCount > 0 && <button type="button" className="portfolio-classification-link" aria-pressed={entity === 'UNAVAILABLE'} onClick={() => { setEntity('UNAVAILABLE'); setScope('ALL'); setPage(0) }}>Needs classification ({unclassifiedCount})</button>}
-    </div>
-    <section id="portfolio-results" role={entity === 'UNAVAILABLE' ? 'region' : 'tabpanel'} aria-label={viewTitle}>
-    <div className="portfolio-summary-grid" aria-label="Customer Portfolio summary"><StatTile label="Current view" value={shown.length} detail="Customers and Prospects matching this view" /><StatTile label="Detailed scenarios" value={shown.filter(item => item.is_rich_scenario).length} detail="Organizations with richer commercial context" /><StatTile label="Scores available" value={shown.filter(item => score(item) != null).length} detail="Customer Health assessments" /></div>
-    <Panel className="portfolio-panel" title={viewTitle} action={<span className="panel-kicker">{shown.length} results</span>}>
-      <div className="portfolio-toolbar"><SearchInput aria-label="Search Customers and Prospects" placeholder="Search Customer, industry, or location" value={query} onChange={event => setQuery(event.target.value)} /><FilterTrigger active={hasFilters} aria-controls="portfolio-filters" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(value => !value)}>Filters{hasFilters ? ` (${Object.keys(activeFilters).length})` : ''}</FilterTrigger><SelectInput className="portfolio-sort-select" aria-label="Sort Customers and Prospects" value={`${sortKey}:${sortDirection}`} onChange={event => { const [key, order] = event.target.value.split(':') as [SortKey, SortDirection]; setSortKey(key); setSortDirection(order) }}><option value="name:ascending">Name A–Z</option><option value="name:descending">Name Z–A</option><option value="attractiveness:descending">Customer Health high–low</option><option value="attractiveness:ascending">Customer Health low–high</option><option value="priority:descending">Priority high–low</option><option value="industry:ascending">Industry A–Z</option></SelectInput></div>
-      <div id="portfolio-filters" className={`portfolio-filter-panel ${filtersOpen ? 'open' : ''}`}>
-        <div className="portfolio-filter-field filters"><span>Scope</span><SelectInput aria-label="Customer scope" value={scope} onChange={event => setScope(event.target.value as Scope)}><option value="RICH">Curated scenarios</option><option value="ALL">All researched Customers and Prospects</option></SelectInput></div>
-        <FilterGroup label="Industry"><FilterChip selected={industry === 'ALL'} onClick={() => setIndustry('ALL')}>All industries</FilterChip>{industries.map(value => <FilterChip selected={industry === value} key={value} onClick={() => setIndustry(value)}>{value}</FilterChip>)}</FilterGroup>
-        <FilterGroup label="Reference classifications"><FilterChip selected={top100} onClick={() => { setTop100(value => !value); setScope('ALL') }}>BTX Top 100</FilterChip></FilterGroup>
-        <FilterGroup label="Strategic partnerships"><FilterChip selected={partnershipScope === 'ALL'} onClick={() => setPartnershipScope('ALL')}>All (Customers &amp; Prospects)</FilterChip><FilterChip selected={partnershipScope === 'EXCLUDE'} onClick={() => setPartnershipScope('EXCLUDE')}>Exclude partnerships</FilterChip><FilterChip selected={partnershipScope === 'ONLY'} onClick={() => setPartnershipScope('ONLY')}>Only partnerships</FilterChip></FilterGroup>
-        <FilterGroup label="Saved planning"><FilterChip selected={shortlistOnly} onClick={() => setShortlistOnly(value => !value)}>My growth &amp; research shortlist</FilterChip></FilterGroup>
-      </div>
-      {planningError && <Notice tone="warning">Saved planning filters are temporarily unavailable. Customer records remain visible unless a saved filter is selected.</Notice>}
-{hasFilters && <div className="portfolio-active-filters" aria-label="Active Portfolio filters"><span>Applied</span>{scope === 'RICH' && <FilterChip selected onClear={() => setScope('ALL')}>Curated scenarios</FilterChip>}{top100 && <FilterChip selected onClear={() => setTop100(false)}>BTX Top 100</FilterChip>}{partnershipScope !== 'ALL' && <FilterChip selected onClear={() => setPartnershipScope('ALL')}>{partnershipScope === 'ONLY' ? 'Only partnerships' : 'Exclude partnerships'}</FilterChip>}{shortlistOnly && <FilterChip selected onClear={() => setShortlistOnly(false)}>My shortlist</FilterChip>}{entity !== 'ALL' && <FilterChip selected >{entity === 'UNAVAILABLE' ? 'Classification unavailable' : humanize(entity.toLowerCase())}</FilterChip>}{industry !== 'ALL' && <FilterChip selected onClear={() => setIndustry('ALL')}>{industry}</FilterChip>}<Button variant="ghost" onClick={clearFilters}>Clear all filters</Button></div>}
-      <div className="portfolio-table-scroll" tabIndex={0} aria-label="Scrollable Customers and Prospects table"><table className="portfolio-data-table" aria-label="Customers and Prospects"><thead><tr>{([['name', 'Customer / Prospect'], ['classification', 'Classification'], ['industry', 'Industry'], ['attractiveness', 'Customer Health'], ['priority', 'Priority'], ['evidence', 'Evidence']] as Array<[SortKey, string]>).map(([key, title]) => <th key={key} scope="col" aria-sort={direction(key)}><button type="button" onClick={() => sortBy(key)}>{title}<span aria-hidden="true">{direction(key) === 'ascending' ? '↑' : direction(key) === 'descending' ? '↓' : '↕'}</span></button></th>)}</tr></thead><tbody>{paged.map(item => <tr key={item.id}><th scope="row" className="portfolio-name"><a href={`#/accounts/${encodeURIComponent(item.id)}`} onClick={event => { event.preventDefault(); onSelect(item.id) }}>{accountName(item)}</a><small>{item.location?.city && (item.location?.state ?? item.location?.region) ? `${item.location.city}, ${item.location.state ?? item.location.region}` : 'Location unavailable'}</small></th><td><StatusBadge value={classification(item)} kind="entity" label={classificationLabel(item)} />{item.btx_top_100 && <StatusBadge value="BTX Top 100" />}{partnershipIds.has(item.id) && <StatusBadge value="Strategic partnership" />}{shortlistIds.has(item.id) && <StatusBadge value="My shortlist" />}</td><td>{primaryIndustry(item)}</td><td className="portfolio-score">{classification(item) === 'CUSTOMER' ? (item.customer_health ? <ScoreSummary compact model={commercialDecisionSummary(item.customer_health, accountName(item))} /> : 'History needed') : 'Not applicable'}</td><td>{item.prospect_research_priority ? humanize(item.prospect_research_priority) : 'Unavailable'}</td><td><State value={item.truth_state ?? 'UNAVAILABLE'} /></td></tr>)}</tbody></table></div>
-      {pageCount > 1 && <nav className="portfolio-pagination" aria-label="Customer table pages"><Button disabled={safePage === 0} onClick={() => setPage(Math.max(0, safePage - 1))}>Previous</Button><span>Page {safePage + 1} of {pageCount} · {shown.length} results</span><Button disabled={safePage + 1 >= pageCount} onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}>Next</Button></nav>}
-      {shown.length === 0 && <Empty>No {viewTitle.toLowerCase()} match the current search and filters. Clear filters or try a different search.</Empty>}
-    </Panel>
-    </section>
-  </div>
-}
-
-function FilterGroup({ label, children }: { label: string; children: ReactNode }) { return <div className="portfolio-filter-field"><span>{label}</span><div className="chips">{children}</div></div> }
 export function Accounts(props: { accounts: Account[]; detail?: Account360; initialAssessment?: OmniAssessmentSelection; initialFederal?: OmniFederalSelection; initialSnapshot?: PortfolioSnapshot; onSnapshot?: (snapshot: PortfolioSnapshot) => void; onSelect: (id: string) => void; onBack: () => void; onOmniContext: (context: Pick<OmniContext, 'selected_assessment' | 'selected_federal_opportunity' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>) => void; location: WorkspaceLocation; onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void }) { return props.detail ? <CustomerDetail key={props.detail.account.id} accounts={props.accounts} detail={props.detail} initialAssessment={props.initialAssessment} initialFederal={props.initialFederal} onSelect={props.onSelect} onBack={props.onBack} onOmniContext={props.onOmniContext} location={props.location} onLocationChange={props.onLocationChange} /> : <Portfolio accounts={props.accounts} initialSnapshot={props.initialSnapshot} onSnapshot={props.onSnapshot} onSelect={props.onSelect} onOmniContext={props.onOmniContext} /> }
 function Signals({ items, selectedAssessmentId, onUseInOmni }: { items: Signal[]; selectedAssessmentId?: string; onUseInOmni: (selection?: OmniAssessmentSelection) => void }) { return items.length ? <div className="seller-signal-list">{items.map(item => { const brief = item.business_briefing; const accountId = brief?.canonical_account_ids[0]; if (!brief) return <article key={item.id}><h3>{item.title}</h3><p>{item.relevance_explanation}</p></article>; const selection = brief.assessment_id && brief.assessment_version && accountId ? { assessment_id: brief.assessment_id, assessment_version: brief.assessment_version, event_id: brief.id, account_id: accountId } : undefined; const selected = Boolean(selection && selection.assessment_id === selectedAssessmentId); return <SignalBriefCard key={brief.context_id ?? brief.id} brief={brief} selected={selected} onUseInOmni={() => selection && onUseInOmni(selected ? undefined : selection)} /> })}</div> : <Empty>No current public Intelligence assessment is available.</Empty> }
 

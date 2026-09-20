@@ -85,6 +85,16 @@ Full baseline after non-durable local test overrides: **788 passed / 25 failed /
 
 Step 2 files: backend api/accounts.py; modules/accounts/profile_projection.py; tests/test_profile_projections.py (two new tests, no existing tests changed); frontend types/api.ts, types/decisions.ts, types/accountProfile.ts; report, test logs, step2 screenshots. App.tsx unchanged. Step2 Actions screenshot absent because no Actions tab exists yet.
 
+## Step 3 — Accounts list
+
+Replaced the old summary cards, Priority/Evidence columns and filter box. Native SVG bookings with expandable exact monthly values; coverage/ranges remain adjacent to scores. Added persisted All/Customers/Prospects/Needs attention/Strategic partners views and live counts, search/inline chips/additional filters, saved filter selection, density, row focus/arrow navigation/Enter, bounded pagination, monograms and per-row provenance tooltip. PUBLIC_MARKET now matches the backend's Prospect classification. Exact strategic filter labels retained. Health-band choice is explicitly Unavailable because the backend has no approved bands.
+
+Tests changed: `poc-ui.test.mjs` semantic-list test now verifies the replacement columns and sort implementation; removed Priority/Evidence assertions replaced with absence assertions. Its list-context test's old curated-only filter-box assertions now verify the replacement All-view and canonical market filter, while preserving (and adding an explicit 50-row limit to) bounded Omni context checks. No unrelated surface assertions removed. Added `profiles-redesign.spec.mjs` for persistence, filtering, public/internal labels, coverage and keyboard entry.
+
+Verification: typecheck/lint/build PASS; frontend unit 84 passed / 0 failed (unchanged count); focused backend 20 passed / 0 failed; existing focused profile E2E 4 passed / 0 failed. New list E2E result recorded below. Step3 screenshots captured for all existing tabs and Intel; no Actions tab yet. React best-practices review used versioned local storage, request cleanup, derived render state, no dependencies. Files: Accounts.tsx, Portfolio.tsx, ProfileMetrics.tsx, profiles-redesign.css, poc-ui.test.mjs, profiles-redesign.spec.mjs, report/screenshots.
+
+List E2E initially counted nested sparkline table rows; corrected its new selector to direct account rows. The same check exposed and fixed arrow navigation selecting nested rows: navigation is now restricted to direct sibling account rows. Final new list E2E: 1 passed / 0 failed.
+
 ## Unverified / remaining
 
 - Steps 1–6 are in progress, not complete.

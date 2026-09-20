@@ -1,0 +1,21 @@
+import { test, expect } from '@playwright/test'
+
+test('account views persist, filter canonical rows and support keyboard navigation', async ({ page }) => {
+  await page.goto('/#/accounts')
+  const table = page.getByRole('table', { name: 'Customers and Prospects', exact: true })
+  await expect(table).toBeVisible()
+  await expect(table.getByRole('columnheader', { name: 'Priority', exact: true })).toHaveCount(0)
+  await expect(table.getByRole('columnheader', { name: 'Evidence', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: /^Customers \d/ }).click()
+  await page.reload()
+  await expect(page.getByRole('button', { name: /^Customers \d/ })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Boeing')
+  const row = table.locator(':scope > tbody > tr')
+  await expect(row).toHaveCount(1)
+  await expect(row).toContainText('Data Coverage')
+  await expect(row).toContainText('public')
+  await expect(row).toContainText('internal')
+  await row.focus()
+  await row.press('Enter')
+  await expect(page.getByRole('heading', { level: 1, name: 'Boeing', exact: true })).toBeVisible()
+})
