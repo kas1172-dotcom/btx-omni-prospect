@@ -24,6 +24,13 @@ try {
       if (['step5', 'step6', 'final'].includes(phase) && name === 'Commercial') {
         await page.getByRole('heading', { name: 'Commercial decision panel', exact: true }).waitFor({ timeout: 30000 })
       }
+      if (['step6', 'final'].includes(phase) && name === 'Relationships') {
+        await page.locator('.ranked-relationships[aria-busy="false"]').waitFor({ timeout: 30000 })
+        await page.waitForLoadState('networkidle')
+        // Let the initial selection/context render settle before checking again.
+        await page.waitForTimeout(1000)
+        await page.locator('.ranked-relationships[aria-busy="false"]').waitFor({ timeout: 30000 })
+      }
       await page.screenshot({ path: resolve(directory, `boeing-${name.toLowerCase()}.png`), fullPage: true })
     } else console.log(`${phase}: ${name} tab absent; no screenshot fabricated`)
   }

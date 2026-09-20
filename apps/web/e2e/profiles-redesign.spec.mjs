@@ -1,5 +1,20 @@
 import { test, expect } from '@playwright/test'
 
+test('Relationships keeps ranked routes visible and the full graph secondary', async ({ page }) => {
+  await page.goto('/#/accounts/boeing')
+  await page.getByRole('tab', { name: 'Relationships', exact: true }).click()
+  const relationships = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
+  await expect(relationships).toHaveAttribute('aria-busy', 'false')
+  await expect(relationships.locator('.ranked-route-cards').first()).toBeVisible()
+  await expect(relationships).toContainText('Hypothetical')
+  await expect(relationships).toContainText('Data Coverage')
+  await expect(relationships.locator('.ranked-network')).toBeHidden()
+  await relationships.getByRole('button', { name: 'Explore network', exact: true }).click()
+  await expect(relationships.locator('.ranked-network')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Contacts', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Research', exact: true }).first()).toBeVisible()
+})
+
 test('Boeing commercial line reconciles and uses governed follow-up preview', async ({ page }) => {
   await page.goto('/#/accounts/boeing')
   await expect(page.getByRole('heading', { level: 1, name: 'Boeing', exact: true })).toBeVisible()

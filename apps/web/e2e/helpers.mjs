@@ -3,8 +3,11 @@ import { expect } from '@playwright/test'
 export async function openCustomerSection(page, name) {
   const tabs = page.getByRole('tablist', { name: 'Profile sections' })
   const label = String(name)
-  const tab = /relationship|contacts/i.test(label) ? 'Relationships' : /intelligence/i.test(label) ? 'Intelligence' : /program|capabilit|opportunit|Growth|planning/i.test(label) ? 'Opportunities' : /Commercial|Related BTX|Decision panel|Actions/i.test(label) ? 'Commercial' : undefined
-  if (tab && await tabs.count()) await tabs.getByRole('tab', { name: tab, exact: true }).click()
+  const tab = /relationship|contacts/i.test(label) ? 'Relationships' : /intelligence/i.test(label) ? 'Intelligence' : /Related BTX|Commercial 360/i.test(label) ? 'More' : /program|capabilit|opportunit|Growth|planning/i.test(label) ? 'Overview' : /Actions/i.test(label) ? 'Actions' : /Commercial|Decision panel/i.test(label) ? 'Commercial' : undefined
+  if (tab) {
+    await expect(tabs).toBeVisible()
+    await tabs.getByRole('tab', { name: tab, exact: true }).click()
+  }
   const trigger = page.getByRole('button', { name }).first()
   await expect(trigger).toBeVisible()
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click()
@@ -20,6 +23,11 @@ export async function openRelationshipWorkspace(page) {
   await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   const workspace = page.getByRole('region', { name: 'Ranked canonical relationships', exact: true })
   await expect(workspace).toHaveAttribute('aria-busy', 'false')
+  // Desktop graph is now secondary, not automatically visible on profile entry.
+  if (page.viewportSize().width > 760) {
+    const graphToggle = workspace.getByRole('button', { name: 'Explore network', exact: true })
+    if (await graphToggle.count()) await graphToggle.click()
+  }
   return workspace
 }
 
