@@ -31,3 +31,12 @@
 - Selecting a result uses the same explicit marker-selection intent, opens its detail panel, and requests fixed site camera framing.
 - No Places provider is configured in this repository beyond the basemap key, so no external prediction request is made. This avoids making local acceptance depend on a key and does not fabricate provider viewports.
 - No dependency added; no test removed or modified.
+
+## 2026-09-20 — Step 3 synchronized table
+
+- Replaced the visible sidebar/card list with a fixed-row, sticky-header table below the map. Its scroll container is capped at 320 px; the legacy list DOM remains hidden temporarily for navigation compatibility and will be removed with the filter cleanup.
+- The table and map toolbar derive from the same unclustered marker collection. Generated presentation clusters never create duplicate rows.
+- Row selection uses explicit marker selection/camera intent. Marker or search selection scrolls the matching row into view.
+- Distance is straight-line and appears only while a selected origin exists. Itinerary controls reuse canonical account/facility markers and do not invent travel time or meeting confirmation.
+- Added `map-list-model.test.mjs` to assert shared array/count behavior and cluster exclusion.
+- No dependency added; no test removed or weakened.

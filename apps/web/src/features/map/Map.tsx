@@ -4,7 +4,7 @@ import { Button, Drawer, Empty, FilterChip, FilterTrigger, StatusBadge } from '.
 import { MapCanvas, type MapCameraRequest } from './MapCanvas'
 import { MapAccountDetails } from './MapAccountDetails'
 import { SignalBriefCard } from '../../components/SignalBriefCard'
-import { DEFAULT_MAP_LAYERS, FULFILLMENT_LABELS, buildMapMarkers, filterMapRecords, filterMarkersByRadius, type MapFilters, type MapMarker } from './mapModel'
+import { DEFAULT_MAP_LAYERS, FULFILLMENT_LABELS, buildMapMarkers, filterMapRecords, filterMarkersByRadius, haversineMiles, type MapFilters, type MapMarker } from './mapModel'
 import type { PendingMapAccount } from '../../types/api'
 import type { MapViewSnapshot } from './mapModel'
 import { ItineraryPlanner, type ItineraryPlannerHandle } from './ItineraryPlanner'
@@ -13,6 +13,7 @@ import type { AccountPlanning } from '../../types/api'
 import { MapFilterPanel } from './MapFilterPanel'
 import { layerOptions, relationshipOptions } from './mapPresentation'
 import { MapSearch } from './MapSearch'
+import { synchronizedMapSites } from './mapListModel'
 
 const layerMarkerKind = { customers: 'customer', prospects: 'prospect', 'public-facilities': 'public-facility', 'btx-facilities': 'btx-facility', intelligence: 'intelligence' }
 const defaults: MapFilters = { query: '', coverage: 'ALL', top100: false, industries: [], relationships: [], layers: DEFAULT_MAP_LAYERS, signalTiming: ['CURRENT', 'UPCOMING'], strategicPartnership: 'ALL', shortlistOnly: false }
@@ -31,6 +32,7 @@ export function Map({ records, pendingAccounts = [], initialSnapshot, initialAcc
   const [planningMessage, setPlanningMessage] = useState('')
   const [cameraRequest, setCameraRequest] = useState<MapCameraRequest>()
   const itinerary = useRef<ItineraryPlannerHandle>(null)
+  const rowRefs = useRef(new globalThis.Map<string, HTMLTableRowElement>())
   useEffect(() => {
     const restore = (event: Event) => {
       const snapshot = (event as CustomEvent<MapViewSnapshot | undefined>).detail
@@ -64,6 +66,7 @@ export function Map({ records, pendingAccounts = [], initialSnapshot, initialAcc
   useEffect(() => { onMapEventSelect?.(selected?.eventId); onMapFacilitySelect(selected?.facilityId, selected?.accountId) }, [selected, onMapEventSelect, onMapFacilitySelect])
   const focal = selected && selected.kind !== 'cluster' ? selected : undefined
   const markers = useMemo(() => filterMarkersByRadius(allMarkers, focal, filters.radiusMiles), [allMarkers, focal, filters.radiusMiles])
+  const sitesInView = useMemo(() => synchronizedMapSites(markers), [markers])
   const prioritizedMarkers = useMemo(() => {
     const representedAccounts = new Set<string>(); const firstAccountSites: MapMarker[] = []; const additionalSites: MapMarker[] = []
     for (const marker of markers) {
@@ -78,6 +81,7 @@ export function Map({ records, pendingAccounts = [], initialSnapshot, initialAcc
   const selectedSignal = selected?.eventId ? signals.find(signal => signal.event_id === selected.eventId) : undefined
   const accountName = useCallback((id: string) => records.find(record => record.account_id === id)?.name ?? 'Open Customer', [records])
   const selectMarker = useCallback((marker: MapMarker) => { setSelected(marker); setCameraRequest({ key: `selection:${marker.id}:${Date.now()}`, points: [marker] }); onMapEventSelect?.(marker.eventId); if (marker.facilityId) onMapFacilitySelect(marker.facilityId, marker.accountId); else if (marker.accountId) onMapAccountSelect(marker.accountId) }, [onMapAccountSelect, onMapEventSelect, onMapFacilitySelect])
+  useEffect(() => { if (selected?.id) rowRefs.current.get(selected.id)?.scrollIntoView({ block: 'nearest' }) }, [selected?.id])
   const clearSelection = () => { setSelected(undefined); onMapEventSelect?.(); onMapFacilitySelect() }
   const updateFilters = (next: MapFilters, mode: 'push' | 'replace' = 'push') => {
     snapshotMode.current = mode
@@ -119,6 +123,7 @@ export function Map({ records, pendingAccounts = [], initialSnapshot, initialAcc
       {selected && <aside className="map-selection" aria-label="Selected map location"><div className="map-selection-content"><button className="map-selection-close" aria-label="Close selected map location" onClick={clearSelection}>×</button><span className="eyebrow">{markerKindLabel[selected.kind] ?? 'Selected map location'}</span><h2>{title}</h2>{selectedSignal ? <><StatusBadge value={selectedSignal.marker_mode === 'UPCOMING' ? 'Upcoming source-supported event' : 'Current collected intelligence'} kind="evidence" /><SignalBriefCard brief={selectedSignal} accountName={accountName} onAccount={onAccount} onUseInOmni={() => onMapEventSelect?.(selectedSignal.event_id)} selected /></> : <>{selectedRecord && <MapAccountDetails key={selectedRecord.id} record={selectedRecord} />}{selectedFacility && !selectedRecord && <><p>{'city' in selectedFacility ? `${selectedFacility.city}, ${selectedFacility.region}` : 'Verified facility location'}</p><p>{'location_type' in selectedFacility ? selectedFacility.location_type : 'BTX facility'} · location verified</p>{'source_url' in selectedFacility && selectedFacility.source_url && <a href={selectedFacility.source_url} target="_blank" rel="noreferrer">Inspect location source →</a>}</>}{planningMessage && <p role="status">{planningMessage}</p>}{selected?.accountId && <div className="map-selection-actions">{selected.facilityId && <Button variant="primary" size="touch" onClick={() => itinerary.current?.add(selected)}>Add to itinerary</Button>}<Button size="touch" onClick={() => void setShortlist()}>{selectedShortlist?.active ? 'Remove from shortlist' : 'Add to shortlist'}</Button><Button size="touch" onClick={() => onAccount(selected.accountId!)}>Open Organization 360</Button><Button size="touch" onClick={() => onRelationships(selected.accountId!)}>Explore relationships</Button><Button size="touch" onClick={() => window.dispatchEvent(new Event('btx:open-omni'))}>Ask Omni</Button></div>}</>}</div></aside>}
     </section>
     </div>
+    <section className="map-site-table" aria-label="Map site table"><header><div><h2>Sites in view</h2><p aria-live="polite"><strong>{sitesInView.length}</strong> sites in view · <strong>{pending.length}</strong> location pending.</p></div></header><div className="map-site-table-scroll"><table><thead><tr><th>Name</th><th>Type</th><th>Market</th><th>Status</th>{focal && <th>Distance from origin</th>}<th><span className="sr-only">Itinerary</span></th></tr></thead><tbody>{sitesInView.map(marker => { const record = marker.accountId ? records.find(item => item.account_id === marker.accountId && (!marker.facilityId || item.facility_id === marker.facilityId)) : undefined; return <tr key={marker.id} ref={node => { if (node) rowRefs.current.set(marker.id, node); else rowRefs.current.delete(marker.id) }} className={selected?.id === marker.id ? 'selected' : undefined}><td><button type="button" aria-pressed={selected?.id === marker.id} onClick={() => selectMarker(marker)}><strong>{marker.label}</strong></button></td><td>{markerKindLabel[marker.kind] ?? 'Mapped site'}</td><td>{record?.primary_markets.join(' · ') || 'Not applicable'}</td><td>{record ? relationshipOptions.find(([id]) => id === record.account_segment)?.[1] ?? 'Needs review' : marker.kind === 'btx-facility' ? 'BTX site' : 'Verified'}</td>{focal && <td>{Math.round(haversineMiles(focal, marker))} mi straight-line</td>}<td>{marker.accountId && marker.facilityId ? <Button size="touch" variant="ghost" onClick={() => itinerary.current?.add(marker)}>Add to itinerary</Button> : <span>—</span>}</td></tr> })}</tbody></table></div>{pending.length > 0 && <details><summary>Location pending ({pending.length})</summary><p>These matching organizations remain available without fabricated coordinates.</p><ul>{pending.map(account => <li key={account.id}><button type="button" onClick={() => onAccount(account.account_id)}>{account.name} · {account.primary_markets.join(' · ')}</button></li>)}</ul></details>}</section>
     <Drawer open={controlsOpen} onClose={() => setControlsOpen(false)} titleId="map-filter-title" className="map-filter-sheet"><header><div><span className="eyebrow">Map controls</span><h2 id="map-filter-title">Layers &amp; filters</h2></div><Button variant="ghost" onClick={() => setControlsOpen(false)}>Close</Button></header>
       <MapFilterPanel filters={draftFilters} onChange={setDraftFilters} onReset={() => setDraftFilters(defaults)} onClose={() => { updateFilters(draftFilters, 'push'); setControlsOpen(false) }} changed={draftChanged} markets={layers} naics={naicsOptions} filterOptions={filterOptions} fulfillment={fulfillmentOptions} planning={planning} planningError={planningError} focal={focal} />
     </Drawer>
