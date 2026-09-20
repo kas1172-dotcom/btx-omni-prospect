@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Account, Alert, CommandCenter, CommandPriorityItem, MonitorSignalBrief, OmniAssessmentSelection, OmniContext, Signal } from '../../types/api'
 import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { curatedSignalBrief } from '../../components/signalBriefModel'
@@ -52,8 +52,7 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   const sourceScopedPriority = useMemo(() => allPriority.filter(item => matchesScope(item, sourceScope) && queryMatch(item)), [allPriority, sourceScope, queryMatch])
   const sourceScopedValidation = useMemo(() => allValidation.filter(item => matchesScope(item, sourceScope) && queryMatch(item)), [allValidation, sourceScope, queryMatch])
   const sourceCounts = useMemo(() => ({ ALL: sourceScopedPriority.length + sourceScopedValidation.length, PUBLIC_SIGNAL: sourceScopedPriority.filter(item => item.kind === 'PUBLIC_SIGNAL').length + sourceScopedValidation.length, COMMERCIAL_REVIEW: sourceScopedPriority.filter(item => item.kind === 'COMMERCIAL_REVIEW').length }), [sourceScopedPriority, sourceScopedValidation])
-  const sortedPriority = useMemo(() => priority.map((item, rank) => ({ item, rank })).sort((left, right) => {
-    if (filters.sort === 'RANKED') return left.rank - right.rank
+  const sortedPriority = useMemo(() => filters.sort === 'RANKED' ? priority : priority.map((item, rank) => ({ item, rank })).sort((left, right) => {
     if (filters.sort === 'RECENT') return missingLastDate(left.item, right.item, -1)
     if (filters.sort === 'OLDEST') return missingLastDate(left.item, right.item, 1)
     const comparison = name(left.item.account_id ?? '').localeCompare(name(right.item.account_id ?? ''))
@@ -62,6 +61,15 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   const priorityPage = clampPage(filters.page, sortedPriority.length, PAGE_SIZE)
   const validationPage = clampPage(filters.validationPage, validation.length, PAGE_SIZE)
   const displayedPriority = useMemo(() => pageSlice(sortedPriority, priorityPage, PAGE_SIZE), [sortedPriority, priorityPage])
+  const pendingReview = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!pendingReview.current) return
+    const target = document.getElementById(`priority-${pendingReview.current}`)
+    if (!target) return
+    target.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+    target.focus({ preventScroll: true })
+    pendingReview.current = undefined
+  }, [displayedPriority])
   const displayedValidation = useMemo(() => pageSlice(validation, validationPage, PAGE_SIZE), [validation, validationPage])
   const businessUnits = useMemo(() => [...new Set([...allPriority, ...allValidation].flatMap(item => item.business_unit_ids ?? []))].sort(), [allPriority, allValidation])
   const curatedIds = useMemo(() => commandCenter?.curated_reference_signal_ids ?? [], [commandCenter])
@@ -76,8 +84,18 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
   const changeFilters = (next: TodayFilters) => { setSelectedBriefContextId(undefined); setSelectedEventId(undefined); setSelectedAssessment(undefined); setSelectedEventAccountId(undefined); setSelectedProgramId(undefined); onEventSelect(undefined); onFilters(next); onLocationChange(locationFor(next, undefined), 'replace') }
   const inspectPriority = (id: string) => {
     const target = document.getElementById(`priority-${id}`)
-    target?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
-    target?.focus({ preventScroll: true }); onLocationChange(locationFor(filters, id), 'replace')
+    if (target) {
+      target.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+      target.focus({ preventScroll: true })
+      onLocationChange(locationFor(filters, id), 'replace')
+      return
+    }
+    const rank = allPriority.findIndex(item => item.id === id)
+    if (rank < 0) return
+    pendingReview.current = id
+    const next: TodayFilters = { ...filters, kind: 'ALL', accountId: '', businessUnit: '', query: '', sort: 'RANKED', page: Math.floor(rank / PAGE_SIZE) + 1 }
+    changeFilters(next)
+    onLocationChange(locationFor(next, id), 'replace')
   }
   const changeMarket = (nextMarket: string) => {
     const nextHub = commandCenter?.market_hubs.find(hub => hub.market === nextMarket)
@@ -98,8 +116,8 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
     <Tabs label="Today sections" value={filters.view} tabs={[{ value: 'PRIORITIES', label: 'Priorities' }, { value: 'MARKET_HUBS', label: 'Market Hubs' }]} onChange={view => changeFilters({ ...filters, view })} className="today-page-tabs" />
     {filters.view === 'PRIORITIES' ? <>
     <section className="today-priority-summary" aria-label="Top priorities">
-      {allPriority.slice(0, 3).map(item => <article key={item.id} className="today-priority-card" data-summary-id={item.id}>
-        <div className="today-item-heading"><span className="eyebrow">{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence' : 'Public intelligence') : 'Internal intelligence'}</span><AttentionBadge level={attentionFor(item)} /></div>
+      {allPriority.slice(0, 3).map(item => <article key={item.id} className="today-priority-card" data-summary-id={item.id} data-high-importance={isHighImportance(item)}>
+        <div className="today-item-heading"><span className="eyebrow">{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence' : 'Public intelligence') : 'Internal intelligence'}</span><span title={item.triage_reason}><AttentionBadge level={attentionFor(item)} /></span></div>
         <h2>{item.account_id ? name(item.account_id) : 'Prospect research'}: {item.signal_brief?.headline ?? item.reason}</h2>
         <p>{item.signal_brief?.what_happened ?? item.reason}</p>
         <p className="today-card-next">{item.recommended_action ?? 'Review supporting evidence before choosing an action.'}</p>
@@ -121,14 +139,14 @@ export function Today({ commandCenter, state, alerts, signals, accounts, filters
           const familyCount = priority.filter(candidate => candidate.account_id === item.account_id && candidate.recommended_action === item.recommended_action).length
           return (
           <li className="today-attention-item" key={item.id} id={`priority-${item.id}`} tabIndex={-1} data-priority-id={item.id}>
-            <span className="today-rank" aria-label={`Priority ${canonicalRank}`}>{canonicalRank}</span>
+            <span className="today-rank" aria-label={`Priority ${canonicalRank}`} title={item.triage_reason}>{canonicalRank}</span>
             <div className="today-item-heading"><button className="today-customer-link" disabled={!item.account_id} onClick={() => item.account_id && onAccount(item.account_id)}>{item.account_id ? name(item.account_id) : 'Prospect research'}</button><small>{item.kind === 'PUBLIC_SIGNAL' ? (item.lifecycle_state === 'SAVED_RECENT' ? 'Saved public intelligence · revalidate' : 'Public intelligence') : 'Internal intelligence'}{familyCount > 1 ? ` · ${familyCount} related recommendations` : ''}</small>{item.observed_at && <time dateTime={item.observed_at}>{item.data_mode === 'SAMPLE' ? `Sample data as of ${localDateLabel(item.observed_at)}` : localDateLabel(item.observed_at)}</time>}</div>
             <div className="today-priority-meaning"><h3>{item.signal_brief?.headline ?? item.reason}</h3><p><strong>Why:</strong> {item.reason}</p><p><strong>Next:</strong> {item.recommended_action ?? 'Review evidence before choosing the next action.'}</p>
               <Disclosure title="Evidence and next action">
-                {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedBriefContextId === (item.signal_brief.assessment_id ?? item.signal_brief.context_id ?? item.signal_brief.id)} /> : <><p className="today-evidence-note">BTX commercial record · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button variant="primary" onClick={() => onLocationChange({ ...location, subview: 'recovery', recordId: item.id, anchor: `priority-${item.id}` }, 'push')}>Open recovery briefing</Button>{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="ghost" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
+                {item.signal_brief ? <SignalBriefCard brief={item.signal_brief} priority={item} accountName={name} onAccount={onAccount} onUseInOmni={useBrief} selected={selectedBriefContextId === (item.signal_brief.assessment_id ?? item.signal_brief.context_id ?? item.signal_brief.id)} /> : <><p className="today-evidence-note">BTX commercial record · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'Unavailable'}</p><div className="card-actions"><Button variant="primary" onClick={() => onLocationChange({ ...location, subview: 'recovery', recordId: item.id, anchor: `priority-${item.id}` }, 'push')}>Open recovery briefing</Button>{item.account_id && <Button onClick={() => onAccount(item.account_id!)}>Review Customer</Button>}{alertById.get(item.id) && <Button variant="ghost" onClick={() => onAction(alertById.get(item.id)!)}>Create action</Button>}</div></>}
               </Disclosure>
             </div>
-            <AttentionBadge level={attentionFor(item)} />
+            <span className="today-priority-attention" title={item.triage_reason}><AttentionBadge level={attentionFor(item)} /></span>
           </li> )})}</ol><WorklistPagination page={priorityPage} pageSize={PAGE_SIZE} total={priority.length} onPage={page => changeFilters({ ...filters, page })} /></> : <Empty>{allPriority.length ? 'No action priorities match the current search and filters. The complete eligible queue is unchanged.' : validation.length ? 'No eligible action priorities exist. Review the separate validation lane below.' : 'No eligible action priorities exist for this briefing.'}</Empty>}
       </Panel>
       {filters.kind !== 'COMMERCIAL_REVIEW' && <Panel title="Needs validation" action={<span className="panel-kicker">{validation.length} to review</span>}>

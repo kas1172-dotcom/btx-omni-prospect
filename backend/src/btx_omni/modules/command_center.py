@@ -7,9 +7,9 @@ from datetime import timedelta
 from typing import Any
 
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER
+from btx_omni.modules.priority_ordering import order_priorities, priority_candidate
 from btx_omni.monitor.briefs import SignalBrief
 
-_SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
 SAVED_INTELLIGENCE_WINDOW_DAYS = 60
 _SELLER_FACING_EVENT_STATES = {
     "RESOLVED_ELIGIBLE",
@@ -113,12 +113,10 @@ def build_command_center(
     generated_at,
     public_as_of=None,
 ) -> dict[str, Any]:
-    """Compose seller sections without deriving new facts or priority policy.
+    """Compose seller sections and apply source-neutral action triage.
 
-    Commercial alerts retain their governed severity order. Current public briefs
-    follow alerts, with strategic-watch matches first, then publication timestamp
-    descending and stable brief ID. Radar is ordered by its source-supported future
-    timestamp and stable ID. Market hubs follow the canonical taxonomy order.
+    The separate validation lane retains its existing admission and ordering.
+    Radar and market navigation retain their own contextual ordering.
     """
     # Commercial SAMPLE records use the explicit demo clock. Public intelligence
     # retains real publication dates and is evaluated against the real read time.
@@ -194,6 +192,8 @@ def build_command_center(
             "kind": "COMMERCIAL_REVIEW",
             "account_id": item.account_id,
             "severity": item.severity,
+            **({"alert_kind": str(item.type)} if hasattr(item, "type") else {}),
+            **({"status": str(item.status)} if hasattr(item, "status") else {}),
             "reason": item.trigger_reason,
             "recommended_action": item.recommended_action,
             "evidence_ids": item.evidence_ids,
@@ -205,19 +205,18 @@ def build_command_center(
         }
         for item in alerts
     ]
-    alert_items.sort(
-        key=lambda item: (
-            _SEVERITY_ORDER.get(item["severity"].upper(), 9),
-            -item["observed_at"].timestamp(),
-            item["id"],
-        )
-    )
     action_briefs = tuple(
         brief for brief in (*current, *recent_saved) if _is_action_priority(brief)
     )
     signal_items = [
         _public_item(brief, outcome_lane="ACTION_PRIORITIES") for brief in action_briefs
     ]
+    priorities = order_priorities([
+        *(priority_candidate(item, source) for item, source in zip(alert_items, alerts, strict=True)),
+        *(priority_candidate(item, source) for item, source in zip(signal_items, action_briefs, strict=True)),
+    ])
+    alert_items = [item for item in priorities if item["kind"] == "COMMERCIAL_REVIEW"]
+    signal_items = [item for item in priorities if item["kind"] == "PUBLIC_SIGNAL"]
     review_briefs = tuple(
         sorted(
             (
@@ -392,7 +391,7 @@ def build_command_center(
         "needs_validation_assessments": tuple(validation_items),
         # Filter consumers need the whole governed sequence, not eight alerts
         # selected before customer/BU scope. Cards are a projection of this list.
-        "priority_briefing": (*alert_items, *signal_items),
+        "priority_briefing": priorities,
         "current_signal_briefs": tuple(_brief_dict(item) for item in current),
         "saved_recent_signal_briefs": tuple(_brief_dict(item) for item in recent_saved),
         "upcoming_radar": tuple(_brief_dict(item) for item in upcoming),
@@ -409,8 +408,8 @@ def build_command_center(
         ),
         "missingness": tuple(missingness),
         "ordering": (
-            "Commercial reviews: HIGH, MEDIUM, LOW; then observed timestamp descending; then stable ID.",
-            "Current signals: strategic-watch match first; then publication timestamp descending; then stable ID.",
+            "Action priorities: triage class; complete assessments first; underlying score descending; due date; oldest observation; stable ID. Source is not a sort key.",
+            "Current signal context: strategic-watch match first; then publication timestamp descending; then stable ID.",
             "Radar: source-supported future timestamp ascending; then stable ID.",
             "Markets: canonical taxonomy order.",
         ),

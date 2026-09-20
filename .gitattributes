@@ -1,0 +1,4 @@
+# Reviewed byte-hashed inputs must match their LF Git blobs on every checkout.
+/docs/research/enriched_commercial_sample.json text eol=lf
+/docs/research/btx_original_workbook_references.json text eol=lf
+/backend/tests/fixtures/g17-ip-sa-20260908.txt text eol=lf

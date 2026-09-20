@@ -35,7 +35,7 @@ const allowedSubviews: Record<Surface, Set<string>> = {
   actions: new Set(['actions', 'suggestions', 'completed']), communications: new Set(),
   settings: new Set(['personal', 'access', 'integrations']), monitor: new Set(),
 }
-const allowedFilterKeys = new Set(['profileTab', 'lane', 'kind', 'account', 'business_unit', 'market', 'metric', 'average', 'compare', 'customer', 'source', 'timing', 'status', 'priority', 'query', 'notice_type', 'fiscal_year', 'classification', 'industry', 'industries', 'relationships', 'layers', 'signal_timing', 'naics', 'business_units', 'capabilities', 'fulfillment', 'radius', 'scope', 'partnership', 'shortlist', 'top100', 'coverage', 'page', 'validation_page', 'sort_direction', 'suggestion_view'])
+const allowedFilterKeys = new Set(['view', 'profileTab', 'lane', 'kind', 'account', 'business_unit', 'market', 'metric', 'average', 'compare', 'customer', 'source', 'timing', 'status', 'priority', 'query', 'notice_type', 'fiscal_year', 'classification', 'industry', 'industries', 'relationships', 'layers', 'signal_timing', 'naics', 'business_units', 'capabilities', 'fulfillment', 'radius', 'scope', 'partnership', 'shortlist', 'top100', 'coverage', 'page', 'validation_page', 'sort_direction', 'suggestion_view'])
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,199}$/
 const safeValue = (value: string) => value.length <= 200 && [...value].every(character => character >= ' ' && character !== '\u007f')
 

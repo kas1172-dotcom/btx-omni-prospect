@@ -7,6 +7,14 @@ const source = await readFile(new URL('../src/app/navigation.ts', import.meta.ur
 const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
 const { decodeWorkspaceLocation, historyUpdate, workspaceLocation, workspaceHash } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
 
+test('Today page tab and market survive URL serialization independently of recovery subview', () => {
+  const filters = { view: 'MARKET_HUBS', market: 'Commercial Aerospace' }
+  const restored = workspaceLocation(workspaceHash({ surface: 'today', filters }))
+  assert.deepEqual(restored.filters, filters)
+  assert.equal(restored.subview, undefined)
+  assert.equal(workspaceLocation('#/today?view=recovery&record=alert-1').subview, 'recovery')
+})
+
 test('workspace locations round-trip the complete stable investigation context', () => {
   const location = {
     surface: 'accounts', accountId: 'lockheed-martin', scope: 'FACILITY', facilityId: 'troy-al', partnershipId: 'rtx-collins-aerospace', subview: 'relationships',

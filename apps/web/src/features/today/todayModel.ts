@@ -1,5 +1,4 @@
 import type { CommandPriorityItem } from '../../types/api'
-import { assessmentAttention } from '../../components/attentionModel'
 
 export function greetingFor(date: Date): string {
   const hour = date.getHours()
@@ -9,17 +8,12 @@ export function greetingFor(date: Date): string {
 }
 
 export function isHighImportance(item: CommandPriorityItem): boolean {
-  return item.signal_brief
-    ? assessmentAttention(item.signal_brief) === 'HIGH'
-    : item.severity?.toUpperCase() === 'HIGH'
+  return item.high_importance === true
 }
 
 export function attentionFor(item: CommandPriorityItem): 'HIGH' | 'MEDIUM' | 'LOW' | 'UNAVAILABLE' {
   if (isHighImportance(item)) return 'HIGH'
-  if (item.signal_brief) return assessmentAttention(item.signal_brief)
-  return ['HIGH', 'MEDIUM', 'LOW'].includes(item.severity ?? '')
-    ? item.severity as 'HIGH' | 'MEDIUM' | 'LOW'
-    : 'UNAVAILABLE'
+  return item.high_importance === false ? 'MEDIUM' : 'UNAVAILABLE'
 }
 
 export function localDateLabel(value?: string): string | undefined {

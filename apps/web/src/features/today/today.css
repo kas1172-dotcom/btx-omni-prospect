@@ -23,6 +23,9 @@
   display: grid;
   gap: 18px;
 }
+.today-priority-card[data-high-importance=true]{border-top:3px solid var(--text-primary)}
+.today-priority-attention{align-self:start;justify-self:start}
+@media(max-width:760px){.today-priority-attention{grid-column:2}}
 .recovery-toolbar,
 .recovery-toolbar > div {
   display: flex;

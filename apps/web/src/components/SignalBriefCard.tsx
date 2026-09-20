@@ -1,4 +1,4 @@
-import type { MonitorSignalBrief, OmniAssessmentSelection } from '../types/api'
+import type { CommandPriorityItem, MonitorSignalBrief, OmniAssessmentSelection } from '../types/api'
 import { Button, Disclosure, EvidenceSource, State } from './UI'
 import { GovernedExplanationDisclosure } from './GovernedExplanationDisclosure'
 import { EvidencePassages } from './EvidencePassages'
@@ -9,18 +9,19 @@ import { ScoreSummary } from './ScoreSummary'
 import { commercialDecisionSummary } from './scoreSummaryModel'
 import { AttentionBadge } from './AttentionBadge'
 import { assessmentAttention } from './attentionModel'
+import { attentionFor } from '../features/today/todayModel'
 import './signalBrief.css'
 
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Date unavailable'
 const display = (value: string) => value.replaceAll('_', ' ').toLocaleLowerCase().replace(/^./, letter => letter.toUpperCase())
-export function SignalBriefCard({ brief, accountName, onAccount, onUseInOmni, selected = false }: { brief: MonitorSignalBrief; accountName?: (id: string) => string; onAccount?: (id: string, assessment?: OmniAssessmentSelection) => void; onUseInOmni?: (brief: MonitorSignalBrief) => void; selected?: boolean }) {
+export function SignalBriefCard({ brief, priority, accountName, onAccount, onUseInOmni, selected = false }: { brief: MonitorSignalBrief; priority?: CommandPriorityItem; accountName?: (id: string) => string; onAccount?: (id: string, assessment?: OmniAssessmentSelection) => void; onUseInOmni?: (brief: MonitorSignalBrief) => void; selected?: boolean }) {
   const accountId = brief.canonical_account_ids[0]
   const eventDate = brief.relevant_event_timestamp ?? brief.publication_timestamp
   const records = brief.evidence_package?.commercial_records ?? []
   const evidenceCount = new Set([...(brief.evidence_ids ?? []), ...(brief.references ?? []).map(item => item.evidence_id), ...records.map(item => item.record_id)]).size
   const coverage = brief.signal_confidence?.data_coverage
   const knowledgeLabel = !coverage ? 'Still being assessed' : Number(coverage.ratio) >= .8 ? 'Substantial' : Number(coverage.ratio) >= .5 ? 'Partial' : 'Limited'
-  const attention = assessmentAttention(brief)
+  const attention = priority ? attentionFor(priority) : assessmentAttention(brief)
   return <article className={`seller-signal-brief attention-${attention.toLocaleLowerCase()}`}>
     <div className="seller-signal-head">
       <div><span className="eyebrow">{brief.event_timing === 'UPCOMING' ? 'Upcoming radar' : 'Signal brief'}</span><h3>{brief.headline}</h3></div>

@@ -99,11 +99,11 @@ for (const width of [390, 1440]) {
     })
 
     await page.goto('/#/today')
-    await page.getByRole('button', { name: 'Public intelligence', exact: true }).click()
+    await page.getByRole('group', { name: 'Priority source' }).getByRole('button', { name: /^Public/ }).click()
     await expect(page.locator('.today-lane-summary')).toContainText('1 filtered · 1 displayed · 1 total needs validation · 1 filtered')
     await expect(page.locator('[data-priority-id]')).toHaveCount(1)
     await expect(page.locator('[data-validation-id]')).toHaveCount(1)
-    const accountFilter = page.getByRole('combobox', { name: 'Filter priorities by customer or prospect' })
+    const accountFilter = page.getByRole('combobox', { name: 'Customer or prospect' })
     await accountFilter.fill('Lockheed Martin')
     await page.getByRole('option', { name: /Lockheed Martin/ }).click()
     await expect(page.locator('.today-lane-summary')).toContainText('0 filtered · 0 displayed · 1 total needs validation · 1 filtered')

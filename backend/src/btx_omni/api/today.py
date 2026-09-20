@@ -23,7 +23,8 @@ def _development_public_fixtures(now: datetime) -> tuple[SignalBrief, ...]:
         "freshness": "CURRENT",
         "source_url": "https://example.com/btx-today-development-fixture",
         "source_system": "development-fixture",
-        "data_mode": "LIVE_PUBLIC",
+        "data_mode": "SAMPLE",
+        "event_type": "CONTRACT_AWARD",
         "resolution_state": "RESOLVED",
         "seller_promotion_state": "RESOLVED_ELIGIBLE",
         "what_to_watch": "Review the source-supported date.",
@@ -43,7 +44,7 @@ def _development_public_fixtures(now: datetime) -> tuple[SignalBrief, ...]:
 def _development_public_fixtures_enabled(runtime: PocRuntime) -> bool:
     return (
         runtime.settings.today_public_fixture_mode
-        and runtime.settings.environment.casefold() != "production"
+        and runtime.settings.environment.casefold() == "development"
     )
 
 
@@ -62,7 +63,7 @@ def today(runtime: PocRuntime = Depends(get_runtime)) -> dict:
     if _development_public_fixtures_enabled(runtime):
         monitor_snapshot["signal_briefs"] = (
             *monitor_snapshot.get("signal_briefs", ()),
-            *_development_public_fixtures(datetime.now(UTC)),
+            *_development_public_fixtures(observed_at),
         )
     monitor_snapshot["watch_targets"] = runtime.monitor.watch_targets
     monitor_snapshot["source_markets"] = {
