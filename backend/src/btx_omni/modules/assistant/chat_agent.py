@@ -3,11 +3,17 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from hashlib import sha256
 from time import monotonic
 
 from btx_omni.ai.contracts import LanguageProviderError
+from btx_omni.modules.assistant.chat_validation import (
+    GENERAL_FACTS,
+    plain_fallback,
+    violations,
+)
 from btx_omni.modules.assistant.orchestration import OmniResponse
 
 DEGRADED = "The AI service isn't available right now, so I can only do basic lookups."
@@ -53,7 +59,27 @@ class ChatAgent:
         self.progress = progress or (lambda _: None)
         self.canceled = canceled or (lambda: False)
         self.reads, self.steps = [], []
+        self.validation = {'status': 'NOT_MODEL_WRITTEN', 'attempts': []}
         self.started = monotonic()
+
+    def bounded(self, call, seconds):
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(call)
+        deadline = min(monotonic() + seconds, self.started + self.limits.seconds)
+        try:
+            while True:
+                if self.canceled():
+                    raise InterruptedError('Canceled')
+                remaining = deadline - monotonic()
+                if remaining <= 0:
+                    raise TimeoutError('The request limit was reached.')
+                try:
+                    return future.result(timeout=min(.1, remaining))
+                except TimeoutError:
+                    if future.done():
+                        raise
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def read(self, name, arguments):
         if self.canceled():
@@ -62,7 +88,7 @@ class ChatAgent:
             raise TimeoutError("The lookup limit was reached.")
         self.progress("Checking " + name.removeprefix("get_").replace("_", " ") + "…")
         start = monotonic()
-        result = self.tools.execute(name, arguments)
+        result = self.bounded(lambda: self.tools.execute(name, arguments), self.limits.tool_seconds)
         elapsed = monotonic() - start
         if elapsed > self.limits.tool_seconds:
             result = {"status": "timeout", "data": {"message": "That lookup took too long. Try a narrower question."}, "source_ids": [], "as_of": self.tools.observed_at.date().isoformat(), "data_mode": "SAMPLE"}
@@ -101,6 +127,10 @@ class ChatAgent:
             self.tools.named_scope = frozenset({self.resolved})
         if not getattr(self.provider, "configured", False):
             return self.fallback(question, degraded=True)
+        if self.tools.general_enabled and not named:
+            for trigger, fact in GENERAL_FACTS.items():
+                if trigger in question.casefold():
+                    self.reads.append({'tool': 'general_knowledge', 'result': {'status': 'ok', 'data_mode': 'GENERAL_KNOWLEDGE', 'data': {'fact': fact}, 'source_ids': [], 'as_of': self.tools.observed_at.date().isoformat()}})
         try:
             for _ in range(self.limits.steps + 1):
                 if self.canceled():
@@ -115,11 +145,25 @@ class ChatAgent:
                     return self.response("I've reached the context limit. Please narrow the question to one record.", "CONTEXT_LIMIT")
                 if monotonic() - self.started >= self.limits.seconds:
                     raise TimeoutError()
-                decision = self.provider.chat_turn(payload, max_output_tokens=self.limits.output_tokens)
+                decision = self.bounded(lambda request=payload: self.provider.chat_turn(request, max_output_tokens=self.limits.output_tokens), self.limits.seconds)
                 if isinstance(decision, dict) and set(decision) == {"answer"} and isinstance(decision["answer"], str):
                     if not self.reads and not self.tools.general_enabled:
                         return self.response("General questions are turned off in this workspace. I can help with BTX data.", "GENERAL_DISABLED")
-                    return self.response(decision["answer"], "ANSWERED", model=True)
+                    content = decision['answer']
+                    issues = violations(content, question, self.reads)
+                    self.validation['attempts'].append(issues)
+                    if issues:
+                        retry_payload = {**payload, 'validation_feedback': issues,
+                                         'instruction': 'Return a corrected answer only. No further tools.'}
+                        retry = self.bounded(lambda request=retry_payload: self.provider.chat_turn(request, max_output_tokens=self.limits.output_tokens), self.limits.seconds)
+                        content = retry.get('answer', '') if isinstance(retry, dict) else ''
+                        issues = violations(content, question, self.reads) if content else ['No corrected answer']
+                        self.validation['attempts'].append(issues)
+                    if issues:
+                        self.validation['status'] = 'FALLBACK'
+                        return self.response(plain_fallback(self.reads), 'VALIDATION_FALLBACK')
+                    self.validation['status'] = 'PASSED'
+                    return self.response(content, "ANSWERED", model=True)
                 if not isinstance(decision, dict) or set(decision) != {"tool", "arguments"}:
                     raise ValueError("Invalid chat decision")
                 result = self.read(decision["tool"], decision["arguments"])
@@ -131,7 +175,11 @@ class ChatAgent:
             return self.response("I've reached the lookup limit. Please ask a narrower follow-up.", "STEP_LIMIT")
         except InterruptedError:
             return self.response("Stopped. No business data was changed.", "CANCELED")
-        except (LanguageProviderError, TimeoutError, ValueError, TypeError, KeyError, PermissionError):
+        except LanguageProviderError as error:
+            if error.status.value == 'QUOTA':
+                return self.response("The AI usage limit has been reached. Try again later; no business data was changed.", 'USAGE_LIMIT')
+            return self.fallback(question, degraded=True)
+        except (TimeoutError, ValueError, TypeError, KeyError, PermissionError, StopIteration, RuntimeError):
             return self.fallback(question, degraded=True)
 
     def fallback(self, question, *, degraded=False):
@@ -169,7 +217,7 @@ class ChatAgent:
                             language_provider="gemini" if model else "deterministic",
                             language_model=getattr(getattr(self.provider, "config", None), "model", None) if model else None,
                             provider_status="AVAILABLE" if model else "NOT_CONFIGURED",
-                            context_used={"chat_v2": True, "status": status},
+                            context_used={"chat_v2": True, "status": status, 'synthesis_validation': self.validation},
                             structured_reads={"steps": self.steps, "reads": self.reads,
                                               "outbound_queries": self.tools.outbound_queries,
                                               "configuration_version": "OMNI_CHAT_V2", "elapsed_ms": round((monotonic()-self.started)*1000, 2),

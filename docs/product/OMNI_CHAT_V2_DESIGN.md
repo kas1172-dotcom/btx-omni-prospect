@@ -140,3 +140,23 @@ dates are separately labeled. Search excerpts are untrusted, with known instruct
 patterns withheld, never persisted as canonical evidence or scoring inputs.
 `WEB_SEARCH_ENABLED` and `GENERAL_KNOWLEDGE_ENABLED` default true; search additionally
 requires a configured provider. Explicitly disabling either is enforced in code.
+
+### Validation and limits implementation
+
+`chat_prompt.py` is the v2 system prompt; existing legacy prompts remain for the
+compatibility endpoint. `chat_validation.py` checks lexical numbers, capitalized
+entities, source URLs, public paragraph citations, completed writes, sample labels,
+PWIN wording and assessment version/coverage. One correction attempt is allowed.
+These checks are conservative heuristics, NOT a proof that every natural-language
+claim follows from evidence; lowercase invented names and semantic inversions remain
+limitations requiring live adversarial evaluation. Two stable general facts (France's
+capital and NAICS 3364) have explicit local factual context; other new named/numeric
+general facts may fail closed pending a sourced lookup rather than bypass validation.
+This deliberately favors admitting uncertainty over fluent unsupported answers.
+
+Each model response is token-bounded; the request has at most steps+2 model calls,
+so the configured output-token ceiling times steps+2 is its output budget. Input
+characters are bounded on every turn. Tool calls use timed futures; cancellation
+stops subsequent steps and result delivery, but cannot forcibly terminate an already
+running SDK/network call. That call retains the existing transport timeout. Usage
+limits use durable actor/environment model-call accounting, not browser counters.
