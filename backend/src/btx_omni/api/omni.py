@@ -241,6 +241,8 @@ def chat(body: OmniQuestion, response: Response, runtime: PocRuntime = Depends(g
     provider = get_ai_provider(config)
     context = body.context.model_dump(exclude_none=True) if body.context else {}
     tools = ChatTools(runtime.environment(), current, observed_at=runtime.observed_at(), context=context,
+                      provider=provider, web_enabled=runtime.settings.web_search_enabled,
+                      general_enabled=runtime.settings.general_knowledge_enabled,
                       events=intelligence_signals(runtime), work=runtime.work.list(current),
                       federal_reader=lambda aid: {'assessments': federal_assessments_for_account(runtime, aid)} if aid else {'status': 'unavailable', 'message': 'Select an organization to inspect its federal opportunities.'})
     try:

@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from btx_omni.domain.work import PrincipalRole
 from btx_omni.modules.accounts.customer_360 import organization_360_projection
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
+from btx_omni.modules.assistant.chat_web import PublicTopic, public_query, search
 from btx_omni.modules.assistant.commercial_tools import CommercialToolSession
 from btx_omni.modules.commercial.money import model_money_projection
 from btx_omni.modules.commercial.read import CommercialReadService
@@ -42,6 +43,12 @@ class Compare(Empty):
     account_ids: list[str] = Field(min_length=2, max_length=2)
 
 
+class Search(OptionalAccount):
+    topic: PublicTopic
+
+    model_config = ConfigDict(extra="forbid", strict=False)
+
+
 class ReadResult(Empty):
     status: Literal["ok", "too_large", "timeout"]
     as_of: str
@@ -51,6 +58,7 @@ class ReadResult(Empty):
 
 
 INPUTS = {
+    "web_search": (Search, "Search public sources using only a recorded public company name and an approved topic. No free-form queries or internal values."),
     "find_organization": (Find, "Resolve a recorded organization name; never infer identity from industry words."),
     "get_customer_360": (AccountInput, "Organization identity and relationship context."),
     "get_commercial_history": (History, "Sample orders, quote rows and revisions, shipments, backlog and periods."),
@@ -89,7 +97,8 @@ class ChatTools:
     """
 
     def __init__(self, sample, principal, *, observed_at, context=None, events=(),
-                 work=(), allowed_account_ids=None, federal_reader=None):
+                 work=(), allowed_account_ids=None, federal_reader=None, provider=None,
+                 web_enabled=True, general_enabled=True):
         if not principal or not principal.user_id:
             raise PermissionError("An authenticated user is required.")
         self.sample, self.principal, self.observed_at = sample, principal, observed_at
@@ -102,6 +111,8 @@ class ChatTools:
         self.context = context or {}
         self.federal_reader = federal_reader
         self.named_scope: frozenset[str] = frozenset()
+        self.provider, self.web_enabled, self.general_enabled = provider, web_enabled, general_enabled
+        self.outbound_queries = []
 
     @property
     def declarations(self):
@@ -144,12 +155,19 @@ class ChatTools:
         data = self._read(name, aid, params)
         encoded = jsonable_encoder(data)
         result = {"status": "ok", "as_of": self.observed_at.date().isoformat(),
-                  "source_ids": sorted(source_ids(encoded))[:40], "data_mode": "SAMPLE", "data": encoded}
+                  "source_ids": sorted(source_ids(encoded))[:40], "data_mode": "PUBLIC_WEB" if name == "web_search" else "SAMPLE", "data": encoded}
         if len(json.dumps(result)) > 24000:
             return {**result, "status": "too_large", "data": {"message": "This result is too large. Ask about a specific record."}}
         return ReadResult.model_validate(result).model_dump()
 
     def _read(self, name, aid, params):
+        if name == "web_search":
+            if not self.web_enabled or not getattr(self.provider, "configured", False):
+                return {"status": "unavailable", "message": "Public search isn't available right now."}
+            company = self.account(aid).legal_name if aid else None
+            query = public_query(params["topic"], company)
+            self.outbound_queries.append(query)
+            return search(self.provider, query, company, self.observed_at)
         if name == "find_organization":
             return self.find(params["name"])
         if name == "get_screen_context":

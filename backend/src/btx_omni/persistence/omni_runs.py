@@ -110,7 +110,7 @@ def answer_receipt(answer, *, build):
         'recommended_action': answer.recommended_action, 'missingness': answer.missingness,
         'citations': answer.citations, 'provider': answer.language_provider, 'model': answer.language_model,
         'provider_status': answer.provider_status, 'provider_usage': answer.provider_usage,
-        'retrieval': {key: reads.get(key) for key in ('configuration_version', 'revision', 'stop_reason', 'steps', 'elapsed_ms', 'max_calls')},
+        'retrieval': {key: reads.get(key) for key in ('configuration_version', 'revision', 'stop_reason', 'steps', 'elapsed_ms', 'max_calls', 'outbound_queries')},
         'graph_revision': relationship.get('graph_revision'), 'market_vintage_id': market.get('vintage_id'),
         'execution': {'external_writes': 0, 'work_writes': 0, 'memory_writes': 0,
                       'scope': 'This read-only Omni request; separate explicitly approved UI workflows are not executed here.'},

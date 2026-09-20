@@ -106,6 +106,8 @@ class ChatAgent:
                 if self.canceled():
                     raise InterruptedError("Canceled")
                 payload = {"question": question, "recent_turns": list(recent_turns)[-6:],
+                           "general_knowledge_enabled": self.tools.general_enabled,
+                           "web_search_enabled": self.tools.web_enabled,
                            "screen_context": self.tools.context, "resolved_account_id": self.resolved,
                            "named_account_ids": named, "tools": self.tools.declarations,
                            "results": self.reads, "remaining_steps": self.limits.steps - len(self.steps)}
@@ -115,6 +117,8 @@ class ChatAgent:
                     raise TimeoutError()
                 decision = self.provider.chat_turn(payload, max_output_tokens=self.limits.output_tokens)
                 if isinstance(decision, dict) and set(decision) == {"answer"} and isinstance(decision["answer"], str):
+                    if not self.reads and not self.tools.general_enabled:
+                        return self.response("General questions are turned off in this workspace. I can help with BTX data.", "GENERAL_DISABLED")
                     return self.response(decision["answer"], "ANSWERED", model=True)
                 if not isinstance(decision, dict) or set(decision) != {"tool", "arguments"}:
                     raise ValueError("Invalid chat decision")
@@ -167,5 +171,6 @@ class ChatAgent:
                             provider_status="AVAILABLE" if model else "NOT_CONFIGURED",
                             context_used={"chat_v2": True, "status": status},
                             structured_reads={"steps": self.steps, "reads": self.reads,
+                                              "outbound_queries": self.tools.outbound_queries,
                                               "configuration_version": "OMNI_CHAT_V2", "elapsed_ms": round((monotonic()-self.started)*1000, 2),
                                               "revision": self.tools.sample.commercial_revision, "model_requested_stop": status == "ANSWERED"})

@@ -128,3 +128,15 @@ literal; these do not change network or migration behavior.
 The additive `/api/omni/chat` endpoint is the v2 entry point. `/api/omni` remains
 available for existing integrations and compatibility tests. The UI switches to v2
 in M4. Neither endpoint gains business writes.
+
+### Public search decision
+
+`chat_web.py` deliberately accepts a closed topic enum and canonical public company
+name only. No user/model free-form query, internal program label, commercial number,
+contact, note or score can enter the grounding request. This limits arbitrary-topic
+fresh research; extending it requires a reviewed public vocabulary, not a raw-query
+escape hatch. Publication dates remain unknown when grounding omits them; retrieval
+dates are separately labeled. Search excerpts are untrusted, with known instruction
+patterns withheld, never persisted as canonical evidence or scoring inputs.
+`WEB_SEARCH_ENABLED` and `GENERAL_KNOWLEDGE_ENABLED` default true; search additionally
+requires a configured provider. Explicitly disabling either is enforced in code.
