@@ -217,7 +217,8 @@ class WorkService:
     ) -> str:
         payload = [account_id, title, description, owner_id, str(priority),
                    due_date.isoformat() if due_date else None, sorted(evidence_ids),
-                   sorted(context_referents), source_suggestion_id, approval_required]
+                   sorted((kind, value) for kind, value in context_referents if not kind.startswith('source_')),
+                   source_suggestion_id, approval_required]
         return sha256(json.dumps(payload, separators=(",", ":")).encode()).hexdigest()
 
     def _creation_replay(

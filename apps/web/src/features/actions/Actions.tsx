@@ -1,131 +1,110 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, resolveFederalAssessment } from '../../api/client'
-import { Button, Disclosure, Drawer, Empty, EvidenceSource, FilterChip, FilterTrigger, Notice, Panel, SearchInput, SelectInput, StatTile, StatusBadge, Textarea, TextInput } from '../../components/UI'
-import type { Account, Action, ActionHistoryEvent, ActionPriority, ActionStatus, FederalAssessment, OmniContext, OmniFederalSelection, Principal, Signal, Suggestion } from '../../types/api'
-import './actions.css'
-import { SuggestionList } from './SuggestionList'
-import { CrmProposalPanel } from './CrmProposalPanel'
-import { actorDisplayName, presentationLabel, safeRecordTitle } from '../../components/presentation'
-import { decodeWorkspaceLocation, type WorkspaceLocation } from '../../app/navigation'
+import { Button, Empty, FilterChip, Panel, SearchInput, SelectInput, StatTile, StatusBadge, TextInput } from '../../components/UI'
+import type { Account, Action, ActionStatus, FederalAssessment, OmniContext, Principal, Signal, Suggestion } from '../../types/api'
+import { workspaceHash, type WorkspaceLocation } from '../../app/navigation'
 import { WorklistPagination } from '../../components/WorklistPagination'
 import { clampPage, pageSlice } from '../../components/worklistModel'
-import { HighCardinalitySelector } from '../../components/HighCardinalitySelector'
-
-const priorityRank: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
-const statusRank: Record<string, number> = { OPEN: 0, IN_PROGRESS: 1, COMPLETED: 2, CANCELED: 3 }
-const nextStatuses: Record<ActionStatus, ActionStatus[]> = { OPEN: ['IN_PROGRESS', 'CANCELED'], IN_PROGRESS: ['COMPLETED', 'CANCELED'], COMPLETED: [], CANCELED: [] }
-const label = (value: string) => presentationLabel(value, 'workflow')
-const PAGE_SIZE = 12
-const missingLast = (left?: string, right?: string, direction: 1 | -1 = 1) => !left || !right ? left ? -1 : right ? 1 : 0 : direction * left.localeCompare(right)
+import { SuggestionList } from './SuggestionList'
+import { CrmProposalPanel } from './CrmProposalPanel'
+import { ActionDetail } from './ActionDetail'
+import { actionSource, closed, overdue, relativeDue } from './actionModel'
+import './actions.css'
 
 type Props = {
-  sourceAlertId?: string; onClearSource: () => void
-  initialActionId?: string
+  sourceAlertId?: string; onClearSource: () => void; initialActionId?: string
   items: Action[]; suggestions: Suggestion[]; principal?: Principal; accounts: Account[]; signals: Signal[]; warning: string
   onItem: (item: Action) => void; onSuggestions: (items: Suggestion[]) => void; onAccount: (id: string) => void
   onActionSelect: (id?: string) => void; onOmniContext: (context: Pick<OmniContext, 'active_filters' | 'visible_record_ids' | 'selected_federal_opportunity'>) => void
   location: WorkspaceLocation; onLocationChange: (next: WorkspaceLocation, mode?: 'push' | 'replace') => void
 }
+const PAGE_SIZE = 12
+const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 
-export function Actions({ items, suggestions, principal, accounts, signals, warning, onItem, onSuggestions, onAccount, onActionSelect, onOmniContext, sourceAlertId, initialActionId, onClearSource, location, onLocationChange }: Props) {
-  const [tab, setTab] = useState<'ACTIONS' | 'SUGGESTIONS' | 'COMPLETED'>(() => location.subview === 'suggestions' || sourceAlertId ? 'SUGGESTIONS' : location.subview === 'completed' ? 'COMPLETED' : 'ACTIONS')
-  const [query, setQuery] = useState(() => String(location.filters?.query ?? '')); const [status, setStatus] = useState(() => String(location.filters?.status ?? 'ACTIVE')); const [priority, setPriority] = useState(() => String(location.filters?.priority ?? 'ALL')); const [sort, setSort] = useState(() => location.sort ?? 'PRIORITY'); const [page, setPage] = useState(() => Number(location.filters?.page ?? 1) || 1); const [suggestionView, setSuggestionView] = useState(() => String(location.filters?.suggestion_view ?? 'ACTIVE'))
-  const [selectedId, setSelectedId] = useState<string | undefined>(initialActionId); const [selectedAction, setSelectedAction] = useState<Action>(); const [editorOpen, setEditorOpen] = useState(false); const [editing, setEditing] = useState<Action>(); const [notice, setNotice] = useState(''); const [history, setHistory] = useState<ActionHistoryEvent[]>([]); const [federalAssessment, setFederalAssessment] = useState<FederalAssessment>()
-  useEffect(() => {
-    const restore = () => {
-      const restored = decodeWorkspaceLocation(window.location.hash).location
-      if (restored.surface !== 'actions') return
-      setTab(restored.subview === 'suggestions' ? 'SUGGESTIONS' : restored.subview === 'completed' ? 'COMPLETED' : 'ACTIONS'); setQuery(String(restored.filters?.query ?? '')); setStatus(String(restored.filters?.status ?? 'ACTIVE')); setPriority(String(restored.filters?.priority ?? 'ALL')); setSort(restored.sort ?? 'PRIORITY'); setPage(Number(restored.filters?.page ?? 1) || 1); setSuggestionView(String(restored.filters?.suggestion_view ?? 'ACTIVE')); setSelectedId(restored.actionId)
-    }
-    window.addEventListener('popstate', restore); window.addEventListener('hashchange', restore)
-    return () => { window.removeEventListener('popstate', restore); window.removeEventListener('hashchange', restore) }
-  }, [])
-  const accountById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts]); const signalByAccount = useMemo(() => new Map(signals.filter(signal => signal.account_id).map(signal => [signal.account_id!, signal])), [signals])
-  const customerName = useCallback((id: string) => accountById.get(id)?.name ?? accountById.get(id)?.legal_name ?? 'Unknown Customer', [accountById])
-  const visible = useMemo(() => items.filter(item => {
-    const search = `${customerName(item.account_id)} ${item.title} ${item.description ?? ''} ${item.owner_id ?? ''}`.toLowerCase()
-    const statusMatch = status === 'ALL' || (status === 'ACTIVE' ? ['OPEN', 'IN_PROGRESS'].includes(item.status) : item.status === status)
-    return search.includes(query.toLowerCase()) && statusMatch && (priority === 'ALL' || item.priority === priority) && (tab !== 'COMPLETED' || ['COMPLETED', 'CANCELED'].includes(item.status)) && (tab === 'COMPLETED' || !['COMPLETED', 'CANCELED'].includes(item.status))
-  }).sort((left, right) => { const stable = left.id.localeCompare(right.id); if (sort === 'DUE' || sort === 'DUE_DESC') return missingLast(left.due_date, right.due_date, sort === 'DUE_DESC' ? -1 : 1) || stable; if (sort === 'STATUS') return statusRank[left.status] - statusRank[right.status] || stable; if (sort === 'CUSTOMER') return customerName(left.account_id).localeCompare(customerName(right.account_id)) || stable; return priorityRank[left.priority] - priorityRank[right.priority] || stable }), [items, priority, query, sort, status, tab, customerName])
-  const currentPage = clampPage(page, visible.length, PAGE_SIZE)
-  const displayed = useMemo(() => pageSlice(visible, currentPage, PAGE_SIZE), [visible, currentPage])
+export function Actions({ items, suggestions, principal, accounts, signals, warning, onItem, onSuggestions, onAccount, onActionSelect, onOmniContext, sourceAlertId, onClearSource, location, onLocationChange }: Props) {
+  const tab = location.subview === 'suggestions' || sourceAlertId ? 'suggestions' : location.subview === 'completed' ? 'completed' : 'actions'
+  const query = String(location.filters?.query ?? '')
+  const status = String(location.filters?.status ?? 'ALL')
+  const priority = String(location.filters?.priority ?? 'ALL')
+  const sort = location.sort ?? 'DUE'
+  const suggestionView = String(location.filters?.suggestion_view ?? 'ACTIVE')
+  const selectedId = location.actionId
+  const [title, setTitle] = useState('')
+  const [notice, setNotice] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [undo, setUndo] = useState<Action>()
+  const [federalAssessment, setFederalAssessment] = useState<FederalAssessment>()
+  const createReceipt = useRef<{ title: string; key: string } | undefined>(undefined)
+  const rows = useRef(new Map<string, HTMLButtonElement>())
+  const quickAdd = useRef<HTMLFormElement>(null)
+  const customerName = (id: string | null) => id ? accounts.find(account => account.id === id)?.name ?? accounts.find(account => account.id === id)?.legal_name ?? id : 'No customer'
+  const changeFilters = (patch: Record<string, string | undefined>) => {
+    const filters: Record<string, string | string[] | undefined> = { ...location.filters, page: undefined, ...patch }
+    onLocationChange({ ...location, filters: Object.fromEntries(Object.entries(filters).filter((entry): entry is [string, string | string[]] => entry[1] !== undefined)) }, 'replace')
+  }
+  const setTab = (subview: string) => { onClearSource(); onLocationChange({ ...location, subview, filters: { ...location.filters, status: 'ALL', page: '1' } }) }
+  const select = (item: Action) => { onLocationChange({ ...location, actionId: item.id }, 'replace') }
+  const clear = () => onLocationChange({ ...location, filters: {}, sort: 'DUE' }, 'replace')
+  const visible = useMemo(() => items.filter(item => (tab === 'completed' ? closed(item) : !closed(item))
+    && (status === 'ALL' || status === 'ACTIVE' && !closed(item) || item.status === status)
+    && (priority === 'ALL' || item.priority === priority)
+    && `${item.title} ${item.description ?? ''} ${item.owner_id ?? ''} ${accounts.find(account => account.id === item.account_id)?.name ?? ''}`.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => (sort === 'PRIORITY' ? priorityOrder[a.priority] - priorityOrder[b.priority] : sort === 'UPDATED' ? b.updated_at.localeCompare(a.updated_at) : (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')) || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)), [items, tab, status, priority, query, sort, accounts])
+  const page = clampPage(Number(location.filters?.page ?? 1), visible.length, PAGE_SIZE)
+  const displayed = pageSlice(visible, page, PAGE_SIZE)
+  const selected = items.find(item => item.id === selectedId)
   const scopedSuggestions = useMemo(() => sourceAlertId ? suggestions.filter(item => item.source_alert_id === sourceAlertId) : suggestions, [sourceAlertId, suggestions])
-  const selected = tab === 'SUGGESTIONS' ? undefined : selectedAction?.id === selectedId ? selectedAction : items.find(item => item.id === selectedId) ?? visible[0]
-  const activeFilters = useMemo(() => ({ ...(status === 'ACTIVE' ? { action_status: 'ACTIVE' } : status === 'ALL' ? {} : { action_status: status }), ...(priority === 'ALL' ? {} : { priority }), ...(tab === 'SUGGESTIONS' ? { action_view: 'SUGGESTIONS', source_alert_id: sourceAlertId ?? '' } : {}) }), [priority, status, sourceAlertId, tab])
-  useEffect(() => { onActionSelect(selected?.id); if (selected?.id && selected.id !== location.actionId) onLocationChange({ ...location, actionId: selected.id }, selectedId ? 'replace' : 'push') }, [location, onActionSelect, onLocationChange, selected?.id, selectedId]); useEffect(() => () => onActionSelect(undefined), [onActionSelect])
-  useEffect(() => { onLocationChange({ ...location, subview: tab === 'SUGGESTIONS' ? 'suggestions' : tab === 'COMPLETED' ? 'completed' : undefined, filters: { ...(query ? { query } : {}), ...(status !== 'ACTIVE' ? { status } : {}), ...(priority !== 'ALL' ? { priority } : {}), ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(suggestionView !== 'ACTIVE' ? { suggestion_view: suggestionView } : {}) }, sort, recordId: tab === 'SUGGESTIONS' ? location.recordId : undefined }, 'replace') }, [location, onLocationChange, priority, query, sort, status, tab, currentPage, suggestionView])
+  useEffect(() => { onActionSelect(selected?.id) }, [selected?.id, onActionSelect])
   useEffect(() => {
-    let current = true
-    if (!selected?.id) return () => { current = false }
-    void api.history(selected.id).then(response => { if (current) setHistory(response.events) }).catch(() => { if (current) setHistory([]) })
-    return () => { current = false }
-  }, [selected])
-  const selectedFederalAssessment = useMemo(() => selected?.context_referents.some(([kind, value]) => kind === 'federal_assessment' && value === federalAssessment?.assessment_id) ? federalAssessment : undefined, [federalAssessment, selected])
-  const federalSelection = useMemo<OmniFederalSelection | undefined>(() => { if (!selected || !selectedFederalAssessment) return undefined; const refs = new Map(selected.context_referents); const route = selectedFederalAssessment.routes.find(item => item.route_type === refs.get('federal_route_type') && item.account_id === selected.account_id); return route ? { opportunity_id: selectedFederalAssessment.opportunity_id, assessment_id: selectedFederalAssessment.assessment_id, assessment_version: selectedFederalAssessment.assessment_version, route_type: route.route_type, account_id: route.account_id, partnership_id: route.route_type === 'STRATEGIC_PARTNER' ? route.account_id : undefined } : undefined }, [selectedFederalAssessment, selected])
+    onOmniContext({ active_filters: { query, action_status: status, priority }, visible_record_ids: (tab === 'suggestions' ? scopedSuggestions : visible).map(item => item.id).slice(0, 50), selected_federal_opportunity: location.federal && selected ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined })
+  }, [query, status, priority, visible, onOmniContext, location.federal, selected, tab, scopedSuggestions])
+  useEffect(() => () => { onActionSelect(undefined); onOmniContext({}) }, [onActionSelect, onOmniContext])
   useEffect(() => {
-    const assessmentId = selected?.context_referents.find(([kind]) => kind === 'federal_assessment')?.[1]
+    if (!undo) return
+    const timeout = window.setTimeout(() => setUndo(undefined), 8000)
+    return () => window.clearTimeout(timeout)
+  }, [undo])
+  useEffect(() => {
     const federal = location.federal
-    if (!assessmentId || !federal || federal.assessmentId !== assessmentId) return
+    if (!selected || !federal || !selected.context_referents.some(([kind, value]) => kind === 'federal_assessment' && value === federal.assessmentId)) return
     const controller = new AbortController()
-    void resolveFederalAssessment({ opportunity_id: federal.opportunityId, assessment_id: federal.assessmentId, assessment_version: federal.assessmentVersion, route_type: federal.routeType, account_id: federal.accountId, partnership_id: federal.partnershipId }, controller.signal).then(value => { if (!controller.signal.aborted) setFederalAssessment(value) }).catch(() => undefined)
+    void resolveFederalAssessment({ opportunity_id: federal.opportunityId, assessment_id: federal.assessmentId, assessment_version: federal.assessmentVersion, route_type: federal.routeType, account_id: federal.accountId, partnership_id: federal.partnershipId }, controller.signal).then(setFederalAssessment).catch(() => undefined)
     return () => controller.abort()
   }, [location.federal, selected])
-  useEffect(() => onOmniContext({ active_filters: activeFilters, visible_record_ids: (tab === 'SUGGESTIONS' ? scopedSuggestions : visible).map(item => item.id).slice(0, 50), selected_federal_opportunity: federalSelection }), [activeFilters, federalSelection, onOmniContext, visible, scopedSuggestions, tab]); useEffect(() => () => onOmniContext({}), [onOmniContext])
-  const refreshSuggestions = (id: string, patch: Partial<Suggestion>) => onSuggestions(suggestions.map(item => item.id === id ? { ...item, ...patch } : item))
-  const convert = async (suggestion: Suggestion) => { try { const action = await api.convertSuggestion(suggestion.id, suggestion.revision); onItem(action); refreshSuggestions(suggestion.id, { converted_action_id: action.id }); setSelectedId(action.id); setTab('ACTIONS'); setNotice('Suggestion converted to one durable Action. No external operation was executed.') } catch (error) { setNotice(error instanceof Error ? error.message : 'Suggestion could not be converted.') } }
-  const applySelectedUpdate = (item: Action) => { setSelectedId(item.id); setSelectedAction(item); onItem(item) }
-  const transition = async (item: Action, next: ActionStatus) => { try { const updated = await api.transition(item.id, next, item.version); applySelectedUpdate(updated); setNotice(`Action moved to ${label(next)}.`) } catch (error) { setNotice(error instanceof Error ? error.message : 'Action transition failed. Reload the Action before retrying.') } }
-  const decide = async (item: Action, decision: 'APPROVED' | 'REJECTED') => { try { const updated = await api.approve(item.id, decision, item.version); applySelectedUpdate(updated); setNotice(`Approval ${decision.toLowerCase()}.`) } catch (error) { setNotice(error instanceof Error ? error.message : 'Approval decision failed. Reload the Action before retrying.') } }
-  const clear = () => { setStatus('ACTIVE'); setPriority('ALL'); setQuery('') }
-  const openEditor = (action?: Action) => { setEditing(action); setEditorOpen(true) }
-  const activeSuggestions = suggestions.filter(item => !item.dismissed)
-  return <div className="surface actions-surface">
-    <header className="page-title actions-header"><div><span className="eyebrow">Seller workbench</span><h1>Actions</h1><p>Suggestions recommend work. Actions are durable, owned work with an explicit lifecycle.</p></div><Button variant="primary" size="touch" onClick={() => openEditor()}>Create Action</Button></header>
-    <p className="truth-note">{principal?.display_name ?? 'Authorized principal'} · {principal?.role ?? 'Loading role'} · {warning}</p>{notice && <p className="notice" role="status">{notice}</p>}
-    <nav className="actions-tabs" aria-label="Action views">{([['ACTIONS', 'My Actions'], ['SUGGESTIONS', 'Suggested'], ['COMPLETED', 'Completed']] as const).map(([value, text]) => <button key={value} aria-current={tab === value ? 'page' : undefined} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>{text}</button>)}</nav>
-    <div className="actions-summary-grid" aria-label="Actions summary"><StatTile label="Open" value={items.filter(item => item.status === 'OPEN').length} /><StatTile label="In progress" value={items.filter(item => item.status === 'IN_PROGRESS').length} tone="warning" /><StatTile label="Overdue" value={items.filter(item => item.due_date && item.due_date < '2026-08-31' && !['COMPLETED', 'CANCELED'].includes(item.status)).length} tone="danger" /><StatTile label="Suggested" value={activeSuggestions.filter(item => !item.converted_action_id).length} tone="info" /></div>
-    {tab === 'SUGGESTIONS' ? <>{sourceAlertId && <section className="notice" aria-label="Selected Today priority"><p>{scopedSuggestions.length ? 'Showing the recommendation linked to your Today priority. Review its evidence before creating work.' : 'The selected recommendation is no longer available in your current scope. Refresh suggestions; no substitute action was selected.'}</p><Button onClick={onClearSource}>Show all suggestions</Button>{scopedSuggestions.map(item => item.converted_action_id && <Button key={item.id} onClick={() => { setSelectedId(item.converted_action_id); setTab('ACTIONS') }}>Open existing action</Button>)}</section>}<SuggestionList suggestions={scopedSuggestions} name={customerName} onConvert={convert} onFeedback={refreshSuggestions} onRefreshed={onSuggestions} query={query} onQuery={value => { setQuery(value); setPage(1) }} priority={priority} onPriority={value => { setPriority(value); setPage(1) }} sort={sort} onSort={value => { setSort(value); setPage(1) }} view={suggestionView} onView={value => { setSuggestionView(value); setPage(1) }} page={currentPage} onPage={setPage} selectedId={location.recordId} onSelected={recordId => onLocationChange({ ...location, recordId }, 'replace')} /></> : <>
-      <div className="action-toolbar"><SearchInput aria-label="Search actions" placeholder="Search Actions or Customers" value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} /><FilterTrigger active={status !== 'ACTIVE' || priority !== 'ALL'}>Filters</FilterTrigger><SelectInput aria-label="Filter by status" value={status} onChange={event => { setStatus(event.target.value); setPage(1) }}><option value="ACTIVE">Active statuses</option><option value="ALL">All statuses</option>{Object.keys(statusRank).map(value => <option key={value}>{value}</option>)}</SelectInput><SelectInput aria-label="Filter by priority" value={priority} onChange={event => { setPriority(event.target.value); setPage(1) }}><option value="ALL">All priorities</option>{Object.keys(priorityRank).map(value => <option key={value}>{value}</option>)}</SelectInput><SelectInput aria-label="Sort actions" value={sort} onChange={event => { setSort(event.target.value); setPage(1) }}><option value="PRIORITY">Sort: Priority</option><option value="DUE">Sort: Due date</option><option value="DUE_DESC">Sort: Due date descending</option><option value="STATUS">Sort: Status</option><option value="CUSTOMER">Sort: Customer</option></SelectInput></div>
-      {(status !== 'ACTIVE' || priority !== 'ALL' || query) && <div className="action-filter-chips">{status !== 'ACTIVE' && <FilterChip selected onClear={() => setStatus('ACTIVE')}>Status: {label(status)}</FilterChip>}{priority !== 'ALL' && <FilterChip selected onClear={() => setPriority('ALL')}>Priority: {label(priority)}</FilterChip>}{query && <FilterChip selected onClear={() => setQuery('')}>Search: {query}</FilterChip>}<Button variant="ghost" onClick={clear}>Clear all</Button></div>}
-      {selectedFederalAssessment && selected && <Notice title="Federal opportunity context"><strong>{selectedFederalAssessment.technical.requirement}</strong><p>{selectedFederalAssessment.stage.label}: {selectedFederalAssessment.stage.explanation}</p><p>{selectedFederalAssessment.routes.find(route => route.account_id === selected.account_id && route.route_type === new Map(selected.context_referents).get('federal_route_type'))?.why}</p><small>Assessment version {selectedFederalAssessment.assessment_version}; this internal proposal performed no external write.</small></Notice>}
-      <p className="worklist-counts" role="status">{items.length} total Actions · {visible.length} filtered · {displayed.length} displayed</p>
-      <div className="action-workbench"><Panel title="My Actions" action={<span className="panel-kicker">Page {currentPage}</span>}><div className="action-list" role="list">{displayed.length ? displayed.map(item => <ActionRow key={item.id} action={item} customer={customerName(item.account_id)} selected={selected?.id === item.id} onSelect={() => { setSelectedId(item.id); setSelectedAction(item) }} />) : <Empty>{items.length ? 'No Actions match the current search and filters. The durable Action set is unchanged.' : 'No durable Actions exist in your permitted scope.'}</Empty>}</div><WorklistPagination page={currentPage} pageSize={PAGE_SIZE} total={visible.length} onPage={setPage} /></Panel><aside className="action-detail">{selected ? <ActionDetail action={selected} history={history} customer={customerName(selected.account_id)} signal={signalByAccount.get(selected.account_id)} principal={principal} onAccount={() => onAccount(selected.account_id)} onEdit={() => openEditor(selected)} onTransition={next => void transition(selected, next)} onDecision={decision => void decide(selected, decision)} /> : <Panel title="Action detail"><Empty>Select an Action to inspect its governed work state.</Empty></Panel>}</aside></div>
-    </>}
-    {tab !== 'SUGGESTIONS' && selected && <CrmProposalPanel key={selected.id} action={selected} principal={principal} />}
-    <ActionEditor key={`${editorOpen}-${editing?.id ?? 'new'}`} open={editorOpen} action={editing} accounts={accounts} principal={principal} onClose={() => setEditorOpen(false)} onSaved={item => { applySelectedUpdate(item); setEditorOpen(false); setNotice(editing ? 'Action updated and recorded in history.' : 'Durable Action created.') }} />
-  </div>
-}
-
-function ActionRow({ action, customer, selected, onSelect }: { action: Action; customer: string; selected: boolean; onSelect: () => void }) { return <button type="button" role="listitem" className={`action-row ${selected ? 'selected' : ''}`} aria-pressed={selected} onClick={onSelect}><span><strong>{customer}</strong><small>{safeRecordTitle(action.title, 'Governed customer action')}</small></span><StatusBadge value={action.priority} kind="priority" /><span className="action-row-meta"><small>{actorDisplayName(action.owner_id)}</small><small>{action.due_date ?? 'No due date'}</small></span><StatusBadge value={action.status} kind="action" /></button> }
-
-function ActionDetail({ action, history, customer, signal, principal, onAccount, onEdit, onTransition, onDecision }: { action: Action; history: ActionHistoryEvent[]; customer: string; signal?: Signal; principal?: Principal; onAccount: () => void; onEdit: () => void; onTransition: (status: ActionStatus) => void; onDecision: (decision: 'APPROVED' | 'REJECTED') => void }) { return <Panel title="Action detail" action={<StatusBadge value={action.status} kind="action" />}><div className="action-detail-stack"><div><span className="eyebrow">{customer}</span><h2>{safeRecordTitle(action.title, 'Governed customer action')}</h2><p>{action.description ?? 'No additional detail supplied.'}</p></div><dl className="action-meta"><div><dt>Owner</dt><dd>{actorDisplayName(action.owner_id, principal)}</dd></div><div><dt>Priority</dt><dd>{label(action.priority)}</dd></div><div><dt>Due</dt><dd>{action.due_date ?? 'No due date'}</dd></div><div><dt>Approval</dt><dd>{label(action.approval_status)}</dd></div></dl><div className="card-actions"><Button onClick={onEdit}>Edit Action</Button><Button variant="ghost" onClick={onAccount}>View Customer</Button></div><Panel title="Next work state" variant="subdued"><div className="card-actions">{nextStatuses[action.status].map(next => <Button key={next} variant={next === 'CANCELED' ? 'destructive' : 'primary'} onClick={() => onTransition(next)}>{next === 'IN_PROGRESS' ? 'Start work' : label(next)}</Button>)}{!nextStatuses[action.status].length && <span className="muted">This Action is closed. Reopening is not supported.</span>}</div></Panel>{action.approval_status === 'PENDING' && <Panel title="Approval" variant="subdued">{principal?.role === 'MANAGER' ? <div className="card-actions"><Button variant="primary" onClick={() => onDecision('APPROVED')}>Approve</Button><Button variant="destructive" onClick={() => onDecision('REJECTED')}>Reject</Button></div> : <p className="muted">Manager review is required for this external workflow. Approval does not change work status.</p>}</Panel>}<Disclosure title="Evidence and history"><p>Evidence IDs: {action.evidence_ids.length ? action.evidence_ids.join(', ') : 'Unavailable'}</p>{signal ? <EvidenceSource title={signal.title} source={signal.source_tier} date={signal.observed_at} evidenceState={signal.evidence_state} validationState={signal.source_validation_state} url={signal.source_url} /> : <p className="muted">No linked public signal is available. Controlled commercial context may support this action.</p>}<p className="muted">Created by {action.created_by} · Updated {new Date(action.updated_at).toLocaleDateString()}</p><ol className="action-history" aria-label="Action history">{history.map(event => <li key={event.id}><strong>{label(event.event)}</strong><span>Actor ID {event.actor_id} · {new Date(event.occurred_at).toLocaleString()}</span></li>)}</ol></Disclosure></div></Panel> }
-
-function ActionEditor({ open, action, accounts, principal, onClose, onSaved }: { open: boolean; action?: Action; accounts: Account[]; principal?: Principal; onClose: () => void; onSaved: (item: Action) => void }) {
-  const [customerSelection, setCustomerId] = useState(action?.account_id)
-  const customerId = customerSelection ?? accounts[0]?.id ?? ''
-  const [title, setTitle] = useState(action?.title ?? '')
-  const [description, setDescription] = useState(action?.description ?? '')
-  const [priority, setPriority] = useState<ActionPriority>(action?.priority ?? 'MEDIUM')
-  const [dueDate, setDueDate] = useState(action?.due_date ?? '')
-  const [ownerId, setOwnerId] = useState(action?.owner_id ?? principal?.user_id ?? '')
-  const [approvalRequired, setApprovalRequired] = useState(action?.approval_status === 'PENDING')
-  const [error, setError] = useState('')
-  const inFlight = useRef(false)
-  const retry = useRef<{ signature: string; key: string } | undefined>(undefined)
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    if (inFlight.current) return
-    if (!customerId || !accounts.some(item => item.id === customerId)) { setError('Choose an available Customer. Your draft is retained.'); return }
-    if (!title.trim()) { setError('Title is required.'); return }
-    const signature = JSON.stringify([customerId, title, description, priority, dueDate, ownerId, approvalRequired])
-    if (retry.current?.signature !== signature) retry.current = { signature, key: crypto.randomUUID() }
-    inFlight.current = true
-    try {
-      const saved = action ? await api.editAction(action.id, { title, description: description || undefined, priority, due_date: dueDate || undefined, expected_version: action.version, ...(principal?.role === 'MANAGER' ? { owner_id: ownerId || undefined } : {}) })
-        : await api.createAction({ account_id: customerId, title, description: description || undefined, priority, due_date: dueDate || undefined, owner_id: ownerId || undefined, approval_required: approvalRequired, idempotency_key: retry.current.key })
-      onSaved(saved)
-    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Action could not be saved. Retry retains this request; inspect saved work if the outcome is unknown.') }
-    finally { inFlight.current = false }
+  const transition = async (item: Action, next: ActionStatus, all = false) => {
+    const updated = await api.transition(item.id, next, item.version, all)
+    onItem(updated)
+    if (closed(updated)) setUndo(updated)
+    setNotice(`Task ${next.toLowerCase().replaceAll('_', ' ')}.`)
   }
-  return <Drawer open={open} onClose={onClose} titleId="action-editor-title" className="action-editor"><form onSubmit={event => void submit(event)}><header><div><span className="eyebrow">Durable work</span><h2 id="action-editor-title">{action ? 'Edit Action' : 'Create Action'}</h2></div><Button type="button" variant="ghost" onClick={onClose}>Close</Button></header><HighCardinalitySelector label="Customer" value={customerId} disabled={Boolean(action)} onChange={setCustomerId} choices={accounts.map(account => ({ id: account.id, label: account.name ?? account.legal_name ?? 'Unnamed organization', description: account.relationship === 'CURRENT_CUSTOMER' ? 'Customer' : account.relationship === 'PROSPECT' || account.relationship === 'TARGET' ? 'Prospect' : 'Classification unavailable', searchText: [account.legal_name, account.domain, ...(account.industries ?? [])].filter(Boolean).join(' ') }))} recentIds={action?.account_id ? [action.account_id] : []} /><TextInput label="Title" value={title} error={error && !title.trim() ? error : undefined} onChange={event => setTitle(event.target.value)} /><Textarea label="Details" value={description} onChange={event => setDescription(event.target.value)} /><div className="action-form-grid"><SelectInput label="Priority" value={priority} onChange={event => setPriority(event.target.value as ActionPriority)}><option>HIGH</option><option>MEDIUM</option><option>LOW</option></SelectInput><TextInput label="Due date" type="date" value={dueDate} onChange={event => setDueDate(event.target.value)} /></div>{principal?.role === 'MANAGER' && <TextInput label="Owner ID" value={ownerId} onChange={event => setOwnerId(event.target.value)} />}{!action && <label className="action-approval-choice"><input type="checkbox" checked={approvalRequired} onChange={event => setApprovalRequired(event.target.checked)} /> External workflow requires Manager approval</label>}{error && title.trim() && <p className="ui-field-message" role="alert">{error}</p>}<footer><Button type="button" onClick={onClose}>Cancel</Button><Button type="submit" variant="primary">{action ? 'Save changes' : 'Create Action'}</Button></footer></form></Drawer>
+  const convert = async (suggestion: Suggestion) => {
+    try { const created = await api.convertSuggestion(suggestion.id, suggestion.revision); onItem(created); onSuggestions(suggestions.map(item => item.id === suggestion.id ? { ...item, converted_action_id: created.id } : item)); onClearSource(); onLocationChange({ ...location, subview: 'actions', actionId: created.id, filters: {} }); setNotice('Suggestion converted to one durable Action. No external operation was executed.') }
+    catch (error) { setNotice(error instanceof Error ? error.message : 'Suggestion conversion failed.') }
+  }
+  const create = async () => {
+    if (!title.trim() || creating) return
+    const trimmed = title.trim()
+    if (createReceipt.current?.title !== trimmed) createReceipt.current = { title: trimmed, key: crypto.randomUUID() }
+    setCreating(true)
+    try { const created = await api.createAction({ title: trimmed, priority: 'MEDIUM', idempotency_key: createReceipt.current.key, context_referents: [['source_screen', 'Actions'], ['source_route', workspaceHash({ surface: 'actions' })]] }); onItem(created); setTitle(''); createReceipt.current = undefined; onLocationChange({ ...location, subview: 'actions', actionId: created.id, filters: {} }) }
+    catch (error) { setNotice(error instanceof Error ? error.message : 'Task creation failed; your title and retry key are retained.') }
+    finally { setCreating(false) }
+  }
+  const closeDetail = () => { const previous = selectedId; onLocationChange({ ...location, actionId: undefined }, 'replace'); window.requestAnimationFrame(() => { const row = previous ? rows.current.get(previous) : undefined; if (row) row.focus(); else quickAdd.current?.querySelector('input')?.focus() }) }
+  return <div className={`surface actions-surface ${selected && tab !== 'suggestions' ? 'detail-open' : ''}`}>
+    <header className="page-title actions-header"><div><span className="eyebrow">Personal workspace</span><h1>Actions</h1><p>Your tasks, subtasks, approvals and evidence.</p></div></header>
+    <p className="truth-note">{principal?.display_name} · {warning}</p>{notice && <p role="status">{notice}</p>}
+    {undo && <div className="action-undo" role="status">Task {undo.status.toLowerCase()}. <Button onClick={() => { const target = undo; void api.action(target.id).then(latest => api.transition(latest.id, latest.allowed_transitions[0], latest.version)).then(updated => { onItem(updated); setUndo(undefined); setNotice('Task reopened.') }).catch(error => setNotice(error.message)) }}>Undo</Button></div>}
+    <nav className="actions-tabs" aria-label="Action views">{[['actions', 'My Actions'], ['suggestions', `Suggested (${suggestions.filter(item => !item.dismissed && !item.converted_action_id).length})`], ['completed', 'Closed']].map(([value, text]) => <button key={value} aria-current={tab === value ? 'page' : undefined} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>{text}</button>)}</nav>
+    <div className="actions-summary-grid" aria-label="Actions summary"><StatTile label="Open" value={items.filter(item => item.status === 'OPEN').length} /><StatTile label="In progress" value={items.filter(item => item.status === 'IN_PROGRESS').length} /><StatTile label="Overdue" value={items.filter(item => overdue(item)).length} />{principal?.role === 'MANAGER' && <StatTile label="Pending approval" value={items.filter(item => ['PENDING', 'REQUESTED'].includes(item.approval_status) && (item.approval_requested_by ?? item.created_by) !== principal.user_id).length} />}</div>
+    {tab === 'suggestions' ? <>{sourceAlertId && <section className="notice" aria-label="Selected Today priority"><p>Showing the recommendation linked to your Today priority.</p><Button onClick={onClearSource}>Show all suggestions</Button>{scopedSuggestions.filter(item => item.converted_action_id).map(item => <Button key={item.id} onClick={() => { onClearSource(); onLocationChange({ ...location, subview: 'actions', actionId: item.converted_action_id }) }}>Open existing action</Button>)}</section>}<SuggestionList suggestions={scopedSuggestions} name={customerName} onConvert={convert} onFeedback={(id, patch) => onSuggestions(suggestions.map(item => item.id === id ? { ...item, ...patch } : item))} onRefreshed={onSuggestions} query={query} onQuery={value => changeFilters({ query: value })} priority={priority} onPriority={value => changeFilters({ priority: value })} sort={sort} onSort={value => onLocationChange({ ...location, sort: value }, 'replace')} view={suggestionView} onView={value => changeFilters({ suggestion_view: value })} page={page} onPage={value => changeFilters({ page: String(value) })} selectedId={location.recordId} onSelected={recordId => onLocationChange({ ...location, recordId }, 'replace')} /></> : <>
+      <div className="action-toolbar"><SearchInput aria-label="Search actions" placeholder="Search tasks" value={query} onChange={event => changeFilters({ query: event.target.value })} /><SelectInput aria-label="Filter by status" value={status} onChange={event => changeFilters({ status: event.target.value })}><option value="ALL">All statuses</option>{(tab === 'completed' ? ['COMPLETED', 'CANCELED'] : ['OPEN', 'IN_PROGRESS']).map(value => <option key={value}>{value}</option>)}</SelectInput><SelectInput aria-label="Filter by priority" value={priority} onChange={event => changeFilters({ priority: event.target.value })}><option value="ALL">All priorities</option>{Object.keys(priorityOrder).map(value => <option key={value}>{value}</option>)}</SelectInput><SelectInput aria-label="Sort actions" value={sort} onChange={event => onLocationChange({ ...location, sort: event.target.value }, 'replace')}><option value="DUE">Due date</option><option value="PRIORITY">Priority</option><option value="UPDATED">Recently updated</option></SelectInput></div>
+      <div className="action-filter-chips">{query && <FilterChip selected onClear={() => changeFilters({ query: undefined })}>Search: {query}</FilterChip>}{status !== 'ALL' && <FilterChip selected onClear={() => changeFilters({ status: undefined })}>Status: {status}</FilterChip>}{priority !== 'ALL' && <FilterChip selected onClear={() => changeFilters({ priority: undefined })}>Priority: {priority}</FilterChip>}<Button onClick={clear}>Clear all</Button><span>{visible.length} results</span></div>
+      <form ref={quickAdd} className="quick-add" onSubmit={event => { event.preventDefault(); void create() }}><TextInput label="Quick add task" placeholder="Type a title and press Enter" value={title} onChange={event => setTitle(event.target.value)} /><Button type="submit" disabled={creating || !title.trim()}>Add task</Button></form>
+      {federalAssessment && <section className="notice"><h3>Federal opportunity context</h3><p>{federalAssessment.technical.requirement}</p><p>{federalAssessment.stage.label}: {federalAssessment.stage.explanation}</p></section>}
+      <div className="action-workbench"><div className="action-list-pane"><Panel title="My Actions"><div className="action-list" role="list">{displayed.map(item => { const source = actionSource(item); const children = item.subtasks.filter(child => !child.removed); return <div role="listitem" key={item.id} className={`action-row ${selectedId === item.id ? 'selected' : ''}`}><input aria-label={`Complete ${item.title}`} type="checkbox" checked={item.status === 'COMPLETED'} disabled={closed(item)} onChange={() => { select(item); if (children.some(child => !child.done)) { setNotice('Open subtasks remain. Use Complete in the detail pane to review and finish all.'); return } void transition(item, 'COMPLETED').catch(error => setNotice(error.message)) }} /><button ref={element => { if (element) rows.current.set(item.id, element); else rows.current.delete(item.id) }} className="action-select" onClick={() => select(item)}><strong>{item.title}</strong><small>{customerName(item.account_id)}</small></button><StatusBadge value={item.priority} kind="priority" /><span className="action-row-meta"><small>{relativeDue(item.due_date)}</small><small>{item.owner_id ?? 'Unassigned'}</small><small>{children.filter(child => child.done).length}/{children.length} subtasks</small><small className="approval-badge">{item.approval_status.replaceAll('_', ' ')}</small>{source && <a className="source-badge" href={source.href}>{source.label}</a>}</span></div> })}{!displayed.length && <Empty>No results. <Button onClick={clear}>Clear filters</Button></Empty>}</div><WorklistPagination page={page} pageSize={PAGE_SIZE} total={visible.length} onPage={value => changeFilters({ page: String(value) })} /></Panel></div>
+        {selected && <ActionDetail key={selected.id} action={selected} accounts={accounts} principal={principal} signals={signals} onItem={onItem} onAccount={onAccount} onClose={closeDetail} onTransition={transition} />}</div>
+      {selected && <CrmProposalPanel key={selected.id} action={selected} principal={principal} />}
+    </>}
+  </div>
 }

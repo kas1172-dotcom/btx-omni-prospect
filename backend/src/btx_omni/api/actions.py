@@ -375,7 +375,8 @@ def edit_action(
         if body.account_id is not None and body.account_id not in {item.id for item in runtime.environment().accounts}:
             raise HTTPException(404, "Canonical Customer not found.")
         existing = get_action(action_id, runtime, current)
-        if (existing.evidence_ids or existing.context_referents or existing.source_suggestion_id) and body.account_id != existing.account_id:
+        evidence_context = any(not kind.startswith('source_') for kind, _ in existing.context_referents)
+        if (existing.evidence_ids or evidence_context or existing.source_suggestion_id) and body.account_id != existing.account_id:
             raise HTTPException(409, "A sourced task must retain its evidence-linked customer.")
     try:
         return runtime.work.edit(

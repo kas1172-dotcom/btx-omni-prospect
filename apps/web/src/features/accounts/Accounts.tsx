@@ -12,7 +12,7 @@ import { SignalBriefCard } from '../../components/SignalBriefCard'
 import { RelatedBtxActivity } from '../../components/RelatedBtxActivity'
 import { SupportingEvidence, WhyThis } from '../../components/SupportingEvidence'
 import { actorDisplayName, presentationLabel } from '../../components/presentation'
-import type { WorkspaceLocation } from '../../app/navigation'
+import { workspaceHash, type WorkspaceLocation } from '../../app/navigation'
 import { ScoreSummary } from '../../components/ScoreSummary'
 import { attractivenessSummary, prospectFitSummary } from '../../components/scoreSummaryModel'
 import { relationshipEvidenceLabel } from '../../components/relationshipPresentation'
@@ -203,7 +203,7 @@ function CustomerActions({ accountId, refreshVersion }: { accountId: string; ref
     if (!title.trim() || pending) return
     setPending(true)
     try {
-      const item = await api.createAction({ account_id: accountId, title, priority, idempotency_key: draftKey })
+      const item = await api.createAction({ account_id: accountId, title, priority, idempotency_key: draftKey, context_referents: [['source_screen', 'Customer 360'], ['source_route', workspaceHash({ surface: 'accounts', accountId })]] })
       setItems(current => [item, ...current.filter(existing => existing.id !== item.id)])
       setTitle(''); setDraftKey(crypto.randomUUID()); setNotice('Internal Action created. No external system was changed.')
     } catch { setNotice('Creation was not confirmed. Retry the same draft to avoid duplicates; inspect Work if you changed a previously submitted draft.') }

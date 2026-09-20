@@ -6,7 +6,7 @@ import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
 import { Today, type TodayFilters } from '../features/today/Today'
-import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
+import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, workspaceHash, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
 import { authorizedDestinations, canOpenDestination, type NavigationAuthority } from './destinations'
 import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapFilterOptions, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
 import '../design/tokens.css'
@@ -74,6 +74,18 @@ export default function App() {
   const [mapFilterOptions, setMapFilterOptions] = useState<MapFilterOptions>({ business_units: [], capabilities: [] })
   const [detail, setDetail] = useState<Account360>()
   const [items, setItems] = useState<WorkItem[]>([])
+  const actionEditSequence = useRef(0)
+  const actionEdits = useRef(new globalThis.Map<string, number>())
+  const updateAction = useCallback((item: WorkItem) => {
+    actionEdits.current.set(item.id, ++actionEditSequence.current)
+    setItems(current => [...current.filter(value => value.id !== item.id), item])
+  }, [])
+  const receiveActions = useCallback((snapshot: WorkItem[], startedAt: number) => {
+    setItems(current => {
+      const newer = current.filter(item => (actionEdits.current.get(item.id) ?? 0) > startedAt)
+      return [...snapshot.filter(item => !newer.some(value => value.id === item.id)), ...newer]
+    })
+  }, [])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [communications, setCommunications] = useState<CommunicationDraft[]>([])
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>()
@@ -219,7 +231,7 @@ export default function App() {
         description: `${brief.why_it_may_matter}${brief.action_rationale ? ` ${brief.action_rationale}` : ''}`,
         priority: brief.commercial_relevance_state === 'ESTABLISHED_ACCOUNT_REVIEW' ? 'HIGH' : 'MEDIUM',
         evidence_ids: [brief.assessment_id, ...brief.evidence_ids],
-        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id]],
+        context_referents: [['intelligence_assessment', brief.assessment_id], ['intelligence_event', brief.id], ['source_screen', 'Intelligence'], ['source_route', workspaceHash({ ...locationRef.current, returnTo: undefined })]],
         approval_required: false,
         idempotency_key: `monitor-${brief.assessment_id.slice(0, 56)}`,
       })
@@ -241,6 +253,8 @@ export default function App() {
       ['federal_assessment', assessment.assessment_id],
       ['federal_assessment_version', String(assessment.assessment_version)],
       ['federal_route_type', route.route_type],
+      ['source_screen', 'Federal opportunities'],
+      ['source_route', workspaceHash({ ...locationRef.current, returnTo: undefined })],
     ]
     if (route.route_type === 'STRATEGIC_PARTNER') referents.push(['strategic_partnership', route.account_id])
     try {
@@ -322,11 +336,19 @@ export default function App() {
     if (!requested || requested === 'today') load('today', api.today(signal), value => { setAlerts(value.commercial_alerts); setCommandCenter(value.command_center); setTodayState('loaded') }, () => setTodayState(previous => previous === 'loaded' ? previous : 'unavailable'))
     if (!requested || requested === 'intelligence') load('intelligence', api.intelligence(signal), value => setSignals(value.signals))
     if (!requested || requested === 'map') load('map', api.map(undefined, signal), value => { setRecords(value.accounts); setPendingMapAccounts(value.pending_accounts ?? []); setPublicLocations(value.facilities); setBtxFacilities(value.btx_facilities); setMapSignals(value.intelligence); setLayers(value.layers); setMapFilterOptions(value.filter_options ?? { business_units: [], capabilities: [] }) })
-    if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { setItems(value.items); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
+    const actionReadSequence = actionEditSequence.current
+    if (!requested || requested === 'actions') load('actions', api.actions(signal), value => { receiveActions(value.items, actionReadSequence); setSuggestions(value.suggestions); setActionPrincipal(value.principal); setActionWarning(value.warning) })
     if (!requested || requested === 'communications') load('communications', api.communications(signal), value => setCommunications(value.items))
     if (!requested || requested === 'settings') load('settings', api.settings(signal), applyWorkspaceSettings, () => setSettingsState('error'))
     return () => controller.abort()
-  }, [applyWorkspaceSettings, authState, resourceRefresh])
+  }, [applyWorkspaceSettings, authState, resourceRefresh, receiveActions])
+  useEffect(() => {
+    if (authState !== 'authenticated' || location.surface !== 'actions') return
+    const controller = new AbortController()
+    const startedAt = actionEditSequence.current
+    void api.actions(controller.signal).then(value => { if (!controller.signal.aborted) { receiveActions(value.items, startedAt); setSuggestions(value.suggestions) } }).catch(() => { if (!controller.signal.aborted) setActionWarning('Actions could not refresh. Previously displayed work may be outdated.') })
+    return () => controller.abort()
+  }, [authState, location.surface, receiveActions])
   useEffect(() => {
     if (authState !== 'authenticated' || !workspaceSettings?.capabilities.view_source_health) return
     if (resourceRefresh && resourceRefresh.key !== 'monitor') return
@@ -383,7 +405,7 @@ export default function App() {
         onOmniContext={setViewContext}
       />
     ) : surface === 'actions' ? (
-      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={location.actionId ?? selectedActionId} onItem={(item) => setItems((old) => [...old.filter((value) => value.id !== item.id), item])} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} location={location} onLocationChange={commitLocation} />
+      <Actions items={items} suggestions={suggestions} principal={actionPrincipal} initialActionId={location.actionId ?? selectedActionId} onItem={updateAction} onSuggestions={setSuggestions} accounts={accounts} signals={signals} warning={actionWarning} onAccount={(id) => void select(id)} onActionSelect={setSelectedActionId} onOmniContext={setViewContext} sourceAlertId={actionSourceAlertId} onClearSource={() => setActionSourceAlertId(undefined)} location={location} onLocationChange={commitLocation} />
     ) : surface === 'communications' ? (
       <Communications accounts={accounts} principal={actionPrincipal} items={communications} onItem={(item) => setCommunications((old) => [...old.filter((value) => value.id !== item.id), item])} onAccount={(id) => void select(id)} />
     ) : surface === 'settings' ? (

@@ -23,6 +23,27 @@ for (const kind of ['communication', 'action']) {
     })
     const title = `Independent ${kind} ${crypto.randomUUID()}`
     await page.goto(kind === 'communication' ? '/#/communications' : '/#/actions')
+    if (kind === 'action') {
+      await page.getByLabel('Quick add task').fill(title)
+      await page.getByLabel('Quick add task').press('Enter')
+      await expect(page.getByText(/Failed to fetch|Load failed|fetch/i)).toBeVisible()
+      await expect(page.getByLabel('Quick add task')).toHaveValue(title)
+      await page.getByLabel('Quick add task').press('Enter')
+      const detail = page.locator('.action-detail')
+      await expect(detail.getByLabel('Title', { exact: true })).toHaveValue(title)
+      expect(posts).toBe(2)
+      expect(submitted[0].account_id).toBeUndefined()
+      expect(submitted[0].idempotency_key).toBe(submitted[1].idempotency_key)
+      release()
+      const customer = detail.getByRole('combobox', { name: 'Customer', exact: true })
+      await customer.fill('Boeing')
+      await detail.getByRole('option', { name: /Boeing/ }).click()
+      await expect(customer).toHaveValue('Boeing')
+      await expect.poll(async () => (await (await page.request.get(apiPath)).json()).items.find(item => item.title === title)?.account_id).toBe('boeing')
+      const saved = await (await page.request.get(apiPath)).json()
+      expect(saved.items.filter(item => item.title === title)).toHaveLength(1)
+      return
+    }
     await page.getByRole('button', { name: kind === 'communication' ? 'Create draft' : 'Create Action', exact: true }).click()
     const editor = page.getByRole('dialog', { name: kind === 'communication' ? 'Create communication' : 'Create Action', exact: true })
     await editor.getByLabel(kind === 'communication' ? 'Subject' : 'Title', { exact: true }).fill(title)
