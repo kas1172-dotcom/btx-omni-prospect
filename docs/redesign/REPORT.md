@@ -71,6 +71,20 @@ Priority is `account.prospect_research_priority`, a seeded string sorted HIGH/ME
 
 Available canonical fields: `commercial_ledger.monthly_history[].revenue_minor/bookings_minor`, `ttm`, fulfillment `remaining_quantity` and raw line `unit_price_minor`, health `backlog_coverage.raw_value`, risk `pipeline.raw_value` (overdue share), `concentration.raw_value`, CRM `last_activity_at/owner_id`, `role_targets.contact_verified/verified_function`, `interactions.two_way/date`, `relationship_profile.expected_touch_days`, active `public_risk_events` and `CommercialAlert.status`. Expansion records are existing scoped commercial opportunities. Monthly history is already returned but not typed in TypeScript. All commercial sample provenance must remain visible.
 
+## Step 2 — canonical projections
+
+List additions: `owner_id`, `business_unit_ids`, `naics` (original assignment objects including verification), `health_band` (null), `health_band_state`, `open_items.public/internal`, `bookings_monthly`, `bookings_delta_3m_vs_prior_3m`, `last_activity_at`.
+
+Detail addition: `profile`, containing the same list fields plus `backlog_months`, `quote_overdue_share`, `concentration.share/evidence`, `open_order_count`, `open_order_value_minor`, `fulfillment`, `function_coverage`, `last_two_way_at`, `expected_touch_days`, `internal_commercial_risk`, `public_risk_rollup`, active `public_risk_events`, `overall_customer_risk`, `open_internal_items`, `expansion_opportunity_count`. Existing `commercial_ledger` is now typed, not duplicated or recomputed. Existing factor `raw_value/period` fields are now typed.
+
+All scoring values use existing health/risk input calculations and assessment/rollup services. Open items are defined once in `profile_projection.py`: unique active public risk events; unique internal alerts with OPEN status. Counts are records known to the projection, not claims of complete public monitoring. Function coverage preserves role-only SAMPLE verification; no invented identified people. Missing is never inferred from incomplete research. Band thresholds remain unconfigured.
+
+Verification: typecheck/lint/build PASS; frontend 84/84 unchanged; existing focused backend 18/18 plus new parity/reconciliation tests 2/2; focused E2E 4/4. New tests assert every sample list field equals the detail projection and commercial inputs equal existing scoring factors. Boeing's referenced line reconciles 292 ordered / 146 shipped / 146 remaining / 14,308,000 minor units ($143,080). This is one line, not the sum of all recorded account history. Initial new-test setup errors (missing Settings, then unenriched sample) fixed by constructing runtime with the existing validated commercial projection, without changing fixtures or assertions.
+
+Full baseline after non-durable local test overrides: **788 passed / 25 failed / 10 errors / 2 skipped**, recorded in baseline-backend.txt. This is the comparison configuration for final full-suite verification. No test exclusions added. PostgreSQL-only verification remains UNVERIFIED.
+
+Step 2 files: backend api/accounts.py; modules/accounts/profile_projection.py; tests/test_profile_projections.py (two new tests, no existing tests changed); frontend types/api.ts, types/decisions.ts, types/accountProfile.ts; report, test logs, step2 screenshots. App.tsx unchanged. Step2 Actions screenshot absent because no Actions tab exists yet.
+
 ## Unverified / remaining
 
 - Steps 1–6 are in progress, not complete.

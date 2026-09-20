@@ -1,4 +1,7 @@
 import type { OmniRelationshipSelection, RankedRoute } from './relationships'
+import type { ProfileListFields, ProfileProjection, CommercialLedger } from './accountProfile'
+export interface Account extends Partial<ProfileListFields> { id: string }
+export interface Account360 { profile: ProfileProjection; commercial_ledger: CommercialLedger | null }
 export interface OmniCanonicalReads { account_id: string; revision: string; stop_reason: string; model_requested_stop: boolean; configuration_version: string; elapsed_ms: number; steps: Array<{ step: number; tool: string; status: string; result_checksum: string; evidence_ids: string[] }>; reads: Array<{ tool: string; arguments: Record<string, unknown>; result: unknown }> }
 export type Relationship = 'PUBLIC_MARKET' | 'CURRENT_CUSTOMER' | 'FORMER_CUSTOMER' | 'TARGET' | 'PROSPECT'
 export interface GovernedExplanation { provider_status: string; assisted: boolean; summary: string; key_drivers: string[]; limitations: string[]; what_to_consider: string[]; evidence_ids: string[]; disclosure: string }
