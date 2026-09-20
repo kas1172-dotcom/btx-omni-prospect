@@ -17,6 +17,26 @@ Status: implementation in progress; no tier certified complete yet.
 
 ## Validation
 
+### Item 1.5 golden vectors
+
+| Vector | Target | Computed | Fixture-backed assertion |
+|---|---:|---:|---|
+| Signal Confidence, 9 days | 86.25 High | 86.25 High | `test_requested_nine_day_confidence_target` |
+| Signal Confidence, 3 days | 88.75 High | 88.75 High | `test_three_day_confidence_target` |
+| Opportunity Priority | 81.75 High, Qualified/Durable | 81.75, YES/YES, Best Bet | `test_opportunity_81_75_with_independent_qualified_durable_gates` |
+| Internal Commercial Risk | 52.5 Moderate | 52.5 Moderate | `test_internal_risk_52_5_from_reconciled_transactions` |
+| Public Event Risk | 76.25 High, Escalate | 76.25 High, Escalate | `test_public_internal_and_combined_risk_are_separate` |
+| Overall customer risk | 62.00, no uplift/floor | 62.00, no uplift/floor | same assertion |
+| Customer Health | 60 Watch | 60 Watch | `test_health_watch_60_from_reconciled_transactions` |
+| Other Health bands | Healthy / At risk / Critical | 96.25 / 40 / 17.5 | `test_health_distribution` |
+| Queue | class 0, risk, RFQ 94, cooling | same order | `test_action_queue_classes_dominate_raw_score` |
+
+New fictional customers are entirely authored synthetic data. Monthly histories reconcile to orders, dispatches, acceptances, revenue, invoices and payments. Internal risk's raw leaves include 18% bookings decline, 15% overdue open quote value, 2.5 months backlog, one active function, 7.14% BU exposure and one noncritical open case. Historical transactions retain their dates while the observation snapshot is current; shifting actual history to the demo date would destroy the longitudinal model.
+
+The Opportunity Priority target is reachable with a different rule-consistent leaf decomposition than its illustrative example: 23.1 + 19.75 + 12 + 8.4 + 10 + 8.5. The test docstring records this. The rubric omits a make/buy leaf table; retained the existing SOURCES_EXTERNALLY=100, MIXED=60, MOSTLY_CAPTIVE=30 mapping as an explicit implementation decision, not fabricated source text.
+
+Fictional public-risk exercises use `sample://` locators, not counterfeit SEC URLs. The scoring service permits arithmetic for explicitly tagged fictional SAMPLE exercises while retaining `synthetic=True` and refusing canonical real-world seller recommendation eligibility. There is no assertion of a real consolidation. Eight Tier 1 fixture-vector tests pass.
+
 ### Items 1.4 and 1.4a
 
 Kratos source event date **2026-08-24**, retrieved **2026-09-20**, publisher **Kratos Defense & Security Solutions**. Required investor URL: https://ir.kratosdefense.com/news-releases/news-release-details/kratos-providing-spartan-j85-engines-support-boeing-jdam-lr (403 on this retrieval). Verified primary corporate mirror: https://www.kratosdefense.com/newsroom/kratos-providing-spartan-j85-engines-to-support-boeing-jdam-lr-production-contract (date and J85 production at Auburn Hills explicitly stated). The company mirror and syndicated release are one origin, not independent corroboration.

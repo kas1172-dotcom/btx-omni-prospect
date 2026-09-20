@@ -9,7 +9,20 @@ def enhance_environment(base, *, anchor=None):
     """Opt-in SAMPLE view; old fixture files and all canonical IDs remain intact."""
     from dataclasses import replace
     from btx_omni.modules.commercial.projection import project_commercial_records
-    records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor)}
+    from btx_omni.core.clock import as_of_datetime
+    from btx_omni.core.classification import Classification
+    from btx_omni.core.provenance import Provenance
+    from btx_omni.domain.accounts import CanonicalAccount, AccountRelationship
+    from btx_omni.domain.common import DataMode, EvidenceState
+    from btx_omni.providers.sample.scoring_cases import customer, add_expansion
+    additions = [customer(case, anchor=anchor) for case in ('risk', 'watch', 'healthy', 'at-risk', 'critical')]
+    add_expansion(additions[1], facility_id=base.btx_facilities[0].id)
+    clock = as_of_datetime(anchor)
+    accounts = tuple(CanonicalAccount(a['account_id'], a['identity']['display_name'], AccountRelationship.CURRENT_CUSTOMER,
+        None, ('Defense',), provenance=Provenance(VERSION, a['account_id'], None, clock, clock,
+            Classification.INTERNAL_COMMERCIAL, EvidenceState.CONFIRMED, DataMode.SAMPLE, True)) for a in additions)
+    base = replace(base, accounts=base.accounts + accounts)
+    records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor), **{a['account_id']: a for a in additions}}
     projected = project_commercial_records(base, records, revision=VERSION)
     # Preserve shared graph identity even when a selected commercial scenario changes.
     preserve = {}

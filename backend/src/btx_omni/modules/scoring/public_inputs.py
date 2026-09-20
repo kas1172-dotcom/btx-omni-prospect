@@ -100,12 +100,14 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
         'inputs': {key: asdict(value) for key, value in inputs.items()}},
         sort_keys=True, default=str, separators=(',', ':')).encode()).hexdigest()
     result = assess('signal_confidence', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
-                    revision=revision, inputs=inputs, eligible=bool(evidence) and not event.provenance.synthetic)
+                    revision=revision, inputs=inputs, eligible=bool(evidence) and (not event.provenance.synthetic or
+                        (event.provenance.source_system == 'fictional_rubric_fixture' and event.provenance.data_mode.value == 'SAMPLE' and facts.get('fictional_scenario') == 'true')))
     result.update({'input_configuration_version': VERSION, 'freshness_threshold_hours': window,
                    'evidence_state': 'STALE' if age is not None and age > window else 'CURRENT' if freshness is not None else 'UNKNOWN',
                    'collection_freshness_hours': freshness_hours, 'specificity_required_fields': required,
                    'specificity_missing_fields': tuple(name for name in required if name not in observed),
-                   'seller_recommendation_eligible': bool(source_points is not None and source_points >= 50 and entity_points >= 75 and count and freshness not in {None, 0})})
+                   'seller_recommendation_eligible': bool(not event.provenance.synthetic and source_points is not None and source_points >= 50 and entity_points >= 75 and count and freshness not in {None, 0}),
+                   'synthetic': event.provenance.synthetic, 'data_mode': event.provenance.data_mode.value})
     result['band'] = ('HIGH' if result['score'] >= 70 else 'MEDIUM' if result['score'] >= 40 else 'LOW') if result['score'] is not None else 'INSUFFICIENT_EVIDENCE'
     return result
 
