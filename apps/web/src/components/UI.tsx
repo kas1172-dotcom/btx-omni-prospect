@@ -5,8 +5,29 @@ import { presentationLabel } from './presentation'
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
 type ButtonSize = 'compact' | 'touch' | 'icon'
 
-export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean }>(function Button({ variant = 'secondary', size = 'compact', loading = false, disabled, className = '', children, ...props }, ref) {
-  return <button {...props} ref={ref} className={`ui-button ui-button-${variant} ui-button-${size} ${className}`.trim()} disabled={disabled || loading} aria-busy={loading || undefined}>{loading && <span className="ui-button-spinner" aria-hidden="true" />}{loading ? <span>Loading…</span> : children}</button>
+export function PrecisionLoader({ size = 'medium', className = '' }: { size?: 'compact' | 'medium' | 'large'; className?: string }) {
+  return <span className={`ui-precision-loader ui-precision-loader-${size} ${className}`.trim()} aria-hidden="true">
+    <svg viewBox="0 0 80 80" focusable="false">
+      <circle className="ui-precision-chuck-ring" cx="40" cy="40" r="31" />
+      <circle className="ui-precision-chuck-guide" cx="40" cy="40" r="24" />
+      <g className="ui-precision-chuck-jaws">
+        <path d="M35 9h10l3 17-8 7-8-7Z" />
+        <path d="M35 9h10l3 17-8 7-8-7Z" transform="rotate(120 40 40)" />
+        <path d="M35 9h10l3 17-8 7-8-7Z" transform="rotate(240 40 40)" />
+      </g>
+      <circle className="ui-precision-workpiece" cx="40" cy="40" r="11" />
+      <circle className="ui-precision-bore" cx="40" cy="40" r="4" />
+      <circle className="ui-precision-index" cx="40" cy="40" r="34" />
+    </svg>
+  </span>
+}
+
+export function LoadingStatus({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <p className={`ui-loading-status ${className}`.trim()} role="status" aria-live="polite" aria-busy="true"><PrecisionLoader size="compact" /><span>{children}</span></p>
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean; loadingLabel?: ReactNode }>(function Button({ variant = 'secondary', size = 'compact', loading = false, loadingLabel = 'Loading…', disabled, className = '', children, ...props }, ref) {
+  return <button {...props} ref={ref} className={`ui-button ui-button-${variant} ui-button-${size} ${className}`.trim()} disabled={disabled || loading} aria-busy={loading || undefined}>{loading && <PrecisionLoader size="compact" />}{loading ? <span>{loadingLabel}</span> : children}</button>
 })
 
 export function IconButton({ label, children, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> & { label: string; children: ReactNode }) { return <Button {...props} size="icon" aria-label={label}>{children}</Button> }
@@ -24,14 +45,14 @@ export function FilterChip({ selected = false, onClear, children, ...props }: Bu
 
 type StatusKind = 'entity' | 'priority' | 'action' | 'evidence' | 'source' | 'integration' | 'relationship' | 'truth' | 'neutral'
 type StatusTone = 'neutral' | 'info' | 'internal' | 'success' | 'warning' | 'danger' | 'stale' | 'unavailable' | 'inverse'
-const semanticTone = (value: string): StatusTone => { const normalized = value.toUpperCase().replaceAll(' ', '_'); if (normalized === 'CUSTOMER') return 'inverse'; if (normalized === 'INTERNAL_COMMERCIAL_INTELLIGENCE') return 'internal'; if (['STALE', 'PARTIAL'].includes(normalized)) return 'stale'; if (['UNAVAILABLE', 'NOT_APPLICABLE'].includes(normalized)) return 'unavailable'; if (['AVAILABLE', 'CONFIRMED', 'COMPLETED', 'APPROVED', 'SAVED', 'SUPPORTED', 'BROWSER_VERIFIED', 'PUBLICLY_VERIFIED', 'LIVE_PUBLIC'].includes(normalized)) return 'success'; if (['INFERRED', 'MEDIUM', 'NEEDS_RESEARCH', 'NEEDS_VALIDATION', 'AUTOMATION_BLOCKED', 'IN_PROGRESS', 'PENDING', 'PENDING_CHANGES', 'SAVING'].includes(normalized)) return 'warning'; if (['HIGH', 'HIGH_PRIORITY', 'CONFLICTING', 'STALE_QUOTE', 'CUSTOMER_INACTIVITY', 'CANCELED', 'BLOCKED', 'RESTRICTED'].includes(normalized)) return 'danger'; if (['OPEN', 'INFORMATIONAL', 'CONNECTED', 'PUBLIC_INTELLIGENCE', 'SELECTED'].includes(normalized)) return 'info'; return 'neutral' }
+const semanticTone = (value: string): StatusTone => { const normalized = value.toUpperCase().replaceAll(' ', '_'); if (normalized === 'CUSTOMER') return 'inverse'; if (normalized === 'INTERNAL_COMMERCIAL_INTELLIGENCE') return 'internal'; if (['STALE', 'PARTIAL'].includes(normalized)) return 'stale'; if (['UNAVAILABLE', 'NOT_APPLICABLE'].includes(normalized)) return 'unavailable'; if (['AVAILABLE', 'CONFIRMED', 'COMPLETED', 'APPROVED', 'SAVED', 'SUPPORTED', 'BROWSER_VERIFIED', 'PUBLICLY_VERIFIED', 'LIVE_PUBLIC', 'LOW'].includes(normalized)) return 'success'; if (['INFERRED', 'MEDIUM', 'NEEDS_RESEARCH', 'NEEDS_VALIDATION', 'AUTOMATION_BLOCKED', 'IN_PROGRESS', 'PENDING', 'PENDING_CHANGES', 'SAVING'].includes(normalized)) return 'warning'; if (['HIGH', 'HIGH_PRIORITY', 'CONFLICTING', 'STALE_QUOTE', 'CUSTOMER_INACTIVITY', 'CANCELED', 'BLOCKED', 'RESTRICTED'].includes(normalized)) return 'danger'; if (['OPEN', 'INFORMATIONAL', 'CONNECTED', 'PUBLIC_INTELLIGENCE', 'SELECTED'].includes(normalized)) return 'info'; return 'neutral' }
 export function StatusBadge({ value, kind = 'neutral', tone, label }: { value: string; kind?: StatusKind; tone?: StatusTone; label?: string }) { return <span className={`state ui-status ui-status-${kind} ui-status-${tone ?? semanticTone(value)}`}>{label ?? presentationLabel(value, kind === 'action' ? 'workflow' : kind === 'relationship' ? 'relationship' : kind === 'evidence' || kind === 'truth' ? 'evidence' : kind === 'integration' || kind === 'source' ? 'provider' : 'general')}</span> }
 export function State({ value }: { value: string }) { return <StatusBadge value={value} kind="truth" /> }
 
 export function Panel({ title, children, action, variant = 'default', className = '' }: { title?: string; children: ReactNode; action?: ReactNode; variant?: 'default' | 'subdued' | 'elevated'; className?: string }) { return <section className={`panel ui-panel ui-panel-${variant} ${className}`.trim()}>{title && <header className="panel-head"><h2>{title}</h2>{action}</header>}{children}</section> }
 export function StatTile({ label, value, detail, tone = 'neutral', className = '' }: { label: string; value: ReactNode; detail?: ReactNode; tone?: 'neutral' | 'info' | 'success' | 'warning' | 'danger'; className?: string }) { return <article className={`ui-stat ui-stat-${tone} ${className}`.trim()}><span>{label}</span><strong>{value}</strong>{detail && <small>{detail}</small>}</article> }
 export function MetadataRow({ label, value }: { label: ReactNode; value: ReactNode }) { return <div className="ui-metadata-row"><span>{label}</span><strong>{value}</strong></div> }
-export function Notice({ tone = 'info', title, children }: { tone?: 'info' | 'warning' | 'danger'; title?: string; children: ReactNode }) { return <div className={`ui-notice ui-notice-${tone}`} role={tone === 'info' ? 'status' : 'alert'}>{title && <strong>{title}</strong>}<span>{children}</span></div> }
+export function Notice({ tone = 'info', title, children }: { tone?: 'info' | 'warning' | 'danger'; title?: string; children: ReactNode }) { return <div className={`ui-notice ui-notice-${tone}`} role={tone === 'info' ? 'status' : 'alert'}>{title && <strong className="ui-notice-title">{title}</strong>}<div className="ui-notice-content">{children}</div></div> }
 
 export function Disclosure({ title, children, defaultOpen = false, className = '', open: controlledOpen, onOpenChange }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string; open?: boolean; onOpenChange?: (open: boolean) => void }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen)
@@ -77,5 +98,5 @@ export function Drawer({ open, onClose, titleId, children, className = '', initi
 }
 
 export type ResourceStateKind = 'loading' | 'empty' | 'filtered-empty' | 'not-applicable' | 'partial' | 'stale' | 'unavailable' | 'permission' | 'error' | 'refreshing' | 'needs-research'
-export function StatusMessage({ state = 'empty', title, children, action }: { state?: ResourceStateKind; title?: string; children: ReactNode; action?: ReactNode }) { const alert = state === 'error' || state === 'permission'; const busy = state === 'loading' || state === 'refreshing'; return <div className={`ui-status-message ui-status-message-${state}`} role={alert ? 'alert' : 'status'} aria-live={busy ? 'polite' : undefined} aria-busy={busy || undefined}>{busy && <span className="ui-state-spinner" aria-hidden="true" />}{title && <strong>{title}</strong>}<span>{children}</span>{action}</div> }
+export function StatusMessage({ state = 'empty', title, children, action }: { state?: ResourceStateKind; title?: string; children: ReactNode; action?: ReactNode }) { const alert = state === 'error' || state === 'permission'; const busy = state === 'loading' || state === 'refreshing'; return <div className={`ui-status-message ui-status-message-${state}`} role={alert ? 'alert' : 'status'} aria-live={busy ? 'polite' : undefined} aria-busy={busy || undefined}>{busy && <PrecisionLoader size={state === 'refreshing' ? 'compact' : 'medium'} />}{title && <strong>{title}</strong>}<span>{children}</span>{action}</div> }
 export function Empty({ children }: { children: ReactNode }) { return <StatusMessage state="empty">{children}</StatusMessage> }

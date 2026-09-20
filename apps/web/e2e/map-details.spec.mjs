@@ -154,14 +154,19 @@ test('zero score and zero distance are readable values (projection edge-case fix
     const data = await response.json()
     for (const item of data.accounts.filter(item => item.account_id === 'kla')) {
       item.attractiveness_score = '0'
-      item.account_attractiveness.score = '0'
       item.nearest_btx_facility = { id: 'fixture-coincident', name: 'Coincident test facility', distance_miles: '0', distance_method: 'HAVERSINE_STRAIGHT_LINE' }
     }
+    await route.fulfill({ response, json: data })
+  })
+  await page.route('**/api/accounts/kla', async route => {
+    const response = await route.fetch()
+    const data = await response.json()
+    data.customer_health.score = '0'
     await route.fulfill({ response, json: data })
   })
   await page.goto('/#/map')
   await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
-  await expect(panel.getByLabel('Customer Attractiveness score summary')).toContainText('0')
+  await expect(panel.getByLabel('Customer health score summary')).toContainText('0')
   await expect(panel).toContainText('Coincident test facility · 0 miles straight-line')
 })

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
+import { LoadingStatus } from '../../components/UI'
 import './workbook-fields.css'
 
 export interface WorkbookPage {
@@ -27,7 +28,7 @@ function WorkbookPageView({ accountId }: { accountId: string }) {
   }, [accountId, offset, retry])
   return <div aria-busy={!current && failed !== offset}>
     <p>Private source references, not current transactions, verified locations or official scores. Original units and periods are retained.</p>
-    {failed === offset ? <p role="alert">Workbook fields could not be retrieved. <button onClick={() => setRetry(value => value + 1)}>Retry workbook fields</button></p> : !current && <p role="status">Loading source rows…</p>}
+    {failed === offset ? <p role="alert">Workbook fields could not be retrieved. <button onClick={() => setRetry(value => value + 1)}>Retry workbook fields</button></p> : !current && <LoadingStatus>Opening retained source rows…</LoadingStatus>}
     {loaded && <div aria-label={current ? 'Current source rows' : 'Previously loaded source rows'}>
       {!current && <p>Previously loaded rows remain visible while this page loads.</p>}
       {loaded.data.total === 0 && <p>No original workbook row is associated with this account.</p>}

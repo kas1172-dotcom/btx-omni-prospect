@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
 
+// Finish intercepted reads before Playwright disposes their responses.
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }) })
+
 test.use({ viewport: { width: 1440, height: 900 } })
 
 const accountId = 'lockheed-martin'
@@ -51,7 +54,7 @@ async function openSelectedAssessmentFromToday(page) {
   await page.goto('/#/today')
   await page.getByRole('button', { name: 'Public intelligence' }).click()
   const priority = page.locator('[data-priority-id="priority-navigation"]')
-  await priority.getByText('Evidence and governed action').click()
+  await priority.getByText('Evidence and next action').click()
   await priority.getByRole('button', { name: 'Use in Omni' }).click()
   await priority.locator('.seller-signal-brief').getByRole('button', { name: 'Lockheed Martin' }).click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
@@ -61,12 +64,14 @@ test('Today assessment and related record retain the filtered return location th
   await openSelectedAssessmentFromToday(page)
   expect(page.url()).toContain(`assessment=${assessmentId}`)
   expect(page.url()).toContain('return=%23%2Ftoday')
+  await page.getByRole('tab', { name: 'Commercial', exact: true }).click()
   const related = page.locator('.account-primary-grid .customer-section').filter({ hasText: 'Related BTX activity to review' })
   await related.getByRole('button', { name: /Related BTX activity to review/ }).click()
   await related.getByRole('button', { name: 'Inspect source record' }).first().click()
   await expect(page.getByRole('region', { name: 'Lockheed agreement quote source record' })).toBeVisible()
   expect(page.url()).toContain('view=record')
   await page.goBack(); await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
+  await page.goBack(); await expect(page.getByRole('tab', { name: 'Overview', exact: true })).toHaveAttribute('aria-selected', 'true')
   await page.goBack(); await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
   expect(page.url()).toContain('f.kind=PUBLIC_SIGNAL')
   expect(page.url()).toContain(`assessment=${assessmentId}`)
@@ -95,7 +100,7 @@ test('Map facility scope survives Organization 360 and is supplied when Omni ope
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   expect(page.url()).toContain('facility=public-hq-lockheed-martin'); expect(page.url()).toContain('scope=facility')
   await page.getByLabel('Open Omni assistant').click()
-  const request = page.waitForRequest(item => item.url().endsWith('/api/omni') && item.method() === 'POST')
+  const request = page.waitForRequest(item => item.url().endsWith('/api/omni/chat/stream') && item.method() === 'POST')
   await page.getByRole('textbox', { name: 'Ask Omni' }).fill('What facility context is selected?')
   await page.getByRole('button', { name: 'Send' }).click()
   const body = (await request).postDataJSON()

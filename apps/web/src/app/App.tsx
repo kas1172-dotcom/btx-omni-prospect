@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, resolveFederalAssessment } from '../api/client'
 import { OmniDrawer } from '../components/OmniDrawer'
-import { Button, Disclosure, StatusMessage } from '../components/UI'
+import { Button, Drawer, LoadingStatus, StatusMessage } from '../components/UI'
 import { deferredSurface } from '../components/deferredSurface'
 import type { PortfolioSnapshot } from '../features/accounts/Accounts'
 import { DEFAULT_MAP_LAYERS, type MapFilters, type MapLayer, type MapViewSnapshot } from '../features/map/mapModel'
 import { Today, type TodayFilters } from '../features/today/Today'
+import { HostedSessionCheck, HostedSignIn } from '../features/auth/HostedSignIn'
 import { decodeWorkspaceLocation, historyUpdate, sameWorkspaceLocation, type NavigationMode, type Surface, type WorkspaceLocation } from './navigation'
 import { authorizedDestinations, canOpenDestination, type NavigationAuthority } from './destinations'
 import type { Account, Account360, Alert, BtxMapFacility, CommandCenter, CommunicationDraft, FederalAssessment, FederalOpportunity, FederalRoute, MapAccountSegment, MapFilterOptions, MapIntelligence, MapRecord, MonitorHealth, OmniAssessmentSelection, OmniContext, OmniFederalSelection, OmniSurface, Principal, PublicLocation, Signal, Suggestion, WorkItem, WorkspaceSettings } from '../types/api'
@@ -13,6 +14,7 @@ import '../design/tokens.css'
 import '../design/app.css'
 import '../design/shell.css'
 import '../design/mobile.css'
+const Opportunities = deferredSurface(() => import('../features/opportunities/Opportunities').then(module => module.Opportunities), 'Opportunities', 'Opportunities')
 const Accounts = deferredSurface(() => import('../features/accounts/Accounts').then(module => module.Accounts), 'Customers & Prospects', 'Accounts')
 const Map = deferredSurface(() => import('../features/map/Map').then(module => module.Map), 'Map', 'Map')
 const Actions = deferredSurface(() => import('../features/actions/Actions').then(module => module.Actions), 'Actions', 'Actions')
@@ -20,10 +22,11 @@ const Communications = deferredSurface(() => import('../features/communications/
 const Intelligence = deferredSurface(() => import('../features/intelligence/Intelligence').then(module => module.Intelligence), 'Intelligence', 'Intelligence')
 const Monitor = deferredSurface(() => import('../features/monitor/Monitor').then(module => module.Monitor), 'Source Health', 'Source Health')
 const Settings = deferredSurface(() => import('../features/settings/Settings').then(module => module.Settings), 'Settings', 'Settings')
-type OmniViewContext = Pick<OmniContext, 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
+type OmniViewContext = Pick<OmniContext, 'selected_commercial_opportunity' | 'selected_account_id' | 'selected_event_id' | 'selected_assessment' | 'selected_federal_opportunity' | 'selected_program_id' | 'active_filters' | 'visible_record_ids' | 'relationship_selection'>
 const surfaceLabels: Record<Surface, string> = {
   today: 'Today',
-  accounts: 'Customers & Prospects',
+  accounts: 'Profiles',
+  opportunities: 'Opportunities',
   intelligence: 'Intelligence',
   map: 'Map',
   actions: 'Actions',
@@ -79,7 +82,7 @@ export default function App() {
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>()
   const [settingsState, setSettingsState] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [actionPrincipal, setActionPrincipal] = useState<Principal>()
-  const [actionWarning, setActionWarning] = useState('Actions use durable governed storage.')
+  const [actionWarning, setActionWarning] = useState('Actions retain their evidence, owner, status, and approval history.')
   const [monitor, setMonitor] = useState<MonitorHealth>()
   const navigationAuthority: NavigationAuthority = { authenticated: authState === 'authenticated', sourceHealth: workspaceSettings?.capabilities.view_source_health === true }
   const destinations = authorizedDestinations(navigationAuthority)
@@ -106,6 +109,7 @@ export default function App() {
     if (update.method === 'none' && update.hash === decodeWorkspaceLocation(window.location.hash).canonicalHash) return
     if (update.method === 'push') window.history.pushState({ btxOmniNavigation: true }, '', update.hash)
     else if (update.method === 'replace') window.history.replaceState({ btxOmniNavigation: true }, '', update.hash)
+    locationRef.current = next
     setLocation(next)
     setLinkRecovery('')
   }, [])
@@ -233,7 +237,7 @@ export default function App() {
   const createFederalAction = useCallback(async (opportunity: FederalOpportunity, route: FederalRoute) => {
     const assessment = opportunity.assessment
     if (!assessment || !route.account_id) {
-      setError('This route does not establish an organization for a governed Action proposal.')
+      setError('This route does not identify an organization for an Action proposal.')
       return
     }
     const referents: Array<[string, string]> = [
@@ -267,6 +271,9 @@ export default function App() {
       if (decoded.recovery) setLinkRecovery('This link is malformed or no longer supported. A safe workspace view is shown instead.')
       if (window.location.hash !== decoded.canonicalHash) window.history.replaceState({ btxOmniNavigation: true }, '', decoded.canonicalHash)
       if (!decoded.location.accountId) { setDetail(undefined); clearSelectedEvent(); clearMapSelection(); clearSelectedAction(); clearViewContext() }
+      // Child portfolio effects can run before the parent passive effect. Publish
+      // the restored scope now so they cannot replace a profile deep link.
+      locationRef.current = decoded.location
       setLocation(decoded.location)
       if (decoded.location.surface === 'today') setTodayFilters(todayFiltersFromLocation(decoded.location))
       if (decoded.location.surface === 'map') {
@@ -353,12 +360,12 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [commitLocation, location.subview, location.surface, navigationAuthority.sourceHealth, settingsState, workspaceSettings?.capabilities.view_integration_diagnostics])
   useEffect(() => () => accountRequest.current?.abort(), [])
-  if (authState === 'checking') return <main className="app-shell app-shell-loading"><div className="loading-stage"><span className="eyebrow">Secure workspace</span><h1>Checking hosted session</h1><p>Validating the server-held POC session without exposing role credentials.</p></div></main>
+  if (authState === 'checking') return <HostedSessionCheck />
   if (authState === 'required') return <HostedSignIn onAuthenticated={() => window.location.reload()} />
   const locationAssessment: OmniAssessmentSelection | undefined = location.assessment ? { assessment_id: location.assessment.assessmentId, assessment_version: location.assessment.assessmentVersion, event_id: location.assessment.eventId, account_id: location.assessment.accountId } : undefined
   const locationFederal: OmniFederalSelection | undefined = location.federal ? { opportunity_id: location.federal.opportunityId, assessment_id: location.federal.assessmentId, assessment_version: location.federal.assessmentVersion, route_type: location.federal.routeType, account_id: location.federal.accountId, partnership_id: location.federal.partnershipId } : undefined
   const content =
-    surface === 'accounts' ? (
+    surface === 'opportunities' ? (<Opportunities location={location} onLocationChange={commitLocation} onOmniContext={setViewContext} />) : surface === 'accounts' ? (
       <Accounts accounts={accounts} detail={detail} initialAssessment={locationAssessment} initialFederal={locationFederal} initialSnapshot={portfolioSnapshot} onSnapshot={updatePortfolioSnapshot} onSelect={(id) => void select(id)} onBack={backFromAccount} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
     ) : surface === 'intelligence' ? (
       <Intelligence signals={signals} accounts={accounts} commandCenter={commandCenter} settings={workspaceSettings} onAccount={(id, assessment) => void select(id, true, assessment)} onEventSelect={setSelectedEventId} onCreateAction={(brief) => void createIntelligenceAction(brief)} onFederalAccount={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'overview', federalAssessment)} onFederalPartnership={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'partnership', federalAssessment)} onFederalRelationship={(id, federal, federalAssessment) => void select(id, true, undefined, federal, 'relationships', federalAssessment)} onFederalOmni={(federal) => { setViewContext({ selected_federal_opportunity: federal }); commitLocation({ ...location, federal: { opportunityId: federal.opportunity_id, assessmentId: federal.assessment_id, assessmentVersion: federal.assessment_version, routeType: federal.route_type, accountId: federal.account_id ?? undefined, partnershipId: federal.partnership_id ?? undefined } }, 'replace'); window.dispatchEvent(new Event('btx:open-omni')) }} onFederalAction={(opportunity, route) => void createFederalAction(opportunity, route)} onOmniContext={setViewContext} location={location} onLocationChange={commitLocation} />
@@ -399,7 +406,7 @@ export default function App() {
           clearViewContext()
           navigate('intelligence')
         }}
-      /> : <section className="surface" role="status">Checking workspace access…</section>
+      /> : <section className="surface"><LoadingStatus>Preparing workspace access…</LoadingStatus></section>
     ) : (
       <Today
         filters={todayFilters}
@@ -434,6 +441,7 @@ export default function App() {
           {
             today: 'TODAY',
             accounts: 'ACCOUNTS',
+            opportunities: 'ACCOUNTS',
             intelligence: 'INTELLIGENCE',
             map: 'MAP',
             actions: 'ACTIONS',
@@ -445,13 +453,17 @@ export default function App() {
   const filteredAccountId = typeof viewContext.active_filters?.account_id === 'string'
     ? viewContext.active_filters.account_id
     : undefined
-  const selectedAccountId = detail?.account.id ?? (surface === 'map' ? selectedMapAccountId : filteredAccountId)
+  const locationCustomerId = surface === 'intelligence' && typeof location.filters?.customer === 'string'
+    ? location.filters.customer
+    : undefined
+  const selectedAccountId = detail?.account.id ?? (surface === 'map' ? selectedMapAccountId : locationCustomerId ?? viewContext.selected_account_id ?? filteredAccountId)
   const omniContext: OmniContext = {
     surface: omniSurface,
     selected_account_id: selectedAccountId,
     selected_event_id: surface === 'intelligence' || surface === 'today' || surface === 'map' || (surface === 'accounts' && detail) ? (viewContext.selected_assessment?.event_id ?? selectedEventId ?? viewContext.selected_event_id) : undefined,
     selected_assessment: viewContext.selected_assessment,
     selected_federal_opportunity: viewContext.selected_federal_opportunity,
+    selected_commercial_opportunity: viewContext.selected_commercial_opportunity,
     selected_program_id: surface === 'today' ? viewContext.selected_program_id : undefined,
     // A facility-supported map investigation remains scoped to that facility
     // after the user opens Organization 360.  The URL never promotes an
@@ -469,7 +481,7 @@ export default function App() {
       <aside className="app-sidebar">
         <button className="wordmark" onClick={() => navigate('today')} aria-label="Go to Today">
           BTX <span>OMNI</span>
-          <small>Commercial intelligence</small>
+          <small>Project Beacon</small>
         </button>
         <nav className="sidebar-nav" aria-label="Primary navigation">
           {desktopPrimaryDestinations.map(destination => (
@@ -480,33 +492,26 @@ export default function App() {
         </nav>
         <div className="sidebar-footer">
           {desktopSecondaryDestinations.map(destination => <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-current={surface === destination.surface ? 'page' : undefined} title={destination.job} onClick={() => navigate(destination.surface)}>{destination.label}</button>)}
-          <span className="eyebrow">{actionPrincipal?.display_name ?? 'Governed seller workspace'}</span>
+          <span className="eyebrow">{actionPrincipal?.display_name ?? 'Seller workspace'}</span>
           <small>{actionPrincipal?.role ?? 'Public evidence + SAMPLE context'}</small>
         </div>
       </aside>
       <section className="app-workspace">
         <header className="topbar">
           <div className="topbar-context">
-            <span className="eyebrow">BTX Omni Prospect</span>
+            <span className="eyebrow">BTX Omni · Project Beacon</span>
             <strong>{surfaceLabels[surface]}</strong>
           </div>
           <div className="topbar-controls">
           {actionPrincipal && <div className="signed-in-user" aria-label="Signed-in user"><span aria-hidden="true">{actionPrincipal.display_name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span><strong>{actionPrincipal.display_name}</strong></div>}
-          <Disclosure className="mode" title="Workspace menu" open={workspaceMenuOpen} onOpenChange={setWorkspaceMenuOpen}>
-            <div className="mobile-secondary-links">
-              {mobileSecondaryDestinations.map(destination => <button key={destination.surface} aria-current={surface === destination.surface ? 'page' : undefined} onClick={() => navigate(destination.surface)}>{destination.label}</button>)}
-            </div>
-            <p>Public evidence and SAMPLE commercial context remain explicitly separated.</p>
-            {actionPrincipal && <p className="mobile-user-identity">Signed in as {actionPrincipal.display_name}</p>}
-          </Disclosure>
           </div>
         </header>
         <aside className="demonstration-banner" aria-label="Demonstration environment">Simulated data environment</aside>
         {linkRecovery && <div className="api-notice" role="alert">{linkRecovery} <button type="button" onClick={() => navigate(surface)}>Return to {surfaceLabels[surface]}</button></div>}
         {error && <div className="api-notice">{error}</div>}
-        {accountOpening && <div className="api-notice" role="status">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'account'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></div>}
+        {accountOpening && <LoadingStatus className="api-notice">Opening {accounts.find(account => account.id === accountOpening)?.name ?? 'organization'}… <button type="button" onClick={() => { accountRequest.current?.abort(); setAccountOpening(undefined) }}>Cancel</button></LoadingStatus>}
         {surface !== 'settings' && resourceState[surface] === 'error' && <StatusMessage state="error" title={`${surfaceLabels[surface]} could not refresh`} action={<Button onClick={() => setResourceRefresh(previous => ({ key: surface, version: (previous?.version ?? 0) + 1 }))}>Retry {surfaceLabels[surface]}</Button>}>{resourceReady[surface] ? 'Last-good content remains visible and is not labeled as freshly collected.' : 'This resource is unavailable. Other permitted workspace sections remain available.'}</StatusMessage>}
-        {surface === 'settings' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
+        {surface === 'settings' || surface === 'opportunities' ? content : !resourceState[surface] ? <section className="surface"><StatusMessage state="loading" title={`Loading ${surfaceLabels[surface]}`}>Other workspace sections remain available.</StatusMessage></section> : resourceReady[surface] ? content : null}
       </section>
       <nav className="mobile-primary-nav" aria-label="Mobile primary navigation">
         {mobilePrimaryDestinations.map(destination => (
@@ -514,14 +519,19 @@ export default function App() {
             {destination.label}
           </button>
         ))}
+        {mobileSecondaryDestinations.length > 0 && <button type="button" className={mobileSecondaryDestinations.some(destination => destination.surface === surface) ? 'active' : ''} aria-expanded={workspaceMenuOpen} aria-haspopup="dialog" aria-controls="mobile-more-workspaces" onClick={() => setWorkspaceMenuOpen(true)}>More</button>}
       </nav>
+      <Drawer open={workspaceMenuOpen} onClose={() => setWorkspaceMenuOpen(false)} titleId="mobile-more-workspaces-title" className="mobile-workspace-drawer">
+        <header>
+          <div><span className="eyebrow">BTX Omni · Project Beacon</span><h2 id="mobile-more-workspaces-title">More</h2></div>
+          <Button type="button" variant="ghost" aria-label="Close more workspaces" onClick={() => setWorkspaceMenuOpen(false)}>Close</Button>
+        </header>
+        <nav id="mobile-more-workspaces" className="mobile-secondary-links" aria-label="More workspaces">
+          {mobileSecondaryDestinations.map(destination => <button key={destination.surface} className={surface === destination.surface ? 'active' : ''} aria-label={destination.label} aria-current={surface === destination.surface ? 'page' : undefined} onClick={() => navigate(destination.surface)}><strong>{destination.label}</strong><span>{destination.job}</span></button>)}
+        </nav>
+        {actionPrincipal && <footer><span>Signed in as</span><strong>{actionPrincipal.display_name}</strong></footer>}
+      </Drawer>
       <OmniDrawer accountId={selectedAccountId} accountName={detail?.account.name ?? detail?.account.legal_name ?? selectedAccount?.name ?? selectedAccount?.legal_name} context={omniContext} />
     </main>
   )
-}
-
-function HostedSignIn({ onAuthenticated }: { onAuthenticated: () => void }) {
-  const [accessCode, setAccessCode] = useState(''); const [error, setError] = useState(''); const [submitting, setSubmitting] = useState(false)
-  const submit = async (event: React.FormEvent) => { event.preventDefault(); setSubmitting(true); setError(''); try { await api.signIn(accessCode); setAccessCode(''); onAuthenticated() } catch { setError('The hosted access code is invalid or session authentication is not configured.') } finally { setSubmitting(false) } }
-  return <main className="app-shell app-shell-loading"><form className="loading-stage" onSubmit={event => void submit(event)}><span className="eyebrow">Hosted POC access</span><h1>Sign in to Omni Prospect</h1><p>Enter an administrator-issued short-lived POC access code. The code is exchanged server-side and is never stored in the frontend.</p><label>Access code<input type="password" autoComplete="current-password" value={accessCode} onChange={event => setAccessCode(event.target.value)} required /></label>{error && <p role="alert">{error}</p>}<button type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button></form></main>
 }

@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { openProfileSection } from './profile-section-helpers.mjs'
 
 async function openAccount(page, name) {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill(name)
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name, exact: true }).click()
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
@@ -10,11 +11,11 @@ async function openAccount(page, name) {
 
 test('seller saves a dated private research shortlist and filters the same portfolio', async ({ page }) => {
   await openAccount(page, 'KLA Corporation')
-  await page.getByRole('button', { name: /Growth & research planning/ }).click()
+  await openProfileSection(page, /Growth & research planning/, 'Opportunities')
   await page.getByRole('button', { name: 'Sales planning gap' }).click()
-  const gap = page.getByText('No governed sales target is present, so a sales shortfall cannot be calculated.')
+  const gap = page.getByText('No approved sales target is recorded, so a sales shortfall cannot be calculated.')
   await expect(gap).toBeVisible()
-  await expect(page.getByText(/Governed target:/).locator('..')).toContainText('Unavailable')
+  await expect(page.getByText(/Approved planning target:/).locator('..')).toContainText('Unavailable')
   await page.getByLabel('Shortlist purpose').selectOption('RESEARCH')
   await page.getByLabel('Planning objective').fill('Confirm technical qualification and the correct buyer role.')
   await page.getByLabel('Target date').fill('2026-10-15')
@@ -38,10 +39,10 @@ test('seller saves a dated private research shortlist and filters the same portf
   await expect(results).toContainText('KLA Corporation')
   await expect(results).not.toContainText('Boeing')
 
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
-  await page.getByRole('button', { name: /Growth & research planning/ }).click()
+  await openProfileSection(page, /Growth & research planning/, 'Opportunities')
   const removeShortlist = page.waitForResponse(response => response.url().endsWith('/api/planning/shortlist') && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Remove from shortlist' }).click()
   expect((await removeShortlist).status()).toBe(200)
@@ -51,7 +52,7 @@ test('seller saves a dated private research shortlist and filters the same portf
 test('manager creates an audited partnership designation and portfolio include/exclude filters agree', async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
   await openAccount(page, 'HUXWRX')
-  await page.getByRole('button', { name: /Growth & research planning/ }).click()
+  await openProfileSection(page, /Growth & research planning/, 'Opportunities')
   await page.getByRole('button', { name: 'Manager designation' }).click()
   await page.getByLabel('Audited designation reason').fill('Manager-approved strategic account planning classification.')
   await page.getByRole('button', { name: 'Designate strategic partnership' }).click()
@@ -68,7 +69,7 @@ test('manager creates an audited partnership designation and portfolio include/e
   await page.getByRole('button', { name: /Remove Exclude partnerships filter/ }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('HUXWRX')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'HUXWRX', exact: true }).click()
-  await page.getByRole('button', { name: /Growth & research planning/ }).click()
+  await openProfileSection(page, /Growth & research planning/, 'Opportunities')
   await page.getByRole('button', { name: 'Manager designation' }).click()
   await page.getByLabel('Audited designation reason').fill('Manager review closed the temporary test classification.')
   await page.getByRole('button', { name: 'Remove strategic partnership' }).click()
@@ -77,7 +78,7 @@ test('manager creates an audited partnership designation and portfolio include/e
 
 test('a late planning read cannot overwrite a seller draft', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')
   let releasePlanning
   const planningReleased = new Promise(resolve => { releasePlanning = resolve })
@@ -94,7 +95,7 @@ test('a late planning read cannot overwrite a seller draft', async ({ page }) =>
     }
   }, { times: 1 })
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'KLA Corporation', exact: true }).click()
-  await page.getByRole('button', { name: /Growth & research planning/ }).click()
+  await openProfileSection(page, /Growth & research planning/, 'Opportunities')
   const objective = 'Preserve this seller-authored qualification review.'
   await page.getByLabel('Planning objective').fill(objective)
   releasePlanning()

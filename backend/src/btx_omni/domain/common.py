@@ -8,6 +8,7 @@ from enum import StrEnum
 class DataMode(StrEnum):
     SAMPLE = "SAMPLE"
     CONNECTED = "CONNECTED"
+    IMPORTED = "IMPORTED"
 
 
 class EvidenceState(StrEnum):

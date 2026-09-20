@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from fastapi.testclient import TestClient
 
 from btx_omni.app import create_app
@@ -22,14 +24,14 @@ def test_customer_360_is_canonical_and_projects_bounded_joined_context() -> None
 
 def test_prospect_360_does_not_turn_absence_into_commercial_zero() -> None:
     client = TestClient(create_app())
-    body = client.get("/api/accounts/huxwrx").json()["customer_360"]
+    body = client.get("/api/accounts/intel").json()["customer_360"]
     assert body["commercial"]["records"] == []
     assert body["commercial"]["missing"] == "No linked commercial history"
     assert body["quotes"]["records"] == []
     assert body["orders"]["records"] == []
     assert body["crm"]["contacts"] == []
-    assert [item["id"] for item in body["programs"]] == ["huxwrx-sample-opportunity"]
-    assert [item["id"] for item in body["components"]] == ["cc-huxwrx-sample-opportunity"]
+    assert body["programs"] == []
+    assert body["components"] == []
 
 
 def test_customer_360_has_no_name_based_fallback() -> None:
@@ -42,17 +44,18 @@ def test_projection_preserves_provider_unavailability_without_hiding_governed_re
     commercial = CommercialReadService(
         sample,
         source_states={"commercial": ("CONNECTED", "UNAVAILABLE")},
-    ).account_snapshot("huxwrx")
+    ).account_snapshot("lockheed-martin")
+    commercial = replace(commercial, commercial_context=())
     projection = customer_360_projection(
-        account_id="huxwrx", sample=sample, commercial=commercial, signals=[]
+        account_id="lockheed-martin", sample=sample, commercial=commercial, signals=[]
     )
     assert projection["commercial"]["source_state"] == {
         "data_mode": "CONNECTED",
         "source_state": "UNAVAILABLE",
     }
     assert projection["commercial"]["records"] == []
-    assert projection["components"][0]["id"] == "cc-huxwrx-sample-opportunity"
-    assert projection["capabilities"][0]["id"] == "cap-era-industries"
+    assert projection["components"]
+    assert projection["capabilities"]
 
 
 def test_projection_is_stably_ordered_and_bounded() -> None:

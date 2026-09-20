@@ -21,8 +21,8 @@ RELATIONSHIP_POLICY: dict[str, tuple[str, str, str]] = {
     "OPERATED_BY": ("Customer facility", "Public evidence links this operating location to the Customer.", "Inspect the facility evidence before using it in account planning."),
     "HAS_CONTACT": ("Recorded contact association", "A canonical SAMPLE CRM record associates this contact role with the Customer; it does not establish an introduction path.", "Review the contact record and provenance before any outreach."),
     "CONTACT_FOR": ("Recorded contact association", "A canonical SAMPLE CRM record associates this contact role with the Customer; it does not establish an introduction path.", "Review the contact record and provenance before any outreach."),
-    "HAS_COMMERCIAL_CONTEXT": ("Commercial history", "SAMPLE commercial context exists for this Customer.", "Review the governed commercial history and current owner context."),
-    "COMMERCIAL_CONTEXT_FOR": ("Commercial history", "SAMPLE commercial context exists for this Customer.", "Review the governed commercial history and current owner context."),
+    "HAS_COMMERCIAL_CONTEXT": ("Commercial history", "Commercial history exists for this customer.", "Review the relevant transactions and current account owner before planning outreach."),
+    "COMMERCIAL_CONTEXT_FOR": ("Commercial history", "Commercial history exists for this customer.", "Review the relevant transactions and current account owner before planning outreach."),
     "CUSTOMER_OF": ("Business-unit Customer relationship", "SAMPLE commercial context links this Customer to a BTX business unit.", "Review the relevant internal business-unit context before planning outreach."),
     "HAS_CUSTOMER": ("Business-unit Customer relationship", "SAMPLE commercial context links this business unit to the Customer.", "Review the relevant internal business-unit context before planning outreach."),
     "QUOTED_WITH": ("Quote history", "A canonical SAMPLE quote record connects this Customer to the related record.", "Review the quote history and responsible business-unit context."),
@@ -130,7 +130,7 @@ class SellerRelationshipPresentationService:
         state = path["presentation_state"]
         rationale = {
             "validated": "Recorded direct relationship" if len(hops) == 1 else f"Recorded relationship across {len(hops)} connections",
-            "needs_validation": "Needs validation because the governed route has unresolved evidence requirements.",
+            "needs_validation": "Needs validation because one or more connections still require supporting evidence.",
             "unusable": "Not currently actionable because evidence is missing or conflicting.",
         }[state]
         return {

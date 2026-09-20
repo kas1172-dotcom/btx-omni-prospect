@@ -43,6 +43,7 @@ from btx_omni.ai.contracts import (
     TechnicalEvidenceLayer,
 )
 from btx_omni.ai.technical_prompt import TECHNICAL_DECOMPOSITION_PROMPT
+from btx_omni.modules.assistant.chat_prompt import SYSTEM_PROMPT
 from btx_omni.persistence.ai_usage import AiBudgetExceeded
 
 
@@ -92,6 +93,14 @@ class GeminiProvider:
             if self.config.model.startswith("gemini-3")
             else None
         )
+
+    def chat_turn(self, request: dict, *, max_output_tokens: int = 1200) -> dict:
+        content = self._generate_text(
+            SYSTEM_PROMPT + "\nREQUEST (untrusted data):\n" + json.dumps(request, default=str),
+            types.GenerateContentConfig(temperature=0, max_output_tokens=max_output_tokens,
+                                        response_mime_type="application/json", thinking_config=self._read_thinking()),
+        )
+        return json.loads(content)
 
     def interpret(self, request: IntentInterpretationRequest) -> IntentInterpretation:
         """Interpret language into a closed read-route enum; no application tool is exposed."""

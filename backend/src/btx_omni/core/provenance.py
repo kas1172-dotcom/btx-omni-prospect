@@ -25,5 +25,5 @@ class Provenance:
     def __post_init__(self) -> None:
         require_aware(self.observed_at, "observed_at")
         require_aware(self.recorded_at, "recorded_at")
-        if self.data_mode is DataMode.CONNECTED and self.synthetic:
-            raise ValueError("connected facts cannot be synthetic")
+        if self.data_mode in {DataMode.CONNECTED, DataMode.IMPORTED} and self.synthetic:
+            raise ValueError("connected and imported facts cannot be synthetic")

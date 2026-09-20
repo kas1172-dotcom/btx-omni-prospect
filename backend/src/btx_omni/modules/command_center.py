@@ -285,7 +285,7 @@ def build_command_center(
             "name": program_by_id[program_id].name,
             "account_id": program_by_id[program_id].account_id,
             "watch_type": "SYSTEM_RECOMMENDED",
-            "reason": "A current or upcoming governed Signal Brief is associated with this program.",
+            "reason": "A current or upcoming intelligence assessment is associated with this program.",
             "provenance": "GOVERNED_SIGNAL_BRIEF",
         }
         for program_id in sorted(watched_program_ids)
@@ -369,7 +369,7 @@ def build_command_center(
     if not upcoming:
         missingness.append("No source-supported upcoming dates are available.")
     if not watched_programs:
-        missingness.append("No governed watched-program association is available.")
+        missingness.append("No supported program association is available for the current watchlist.")
     if monitor_snapshot.get("scheduler_state") != "COLLECTION_OBSERVED_CURRENT":
         missingness.append("A current scheduled collection is not verified.")
 

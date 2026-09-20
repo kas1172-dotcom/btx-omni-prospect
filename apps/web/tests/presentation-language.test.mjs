@@ -22,8 +22,9 @@ test('Intelligence prefers persisted assessments and distinguishes incomplete an
   assert.match(model, /signal\.business_briefing \?\?/)
   assert.match(model, /analysis_status: 'PENDING_ANALYSIS'/)
   assert.match(intelligence, /const complete = brief\.analysis_status === "READY"/)
-  assert.match(intelligence, /Account-specific analysis is still in progress/)
-  assert.match(intelligence, /\[\.\.\.curated, \.\.\.current, \.\.\.priority\]/)
+  assert.match(intelligence, /Research direction · not yet assessed/)
+  assert.match(intelligence, /brief\.why_it_may_matter/)
+  assert.match(intelligence, /\[\.\.\.curated, \.\.\.savedRecent, \.\.\.current\]/)
   assert.doesNotMatch(intelligence, /linked to a canonical Customer or Prospect/)
 })
 

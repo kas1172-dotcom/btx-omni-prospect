@@ -3,29 +3,43 @@
 Registry source tiers and canonical resolution are server-owned inputs. Model
 prose, publisher repetition and proposed commercial relevance cannot score them.
 """
+import json
+from dataclasses import asdict
 from datetime import UTC
 from decimal import Decimal
 from hashlib import sha256
 
 from btx_omni.modules.scoring.families import FactorInput, assess
+from btx_omni.modules.scoring.public_rules import (
+    GOVERNMENT_SOURCES,
+    RISK_FIELDS,
+    SOURCE_POINTS,
+    freshness_points,
+    freshness_window_hours,
+    required_fields,
+    risk_points,
+)
 from btx_omni.monitor.ontology import EventType, ResolutionState
 
-VERSION = 'BTX_PUBLIC_SIGNAL_INPUTS_POC_1'
-# Provisional source-quality bins; the family weights remain unchanged.
-SOURCE_POINTS = {'TIER_1_AUTHORITATIVE_STRUCTURED': 100,
-                 'TIER_2_AUTHORITATIVE_PUBLISHER': 90,
-                 'TIER_3_REPUTABLE_SECONDARY': 70, 'TIER_4_DISCOVERY': 40}
-RISK_INPUT_VERSION = 'BTX_PUBLIC_RISK_INPUTS_POC_1'
+VERSION = 'BTX_PUBLIC_SIGNAL_INPUTS_V2'
+RISK_INPUT_VERSION = 'BTX_PUBLIC_RISK_INPUTS_V2'
 RISK_EVENT_TYPES = {
     EventType.CONTRACT_REDUCTION, EventType.PROGRAM_CANCELLATION,
     EventType.FACILITY_CLOSURE, EventType.WORKFORCE_REDUCTION,
-    EventType.FINANCIAL_DISTRESS, EventType.EXPORT_RESTRICTION,
-    EventType.PRODUCTION_DELAY,
+    EventType.FINANCIAL_DISTRESS, EventType.EXPORT_RESTRICTION, EventType.PRODUCTION_DELAY,
 }
-LEVEL_POINTS = {'LOW': 25, 'MODERATE': 50, 'HIGH': 75, 'CRITICAL': 100}
-PERSISTENCE_POINTS = {'TRANSIENT': 25, 'MONTHS': 50, 'ONE_YEAR': 75, 'STRUCTURAL': 100}
-BREADTH_POINTS = {'RECORD': 25, 'FACILITY': 50, 'PROGRAM': 75, 'ENTERPRISE': 100}
-REVERSIBILITY_POINTS = {'READY_MITIGATION': 25, 'MITIGATION_UNCERTAIN': 50, 'DIFFICULT': 75, 'IRREVERSIBLE': 100}
+
+
+def _claims(event):
+    evidence = {item.evidence_id for item in event.evidence}
+    candidates = {}
+    for claim in event.claims:
+        if claim.evidence_ids and set(claim.evidence_ids) <= evidence and claim.extraction_method in {
+            'deterministic_structured_mapping', 'reviewed_source_extraction', 'reviewed_internal_record'
+        }:
+            candidates.setdefault(claim.predicate, []).append(claim)
+    # Conflicting equal-authority assertions remain unknown, never first-wins.
+    return {key: values[0] for key, values in candidates.items() if len({v.value for v in values}) == 1}
 
 
 def public_signal_assessment(event, observation, *, now, freshness_hours):
@@ -34,121 +48,89 @@ def public_signal_assessment(event, observation, *, now, freshness_hours):
     evidence = tuple(sorted({item.evidence_id for item in event.evidence}))
     bound = observation is not None and observation.raw_evidence.id in evidence
     source_evidence = (observation.raw_evidence.id,) if bound else ()
+    claims = _claims(event)
+    facts = {key: item.value for key, item in claims.items()}
     published = observation.source_published_at if bound else event.source_published_at
-    source_points = SOURCE_POINTS.get(observation.source_tier) if bound else None
-    resolved = (event.resolution_state is ResolutionState.RESOLVED
-                and bool(event.subject_entities)
-                and all(item.state is ResolutionState.RESOLVED and item.canonical_account_id
-                        for item in event.subject_entities))
-    title = next((item for item in event.claims if item.predicate == 'source_title'
-                  and item.value and set(item.evidence_ids) <= set(evidence)
-                  and item.evidence_ids), None)
-    required = ('typed_event', 'source_title', 'event_date', 'resolved_subject')
-    observed = tuple(name for name, present in zip(required, (
-        event.event_type is not EventType.UNCLASSIFIED_PUBLIC_UPDATE,
-        title is not None, event.event_date is not None, resolved), strict=True) if present)
-    # No publication date is substituted for the occurrence/effective date.
+    tier = observation.source_tier if bound else None
+    source_points = (100 if observation.source_identity.source_system in GOVERNMENT_SOURCES else SOURCE_POINTS.get(tier)) if bound else None
+    resolved = (event.resolution_state is ResolutionState.RESOLVED and bool(event.subject_entities)
+                and all(item.state is ResolutionState.RESOLVED and item.canonical_account_id for item in event.subject_entities))
+    # Parent identity is not subsidiary/site resolution.
+    entity_points = 50 if resolved else 0
+    if resolved and facts.get('site_identity_verified') == 'true':
+        if facts.get('authoritative_identifier_verified') == 'true':
+            entity_points = 100
+        elif facts.get('legal_name_address_verified') == 'true':
+            entity_points = 75
+    required = required_fields(event.event_type.value)
+    observed = tuple(name for name in required if facts.get(name))
     age = (now - published).total_seconds() / 3600 if published else None
-    freshness = (Decimal(100) if age <= freshness_hours else Decimal(0)) if age is not None and age >= 0 else None
+    window = freshness_window_hours(event.event_type.value)
+    freshness = freshness_points(age, window)
+    origins = {claim.value for claim in event.claims if claim.predicate == 'independent_source_origin'
+               and claim.extraction_method == 'reviewed_independent_origin' and claim.evidence_ids
+               and set(claim.evidence_ids) <= set(evidence)}
+    # Without an independently reviewed origin map, the bound primary source is
+    # exactly one origin. Copies and model assertions never increase this count.
+    count = len(origins) if origins else 1 if bound else 0
 
-    def factor(points, ids, reason, *, fields, present, raw=None):
-        return FactorInput(Decimal(points) if points is not None and ids else None,
-                           ids, reason, raw_value=raw, period=now.date().isoformat(),
-                           truth_class='PUBLIC_SOURCE', required_fields=fields,
-                           observed_fields=present)
+    def factor(points, ids, reason, raw=None):
+        return FactorInput(Decimal(points) if points is not None and ids else None, ids, reason,
+                           raw_value=raw, period=now.date().isoformat(), truth_class='PUBLIC_SOURCE')
 
     inputs = {
-        'source_reliability': factor(source_points, source_evidence,
-            'Source quality follows the registered publisher tier, not model language.',
-            fields=('registered_source_tier',), present=('registered_source_tier',) if source_points is not None else (),
-            raw=observation.source_tier if bound else None),
-        'entity_match': factor(100 if resolved else None, evidence,
-            'Canonical subject identity is resolved.' if resolved else 'Subject identity is unresolved; a proposed match is not evidence.',
-            fields=('canonical_subject',), present=('canonical_subject',) if resolved else ()),
-        'event_specificity': factor(Decimal(len(observed)) * 100 / len(required), evidence,
-            'Specificity reflects the recorded event type, title, event date and subject; publication is not an event date.',
-            fields=required, present=observed),
-        'independent_corroboration': factor(None, (),
-            'Independent source lineage has not been established. Copies and repeated collection do not prove corroboration.',
-            fields=('independent_source_lineage',), present=()),
+        'source_reliability': factor(source_points, source_evidence, 'Reliability follows the authenticated source category, not commercial relevance.', tier),
+        'entity_match': factor(entity_points, evidence, 'Identity matching distinguishes a resolved parent from a verified site or subsidiary.', entity_points),
+        'event_specificity': factor(Decimal(len(observed)) * 100 / len(required) if bound else None, source_evidence,
+            'Specificity measures the required fields for this event type; missing fields reduce the contribution.', f'{len(observed)}/{len(required)}'),
+        'independent_corroboration': factor(100 if count >= 3 else 75 if count == 2 else 25 if count == 1 else 0,
+            source_evidence or evidence, 'Independently originated sources, not copied articles or repeated collections.', count),
         'freshness': factor(freshness, source_evidence,
-            f'Publication is evaluated against the source policy of {freshness_hours} hours. Unknown or future publication is not current.',
-            fields=('publication_date',), present=('publication_date',) if freshness is not None else (),
-            raw=published.isoformat() if published else None),
+            f'Fact freshness uses the rubric’s {window // 24}-day window; collection time does not reset publication age.', published.isoformat() if published else None),
     }
-    revision = sha256(repr((VERSION, event.id, event.event_type, event.event_date,
-                           tuple(event.subject_entities), evidence,
-                           tuple(sorted((c.predicate, c.value, tuple(sorted(set(c.evidence_ids)))) for c in event.claims)),
-                           observation.source_version.content_hash if bound else None,
-                           source_points, published, freshness_hours, freshness)).encode()).hexdigest()
+    # Persistence may reorder payload keys. Hash scoring inputs canonically,
+    # not repr(event/observation), so worker and API reads share one identity.
+    revision = sha256(json.dumps({'version': VERSION, 'event': event.id,
+        'source_revision': observation.source_version if observation else None,
+        'window': window, 'as_of': now.astimezone(UTC).date().isoformat(),
+        'inputs': {key: asdict(value) for key, value in inputs.items()}},
+        sort_keys=True, default=str, separators=(',', ':')).encode()).hexdigest()
     result = assess('signal_confidence', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
-                    revision=revision, inputs=inputs, eligible=bool(evidence) and not event.provenance.synthetic,
-                    eligibility_reasons=('Public assertion assessment; independent of customer/prospect status and commercial priority.',))
-    result['input_configuration_version'] = VERSION
-    result['freshness_threshold_hours'] = freshness_hours
+                    revision=revision, inputs=inputs, eligible=bool(evidence) and not event.provenance.synthetic)
+    result.update({'input_configuration_version': VERSION, 'freshness_threshold_hours': window,
+                   'collection_freshness_hours': freshness_hours, 'specificity_required_fields': required,
+                   'specificity_missing_fields': tuple(name for name in required if name not in observed),
+                   'seller_recommendation_eligible': bool(source_points is not None and source_points >= 50 and entity_points >= 75 and count and freshness not in {None, 0})})
     result['band'] = ('HIGH' if result['score'] >= 70 else 'MEDIUM' if result['score'] >= 40 else 'LOW') if result['score'] is not None else 'INSUFFICIENT_EVIDENCE'
     return result
 
 
 def public_risk_assessment(event, observation, *, now):
-    """Map source-scoped risk assertions to the separate severity family.
-
-    Only deterministic normalized claims may populate points. A model summary,
-    headline sentiment, or a generic regulatory event cannot manufacture risk.
-    """
     if now.tzinfo is None:
         raise ValueError('Public risk assessments require an aware clock.')
-    evidence = {item.evidence_id for item in event.evidence}
-    claims = {}
-    for claim in event.claims:
-        if claim.predicate not in claims and claim.evidence_ids and set(claim.evidence_ids) <= evidence:
-            claims[claim.predicate] = claim
-    explicit_negative = claims.get('risk_direction')
-    eligible = event.event_type in RISK_EVENT_TYPES or bool(
-        explicit_negative and explicit_negative.value.strip().upper() == 'NEGATIVE'
-    )
-    if not eligible:
+    claims = _claims(event)
+    facts = {key: item.value for key, item in claims.items()}
+    if event.event_type not in RISK_EVENT_TYPES and facts.get('risk_direction') != 'NEGATIVE':
         return None
-
-    def categorical(predicate, mapping, label):
-        claim = claims.get(predicate)
-        key = claim.value.strip().upper() if claim else None
-        points = mapping.get(key)
-        ids = tuple(sorted(set(claim.evidence_ids))) if claim and points is not None else ()
-        return FactorInput(
-            Decimal(points) if points is not None else None, ids,
-            f'{label}: {key.replace("_", " ").lower()}.' if points is not None else f'{label} is not established by a scoped source assertion.',
-            raw_value=key, period=now.date().isoformat(), truth_class='PUBLIC_SOURCE',
-            required_fields=(predicate,), observed_fields=(predicate,) if points is not None else (),
-        )
-
-    inputs = {
-        'impact': categorical('risk_impact_level', LEVEL_POINTS, 'Potential BTX impact'),
-        'materiality': categorical('risk_materiality_level', LEVEL_POINTS, 'Affected program, site, or business materiality'),
-        'imminence': categorical('risk_imminence_level', LEVEL_POINTS, 'Timing imminence'),
-        'persistence': categorical('risk_persistence', PERSISTENCE_POINTS, 'Expected persistence'),
-        'breadth': categorical('risk_breadth', BREADTH_POINTS, 'Affected scope'),
-        'reversibility': categorical('risk_reversibility', REVERSIBILITY_POINTS, 'Mitigation difficulty'),
-    }
-    revision = sha256(repr((RISK_INPUT_VERSION, event.id, event.event_type,
-                           tuple(sorted((key, value.value, tuple(value.evidence_ids)) for key, value in claims.items())),
-                           observation.source_version.content_hash if observation else None)).encode()).hexdigest()
-    result = assess(
-        'risk_severity', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
-        revision=revision, inputs=inputs, eligible=True,
-        eligibility_reasons=('A negative public event is assessed independently from Signal Confidence and opportunity priority.',),
-    )
+    inputs = {}
+    for key, fields in RISK_FIELDS.items():
+        points = risk_points(key, facts)
+        ids = tuple(sorted({eid for field in fields if field in claims for eid in claims[field].evidence_ids}))
+        inputs[key] = FactorInput(Decimal(points) if points is not None and ids else None, ids,
+            f'{key.replace("reversibility", "mitigation").capitalize()}: source-scoped observations follow rubric v2.' if points is not None
+            else f'{key.replace("reversibility", "mitigation").capitalize()}: quantified, scoped evidence is missing.',
+            raw_value=str({key: facts[key] for key in fields if key in facts}), period=now.date().isoformat(), truth_class='PUBLIC_SOURCE')
+    revision = sha256(repr((RISK_INPUT_VERSION, event.id, sorted(facts.items()), observation.source_version if observation else None)).encode()).hexdigest()
+    result = assess('risk_severity', subject_id=event.id, as_of=now.astimezone(UTC).date().isoformat(),
+                    revision=revision, inputs=inputs, eligible=True)
     score = result['score']
     confidence = public_signal_assessment(event, observation, now=now, freshness_hours=24 * 30)['score']
-    severity_band = 'HIGH' if score is not None and score >= 70 else 'MEDIUM' if score is not None and score >= 40 else 'LOW' if score is not None else 'INSUFFICIENT_EVIDENCE'
-    confidence_band = 'HIGH' if confidence is not None and confidence >= 70 else 'MEDIUM' if confidence is not None and confidence >= 40 else 'LOW'
-    disposition = ('INSUFFICIENT_EVIDENCE' if score is None else
-                   'ESCALATE_NOW' if severity_band == 'HIGH' and confidence_band == 'HIGH' else
-                   'VALIDATE_IMMEDIATELY' if severity_band == 'HIGH' else
-                   'ACT_OR_MONITOR' if severity_band == 'MEDIUM' and confidence_band == 'HIGH' else
-                   'RESEARCH_FURTHER' if severity_band == 'MEDIUM' else
-                   'MONITOR' if confidence_band == 'HIGH' else 'FEED_ONLY')
-    result.update({'input_configuration_version': RISK_INPUT_VERSION,
-                   'band': severity_band, 'evidence_confidence_band': confidence_band,
+    severity_band = 'CRITICAL' if score is not None and score >= 85 else 'HIGH' if score is not None and score >= 70 else 'MODERATE' if score is not None and score >= 40 else 'LOW' if score is not None else 'INSUFFICIENT_EVIDENCE'
+    confirmed = confidence is not None and confidence >= 70
+    disposition = ('INSUFFICIENT_EVIDENCE' if score is None else 'ESCALATE_NOW' if score >= 70 and confirmed
+                   else 'VALIDATE_IMMEDIATELY' if score >= 70 else 'ACT_OR_MONITOR' if score >= 40 and confirmed
+                   else 'RESEARCH_FURTHER' if score >= 40 else 'MONITOR' if confirmed else 'FEED_ONLY')
+    result.update({'input_configuration_version': RISK_INPUT_VERSION, 'band': severity_band,
+                   'evidence_confidence_band': 'HIGH' if confirmed else 'MEDIUM' if confidence is not None and confidence >= 40 else 'LOW',
                    'disposition': disposition})
     return result

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     frontend_origins: str = "http://localhost:5173"
     session_ttl_seconds: int = 1800
     session_cookie_name: str = "btx_poc_session"
+    omni_tenant_id: str | None = Field(default=None, validation_alias="OMNI_TENANT_ID")
     hosted_demo_access_bypass: bool = False
     monitor_mode: str = "disabled"
     monitor_durable_state_enabled: bool = False
@@ -66,6 +67,13 @@ class Settings(BaseSettings):
         ),
     )
     gemini_model: str = "gemini-2.5-flash"
+    omni_chat_model: str | None = None
+    omni_chat_steps: int = Field(default=6, ge=1, le=12)
+    omni_chat_output_tokens: int = Field(default=1200, ge=256, le=4096)
+    omni_chat_daily_calls: int = Field(default=100, ge=1, le=1000)
+    omni_chat_retention_days: int = Field(default=30, ge=1, le=365)
+    web_search_enabled: bool = Field(default=True, validation_alias=AliasChoices('WEB_SEARCH_ENABLED', 'BTX_WEB_SEARCH_ENABLED'))
+    general_knowledge_enabled: bool = Field(default=True, validation_alias=AliasChoices('GENERAL_KNOWLEDGE_ENABLED', 'BTX_GENERAL_KNOWLEDGE_ENABLED'))
     gemini_mode: str = "developer"
     google_cloud_project: str | None = None
     google_cloud_location: str = "global"

@@ -13,7 +13,7 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
   const attention = page.getByRole('heading', { name: 'Action priorities' }).locator('..').locator('..')
   await expect(attention).toContainText('Why:')
   await expect(attention).toContainText('Next:')
-  await attention.getByRole('button', { name: 'Evidence and governed action' }).first().click()
+  await attention.getByRole('button', { name: 'Evidence and next action' }).first().click()
   await expect(attention).toContainText('BTX commercial record')
   await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
   await expect(page.getByRole('heading', { name: 'Public intelligence', exact: true })).toBeVisible()
@@ -42,7 +42,7 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
   expect(await page.locator('[data-summary-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-summary-id')))).toEqual(projectedPriority.slice(0, 3))
   for (const item of commercial.filter(item => displayedPriority.includes(item.id))) {
     const card = page.locator(`[data-priority-id="${item.id}"]`)
-    await card.getByRole('button', { name: 'Evidence and governed action' }).click()
+    await card.getByRole('button', { name: 'Evidence and next action' }).click()
     await expect(card).toContainText('BTX commercial record')
     await expect(card.getByRole('button', { name: 'Create action' })).toBeVisible()
   }
@@ -83,7 +83,7 @@ test('desktop Intelligence composes search and canonical filters with evidence a
   const active = page.locator('.intelligence-active-filters')
   await expect(active.getByRole('button', { name: 'Remove Market: Defense filter' })).toHaveAttribute('aria-pressed', 'true')
   await search.fill('no governed signal matches this')
-  await expect(page.getByText(/No governed Intelligence matches/)).toBeVisible()
+  await expect(page.getByText(/No saved Intelligence matches/)).toBeVisible()
   await page.getByRole('button', { name: 'Clear all' }).click()
   await expect(page.locator('.intelligence-card').first()).toBeVisible()
 
@@ -103,9 +103,10 @@ test('desktop Intelligence composes search and canonical filters with evidence a
 test('public briefing joins the selected signal to canonical account context without cross-contaminating actions', async ({ page }) => {
   await page.goto('/')
   await navigate(page, 'Intelligence')
-  const first = page.locator('.intelligence-card').first()
-  const headline = await first.getByRole('heading').innerText()
-  await first.getByRole('button', { name: 'Open briefing' }).click()
+  await page.getByLabel('Filter Intelligence by Customer').selectOption('applied-materials')
+  const technicalSignal = page.locator('.intelligence-card').filter({ hasText: 'Applied Materials receives $100 million advanced-packaging award' })
+  const headline = await technicalSignal.getByRole('heading').innerText()
+  await technicalSignal.getByRole('button', { name: 'Open briefing' }).click()
 
   await expect(page.locator('.intelligence-briefing h1')).toHaveText(headline)
   await expect(page).toHaveURL(/#\/intelligence\?view=brief&event=/)

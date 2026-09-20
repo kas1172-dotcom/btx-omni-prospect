@@ -15,7 +15,7 @@ from btx_omni.persistence.commercial_import import CommercialImportRepository
 from btx_omni.providers.research._catalog_support import RESEARCH_DIR
 from btx_omni.providers.sample.environment import build_sample_environment
 
-INPUT_SHA256 = '7745ab0d8d8b73d27452cb4302979440453587eaeb1c9e1512a4750b8570c493'
+INPUT_SHA256 = 'b9ff27965e2716abab313f840de903191617c4da24d8fd8df7bf999c868bcd2e'
 ACCOUNT_CROSSWALK = {
     'ACC-HONEYWELL': 'honeywell', 'ACC-BOEING': 'boeing', 'ACC-KLA': 'kla',
     'ACC-SPACEX': 'spacex', 'ACC-INTUITIVE': 'intuitive-surgical',

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -123,6 +123,7 @@ class CanonicalAccount:
     secondary_classifications: tuple[str, ...] = ()
     btx_top_100: bool = False
     btx_top_100_provenance: ResearchProvenance | None = None
+    prospect_fit_evidence: dict[str, dict] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

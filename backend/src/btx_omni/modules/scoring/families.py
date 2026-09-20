@@ -12,7 +12,7 @@ from hashlib import sha256
 
 from btx_omni.modules.scoring.account_attractiveness import FACTORS
 
-VERSION = "BTX_DECISION_FAMILIES_POC_1"
+VERSION = "BTX_SCORING_RUBRIC_V2"
 
 
 @dataclass(frozen=True)
@@ -28,12 +28,11 @@ FAMILIES = {
     f.key: f for f in (
         Family("signal_confidence", "signal", (("source_reliability", 30), ("entity_match", 25), ("event_specificity", 20), ("independent_corroboration", 15), ("freshness", 10))),
         Family("opportunity_priority", "opportunity", tuple((f.key, int(f.weight * 100)) for f in FACTORS)),
-        Family("pwin", "qualified_deal", (("buyer_commitment", 25), ("solution_fit", 20), ("commercial_position", 20), ("competitive_position", 20), ("decision_timing", 15)), Decimal(1), "Uncalibrated POC pursuit index; must not be displayed as a win probability."),
-        Family("delivery_feasibility", "proposed_solution", (("qualification", 40), ("capacity", 30), ("materials", 20), ("logistics", 10)), Decimal(1)),
-        Family("customer_health", "current_customer", (("commercial_momentum", 30), ("pipeline", 20), ("backlog", 15), ("engagement", 15), ("concentration", 10), ("friction", 10)), interpretation="POC longitudinal health uses separately derived health-oriented inputs, not opportunity scores."),
+        Family("pwin", "qualified_deal", (("buyer_access", 25), ("competitive_position", 20), ("requirement_fit", 20), ("budget_process", 15), ("price_competitiveness", 10), ("track_record", 10)), Decimal(1), "Rubric v2 pursuit-readiness index; not a calibrated win probability."),
+        Family("delivery_feasibility", "proposed_solution", (("capability_match", 30), ("schedule_feasibility", 25), ("material_readiness", 15), ("quality_certification", 15), ("margin", 10), ("coordination", 5)), Decimal(1), "Rubric v2 scoped delivery readiness; mandatory constraints override the weighted result."),
+        Family("customer_health", "current_customer", (("commercial_trajectory", 30), ("relationship_coverage", 20), ("engagement_cadence", 20), ("backlog_coverage", 15), ("relationship_history", 10), ("attached_risk_history", 5)), interpretation="Relationship health over time; material current risks remain visible independently. Rubric v2 section 10."),
         Family("risk_severity", "public_risk_event", (("impact", 30), ("materiality", 20), ("imminence", 15), ("persistence", 15), ("breadth", 10), ("reversibility", 10))),
         Family("internal_commercial_risk", "current_customer", (("commercial_momentum", 30), ("pipeline", 20), ("backlog", 15), ("engagement", 15), ("concentration", 10), ("friction", 10))),
-        Family("action_priority", "action", (("impact", 40), ("urgency", 30), ("readiness", 20), ("scope", 10))),
     )
 }
 
@@ -48,6 +47,8 @@ class FactorInput:
     truth_class: str = "POC_SCENARIO"
     required_fields: tuple[str, ...] = ()
     observed_fields: tuple[str, ...] = ()
+    lower_bound: Decimal | None = None
+    upper_bound: Decimal | None = None
 
     def __post_init__(self):
         if self.points is not None and (not self.points.is_finite() or not Decimal(0) <= self.points <= Decimal(100)):
@@ -58,6 +59,13 @@ class FactorInput:
             raise ValueError("A factor requires a seller-readable reason")
         if len(set(self.required_fields)) != len(self.required_fields) or len(set(self.observed_fields)) != len(self.observed_fields) or not set(self.observed_fields) <= set(self.required_fields):
             raise ValueError("Invalid factor field coverage contract")
+        if (self.lower_bound is None) != (self.upper_bound is None):
+            raise ValueError("A partial factor requires both bounds")
+        if self.lower_bound is not None:
+            if self.points is not None or not self.evidence_ids:
+                raise ValueError("Partial bounds require evidence and no point score")
+            if not self.lower_bound.is_finite() or not self.upper_bound.is_finite() or not 0 <= self.lower_bound <= self.upper_bound <= 100:
+                raise ValueError("Invalid partial factor bounds")
 
 
 def _round(value: Decimal) -> Decimal:
@@ -76,7 +84,7 @@ def assess(
     if sum(weight for _, weight in family.weights) != 100:
         raise ValueError("Invalid family configuration")
     factors, missing, required_fields, observed_fields = [], [], [], []
-    weighted_sum, known_weight = Decimal(0), 0
+    known_weight = 0
     for name, weight in family.weights:
         value = inputs.get(name)
         points = value.points if value else None
@@ -88,7 +96,6 @@ def assess(
             missing.append(name)
         else:
             known_weight += weight
-            weighted_sum += points * weight
         factors.append({"key": name, "weight": weight, "points": points,
                         "contribution": _round(points * weight / 100) if points is not None else None,
                         "evidence_ids": value.evidence_ids if value else (),
@@ -96,34 +103,58 @@ def assess(
                         "raw_value": value.raw_value if value else None,
                         "period": value.period if value else None,
                         "required_fields": required, "observed_fields": observed,
+                        "lower_bound": value.lower_bound if value else None,
+                        "upper_bound": value.upper_bound if value else None,
                         "truth_class": value.truth_class if value else None})
-    factor_coverage = Decimal(len(expected) - len(missing)) / len(expected)
-    coverage = Decimal(len(observed_fields)) / len(required_fields)
+    factor_coverage = Decimal(known_weight) / 100
+    # A partially documented factor is not a usable observation. Keep its
+    # original weight in the denominator rather than promoting other factors.
+    usable_weight = sum(f["weight"] for f in factors if f["points"] is not None and set(f["required_fields"]) <= set(f["observed_fields"]))
+    coverage = Decimal(usable_weight) / 100
     usable = eligible and min(coverage, factor_coverage) >= family.minimum_coverage and not blocking_constraints
-    score = _round(weighted_sum / known_weight) if usable and known_weight else None
+    lower, upper = Decimal(0), Decimal(0)
+    for factor in factors:
+        complete = factor["points"] is not None and set(factor["required_fields"]) <= set(factor["observed_fields"])
+        floor = factor["points"] if complete else factor["lower_bound"] if factor["lower_bound"] is not None else Decimal(0)
+        ceiling = factor["points"] if complete else factor["upper_bound"] if factor["upper_bound"] is not None else Decimal(100)
+        lower += floor * factor["weight"] / 100
+        upper += ceiling * factor["weight"] / 100
+    # Only a complete assessment has a point score. Partial evidence has an
+    # explicit fixed-weight range; unknown must not masquerade as observed zero.
+    score = _round(lower) if usable and usable_weight == 100 else None
     for factor in factors:
         factor["configured_contribution"] = factor["contribution"]
-        factor["effective_weight_percent"] = _round(Decimal(factor["weight"]) * 100 / known_weight) if score is not None and factor["points"] is not None else None
-        factor["contribution"] = _round(factor["points"] * factor["weight"] / known_weight) if score is not None and factor["points"] is not None else None
+        factor["effective_weight_percent"] = Decimal(factor["weight"])
+        if not set(factor["required_fields"]) <= set(factor["observed_fields"]):
+            factor["contribution"] = None
     return {
         "decision_id": "decision:" + sha256(repr((family, subject_id, as_of, revision, VERSION, sorted(inputs.items()), eligible, eligibility_reasons, blocking_constraints)).encode()).hexdigest()[:32],
         "family": family_key, "subject_kind": family.subject_kind, "subject_id": subject_id,
         "as_of": as_of, "revision": revision, "configuration_version": VERSION,
         "score": score, "score_unit": "POC_INDEX_0_TO_100", "provisional": True,
+        "score_range": {"low": _round(Decimal(lower)), "high": _round(Decimal(upper))},
         "status": "BLOCKED" if blocking_constraints else "INELIGIBLE" if not eligible else "SCORED" if score is not None else "INSUFFICIENT_EVIDENCE",
         "eligible": eligible, "eligibility_reasons": eligibility_reasons,
         "blocking_constraints": blocking_constraints, "factors": factors,
         "data_coverage": {"family": "data_coverage", "subject_id": subject_id, "present": len(observed_fields), "applicable": len(required_fields), "ratio": coverage, "missing_fields": sorted(set(required_fields) - set(observed_fields)), "missing_factors": missing, "factor_coverage": factor_coverage},
         "interpretation": family.interpretation,
-        "missingness_policy": "Fixed applicable denominator; partial scoring reweights known factor weights only above the declared coverage gate. Missing is never zero.",
+        "missingness_policy": "Fixed weights; incomplete assessments expose a low/high range, never a reweighted point score. Missing is never zero.",
     }
 
 
-def public_risk_rollup(events: tuple[dict, ...]) -> dict:
+def public_risk_rollup(events: tuple[dict, ...], *, monitoring_complete: bool = False) -> dict:
     """Independent material domains, never article count, govern the uplift."""
     unique: dict[str, dict] = {}
     for event in events:
         if not event["active"]:
+            continue
+        confidence = event.get("signal_confidence")
+        if confidence is None:
+            continue
+        confidence = Decimal(str(confidence))
+        if not confidence.is_finite() or not 0 <= confidence <= 100:
+            raise ValueError("Invalid signal confidence")
+        if confidence < 70:
             continue
         score = Decimal(str(event["severity"]))
         if not score.is_finite() or not 0 <= score <= 100:
@@ -134,16 +165,19 @@ def public_risk_rollup(events: tuple[dict, ...]) -> dict:
             raise ValueError("Conflicting copies require event resolution before roll-up")
         unique[identity] = event
     if not unique:
-        return {"score": None, "independent_event_ids": (), "uplift": 0}
+        return {"score": Decimal(0) if monitoring_complete else None, "independent_event_ids": (), "uplift": 0,
+                "monitoring_complete": monitoring_complete,
+                "interpretation": "No confirmed active public risk." if monitoring_complete else "Monitoring coverage is incomplete; public risk is not assumed to be zero."}
     ranked = sorted(unique.values(), key=lambda e: (-Decimal(str(e["severity"])), e["underlying_event_id"]))
     material = [e for e in ranked if Decimal(str(e["severity"])) >= 40]
-    domains = {e["risk_domain"] for e in material}
-    severe_domains = {e["risk_domain"] for e in material if Decimal(str(e["severity"])) >= 70}
-    uplift = 10 if len(domains) >= 3 or len(severe_domains) >= 2 else 5 if len(domains) >= 2 else 0
+    allowed_domains = {'financial/legal', 'demand/program', 'operations/site', 'supplier/service'}
+    domains = {e["risk_domain"] for e in material if e['risk_domain'] in allowed_domains}
+    additional_domains = domains - {ranked[0]["risk_domain"]}
+    uplift = 10 if len(additional_domains) >= 2 else 5 if additional_domains else 0
     return {"score": min(Decimal(100), Decimal(str(ranked[0]["severity"])) + uplift),
             "independent_event_ids": tuple(e["underlying_event_id"] for e in ranked),
             "uplift": uplift, "configuration_version": VERSION,
-            "calibration": "Material>=40 and severe>=70 are provisional POC thresholds."}
+            "calibration": "Rubric v2: each additional material domain requires severity >=40 and confidence >=70."}
 
 
 def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | None,
@@ -154,7 +188,7 @@ def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | N
     for value in (internal_score, public_score):
         if value is not None and (not value.is_finite() or not 0 <= value <= 100):
             raise ValueError("Risk inputs must be valid governed indices")
-    eligible = current_customer and internal_score is not None and public_score is not None
+    eligible = current_customer and internal_score is not None and public_score is not None and public_confirmed
     missing = tuple(name for name, value in (("internal_commercial_risk", internal_score), ("public_risk_rollup", public_score)) if value is None)
     floors = []
     if public_confirmed and public_score is not None and public_score >= 85:
@@ -172,6 +206,7 @@ def overall_customer_risk(*, current_customer: bool, internal_score: Decimal | N
             "weights": {"internal_commercial_risk": 60, "public_risk_rollup": 40},
             "convergence_uplift": uplift, "convergence_evidence_ids": convergence_evidence_ids,
             "critical_override_evidence_ids": critical_override_evidence_ids,
+            "execution_blocked": bool(critical_override_evidence_ids),
             "applicable_floors": floors if current_customer else [], "missing_fields": missing,
             "interpretation": "Unknown coverage cannot create an overall score; independent critical conditions remain visible even when the combined index is unavailable."}
 
@@ -182,10 +217,17 @@ def customer_risk_projection(
     current_customer: bool,
     internal_decision: Mapping[str, object],
     signal_briefs: tuple[object, ...],
+    monitoring_complete: bool = False,
 ) -> dict:
     """Join current public risk and canonical internal risk without conflating them."""
     public_events: list[dict] = []
     confirmed_event_ids: list[str] = []
+    domains = {
+        "FINANCIAL_DISTRESS": "financial/legal", "EXPORT_RESTRICTION": "financial/legal",
+        "CONTRACT_REDUCTION": "demand/program", "PROGRAM_CANCELLATION": "demand/program",
+        "FACILITY_CLOSURE": "operations/site", "WORKFORCE_REDUCTION": "operations/site",
+        "PRODUCTION_DELAY": "operations/site",
+    }
     for brief in sorted(signal_briefs, key=lambda item: str(getattr(item, "id", ""))):
         if account_id not in tuple(getattr(brief, "canonical_account_ids", ())):
             continue
@@ -197,18 +239,20 @@ def customer_risk_projection(
             and getattr(brief, "seller_promotion_state", None) == "RESOLVED_ELIGIBLE"
         )
         event_id = str(brief.id)
+        confidence = getattr(brief, "signal_confidence", None)
+        confidence_score = confidence.get("score") if isinstance(confidence, Mapping) else None
         public_events.append(
             {
                 "active": active,
                 "severity": risk["score"],
+                "signal_confidence": confidence_score,
                 "underlying_event_id": event_id,
-                "risk_domain": str(getattr(brief, "event_type", None) or "UNCLASSIFIED_RISK"),
+                "risk_domain": domains.get(str(getattr(brief, "event_type", None)), "unclassified"),
             }
         )
-        confidence = getattr(brief, "signal_confidence", None)
-        if active and isinstance(confidence, Mapping) and confidence.get("status") == "SCORED":
+        if active and confidence_score is not None and Decimal(str(confidence_score)) >= 70 and confidence.get("status") == "SCORED":
             confirmed_event_ids.append(event_id)
-    public = public_risk_rollup(tuple(public_events))
+    public = public_risk_rollup(tuple(public_events), monitoring_complete=monitoring_complete)
     internal_value = internal_decision.get("score")
     internal_score = Decimal(str(internal_value)) if internal_value is not None else None
     public_score = Decimal(str(public["score"])) if public["score"] is not None else None
@@ -216,7 +260,7 @@ def customer_risk_projection(
         current_customer=current_customer,
         internal_score=internal_score,
         public_score=public_score,
-        public_confirmed=bool(confirmed_event_ids),
+        public_confirmed=bool(confirmed_event_ids) or monitoring_complete,
     )
     return {
         "account_id": account_id,

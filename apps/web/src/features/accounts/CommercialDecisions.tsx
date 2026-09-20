@@ -5,12 +5,14 @@ import { CommercialEvidence } from './CommercialEvidence'
 import { actorDisplayName, presentationLabel } from '../../components/presentation'
 import { ScoreSummary } from '../../components/ScoreSummary'
 import { commercialDecisionSummary } from '../../components/scoreSummaryModel'
+import { Button, LoadingStatus } from '../../components/UI'
 
 const words = (value: string) => presentationLabel(value, 'assessment')
 const index = (value: string | number | null) => value == null ? null : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value))
 
 function Decision({ decision, onEvidence }: { decision: CommercialDecision; onEvidence: (id: string) => void }) {
-  const model = commercialDecisionSummary(decision, decision.subject_id)
+  const subject = ['customer_health', 'internal_commercial_risk'].includes(decision.family) ? 'Selected customer' : decision.family === 'action_priority' ? 'Selected follow-up' : 'Selected opportunity'
+  const model = commercialDecisionSummary(decision, subject)
   return <div className="commercial-decision"><ScoreSummary model={{ ...model, limitingFactors: [...(model.limitingFactors ?? []), ...decision.blocking_constraints.map(reason => ({ label: 'Execution constraint', detail: reason }))] }} />
     {decision.factors.some(factor => factor.evidence_ids.length) && <details><summary>Open a supporting record</summary><div className="decision-evidence-buttons">{[...new Set(decision.factors.flatMap(factor => factor.evidence_ids))].map(id => <button key={id} type="button" onClick={() => onEvidence(id)}>Supporting record</button>)}</div></details>}
   </div>
@@ -36,7 +38,7 @@ function Followup({ accountId, actionId, onCreated }: { accountId: string; actio
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Creation was not confirmed. Retry with the same preview or refresh it.') }
     finally { setPending(false) }
   }
-  return <div><button type="button" disabled={pending} onClick={() => void inspect()}>{pending ? 'Working…' : 'Preview local follow-up'}</button>
+  return <div><Button type="button" loading={pending} loadingLabel="Preparing preview…" onClick={() => void inspect()}>Preview local follow-up</Button>
     {preview && <section aria-label="Local follow-up preview"><h4>{preview.destination}</h4><p><strong>{preview.proposal.title}</strong></p><p>{preview.proposal.description}</p>
       <dl><dt>Owner</dt><dd>{actorDisplayName(preview.proposal.owner_id)}</dd><dt>Due</dt><dd>{preview.proposal.due_date ?? 'Not set'}</dd><dt>Priority</dt><dd>{words(preview.proposal.priority)}</dd></dl>
       <p>{preview.note}</p><p>Supporting records: {preview.proposal.evidence_ids.join(', ')}</p>
@@ -66,10 +68,10 @@ export function CommercialDecisions({ accountId, onWorkChanged }: { accountId: s
         <small>Provisional configuration {result.overall_customer_risk.configuration_version}. Public confidence does not replace severity and no macro signal proves an account order.</small>
       </details>
       {result.opportunities.map(opportunity => <section key={opportunity.opportunity_id}><h3>Quoted component opportunity</h3><p>{words(opportunity.stage)} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: opportunity.currency }).format(opportunity.value_minor / 100)} quoted opportunity</p>
-        <p>{words(opportunity.qualification_status)} · {words(opportunity.durability_status)}</p>
+        <p>Qualified: {opportunity.qualification_status === 'YES' ? 'Yes' : opportunity.qualification_status === 'NO' ? 'No' : 'More evidence needed'} · Durable program: {opportunity.durability_status === 'YES' ? 'Yes' : opportunity.durability_status === 'NO' ? 'No' : 'More evidence needed'}</p>
         {[opportunity.opportunity_priority, opportunity.pwin, opportunity.delivery_feasibility].map(decision => <Decision key={decision.family} decision={decision} onEvidence={setEvidence} />)}</section>)}
       {result.action_priorities.map(action => <section key={action.action_id}><h3>{action.title}</h3><p>{words(action.work_status)}</p><Decision decision={action.decision} onEvidence={setEvidence} />
-        <Followup accountId={accountId} actionId={action.action_id} onCreated={() => { setRefresh(n => n + 1); onWorkChanged() }} /></section>)}</> : !error && <p role="status">Loading canonical decisions…</p>}
+        <Followup accountId={accountId} actionId={action.action_id} onCreated={() => { setRefresh(n => n + 1); onWorkChanged() }} /></section>)}</> : !error && <LoadingStatus>Preparing account decisions…</LoadingStatus>}
     {evidence && <section aria-label="Decision supporting evidence"><h3>Supporting record {evidence}</h3><button onClick={() => setEvidence('')}>Close supporting record</button><CommercialEvidence key={`${accountId}:${evidence}`} accountId={accountId} recordId={evidence} /></section>}
   </div>
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { CanonicalRecord } from "../../components/CanonicalRecord";
-import { Button, Empty, EvidenceSource, StatusBadge } from "../../components/UI";
+import { Button, Empty, EvidenceSource, LoadingStatus, StatusBadge } from "../../components/UI";
 import type { Account360, MapRecord } from "../../types/api";
 import { WorkbookFields } from "../accounts/WorkbookFields";
 import { FULFILLMENT_LABELS } from "./mapModel";
@@ -9,7 +9,7 @@ import { SupportingEvidence, WhyThis } from "../../components/SupportingEvidence
 import { RelatedBtxActivity } from "../../components/RelatedBtxActivity";
 import { TechnicalDecompositionSection } from "../../components/TechnicalDecompositionSection";
 import { ScoreSummary } from "../../components/ScoreSummary";
-import { attractivenessSummary, prospectFitSummary } from "../../components/scoreSummaryModel";
+import { commercialDecisionSummary, prospectFitSummary } from "../../components/scoreSummaryModel";
 import { presentationLabel } from "../../components/presentation";
 
 type Tab = "OVERVIEW" | "COMMERCIAL" | "CONTACTS" | "SOURCES";
@@ -33,7 +33,9 @@ export function MapAccountDetails({ record }: { record: MapRecord }) {
 
   const nearest = record.nearest_btx_facility;
   const segmentLabel = { PROSPECT: "Prospect", CURRENT_CLIENT: "Customer", DORMANT_CUSTOMER: "Dormant customer", UNKNOWN: "Relationship needs review" }[record.account_segment];
-  const score = record.account_segment === "PROSPECT" && record.prospect_fit?.applicable ? prospectFitSummary(record.prospect_fit, record.name) : record.account_attractiveness ? attractivenessSummary(record.account_attractiveness, record.name) : undefined;
+  const accountScore = currentDetail?.customer_health;
+  const prospectScore = currentDetail?.prospect_fit;
+  const score = record.account_segment === "PROSPECT" && prospectScore?.applicable ? prospectFitSummary(prospectScore, record.name) : accountScore ? commercialDecisionSummary(accountScore, record.name) : undefined;
   const verifiedLocation = [record.city, record.region, record.country].filter(Boolean).join(", ");
   return <div className="map-site-detail">
     <div className="map-site-tabs" role="tablist" aria-label="Selected site details">{tabs.map(([value, text]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{text}</button>)}</div>
@@ -46,7 +48,7 @@ export function MapAccountDetails({ record }: { record: MapRecord }) {
       <p><strong>Verified location:</strong> {verifiedLocation || "Location details unavailable"} · {presentationLabel(record.location_truth_state)}</p>
       <p><strong>Market and industry:</strong> {record.primary_markets.join(" · ") || record.industry || "Unavailable"}</p>
       {Boolean(record.naics_assignments?.length) && <p><strong>Account NAICS:</strong> {record.naics_assignments?.map((item) => `${item.code} (${item.taxonomy_version})`).join(" · ")} · POC classification</p>}
-      {record.candidate_capabilities?.length ? <p><strong>Candidate BTX capability fit:</strong> {record.candidate_capabilities.map(item => item.name).join(" · ")}. Derived from account-level business-unit context and requires site qualification.</p> : <p><strong>Candidate BTX capability fit:</strong> No governed account-level match is available.</p>}
+      {record.candidate_capabilities?.length ? <p><strong>Candidate BTX capability fit:</strong> {record.candidate_capabilities.map(item => item.name).join(" · ")}. Derived from account-level business-unit context and requires site qualification.</p> : <p><strong>Candidate BTX capability fit:</strong> No supported account-level capability match is available.</p>}
       {score && <ScoreSummary model={score} />}
       {nearest?.distance_miles != null ? <p><strong>Nearest BTX facility:</strong> {nearest.name} · {nearest.distance_miles} miles straight-line</p> : <p>Nearest BTX facility not yet established.</p>}
       {record.governed_next_step && <p><strong>Next:</strong> {record.governed_next_step}</p>}
@@ -60,10 +62,10 @@ export function MapAccountDetails({ record }: { record: MapRecord }) {
       {record.fulfillment_attention && <><p><strong>Fulfillment attention:</strong> {record.fulfillment_attention.states.map((state) => FULFILLMENT_LABELS[state] ?? state).join(" · ")} · {record.fulfillment_attention.as_of}</p><p>Account-level obligations do not establish capacity or qualification at this site.</p></>}
     </section>}
     {tab === "CONTACTS" && <section role="tabpanel" aria-label="Contacts">
-      {currentDetail ? currentDetail.public_contacts.length ? <div className="map-contact-list">{currentDetail.public_contacts.map((contact) => <EvidenceSource key={`${contact.name ?? contact.role_family}:${contact.title_or_function}`} title={contact.name ?? contact.role_family} source="Public professional research" date={contact.provenance?.last_verified_at} evidenceState={contact.verification_state} url={contact.source_url} detail={`${contact.title_or_function ?? contact.role_family} · contact candidate only; no meeting or introduction is established.`} />)}</div> : <Empty>No verified public contact is available. Review the account's role targets.</Empty> : <p role="status">Loading contact evidence…</p>}
+      {currentDetail ? currentDetail.public_contacts.length ? <div className="map-contact-list">{currentDetail.public_contacts.map((contact) => <EvidenceSource key={`${contact.name ?? contact.role_family}:${contact.title_or_function}`} title={contact.name ?? contact.role_family} source="Public professional research" date={contact.provenance?.last_verified_at} evidenceState={contact.verification_state} url={contact.source_url} detail={`${contact.title_or_function ?? contact.role_family} · contact candidate only; no meeting or introduction is established.`} />)}</div> : <Empty>No verified public contact is available. Review the account's role targets.</Empty> : <LoadingStatus>Opening contact evidence…</LoadingStatus>}
     </section>}
     {tab === "SOURCES" && <section role="tabpanel" aria-label="Sources">
-      {currentDetail ? <>{currentDetail.public_facilities.some((facility) => facility.id === record.facility_id) ? <div className="map-contact-list">{currentDetail.public_facilities.filter((facility) => facility.id === record.facility_id).map((facility) => <EvidenceSource key={facility.id} title={facility.name} source={`${facility.city}, ${facility.region}, ${facility.country}`} evidenceState={facility.verification_state} url={facility.source_url} detail={facility.facility_type} />)}</div> : <Empty>No public facility source matches this selected site ID.</Empty>}<details className="map-record-details"><summary>Location and decision evidence</summary><CanonicalRecord value={{ site: record.location_name ?? record.facility_id, facility_reference: record.facility_id, location_status: record.location_truth_state, location_provenance: record.location_provenance, commercial_revision: record.commercial_briefing?.revision, score_status: record.score_status, missing_score_inputs: record.score_missingness, current_intelligence: record.current_signal_briefs, upcoming_intelligence: record.upcoming_signal_briefs }} /></details></> : <p role="status">Loading source evidence…</p>}
+      {currentDetail ? <>{currentDetail.public_facilities.some((facility) => facility.id === record.facility_id) ? <div className="map-contact-list">{currentDetail.public_facilities.filter((facility) => facility.id === record.facility_id).map((facility) => <EvidenceSource key={facility.id} title={facility.name} source={`${facility.city}, ${facility.region}, ${facility.country}`} evidenceState={facility.verification_state} url={facility.source_url} detail={facility.facility_type} />)}</div> : <Empty>No public facility source matches this selected site ID.</Empty>}<details className="map-record-details"><summary>Location and decision evidence</summary><CanonicalRecord value={{ site: record.location_name ?? record.facility_id, facility_reference: record.facility_id, location_status: record.location_truth_state, commercial_revision: record.commercial_briefing?.revision, score_status: record.score_status, missing_score_inputs: currentDetail.customer_health?.data_coverage.missing_fields ?? [], current_intelligence: record.current_signal_briefs, upcoming_intelligence: record.upcoming_signal_briefs }} /></details></> : <LoadingStatus>Opening location and source evidence…</LoadingStatus>}
     </section>}
   </div>;
 }

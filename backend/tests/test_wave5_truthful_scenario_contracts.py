@@ -19,7 +19,7 @@ def test_curated_public_scenarios_preserve_source_truth_without_claiming_btx_par
 
     assert accounts["boeing"].relationship is AccountRelationship.CURRENT_CUSTOMER
     assert accounts["lockheed-martin"].relationship is AccountRelationship.CURRENT_CUSTOMER
-    assert accounts["huxwrx"].relationship is AccountRelationship.PROSPECT
+    assert accounts["huxwrx"].relationship is AccountRelationship.CURRENT_CUSTOMER
 
     boeing = scenarios["boeing"]
     assert boeing.event.source_url.startswith("https://www.faa.gov/")

@@ -22,7 +22,8 @@ rules, sources, and score-teaching scenarios.
 - **Intelligence** — resolved public signals with source lineage and relevance.
 - **Map** — verified public locations, customer/target state, facilities, and proximity context.
 - **Actions** — reviewable, assignable, human-approved seller workflows.
-- **Omni** — a persistent, grounded assistant for the active commercial context.
+- **Omni** — a read-only conversational assistant with private saved conversations,
+  bounded BTX lookups, optional public search and general questions.
 
 ## Core capabilities
 
@@ -58,6 +59,59 @@ only those canonical API routes. PostgreSQL persists governed workflow and
 decisioning state; the POC's SAMPLE provider supplies the shaped commercial
 environment. See [architecture documentation](docs/architecture/) for repository
 and GitHub setup guidance.
+
+### Omni chat v2
+
+The drawer uses `/api/omni/chat/stream`: a bounded model/tool loop, deterministic
+read adapters, response validation, private audit and conversation storage. SSE
+streams progress during tool use and answer paragraphs after validation, not raw
+model tokens. The original `/api/omni` endpoint remains a legacy compatibility path.
+Scores, eligibility, ranking and identity remain deterministic. Public search uses
+Gemini Google Search grounding, never arbitrary URL fetching, and queries contain
+only recorded public company names and approved topic phrases. Public findings are
+not canonical evidence and cannot change prospects, scores or business records.
+
+Omni cannot write CRM, Actions, communications or accepted memory. **Propose an
+Action** opens the existing prefilled form for human review and saving. History,
+feedback and audit receipts are private storage exceptions, not business evidence.
+Conversations support resume, rename and deletion; deletion also removes their
+feedback and linked answer receipts. Memory retains its separate acceptance controls.
+
+| Setting | Default / meaning |
+| --- | --- |
+| `BTX_OMNI_CHAT_MODEL` | Unset: uses `BTX_GEMINI_MODEL` (currently `gemini-2.5-flash`) |
+| `WEB_SEARCH_ENABLED` | true; also requires configured Gemini |
+| `GENERAL_KNOWLEDGE_ENABLED` | true |
+| `BTX_OMNI_CHAT_STEPS` | 6 read tools, maximum 12 |
+| `BTX_OMNI_CHAT_OUTPUT_TOKENS` | 1200 per model response, maximum 4096 |
+| `BTX_OMNI_CHAT_DAILY_CALLS` | 100 model calls per actor, subject to existing lower limits |
+| `BTX_OMNI_CHAT_RETENTION_DAYS` | 30 inactivity days, maximum 365 |
+
+Requests have a 60-second deadline, 8-second tool wait, 48,000-character turn-input
+cap and one answer correction attempt. In-flight provider calls retain their
+transport timeout; cancel stops further work and delivery. Without Gemini, Omni
+says that only basic deterministic lookups are available. Search's closed vocabulary
+and conservative factual checks can cause an explicit inability to answer; they do
+not prove semantic correctness. Publication dates omitted by grounding stay unknown.
+
+Private v2 storage includes server actor and tenant in ownership. Core commercial
+data remains a single-workspace catalog. Hosted POC access codes map to shared
+seller/manager identities: this is **not** individual-user production authentication
+or proof of fully partitioned multi-tenancy.
+
+Apply migration `0041_omni_conversations` to an authorized development database.
+The normal backend `uv run pytest` command includes fake-provider chat evaluations.
+From `backend`, run the optional live check with:
+
+```powershell
+uv run python scripts/omni_live_eval.py --output omni-live-eval.json
+```
+
+It skips cleanly if no Gemini key/configuration is present. Live execution uses
+sample records, can incur provider usage, and writes a local report for human tone
+and factual review; it never writes business data. See
+[design and limitations](docs/product/OMNI_CHAT_V2_DESIGN.md) and
+[validation report](docs/product/OMNI_CHAT_V2_REPORT.md) for what was actually tested.
 
 ## Engineering review
 

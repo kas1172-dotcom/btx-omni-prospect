@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 
-from btx_omni.core.classification import Classification
 from btx_omni.domain.accounts import (
     AccountFacility,
     AccountRelationship,
@@ -12,7 +11,6 @@ from btx_omni.domain.accounts import (
 from btx_omni.domain.btx import BtxBusinessUnit, BtxFacility
 from btx_omni.domain.capabilities import Capability
 from btx_omni.domain.commercial import CommercialContext
-from btx_omni.domain.common import DataMode, EvidenceState
 from btx_omni.domain.crm import CrmActivity, CrmCompany, CrmContact, CrmDeal
 from btx_omni.domain.markets import primary_market_label
 from btx_omni.domain.orders import Order
@@ -29,7 +27,6 @@ from btx_omni.providers.hubspot_sample.crm import load_crm
 from btx_omni.providers.lake_sample.context import load_commercial_contexts
 from btx_omni.providers.lake_sample.orders import load_orders
 from btx_omni.providers.paperless_sample.quotes import load_paperless_quotes
-from btx_omni.providers.research._catalog_support import source_provenance
 from btx_omni.providers.research.btx_profile import (
     load_btx_business_units,
     load_btx_facilities,
@@ -148,14 +145,6 @@ def build_sample_environment() -> SampleEnvironment:
     components = load_component_classes(business_unit_ids=unit_ids)
     component_ids = {item.id for item in components}
     capabilities = load_capabilities(business_unit_ids=unit_ids)
-    huxwrx_opportunity_provenance = source_provenance(
-        {"id": "huxwrx-sample-opportunity", "provenance": {"source_system": "priority-customer-sample", "source_record_id": "huxwrx-sample-opportunity", "data_mode": "SAMPLE", "synthetic": True, "evidence_state": "CONFIRMED"}},
-        classification=Classification.INTERNAL_COMMERCIAL,
-        default_mode=DataMode.SAMPLE,
-        default_synthetic=True,
-    )
-    programs = (*programs, Program("huxwrx-sample-opportunity", "huxwrx", "SAMPLE prospect opportunity", "Defense", EvidenceState.CONFIRMED, huxwrx_opportunity_provenance))
-    components = (*components, ComponentClass("cc-huxwrx-sample-opportunity", "huxwrx-sample-opportunity", "SAMPLE suppressed-platform precision housing", EvidenceState.CONFIRMED, huxwrx_opportunity_provenance, "Defense", ("era-industries",)))
     edges = load_relationship_edges(account_ids=account_ids, program_ids=program_ids)
     contexts = (
         *load_commercial_contexts(account_ids=account_ids, business_unit_ids=unit_ids),

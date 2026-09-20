@@ -218,7 +218,7 @@ def relevance(x: dict[str, Any], *, now: datetime) -> dict:
             "present" if n else "unavailable",
         ),
         (
-            "BTX governed commercial context",
+            "Relevant BTX commercial context",
             35,
             b,
             x.get("btx_context", {}).get("state", "unavailable"),
@@ -557,7 +557,7 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
                 and all(not item["pending_continuation"] for item in repository.procurement_coverage())
                 if repository else False
             ),
-            "coverage_note": "Collected counts describe saved governed windows, not the total federal market.",
+            "coverage_note": "Collected counts describe the saved search windows, not the total federal market.",
         },
         "usaspending": {
             "state": "SAMPLE"
@@ -639,7 +639,7 @@ def procurement_projection(runtime: Any, **filters: Any) -> dict:
             ],
             "lag": {
                 "state": "INSUFFICIENT_HISTORY",
-                "detail": "Award records have no governed downstream milestone or delivery date.",
+                "detail": "Award records do not include a downstream milestone or delivery date.",
             },
         },
     }

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.work import Principal, PrincipalRole
+from btx_omni.security.sessions import server_principal
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -46,18 +47,12 @@ def principal(
     csrf_token: str | None = Header(default=None, alias="X-CSRF-Token"),
 ) -> Principal:
     if runtime.settings.environment == "development" and development_token is None:
-        return Principal(
-            "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON
-        )
+        return server_principal(runtime.settings, "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON)
     if runtime.settings.environment == "development" and development_token:
         if development_token == runtime.settings.action_salesperson_token:
-            return Principal(
-                "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON
-            )
+            return server_principal(runtime.settings, "seller-1", "Development Salesperson", PrincipalRole.SALESPERSON)
         if development_token == runtime.settings.action_manager_token:
-            return Principal(
-                "manager-1", "Development Manager", PrincipalRole.MANAGER
-            )
+            return server_principal(runtime.settings, "manager-1", "Development Manager", PrincipalRole.MANAGER)
     session = runtime.sessions.get(
         request.cookies.get(runtime.settings.session_cookie_name)
     )

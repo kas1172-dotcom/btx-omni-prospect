@@ -8,7 +8,7 @@ from math import asin, cos, radians, sin, sqrt
 
 from fastapi import APIRouter, Depends
 
-from btx_omni.api.accounts import _seller_attractiveness, get_runtime
+from btx_omni.api.accounts import get_runtime
 from btx_omni.api.runtime import PocRuntime
 from btx_omni.domain.alerts import CommercialAlertKind
 from btx_omni.domain.markets import PRIMARY_MARKET_ORDER, primary_market_label
@@ -18,10 +18,6 @@ from btx_omni.modules.commercial.map_context import map_commercial_context
 from btx_omni.modules.federal_procurement import federal_assessments_for_account
 from btx_omni.modules.scoring.account_attractiveness import (
     seller_attractiveness_projection,
-)
-from btx_omni.modules.scoring.prospect_fit import (
-    prospect_fit_payload,
-    prospect_fit_projection,
 )
 from btx_omni.monitor.briefs import (
     SignalBrief,
@@ -321,7 +317,6 @@ def map_data(
                     "is_rich_scenario": account.id in sample.rich_scenarios
                     or account.id in sample.priority_scenarios,
                     "btx_top_100": account.btx_top_100,
-                    "btx_top_100_provenance": account.btx_top_100_provenance,
                     "coordinates": _coordinates(location.latitude, location.longitude),
                     "location_truth_state": location.verification_state,
                     "location_name": location.name,
@@ -329,20 +324,12 @@ def map_data(
                     "city": location.city,
                     "region": location.region,
                     "country": location.country,
-                    "location_provenance": location.provenance,
                     "commercial_state": "SIMULATED_BTX_CONTEXT"
                     if account.id in commercial_accounts
                     else "UNAVAILABLE",
                     "attractiveness_score": score.score,
                     "attractiveness_coverage": score.coverage,
                     "score_status": score.status,
-                    "score_missingness": score.missingness,
-                    "account_attractiveness": _seller_attractiveness(score),
-                    "prospect_fit": prospect_fit_payload(
-                        prospect_fit_projection(
-                            account, applicable=segment == "PROSPECT"
-                        )
-                    ),
                     "nearest_btx_facility": {
                         "id": nearest.id,
                         "name": nearest.name,
@@ -364,29 +351,6 @@ def map_data(
                     "governed_next_step": account_alerts[0].recommended_action
                     if account_alerts
                     else None,
-                    "selection_missingness": tuple(
-                        item
-                        for item, missing in (
-                            (
-                                "Applicable score inputs",
-                                (segment == "PROSPECT" and not account.industries)
-                                or (segment != "PROSPECT" and score.score is None),
-                            ),
-                            (
-                                "current eligible Signal Brief",
-                                not current_briefs_by_account.get(account.id),
-                            ),
-                            (
-                                "upcoming governed date",
-                                not upcoming_briefs_by_account.get(account.id),
-                            ),
-                            (
-                                "commercial context",
-                                account.id not in commercial_accounts,
-                            ),
-                        )
-                        if missing
-                    ),
                     "deep_account": account.id in commercial_accounts,
                 }
             )
@@ -513,9 +477,6 @@ def map_data(
         "facilities": facility_points,
         "btx_facilities": btx_points,
         "intelligence": intelligence_points,
-        "records": account_points,
-        "public_locations": facility_points,
-        "intelligence_signals": intelligence_points,
         "proximity_note": "Seller planning input only; never an attractiveness input.",
         "filter_options": {
             "business_units": [

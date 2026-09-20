@@ -33,8 +33,8 @@ TEMPLATES = {
         ("ACCOUNT_PROGRAM", "PROGRAM_COMPONENT", "PLAUSIBLE_CAPABILITY_FIT:inverse"),
         ("ACCOUNT_PROGRAM", "PROGRAM_COMPONENT", "PRODUCED_ACCEPTED_COMPONENT:inverse"),
     ),
-    "contact_candidates": (("PUBLISHED_ROLE_AT:inverse",),),
-    "documented_access": tuple(("EXPLICIT_INTRODUCTION",) * n for n in range(1, 7)),
+    "contact_candidates": (("PUBLISHED_ROLE_AT:inverse",), ("WORKS_AT:inverse",)),
+    "documented_access": (*tuple(("EXPLICIT_INTRODUCTION",) * n for n in range(1, 7)), ("WORKS_AT:inverse", "KNOWS:inverse")),
 }
 
 
@@ -46,6 +46,17 @@ class RouteNode:
     label: str
     account_id: str | None = None
     resolved: bool = True
+    contact_count: int | None = None
+    senior_contact_count: int | None = None
+    source_people: tuple[str, ...] = ()
+    unvalidated: bool = False
+    role_family: str | None = None
+    seniority_tier: str | None = None
+    profile_url: str | None = None
+    raw_title: str | None = None
+    provenance_label: str | None = None
+    exported_on: date | None = None
+    resolution_method: str | None = None
 
     @property
     def id(self) -> str:
@@ -74,6 +85,7 @@ class RouteEdge:
     conflicting: bool = False
     constraint_ids: tuple[str, ...] = ()
     derivation_rule: str = "BTX_CANONICAL_GRAPH_POC_1"
+    relevance_score: int | None = None
 
 
 @dataclass(frozen=True)
@@ -143,8 +155,10 @@ class CanonicalRouteGraph:
             return False
         if query.target_component_id and edge.account_id in target_accounts and edge.account_id != source_account and edge.predicate not in STRUCTURAL and edge.component_id != query.target_component_id:
             return False
-        if query.mode == "documented_access" and (edge.predicate != "EXPLICIT_INTRODUCTION" or not edge.valid_until or not edge.observed_on):
-            return False
+        if query.mode == "documented_access":
+            imported_path_edge = edge.predicate in {"KNOWS", "WORKS_AT"} and edge.truth_class == "ANALYST_INFERENCE"
+            if not imported_path_edge and (edge.predicate != "EXPLICIT_INTRODUCTION" or not edge.valid_until or not edge.observed_on):
+                return False
         return not (edge.accepted_order_ids and (not edge.observed_on or edge.observed_on < query.as_of - timedelta(days=query.lookback_days)))
 
     @staticmethod
@@ -172,7 +186,8 @@ class CanonicalRouteGraph:
                          "reason": f"{len(set(edge.accepted_order_ids))} distinct accepted orders support scoped experience." if edge.accepted_order_ids else "Published role candidate; no introduction is established." if edge.predicate == "PUBLISHED_ROLE_AT" else "Explicit introduction evidence is valid for the scoped query date." if edge.predicate == "EXPLICIT_INTRODUCTION" else "Traced fit inference requires technical review.",
                          "truth_class": edge.truth_class})
         coverage = Decimal(sum(len(r["present_fields"]) for r in rows)) / sum(len(r["applicable_fields"]) for r in rows)
-        relevance = 3 if query.source_component_id and all(e.component_id in {query.source_component_id, query.target_component_id} for e in substantive) else 2
+        imported_relevance = [edge.relevance_score for edge in substantive if edge.relevance_score is not None]
+        relevance = min(imported_relevance) if imported_relevance else 3 if query.source_component_id and all(e.component_id in {query.source_component_id, query.target_component_id} for e in substantive) else 2
         return RouteFactors(min(r["B"] for r in rows), relevance, min(r["E"] for r in rows), min(r["F"] for r in rows), coverage), rows
 
     def search(self, query: RouteQuery, *, cancelled: Callable[[], bool] = lambda: False) -> dict:

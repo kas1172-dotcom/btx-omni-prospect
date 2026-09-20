@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { frontendBuild } from '../app/build'
+import { LoadingStatus } from './UI'
 
 /** Module-level factory: component identity survives ordinary parent renders.
  * Only code is cached, never user data. A failed import is evicted for retry.
@@ -69,6 +70,6 @@ export function deferredSurface<P extends object>(load: () => Promise<ComponentT
       {retryCount < 2 ? <button className="button" onClick={() => { retryRequested = true; setFailed(false); setAttempt(value => value + 1) }}>Retry {label} download</button>
         : <p>Download recovery is still unavailable. Other workspaces remain usable. Save your drafts before reloading the app.</p>}
     </section>
-    return <section className="surface" role="status">Loading {label} workspace… Navigation and Omni remain available.</section>
+    return <section className="surface"><LoadingStatus>Preparing {label}… Navigation and Omni remain available.</LoadingStatus></section>
   }
 }

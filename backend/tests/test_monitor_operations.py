@@ -531,7 +531,10 @@ def test_worker_fails_closed_when_another_worker_holds_the_lock(monkeypatch) -> 
 
 
 def test_postgresql_operational_lock_keeps_its_session_alive() -> None:
+    from threading import Event
     from types import SimpleNamespace
+
+    heartbeat = Event()
 
     class Result:
         def scalar_one(self):
@@ -553,6 +556,8 @@ def test_postgresql_operational_lock_keeps_its_session_alive() -> None:
 
         def execute(self, statement):
             self.statements.append(str(statement))
+            if str(statement) == "SELECT 1":
+                heartbeat.set()
             return Result()
 
     connection = Connection()
@@ -564,7 +569,7 @@ def test_postgresql_operational_lock_keeps_its_session_alive() -> None:
 
     with repository.operational_lock(heartbeat_interval_seconds=0.001) as acquired:
         assert acquired
-        time.sleep(0.01)
+        assert heartbeat.wait(timeout=2), "Lock heartbeat did not run"
 
     assert connection.statements[0].startswith("SELECT pg_try_advisory_lock")
     assert "SELECT 1" in connection.statements

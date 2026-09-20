@@ -36,8 +36,9 @@ test('Map V2 is marker-first and opens canonical Customer context', async ({ pag
 test('Map V2 reports missing Google browser configuration truthfully', async ({ page }) => {
   await page.goto('/?map-test-unconfigured=1')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Map' }).click()
-  await expect(page.getByRole('heading', { name: 'Map not configured' })).toBeVisible()
-  await expect(page.getByText('Google Maps browser configuration is required')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Interactive map unavailable in this build' })).toBeVisible()
+  await expect(page.getByText('A permitted Google Maps browser configuration was not included')).toBeVisible()
+  await expect(page.getByText('The synchronized site list and verified details remain available.')).toBeVisible()
 })
 
 for (const width of [390, 320]) test(`Map V2 mobile sheets remain reachable at ${width}px`, async ({ page }) => {

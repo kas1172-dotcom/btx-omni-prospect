@@ -9,6 +9,7 @@ from btx_omni.modules.accounts.customer_360 import (
 )
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
 from btx_omni.modules.commercial.briefing import commercial_briefing
+from btx_omni.modules.commercial.lifecycle import fulfillment_state
 from btx_omni.modules.federal_procurement import federal_assessments_for_account
 from btx_omni.modules.intelligence.governed_explanation_adapters import (
     customer_attractiveness_subject_key,
@@ -25,10 +26,21 @@ from btx_omni.modules.scoring.account_attractiveness import (
     SellerAttractivenessProjection,
     seller_attractiveness_projection,
 )
+from btx_omni.modules.scoring.customer_health import health_inputs
+from btx_omni.modules.scoring.families import assess
 from btx_omni.modules.scoring.prospect_fit import (
     prospect_fit_payload,
     prospect_fit_projection,
 )
+
+
+def _profile_health(sample, account) -> dict | None:
+    ledger = sample.commercial_ledgers.get(account.id)
+    if not ledger or account.relationship.value not in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}:
+        return None
+    state = fulfillment_state(ledger, canonical_account_id=account.id, revision=sample.commercial_revision)
+    return assess("customer_health", subject_id=account.id, as_of=ledger["as_of"],
+                  revision=sample.commercial_revision, inputs=health_inputs(ledger, state), eligible=True)
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -41,6 +53,7 @@ RELATIONSHIP_REFERENCE_PATH_LIMIT = 250
 def _seller_attractiveness(projection: SellerAttractivenessProjection) -> dict:
     return {
         "score": projection.score,
+        "score_range": projection.score_range,
         "coverage": projection.coverage,
         "status": projection.status,
         "score_unit": projection.score_unit,
@@ -122,7 +135,8 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
                 "location": facilities.get(item.id),
                 "attractiveness": projection.score,
                 "account_attractiveness": _seller_attractiveness(projection),
-                "prospect_fit": prospect_fit_payload(prospect_fit_projection(item, applicable=item.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"})),
+                "customer_health": _profile_health(sample, item),
+                "prospect_fit": prospect_fit_payload(prospect_fit_projection(item, applicable=item.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"}, as_of=runtime.observed_at().date())),
                 "business_unit": contexts[item.id].business_unit
                 if item.id in contexts
                 else None,
@@ -190,6 +204,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
     ]
     return {
         "account": account,
+        "customer_health": _profile_health(sample, account),
         "public_identity": account.public_identity,
         "public_identity_state": account.public_identity.verification_state
         if account.public_identity
@@ -224,7 +239,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "orders": commercial.orders,
         "crm": crm,
         "account_attractiveness": _seller_attractiveness(projection),
-        "prospect_fit": prospect_fit_payload(prospect_fit_projection(account, applicable=account.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"})),
+        "prospect_fit": prospect_fit_payload(prospect_fit_projection(account, applicable=account.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"}, as_of=observed.date())),
         "governed_explanation": persisted_seller_explanation(
             runtime.monitor.repository,
             subject_key=customer_attractiveness_subject_key(account_id),

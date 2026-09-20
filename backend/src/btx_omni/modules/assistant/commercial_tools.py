@@ -75,12 +75,13 @@ class CommercialToolSession:
         if name == "read_decisions":
             account = next(a for a in self.sample.accounts if a.id == self.account_id)
             result = customer_decisions(ledger, account_id=self.account_id, revision=self.sample.commercial_revision,
+                                        facility_ids=frozenset(f.id for f in self.sample.btx_facilities),
                                         current_customer=account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}, work_items=self.work)
             # Bound evidence lists, not the decision's required fields or calculated values.
             def bounded(value):
                 if isinstance(value, dict):
                     if "decision_id" in value:
-                        return {k: bounded(value[k]) for k in ("decision_id", "family", "subject_id", "score", "status", "eligibility_reasons", "blocking_constraints", "factors", "data_coverage")}
+                        return {k: bounded(value[k]) for k in ("decision_id", "family", "subject_id", "score", "score_range", "configuration_version", "status", "priority_rank", "priority_class", "eligibility_reasons", "blocking_constraints", "factors", "data_coverage") if k in value}
                     if "points" in value and "required_fields" in value:
                         return {"key": value["key"], "points": value["points"], "weight": value["weight"],
                                 "reason": value["reason"], "truth_class": value["truth_class"],

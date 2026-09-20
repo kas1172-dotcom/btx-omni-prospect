@@ -6,6 +6,7 @@ import {
   Drawer,
   Empty,
   FilterChip,
+  LoadingStatus,
   Panel,
   SearchInput,
   SelectInput,
@@ -127,7 +128,7 @@ export function Communications({
     <div className="surface communications-surface">
       <header className="page-title communications-header">
         <div>
-          <span className="eyebrow">Governed outreach</span>
+          <span className="eyebrow">Draft and approval workflow</span>
           <h1>Communications</h1>
           <p>
             Trigger → Draft → Human review → Approved send. Gemini can assist
@@ -343,7 +344,7 @@ export function Communications({
                   </Panel>
                 )}
                 <Disclosure title="Audit history" open={historyOpen} onOpenChange={setHistoryOpen}>
-                  {!currentHistory && <p role="status">Loading this communication’s history…</p>}
+                  {!currentHistory && <LoadingStatus>Opening this communication’s history…</LoadingStatus>}
                   {currentHistory?.error && <p role="alert">History could not be loaded. No other communication’s history is shown.</p>}
                   <Button onClick={() => setHistoryRefresh(value => value + 1)}>Refresh communication history</Button>
                   <ol className="communication-history">

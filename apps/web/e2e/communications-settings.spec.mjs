@@ -62,7 +62,7 @@ test('manager can review but approval does not bypass recipient and confirmation
 test('Settings and secondary mobile navigation are role-aware, safe, and non-overflowing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  const menu = page.getByRole('button', { name: 'Workspace menu' })
+  const menu = page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'More', exact: true })
   await menu.click()
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
@@ -71,7 +71,7 @@ test('Settings and secondary mobile navigation are role-aware, safe, and non-ove
   await expect(page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Integrations' })).toHaveCount(0)
   await expect(page.getByText('Communication delivery')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Source Health', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(5)
+  await expect(page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button')).toHaveCount(7)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   await page.setViewportSize({ width: 320, height: 700 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)

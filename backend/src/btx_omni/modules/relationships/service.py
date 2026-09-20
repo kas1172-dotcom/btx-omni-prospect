@@ -105,6 +105,19 @@ class RelationshipIntelligenceService:
             project_route_graph,
         )
         graph, metadata = project_route_graph(self.sample, as_of=query.as_of, lookback_days=query.lookback_days)
+        return self._ranked_projected(graph, metadata, query, selected_path_id=selected_path_id,
+                                      node_budget=node_budget, edge_budget=edge_budget,
+                                      expanded_node_ids=expanded_node_ids, context_page=context_page,
+                                      expected_graph_revision=expected_graph_revision,
+                                      include_record_context=include_record_context)
+
+    def ranked_network_routes(self, graph, metadata, query, **options) -> dict:
+        """Render a previously authorization-filtered imported-network graph."""
+        return self._ranked_projected(graph, metadata, query, **options)
+
+    def _ranked_projected(self, graph, metadata, query, *, selected_path_id=None, node_budget=24,
+                          edge_budget=40, expanded_node_ids=(), context_page=0,
+                          expected_graph_revision=None, include_record_context=False) -> dict:
         metadata['record_projection']['unresolved_references'] = [item for item in metadata['record_projection']['unresolved_references']
                                                                if item['account_id'] in query.authorized_account_ids]
         if expected_graph_revision and graph.revision != expected_graph_revision:

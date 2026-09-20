@@ -57,12 +57,12 @@ def settings(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
         },
         "integrations": {
             "google_maps": _integration("ADMIN_MANAGED", "Browser map configuration is deployment managed."),
-            "gemini": _integration("CONFIGURED" if configured_gemini else "NOT_CONFIGURED", "Server-side Gemini with governed deterministic fallback."),
+            "gemini": _integration("CONFIGURED" if configured_gemini else "NOT_CONFIGURED", "Server-side Gemini with a deterministic evidence-based fallback."),
             "hubspot": _integration("ADMIN_MANAGED", "CRM adapter boundary; live write access is not enabled."),
             "communications": _integration("NOT_CONFIGURED", "Draft preview is available; external delivery is disabled."),
             "prism": _integration("SAMPLE", "Commercial context is SAMPLE in this environment; it is not a connected provider."),
             "sam_gov": _integration("NOT_CONFIGURED" if not runtime.settings.sam_api_key else "CONFIGURED", "Procurement source configuration is server managed."),
-            "usaspending": _integration("CONNECTED" if runtime.settings.monitor_mode == "live" else "UNAVAILABLE", "Public procurement source availability follows the governed Monitor runtime."),
+            "usaspending": _integration("CONNECTED" if runtime.settings.monitor_mode == "live" else "UNAVAILABLE", "Public procurement availability follows the configured collection runtime."),
         },
         "release_diagnostics": ({
             "configuration_mode": runtime.settings.environment.upper(),

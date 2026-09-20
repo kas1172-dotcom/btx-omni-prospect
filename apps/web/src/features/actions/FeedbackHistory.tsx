@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
-import { Button, Disclosure } from '../../components/UI'
+import { Button, Disclosure, LoadingStatus } from '../../components/UI'
 import type { SuggestionFeedbackHistory } from '../../types/api'
 
 export function FeedbackHistory({ name, onChanged }: { name: (id: string) => string; onChanged: () => Promise<void> }) {
@@ -36,7 +36,7 @@ export function FeedbackHistory({ name, onChanged }: { name: (id: string) => str
   return <Disclosure title="My feedback history and earlier suggestions">
     <p>Earlier position-based suggestion IDs are retained for audit, but are not reapplied to new recommendations. Their original evidence cannot be reconstructed safely from list position.</p>
     <Button disabled={busy} onClick={() => void load(offset)}>Refresh my feedback history</Button>
-    {busy && <p role="status">Loading your feedback…</p>}{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
+    {busy && <LoadingStatus>Opening your feedback history…</LoadingStatus>}{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
     {history && <><p>{history.total} private feedback events · {history.scope === 'CURRENT_USER_ONLY' ? 'Visible only to you' : ''}</p>
       <ol className="feedback-history-list">{history.items.map(item => <li key={item.id}><strong>{name(item.account_id)} · {item.reason.replaceAll('_', ' ')}</strong><p>{item.note || 'No additional note.'}</p><small>{new Date(item.created_at).toLocaleString()} · version {item.version}</small><p>{item.identity_state === 'RETIRED_UNSTABLE_ID_NOT_REAPPLIED' ? 'Earlier ID; not reapplied to current recommendations.' : 'Stable canonical recommendation ID.'}</p>{item.can_undo && <Button disabled={busy} onClick={() => void undo(item.id)}>Undo this feedback</Button>}</li>)}</ol>
       {!history.items.length && <p>No feedback events on this page.</p>}

@@ -56,7 +56,7 @@ test('journeys 1–5 remain explicitly incomplete without manufactured evidence'
   const card = page.locator('.intelligence-card').filter({ hasText: 'FAA production oversight update' })
   await expect(card).toBeVisible()
   await expect(card).toContainText('Analysis in progress')
-  await expect(card).toContainText('The commercial implication has not yet been established.')
+  await expect(card).toContainText('Complete the account-specific assessment before deciding whether action is warranted.')
   await screenshot(page, testInfo, 'journeys-4-5-public-assessment-incomplete-1440x900.png')
 })
 
@@ -79,14 +79,14 @@ test('journey 6 keeps the internal-risk identity, evidence and action across sur
   await page.getByLabel('Search Today work').fill('Bookings declined')
   const row = page.locator(`[data-priority-id="${alert.id}"]`)
   await expect(row).toHaveCount(1)
-  await row.getByRole('button', { name: 'Evidence and governed action' }).click()
+  await row.getByRole('button', { name: 'Evidence and next action' }).click()
   await expect(row).toContainText(alert.evidence_ids[0])
   await expect(row).toContainText(alert.recommended_action)
   await screenshot(page, testInfo, 'journey-6-internal-risk-1440x900.png')
 
   await row.locator('.today-customer-link').click()
   await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('Governed next action')
+  await expect(page.getByRole('region', { name: 'Organization decision summary' })).toContainText('Next decision')
 })
 
 for (const viewport of [

@@ -227,7 +227,8 @@ def test_omni_explains_alerts_coordination_matching_and_truthful_missingness() -
     )
     assert dormant.recommended_action
     assert stale.citations and stale.recommended_action
-    assert "CROSS_BU_COORDINATION" in cross_bu.content
+    assert "Business-unit coordination" in cross_bu.content
+    assert "CROSS_BU_COORDINATION" not in cross_bu.content
     assert "AWARD_CONTRACT" in defense.content and "EXACT_PART" in defense.content
     assert external.citations
     assert (
@@ -253,8 +254,8 @@ def test_omni_supports_grounded_unscoped_and_session_follow_up_context() -> None
     assert overview.citation_links and overview.recommended_action
     assert follow_up.account_id == "boeing" and follow_up.account_name == "Boeing"
     assert (
-        "Account Attractiveness" in follow_up.content
-        and "CROSS_BU_COORDINATION" in follow_up.content
+        "Attractiveness belongs to a specific expansion or prospecting opportunity" in follow_up.content
+        and "Business-unit coordination" in follow_up.content
     )
     assert "cannot perform CRM writes" in follow_up.content
 
@@ -584,10 +585,10 @@ def test_omni_selected_work_item_handles_next_step_conflicts_invalid_and_read_on
         work_items=service.list(),
     )
     assert (
-        f"stored governed next step is the work-item summary: {item.summary}"
+        f"stored next step is: {item.summary}"
         in next_step.content
     )
-    assert "does not match this work item's canonical account" in next_step.content
+    assert "does not match this Action's recorded account" in next_step.content
     assert any("conflicts" in item for item in next_step.missingness)
     assert "cannot simulate or execute a workflow transition" in outcome.content
     assert "did not execute, complete, dismiss, or update" in execution.content
@@ -832,8 +833,9 @@ def test_omni_relationship_routing_preserves_account_and_unrelated_routes() -> N
         context={"selected_account_id": "spirit-aerosystems"},
     )
     assert "Defense researched account(s) with open quotes" in cross_account.content
-    assert "Account Attractiveness" in score.content
-    assert "Deterministic governed answer for Boeing" in named_account.content
+    assert "Attractiveness belongs to a specific expansion or prospecting opportunity" in score.content
+    assert "Account Attractiveness" not in score.content
+    assert "Account briefing for Boeing" in named_account.content
     assert "curated public-company universe" in general.content
 
 
@@ -1065,15 +1067,15 @@ def test_omni_cross_account_score_ranking_uses_canonical_scores_filters_and_boun
         context={"active_filters": {"market": "Robotics"}},
     )
     assert (
-        "Ranked by the existing canonical Account Attractiveness score"
+        "No scoped opportunities in this selection have complete Attractiveness inputs"
         in ranked.content
     )
-    assert ranked.content.count("coverage") <= 5
-    assert "Boeing" in filtered.content and "Intel" not in filtered.content
+    assert "Organization-level scores are not a substitute" in ranked.content
+    assert "No scoped opportunities" in filtered.content and "Intel" not in filtered.content
     assert filtered.context_used == {"filters": {"market": "Defense"}}
     assert robotics.context_used == {"filters": {"market": "Robotics"}}
     assert (
-        "1 matching account(s) have no available canonical attractiveness score."
+        "Review opportunity-specific evidence before ranking potential business."
         in robotics.missingness
     )
 
@@ -1215,7 +1217,7 @@ def test_omni_cross_account_quotes_comparison_and_route_protection() -> None:
         "account_id": "boeing",
         "related_account_id": "lockheed-martin",
     }
-    assert "exactly two canonical" in unresolved.content
+    assert "exactly two researched account names" in unresolved.content
     assert "Source-backed Intelligence event" in event_route.content
     assert item.summary in action_route.content
     assert "Current Accounts view" in screen_route.content
@@ -1366,12 +1368,13 @@ def test_omni_conversation_facility_action_account_and_cleared_screen_context() 
         and action_follow.context_used["context_source"] == "conversation"
     )
     assert (
-        "Canonical account follow-up for Boeing" in account_follow.content
-        and "Current open governed work items: 1" in account_follow.content
+        "Boeing briefing" in account_follow.content
+        and "Current open Actions: 1" in account_follow.content
     )
     assert (
-        "Canonical account follow-up for Boeing" in intelligence_follow.content
-        and "source-backed Intelligence" in intelligence_follow.content
+        "Boeing briefing" in intelligence_follow.content
+        and "What changed" in intelligence_follow.content
+        and "Why it may matter to BTX" in intelligence_follow.content
     )
 
 
@@ -1533,13 +1536,13 @@ def test_omni_conversation_comparison_relationship_and_ambiguity_are_bounded() -
         and score.context_used["context_source"] == "conversation"
     )
     assert (
-        "open governed work item" in actions.content
+        "open Action" in actions.content
         and actions.context_used["context_source"] == "conversation"
     )
-    assert "Deterministic governed answer for Northrop Grumman" in explicit.content
+    assert "Account briefing for Northrop Grumman" in explicit.content
     assert "can't determine a unique conversational referent" in ambiguous.content
     assert (
-        "Deterministic governed answer for Lockheed Martin" in other.content
+            "Account briefing for Lockheed Martin" in other.content
         and other.context_used["context_source"] == "conversation"
     )
     assert relationship.conversation_referent["relationship_account_ids"] == [
@@ -1550,6 +1553,6 @@ def test_omni_conversation_comparison_relationship_and_ambiguity_are_bounded() -
         and warmer.context_used["context_source"] == "conversation"
     )
     assert (
-        "Ranked by the existing canonical" in global_query.content
+        "No scoped opportunities" in global_query.content
         and global_query.conversation_referent is None
     )

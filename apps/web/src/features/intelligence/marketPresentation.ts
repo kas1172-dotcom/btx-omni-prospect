@@ -24,11 +24,11 @@ export function marketDecision(series: MarketSeries, transformation: MarketTrans
     unit: transformation === 'LEVEL' ? `${unitLabel(series.metadata.unit)}${series.metadata.index_base ? ` · ${series.metadata.index_base}` : ''}` : 'Percent change',
     cadence: cadenceLabel(series.metadata.frequency), geography: geographyLabel(series.metadata.geography), limitation: series.metadata.limitation,
     commercialMeaning: 'This national manufacturing series can guide a market-level conversation and follow-up research. It does not establish an account order, regional demand, facility activity or BTX capacity.',
-    nextAction: 'Compare the signal with governed account, program and commercial evidence before changing seller priority.',
+    nextAction: 'Compare the market movement with account history, program evidence, and active commercial work before changing seller priority.',
   }
 }
 
 export function comparisonCompatibility(primary: MarketMetadata, candidate: MarketMetadata): { compatible: boolean; reason: string } {
   const mismatches = [primary.unit === candidate.unit ? undefined : 'unit', primary.frequency === candidate.frequency ? undefined : 'cadence', primary.geography === candidate.geography ? undefined : 'geography', primary.seasonal_adjustment === candidate.seasonal_adjustment ? undefined : 'seasonal adjustment'].filter(Boolean)
-  return mismatches.length ? { compatible: false, reason: `Comparison unavailable because ${mismatches.join(', ')} do not match and no governed normalization is available.` } : { compatible: true, reason: 'Series share unit, cadence, geography and seasonal-adjustment basis.' }
+  return mismatches.length ? { compatible: false, reason: `Comparison unavailable because ${mismatches.join(', ')} do not match and no approved normalization method is available.` } : { compatible: true, reason: 'Series share unit, cadence, geography and seasonal-adjustment basis.' }
 }

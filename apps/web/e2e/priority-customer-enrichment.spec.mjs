@@ -9,7 +9,7 @@ const priorityCustomers = [
 async function openPortfolio(page) {
   const navigationName = (await page.viewportSize())?.width <= 768 ? 'Mobile primary navigation' : 'Primary navigation'
   await page.goto('/')
-  await page.getByRole('navigation', { name: navigationName }).getByRole('button', { name: 'Customers & Prospects' }).click()
+  await page.getByRole('navigation', { name: navigationName }).getByRole('button', { name: 'Profiles' }).click()
 }
 
 test('all priority Customers are discoverable and rich/reference scenarios remain truthful', async ({ page }) => {
@@ -51,7 +51,7 @@ test('all priority Customers are discoverable and rich/reference scenarios remai
     await expect(page.getByText('No Commercial record is linked to this canonical Customer.')).toHaveCount(0)
   } else {
     await expect(page.getByText('No Commercial record is linked to this canonical Customer.')).toBeVisible()
-    await expect(page.getByText('No governed alert is currently open')).toBeVisible()
+    await expect(page.getByText('No current account alert is open.')).toBeVisible()
     await expect(page.getByText('No eligible validated connection is currently available for this Customer.')).toBeVisible()
   }
 })
@@ -63,14 +63,13 @@ for (const width of [390, 320]) test(`priority Customer disclosures remain usabl
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('Eaton')
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: 'Eaton', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Eaton', level: 1 })).toBeVisible()
-  const attention = await openCustomerSection(page, /Decision panel/)
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click()
   if (eaton.commercial_briefing) {
     expect(eaton.commercial_briefing.summary).toBe('The newest housing shipment is awaiting acceptance')
     await expect(page.getByText(eaton.commercial_briefing.summary, { exact: true }).first()).toBeVisible()
     await expect(page.getByText(eaton.commercial_briefing.next_action, { exact: true }).first()).toBeVisible()
   } else await expect(page.getByText('BOOKINGS DECLINE', { exact: true })).toBeVisible()
-  const commercial = page.getByRole('button', { name: /Commercial context/ })
-  await commercial.click()
+  const commercial = await openCustomerSection(page, /Commercial context/)
   await expect(commercial).toHaveAttribute('aria-expanded', 'true')
   await expect(page.getByText(/Commercial context available/)).toBeVisible()
   await expect(page.getByLabel('Demonstration environment')).toHaveCount(1)

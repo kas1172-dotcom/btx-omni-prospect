@@ -136,8 +136,8 @@ def test_priority_roster_proves_joined_sample_paths_without_filling_sparse_cases
     } == {"boeing", "lockheed-martin", "northrop-grumman"}
     assert matrix["huxwrx"] == {
         "commercial": False, "quote": False, "order": False, "crm": False,
-        "program": True, "component_capability": True, "facility": True,
-        "relationship": False, "scoring": True, "intelligence": False,
+        "program": False, "component_capability": False, "facility": True,
+        "relationship": False, "scoring": False, "intelligence": False,
         "matching": False, "action_context": False,
     }
     assert RICH_JOINED_PRIORITY <= {
@@ -146,13 +146,8 @@ def test_priority_roster_proves_joined_sample_paths_without_filling_sparse_cases
     assert {"honeywell", "woodward", "eaton"} <= {
         account_id for account_id, values in matrix.items() if values["action_context"]
     }
-    huxwrx_program = next(item for item in sample.programs if item.id == "huxwrx-sample-opportunity")
-    huxwrx_component = next(item for item in sample.component_classes if item.id == "cc-huxwrx-sample-opportunity")
-    assert huxwrx_program.account_id == "huxwrx"
-    assert huxwrx_component.program_id == huxwrx_program.id
-    assert huxwrx_component.business_unit_ids == ("era-industries",)
-    assert huxwrx_program.provenance.data_mode.value == "SAMPLE"
-    assert huxwrx_program.provenance.synthetic
+    assert not any(item.id == "huxwrx-sample-opportunity" for item in sample.programs)
+    assert not any(item.id == "cc-huxwrx-sample-opportunity" for item in sample.component_classes)
     assert {item.account_id for item in sample.commercial_contexts} <= set(accounts)
     assert {item.business_unit for item in sample.commercial_contexts} <= business_unit_ids
     assert {item.canonical_account_id for item in sample.paperless_accounts} <= set(accounts)
@@ -217,7 +212,7 @@ def test_priority_scenarios_are_varied_and_alerts_remain_rule_generated() -> Non
 
     assert accounts["honeywell"].relationship is AccountRelationship.CURRENT_CUSTOMER
     assert accounts["woodward"].relationship is AccountRelationship.FORMER_CUSTOMER
-    assert accounts["huxwrx"].relationship is AccountRelationship.PROSPECT
+    assert accounts["huxwrx"].relationship is AccountRelationship.CURRENT_CUSTOMER
     assert ("honeywell", "CROSS_BU_COORDINATION") in kinds
     assert ("woodward", "CUSTOMER_INACTIVITY") in kinds
     assert ("eaton", "BOOKINGS_DECLINE") in kinds
@@ -226,8 +221,11 @@ def test_priority_scenarios_are_varied_and_alerts_remain_rule_generated() -> Non
 
 def test_priority_scores_are_deterministic_inputs_not_hand_written_outputs() -> None:
     sample = build_sample_environment()
-    assert PRIORITY_IDS <= set(sample.scoring_inputs)
-    for account_id in PRIORITY_IDS:
+    # HUXWRX inputs now come only from its imported commercial ledger, not
+    # the superseded cold-prospect overlay.
+    assert "huxwrx" not in sample.scoring_inputs
+    assert PRIORITY_IDS - {"huxwrx"} <= set(sample.scoring_inputs)
+    for account_id in PRIORITY_IDS - {"huxwrx"}:
         first = calculate_account_attractiveness(
             AccountAttractivenessInputs(sample.scoring_inputs[account_id]),
             evidence_ids=(f"sample-score:{account_id}",),
@@ -239,9 +237,14 @@ def test_priority_scores_are_deterministic_inputs_not_hand_written_outputs() -> 
             calculated_at=PocRuntime.observed_at(),
         )
         assert first == second
-        assert first.score is not None
+        assert first.score_range["low"] <= first.score_range["high"]
+        if first.coverage == 1:
+            assert first.score == first.score_range["low"] == first.score_range["high"]
+        else:
+            assert first.score is None
+            assert first.missingness
     assert calculate_account_attractiveness(
-        AccountAttractivenessInputs(sample.scoring_inputs["huxwrx"]),
+        AccountAttractivenessInputs({}),
         evidence_ids=("sample-score:huxwrx",),
         calculated_at=PocRuntime.observed_at(),
     ).coverage < 0.5
@@ -267,7 +270,7 @@ def test_customer_api_exposes_rich_and_sparse_priority_truthfully() -> None:
     }
     assert huxwrx["prism_commercial_context"] == []
     assert huxwrx["alerts"] == []
-    assert huxwrx["account_attractiveness"]["status"] == "NEEDS_RESEARCH"
+    assert huxwrx["account_attractiveness"]["status"] == "UNAVAILABLE"
     assert huxwrx["account_attractiveness"]["score"] is None
     assert listed["huxwrx"]["attractiveness"] is None
     assert listed["huxwrx"]["account_attractiveness"]["score"] is None

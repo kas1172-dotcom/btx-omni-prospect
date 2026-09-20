@@ -1,8 +1,7 @@
-"""Canonical deterministic Account Attractiveness v1 rubric.
+"""Legacy account projection of the fixed-weight opportunity rubric.
 
-This is a 0--100 structural attractiveness index, not a probability. Missing
-evidence is reweighted within its factor and across available factors; it is
-never interpreted as a poor score.
+The compatibility name does not establish an opportunity's qualification.
+Missing leaves retain their weights and produce bounds, never a higher score.
 """
 from __future__ import annotations
 
@@ -13,12 +12,10 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from btx_omni.domain.scores import ScoreStatus
 
-CONFIGURATION_VERSION = "account-attractiveness-v1"
+CONFIGURATION_VERSION = "account-attractiveness-v2-fixed-weights"
 SCORE_UNIT = "STRUCTURAL_INDEX_0_TO_100"
 SELLER_PRESENTATION_MINIMUM_COVERAGE = Decimal(".50")
-INTERPRETATION_NOTE = ("IMPLEMENTATION_INTERPRETATION_PENDING_JAMIE_CALIBRATION: "
-                       "missing-subfactor and missing-factor reweighting are an "
-                       "implementation interpretation of an unspecified rubric case.")
+INTERPRETATION_NOTE = "Fixed-weight rubric index, not a probability. Missing inputs produce a range; account context does not qualify a specific pursuit."
 
 
 @dataclass(frozen=True)
@@ -115,6 +112,8 @@ class FactorResult:
     contribution: Decimal | None = None
     input_coverage: Decimal = Decimal()
     evidence_ids: tuple[str, ...] = ()
+    score_low: Decimal = Decimal(0)
+    score_high: Decimal = Decimal(100)
 
 
 @dataclass(frozen=True)
@@ -129,6 +128,7 @@ class AccountAttractivenessResult:
     calculated_at: datetime
     hypothesis: bool = True
     interpretation_note: str = INTERPRETATION_NOTE
+    score_range: Mapping[str, Decimal] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -147,6 +147,7 @@ class SellerAttractivenessProjection:
     missingness: tuple[str, ...]
     evidence_ids: tuple[str, ...]
     exclusion_reason: str | None = None
+    score_range: Mapping[str, Decimal] = field(default_factory=dict)
 
 
 def subfactor_path(factor_key: str, subfactor_key: str) -> str:
@@ -158,6 +159,9 @@ def _round2(value: Decimal) -> Decimal:
 
 
 def calculate_account_attractiveness(inputs: AccountAttractivenessInputs, *, evidence_ids: tuple[str, ...], calculated_at: datetime) -> AccountAttractivenessResult:
+    valid_keys = {f.key for f in FACTORS if f.single_rubric} | {subfactor_path(f.key, s.rubric.key) for f in FACTORS for s in f.subfactors}
+    if set(inputs.selections) - valid_keys:
+        raise ValueError('Unknown factor cannot modify the approved opportunity rubric')
     raw: list[tuple[FactorDefinition, Decimal | None, tuple[str, ...], Decimal]] = []
     for factor in FACTORS:
         if factor.single_rubric:
@@ -172,24 +176,28 @@ def calculate_account_attractiveness(inputs: AccountAttractivenessInputs, *, evi
             raw.append((factor, None, missing, Decimal()))
         else:
             total = sum((item.weight for item, _ in known), Decimal())
-            score = sum((Decimal(item.rubric.bin_for(selected).points) * item.weight / total for item, selected in known), Decimal())
+            score = sum((Decimal(item.rubric.bin_for(selected).points) * item.weight for item, selected in known), Decimal())
             raw.append((factor, score, missing, total))
-    available_weight = sum((factor.weight for factor, score, _, _ in raw if score is not None), Decimal())
-    coverage = sum((factor.weight * factor_coverage for factor, _, _, factor_coverage in raw), Decimal())
+    coverage = sum((factor.weight for factor, _, _, factor_coverage in raw if factor_coverage == 1), Decimal())
     missingness = tuple(message for factor, score, names, _ in raw for message in (
         (f"{factor.label}: missing",) if score is None else tuple(f"{factor.label} > {name}: missing" for name in names)
     ))
-    if not available_weight:
-        return AccountAttractivenessResult(CONFIGURATION_VERSION, ScoreStatus.INSUFFICIENT_DATA, None, coverage, tuple(FactorResult(f.key, f.weight, None, None, True, names, input_coverage=factor_coverage) for f, _, names, factor_coverage in raw), missingness, evidence_ids, calculated_at)
     results = []
-    final = Decimal()
+    low, high = Decimal(), Decimal()
     for factor, score, missing, factor_coverage in raw:
-        effective = factor.weight / available_weight if score is not None else None
-        contribution = _round2(score * effective) if score is not None else None
-        if score is not None:
-            final += score * effective
-        results.append(FactorResult(factor.key, factor.weight, effective, score, score is None, missing, contribution, factor_coverage))
-    return AccountAttractivenessResult(CONFIGURATION_VERSION, ScoreStatus.AVAILABLE, _round2(final), coverage, tuple(results), missingness, evidence_ids, calculated_at)
+        floor = score if score is not None else Decimal()
+        ceiling = floor + 100 * (1 - factor_coverage)
+        low += floor * factor.weight
+        high += ceiling * factor.weight
+        complete = factor_coverage == 1
+        results.append(FactorResult(factor.key, factor.weight, factor.weight,
+                                    score if complete else None, not complete, missing,
+                                    _round2(floor * factor.weight) if complete else None,
+                                    factor_coverage, score_low=floor, score_high=ceiling))
+    return AccountAttractivenessResult(CONFIGURATION_VERSION,
+        ScoreStatus.AVAILABLE if coverage == 1 else ScoreStatus.INSUFFICIENT_DATA,
+        _round2(low) if coverage == 1 else None, coverage, tuple(results), missingness,
+        evidence_ids, calculated_at, score_range={"low": _round2(low), "high": _round2(high)})
 
 
 def seller_attractiveness_projection(inputs: AccountAttractivenessInputs, *, calculated_at: datetime, excluded: bool = False, exclusion_reason: str | None = None) -> SellerAttractivenessProjection:
@@ -203,5 +211,5 @@ def seller_attractiveness_projection(inputs: AccountAttractivenessInputs, *, cal
     result = calculate_account_attractiveness(inputs, evidence_ids=evidence_ids, calculated_at=calculated_at)
     factors = tuple(replace(factor, evidence_ids=tuple(sorted({eid for key, values in inputs.evidence_by_factor.items() if key == factor.key or key.startswith(factor.key + ".") for eid in values}))) for factor in result.factors)
     eligible = not excluded and result.score is not None and result.coverage >= SELLER_PRESENTATION_MINIMUM_COVERAGE
-    status = "UNAVAILABLE" if excluded or result.score is None else ("SIMULATED_BTX_CONTEXT" if eligible else "NEEDS_RESEARCH")
-    return SellerAttractivenessProjection(result.score if eligible else None, result.coverage, status, SCORE_UNIT, result.configuration_version, True, "SIMULATED_HYPOTHESIS", result.interpretation_note, factors, result.missingness, evidence_ids, exclusion_reason)
+    status = "UNAVAILABLE" if excluded or result.coverage == 0 else ("SIMULATED_BTX_CONTEXT" if eligible else "NEEDS_RESEARCH")
+    return SellerAttractivenessProjection(result.score if eligible else None, result.coverage, status, SCORE_UNIT, result.configuration_version, True, "SIMULATED_HYPOTHESIS", result.interpretation_note, factors, result.missingness, evidence_ids, exclusion_reason, {} if excluded else result.score_range)

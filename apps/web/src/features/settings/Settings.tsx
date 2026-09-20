@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
-import { Button, Disclosure, Notice, Panel, StatusBadge } from '../../components/UI'
+import { Button, Disclosure, Notice, Panel, StatusBadge, StatusMessage } from '../../components/UI'
 import type { Account, WorkspaceSettings } from '../../types/api'
 import './settings.css'
 import { OmniMemory } from './OmniMemory'
@@ -27,7 +27,7 @@ export function Settings({ accounts, location, ...props }: Parameters<typeof Set
 }
 function SettingsContent({ settings, state, onSettings, onRetry, onSignOut }: { settings?: WorkspaceSettings; state: 'loading' | 'loaded' | 'error'; onSettings: (settings: WorkspaceSettings) => void; onRetry: () => void; onSignOut: () => void }) {
   const [notice, setNotice] = useState('')
-  if (state === 'loading') return <div className="surface settings-surface" aria-busy="true"><header className="page-title"><span className="eyebrow">Workspace settings</span><h1>Settings</h1></header><Notice title="Loading Settings">Checking backend-managed role, preferences, integrations, and release diagnostics.</Notice></div>
+  if (state === 'loading') return <div className="surface settings-surface" aria-busy="true"><header className="page-title"><span className="eyebrow">Workspace settings</span><h1>Settings</h1></header><StatusMessage state="loading" title="Preparing Settings">Aligning your role, preferences, and available workspace controls.</StatusMessage></div>
   if (state === 'error' || !settings) return <div className="surface settings-surface"><header className="page-title"><span className="eyebrow">Workspace settings</span><h1>Settings</h1></header><Notice title="Settings could not be loaded">The rest of the workspace remains available. Confirm API reachability and your hosted session, then retry only this Settings request.</Notice><Button onClick={onRetry}>Retry Settings</Button></div>
   const update = async (key: keyof WorkspaceSettings['preferences'], value: boolean) => { try { const preferences = await api.updatePreferences({ [key]: value }); onSettings({ ...settings, preferences }); setNotice('Personal preference saved.') } catch (error) { setNotice(error instanceof Error ? error.message : 'Preference could not be saved.') } }
   const canInspectOperations = settings.capabilities.view_integration_diagnostics

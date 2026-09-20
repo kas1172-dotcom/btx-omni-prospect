@@ -1,6 +1,6 @@
 export type RelationshipMode = 'commercial_fit' | 'cross_account_experience' | 'contact_candidates' | 'documented_access'
 export type OmniRelationshipSelection = { source_account_id: string; target_ids: string[]; mode: RelationshipMode; as_of: string; depth: number; path_id: string; graph_revision: string; source_component_id?: string; target_component_id?: string }
-export type CanonicalGraphNode = { id: string; canonical_id: string; kind: string; label: string; account_id?: string }
+export type CanonicalGraphNode = { id: string; canonical_id: string; kind: string; label: string; account_id?: string; contact_count?: number; senior_contact_count?: number; source_people?: string[]; unvalidated?: boolean; role_family?: string; seniority_tier?: string; profile_url?: string; raw_title?: string; provenance_label?: string; exported_on?: string; resolution_method?: string }
 export type CanonicalGraphEdge = { id: string; source: string; target: string; predicate: string; evidence_ids: string[]; truth_class: string; observed_on?: string; lineage_groups: string[]; source_lineage: string[]; account_id?: string; path_ids?: string[]; expansion_owners?: string[] }
 export type RankedRoute = {
   path_id: string; node_ids: string[]; edge_ids: string[]; inverse_steps: boolean[]; hop_count: number

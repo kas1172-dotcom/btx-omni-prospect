@@ -11,6 +11,11 @@ from btx_omni.core.config import Settings
 from btx_omni.domain.work import Principal, PrincipalRole
 
 
+def server_principal(settings: Settings, user_id: str, display_name: str, role: PrincipalRole) -> Principal:
+    # Future identity-provider mapping seam: tenant authority must remain server-side.
+    return Principal(user_id, display_name, role, settings.omni_tenant_id)
+
+
 @dataclass(frozen=True)
 class Session:
     id: str
@@ -40,9 +45,9 @@ class SessionStore:
     def exchange(self, access_code: str, *, now: datetime | None = None) -> Session | None:
         principal = None
         if compare_digest(access_code, self.settings.action_salesperson_token):
-            principal = Principal("seller-1", "POC Salesperson", PrincipalRole.SALESPERSON)
+            principal = server_principal(self.settings, "seller-1", "POC Salesperson", PrincipalRole.SALESPERSON)
         elif compare_digest(access_code, self.settings.action_manager_token):
-            principal = Principal("manager-1", "POC Manager", PrincipalRole.MANAGER)
+            principal = server_principal(self.settings, "manager-1", "POC Manager", PrincipalRole.MANAGER)
         if principal is None:
             return None
         return self._create(principal, now=now)
@@ -52,7 +57,7 @@ class SessionStore:
         if not self.settings.hosted_demo_access_bypass_enabled:
             return None
         return self._create(
-            Principal("seller-1", "POC Salesperson", PrincipalRole.SALESPERSON),
+            server_principal(self.settings, "seller-1", "POC Salesperson", PrincipalRole.SALESPERSON),
             now=now,
         )
 

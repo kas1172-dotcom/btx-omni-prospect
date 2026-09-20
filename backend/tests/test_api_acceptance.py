@@ -44,7 +44,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         == no_quote.status_code
         == 200
     )
-    assert southwest.json()["records"] and medical.json()["records"]
+    assert southwest.json()["accounts"] and medical.json()["accounts"]
     assert canonical_map.json()["layers"] == [
         "Defense",
         "Commercial Aerospace",
@@ -61,7 +61,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     }
     assert "Aerospace" not in account_markets
     assert "Space Exploration" not in account_markets
-    assert southwest.json()["accounts"] == southwest.json()["records"]
+    assert "records" not in southwest.json()
     assert all(
         item["entity_type"] == "ACCOUNT" and item["coordinates"]
         for item in southwest.json()["accounts"]
@@ -85,7 +85,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     assert all(
         item["nearest_btx_facility"] is not None
         and item["nearest_btx_facility"]["id"] != "btx-southwest"
-        for item in southwest.json()["records"]
+        for item in southwest.json()["accounts"]
     )
     assert all(
         item["location"] is None or item["location"]["country"]
@@ -99,7 +99,8 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         "attractiveness" in item and "commercial_context_state" in item
         for item in accounts.json()["accounts"]
     )
-    assert "intelligence_signals" in southwest.json()
+    assert "public_locations" not in southwest.json()
+    assert "intelligence_signals" not in southwest.json()
     assert all(
         item["coordinates"] is None or item["facility_id"]
         for item in southwest.json()["intelligence"]
@@ -136,7 +137,7 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     )
     assert dormant_omni.json()["recommended_action"]
     assert stale_omni.json()["recommended_action"]
-    assert "CROSS_BU_COORDINATION" in cross_bu.json()["content"]
+    assert "Business-unit coordination" in cross_bu.json()["content"]
     assert external.json()["citations"] and conflict.json()["citations"]
 
 
@@ -549,9 +550,10 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
     payload = response.json()
     assert response.status_code == 200
     assert (
-        "Ranked by the existing canonical Account Attractiveness score"
+        "No scoped opportunities in this selection have complete Attractiveness inputs"
         in payload["content"]
     )
+    assert "Organization-level scores are not a substitute" in payload["content"]
     assert payload["context_used"] == {"filters": {"market": "Defense"}}
 
 

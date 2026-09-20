@@ -156,6 +156,23 @@ def normalize_structured_observation(
         "deterministic_structured_mapping",
         "preserved source field",
     )
+    payload = json.loads(observation.structured_payload or '{}')
+    # Preserve source-defined specificity fields. Publication timestamps and
+    # inferred company mentions are never substituted for missing source facts.
+    aliases = {
+        'recipient': ('recipient_name', 'awardee'), 'instrument_id': ('award_id', 'contract_id', 'solicitationNumber'),
+        'action_type': ('action_type', 'type'), 'amount': ('award_amount', 'amount'),
+        'amount_basis': ('amount_basis',), 'effective_date': ('effective_date', 'event_date'),
+        'work_description': ('description', 'work_description'), 'organization': ('organization', 'company_name'),
+        'site': ('site', 'location'), 'change_type': ('change_type',), 'affected_operation': ('affected_operation',),
+        'legal_entity': ('legal_entity',), 'record_id': ('accession_number', 'filing_id'),
+        'event_type': ('event_type',), 'report_date': ('report_date',), 'affected_scope': ('affected_scope',),
+    }
+    source_claims = [claim]
+    for predicate, keys in aliases.items():
+        values = {str(payload[key]).strip() for key in keys if isinstance(payload.get(key), (str, int, float)) and str(payload[key]).strip()}
+        if len(values) == 1:
+            source_claims.append(NormalizedClaim(predicate, values.pop(), (observation.raw_evidence.id,), 'deterministic_structured_mapping', 'preserved source field'))
     provenance = Provenance(
         observation.source_identity.source_system,
         observation.source_identity.source_record_id,
@@ -177,7 +194,7 @@ def normalize_structured_observation(
         declared_event_date(observation),
         None,
         None,
-        (claim,),
+        tuple(source_claims),
         (EventEvidence(observation.raw_evidence.id, ("source_title",), "PRIMARY"),),
         provenance,
         observation.source_tier,

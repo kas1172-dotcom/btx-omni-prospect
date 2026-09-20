@@ -92,5 +92,5 @@ def test_related_activity_has_plain_language_match_reasons_without_changing_scop
     line = next(item for item in records if item["record_id"] == "line-1")
     assert line["display_name"] == "Housing"
     assert line["match_strength"] == "Strong scoped match"
-    assert "Shares the governed program scope" in line["match_reasons"]
+    assert "Shares the same recorded program scope" in line["match_reasons"]
     assert "remain unconfirmed" in line["unknowns"]

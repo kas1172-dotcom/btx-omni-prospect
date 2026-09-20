@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import UTC, date, datetime
 from hashlib import sha256
 from typing import Literal
@@ -21,6 +22,8 @@ from btx_omni.integrations.hubspot.contracts import (
     SampleHubSpotAdapter,
 )
 from btx_omni.modules.alerts.commercial import CommercialAlertEngine
+from btx_omni.modules.scoring.action_priority import rank_actions
+from btx_omni.modules.scoring.commercial_decisions import customer_decisions
 from btx_omni.modules.work.crm_proposals import CrmProposalWorkflow
 from btx_omni.modules.work.service import (
     ActionConflictError,
@@ -181,8 +184,38 @@ def undo_feedback_receipt(receipt_id: str, body: UndoFeedbackReceipt, runtime: P
 def list_actions(
     runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)
 ) -> dict:
+    work = runtime.work.list(current)
+    sample = runtime.environment()
+    contextual = {}
+    for account_id in {item.account_id for item in work}:
+        ledger = sample.commercial_ledgers.get(account_id)
+        if ledger:
+            decisions = customer_decisions(ledger, account_id=account_id, revision=sample.commercial_revision,
+                current_customer=any(a.id == account_id and a.relationship.value in {'CURRENT_CUSTOMER', 'FORMER_CUSTOMER'} for a in sample.accounts),
+                work_items=tuple(work), facility_ids=frozenset(f.id for f in sample.btx_facilities))
+            for row in decisions['action_priorities']:
+                for work_id in row['linked_work_ids']:
+                    contextual[work_id] = row
+    # Reuse the persisted assessment's decision; neither user-entered urgency
+    # nor a high confidence score establishes risk severity or opportunity value.
+    if runtime.monitor.repository:
+        for item in work:
+            ids = [value for kind, value in item.context_referents if kind == 'intelligence_assessment']
+            if len(ids) != 1:
+                continue
+            assessment = runtime.monitor.repository.intelligence_assessment_by_id(ids[0])
+            if not assessment or assessment['account_id'] != item.account_id or not assessment['is_current']:
+                continue
+            projection = assessment['projection']
+            scores = (projection.get('evidence_package') or {}).get('deterministic_scores', {})
+            decision = scores.get('public_risk_severity') or scores.get('opportunity_priority') or {}
+            contextual[item.id] = {'underlying_decision': decision, 'confirmed_block': False}
+    ranked = rank_actions([{**asdict(item), 'underlying_decision': contextual.get(item.id, {}).get('underlying_decision', {}),
+        'confirmed_block': contextual.get(item.id, {}).get('confirmed_block', False)} for item in work])
+    positions = {item['id']: item for item in ranked}
     return {
-        "items": runtime.work.list(current),
+        "items": [{**asdict(item), 'priority_rank': positions.get(item.id, {}).get('priority_rank'),
+                   'priority_class': positions.get(item.id, {}).get('priority_class')} for item in work],
         "suggestions": _suggestions(runtime, current),
         "principal": current,
         "persistence": "DURABLE_DATABASE",

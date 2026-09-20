@@ -1,6 +1,13 @@
 import { expect } from '@playwright/test'
 
 export async function openCustomerSection(page, name) {
+  const tabs = page.getByRole('tablist', { name: 'Profile sections' })
+  const label = String(name)
+  const tab = /relationship|contacts/i.test(label) ? 'Relationships' : /intelligence/i.test(label) ? 'Intelligence' : /program|capabilit|opportunit|Growth|planning/i.test(label) ? 'Opportunities' : /Commercial|Related BTX|Decision panel|Actions/i.test(label) ? 'Commercial' : undefined
+  if (tab) {
+    await expect(tabs).toBeVisible()
+    await tabs.getByRole('tab', { name: tab, exact: true }).click()
+  }
   const trigger = page.getByRole('button', { name }).first()
   await expect(trigger).toBeVisible()
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click()
@@ -20,6 +27,9 @@ export async function openRelationshipWorkspace(page) {
 }
 
 export async function openOrganizationEvidence(page) {
+  const tabs = page.getByRole('tablist', { name: 'Profile sections' })
+  await expect(tabs).toBeVisible()
+  await tabs.getByRole('tab', { name: 'More', exact: true }).click()
   const trigger = page.locator('.supporting-evidence-trigger').last()
   await expect(trigger).toBeVisible()
   await trigger.click()

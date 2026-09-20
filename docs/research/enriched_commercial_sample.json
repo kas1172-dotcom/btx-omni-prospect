@@ -314,7 +314,10 @@
             "replacement_key": "btx-poc-v2:role-HONEYWELL-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-HONEYWELL-2",
@@ -329,7 +332,10 @@
             "replacement_key": "btx-poc-v2:role-HONEYWELL-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-HONEYWELL-3",
@@ -344,7 +350,10 @@
             "replacement_key": "btx-poc-v2:role-HONEYWELL-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -872,7 +881,9 @@
             "replacement_key": "btx-poc-v2:QUO2-HONEYWELL-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -5534,7 +5545,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -5559,7 +5575,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-02",
@@ -5581,7 +5600,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-03",
@@ -5603,7 +5625,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-04",
@@ -5626,7 +5651,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-05",
@@ -5648,7 +5676,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-06",
@@ -5670,7 +5701,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-07",
@@ -5693,7 +5727,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-08",
@@ -5715,7 +5752,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-09",
@@ -5737,7 +5777,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-10",
@@ -5760,7 +5803,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-11",
@@ -5782,7 +5828,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HONEYWELL-12",
@@ -5805,7 +5854,10 @@
             "replacement_key": "btx-poc-v2:INT2-HONEYWELL-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -5827,6 +5879,17 @@
             "assumption_id": "AS-COMMERCIAL-V2",
             "replacement_key": "btx-poc-v2:opp-HONEYWELL",
             "authored_on": "2026-09-07",
+            "external_verification": false
+          },
+          "title": "APU service-support cover expansion",
+          "business_context": "Review the separate quoted cover package alongside existing APU-family work. Existing releases do not establish demand for this new package.",
+          "material_uncertainties": [
+            "The buyer release schedule, scoped production requirements and available capacity need confirmation."
+          ],
+          "briefing_provenance": {
+            "truth_class": "POC_ASSUMPTION",
+            "authored_on": "2026-09-19",
+            "replacement_key": "btx-poc-v2:opp-HONEYWELL:brief",
             "external_verification": false
           }
         }
@@ -6413,6 +6476,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-HONEYWELL",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-HONEYWELL",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-HONEYWELL",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-HONEYWELL-1",
+          "AGR2-HONEYWELL-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-HONEYWELL",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-HONEYWELL",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-ERA",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 345535000,
+        "bu_revenue_minor": 656664550,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -6722,7 +6825,10 @@
             "replacement_key": "btx-poc-v2:role-BOEING-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-BOEING-2",
@@ -6737,7 +6843,10 @@
             "replacement_key": "btx-poc-v2:role-BOEING-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-BOEING-3",
@@ -6752,7 +6861,10 @@
             "replacement_key": "btx-poc-v2:role-BOEING-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -7331,7 +7443,9 @@
             "replacement_key": "btx-poc-v2:QUO2-BOEING-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -12000,7 +12114,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -12024,7 +12143,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-02",
@@ -12046,7 +12168,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-03",
@@ -12069,7 +12194,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-04",
@@ -12091,7 +12219,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-05",
@@ -12113,7 +12244,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-06",
@@ -12136,7 +12270,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-07",
@@ -12158,7 +12295,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-08",
@@ -12180,7 +12320,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-09",
@@ -12203,7 +12346,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-10",
@@ -12225,7 +12371,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-11",
@@ -12247,7 +12396,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-BOEING-12",
@@ -12270,7 +12422,10 @@
             "replacement_key": "btx-poc-v2:INT2-BOEING-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -12292,6 +12447,17 @@
             "assumption_id": "AS-COMMERCIAL-V2",
             "replacement_key": "btx-poc-v2:opp-BOEING",
             "authored_on": "2026-09-07",
+            "external_verification": false
+          },
+          "title": "Ground-assembly support-fixture pursuit",
+          "business_context": "Evaluate the new quoted ground-assembly fixture work separately from the existing bracket-order recovery. A new quote does not change an accepted delivery commitment.",
+          "material_uncertainties": [
+            "Confirm scope and capacity after reviewing the open recovery obligations."
+          ],
+          "briefing_provenance": {
+            "truth_class": "POC_ASSUMPTION",
+            "authored_on": "2026-09-19",
+            "replacement_key": "btx-poc-v2:opp-BOEING:brief",
             "external_verification": false
           }
         }
@@ -12802,6 +12968,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-BOEING",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-BOEING",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-BOEING",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-BOEING-1",
+          "AGR2-BOEING-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-BOEING",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-BOEING",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-HTS",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 115370500,
+        "bu_revenue_minor": 208861400,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -13082,7 +13288,10 @@
             "replacement_key": "btx-poc-v2:role-KLA-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-KLA-2",
@@ -13097,7 +13306,10 @@
             "replacement_key": "btx-poc-v2:role-KLA-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-KLA-3",
@@ -13112,7 +13324,10 @@
             "replacement_key": "btx-poc-v2:role-KLA-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -13640,7 +13855,9 @@
             "replacement_key": "btx-poc-v2:QUO2-KLA-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -18387,7 +18604,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -18411,7 +18633,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-02",
@@ -18434,7 +18659,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-03",
@@ -18456,7 +18684,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-04",
@@ -18478,7 +18709,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-05",
@@ -18501,7 +18735,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-06",
@@ -18523,7 +18760,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-07",
@@ -18545,7 +18785,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-08",
@@ -18568,7 +18811,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-09",
@@ -18590,7 +18836,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-10",
@@ -18612,7 +18861,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-11",
@@ -18635,7 +18887,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-KLA-12",
@@ -18660,7 +18915,10 @@
             "replacement_key": "btx-poc-v2:INT2-KLA-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -18682,6 +18940,17 @@
             "assumption_id": "AS-COMMERCIAL-V2",
             "replacement_key": "btx-poc-v2:opp-KLA",
             "authored_on": "2026-09-07",
+            "external_verification": false
+          },
+          "title": "Cleaned support-assembly scope review",
+          "business_context": "Review the quoted cleaned support assembly and its current revision before accepting additional inspection or cleaning requirements. Historical component work does not prove approval for new requirements.",
+          "material_uncertainties": [
+            "Confirm the current revision, inspection scope and buyer acceptance criteria."
+          ],
+          "briefing_provenance": {
+            "truth_class": "POC_ASSUMPTION",
+            "authored_on": "2026-09-19",
+            "replacement_key": "btx-poc-v2:opp-KLA:brief",
             "external_verification": false
           }
         }
@@ -19163,6 +19432,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-KLA",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-KLA",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-KLA",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-KLA-1",
+          "AGR2-KLA-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-KLA",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-KLA",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-GENELMEC",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 217728000,
+        "bu_revenue_minor": 612062244,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -19436,7 +19745,10 @@
             "replacement_key": "btx-poc-v2:role-SPACEX-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-SPACEX-2",
@@ -19451,7 +19763,10 @@
             "replacement_key": "btx-poc-v2:role-SPACEX-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-SPACEX-3",
@@ -19466,7 +19781,10 @@
             "replacement_key": "btx-poc-v2:role-SPACEX-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -19994,7 +20312,9 @@
             "replacement_key": "btx-poc-v2:QUO2-SPACEX-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -24642,7 +24962,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -24667,7 +24992,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-02",
@@ -24689,7 +25017,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-03",
@@ -24711,7 +25042,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-04",
@@ -24734,7 +25068,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-05",
@@ -24756,7 +25093,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-06",
@@ -24778,7 +25118,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-07",
@@ -24801,7 +25144,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-08",
@@ -24823,7 +25169,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-09",
@@ -24845,7 +25194,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-10",
@@ -24868,7 +25220,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-11",
@@ -24890,7 +25245,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-SPACEX-12",
@@ -24913,7 +25271,10 @@
             "replacement_key": "btx-poc-v2:INT2-SPACEX-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -24935,6 +25296,17 @@
             "assumption_id": "AS-COMMERCIAL-V2",
             "replacement_key": "btx-poc-v2:opp-SPACEX",
             "authored_on": "2026-09-07",
+            "external_verification": false
+          },
+          "title": "Nonflight mounting-plate schedule review",
+          "business_context": "Evaluate the quoted nonflight mounting-plate package against the requested schedule. Manufacturing experience alone does not establish capacity for acceleration.",
+          "material_uncertainties": [
+            "A current capacity and material review is required before proposing an earlier delivery date."
+          ],
+          "briefing_provenance": {
+            "truth_class": "POC_ASSUMPTION",
+            "authored_on": "2026-09-19",
+            "replacement_key": "btx-poc-v2:opp-SPACEX:brief",
             "external_verification": false
           }
         }
@@ -25445,6 +25817,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-SPACEX",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-SPACEX",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-SPACEX",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-SPACEX-1",
+          "AGR2-SPACEX-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-SPACEX",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-SPACEX",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-HTS",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 89632500,
+        "bu_revenue_minor": 208861400,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -25766,7 +26178,10 @@
             "replacement_key": "btx-poc-v2:role-INTUITIVE-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-INTUITIVE-2",
@@ -25781,7 +26196,10 @@
             "replacement_key": "btx-poc-v2:role-INTUITIVE-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-INTUITIVE-3",
@@ -25796,7 +26214,10 @@
             "replacement_key": "btx-poc-v2:role-INTUITIVE-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -26375,7 +26796,9 @@
             "replacement_key": "btx-poc-v2:QUO2-INTUITIVE-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -31090,7 +31513,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -31114,7 +31542,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-02",
@@ -31136,7 +31567,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-03",
@@ -31159,7 +31593,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-04",
@@ -31181,7 +31618,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-05",
@@ -31203,7 +31643,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-06",
@@ -31226,7 +31669,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-07",
@@ -31248,7 +31694,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-08",
@@ -31270,7 +31719,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-09",
@@ -31293,7 +31745,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-10",
@@ -31315,7 +31770,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-11",
@@ -31337,7 +31795,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-INTUITIVE-12",
@@ -31360,7 +31821,10 @@
             "replacement_key": "btx-poc-v2:INT2-INTUITIVE-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -31891,6 +32355,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-INTUITIVE",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-INTUITIVE",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-INTUITIVE",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-INTUITIVE-1",
+          "AGR2-INTUITIVE-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-INTUITIVE",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-INTUITIVE",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-MAITLAND",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 78334300,
+        "bu_revenue_minor": 78334300,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -32161,7 +32665,10 @@
             "replacement_key": "btx-poc-v2:role-LOCKHEED-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-LOCKHEED-2",
@@ -32176,7 +32683,10 @@
             "replacement_key": "btx-poc-v2:role-LOCKHEED-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-LOCKHEED-3",
@@ -32191,7 +32701,10 @@
             "replacement_key": "btx-poc-v2:role-LOCKHEED-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -32719,7 +33232,9 @@
             "replacement_key": "btx-poc-v2:QUO2-LOCKHEED-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -37293,7 +37808,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -37317,7 +37837,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-02",
@@ -37340,7 +37863,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-03",
@@ -37362,7 +37888,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-04",
@@ -37384,7 +37913,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-05",
@@ -37407,7 +37939,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-06",
@@ -37429,7 +37964,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-07",
@@ -37451,7 +37989,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-08",
@@ -37474,7 +38015,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-09",
@@ -37496,7 +38040,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-10",
@@ -37518,7 +38065,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-11",
@@ -37541,7 +38091,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-LOCKHEED-12",
@@ -37564,7 +38117,10 @@
             "replacement_key": "btx-poc-v2:INT2-LOCKHEED-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -37586,6 +38142,17 @@
             "assumption_id": "AS-COMMERCIAL-V2",
             "replacement_key": "btx-poc-v2:opp-LOCKHEED",
             "authored_on": "2026-09-07",
+            "external_verification": false
+          },
+          "title": "Handling-stand interface-plate qualification review",
+          "business_context": "Review this quoted support-equipment package against the applicable facility approval. It is separate from public Javelin announcements and does not establish BTX Javelin participation.",
+          "material_uncertainties": [
+            "Confirm whether facility approval covers the new requirements and identify the appropriate buyer role."
+          ],
+          "briefing_provenance": {
+            "truth_class": "POC_ASSUMPTION",
+            "authored_on": "2026-09-19",
+            "replacement_key": "btx-poc-v2:opp-LOCKHEED:brief",
             "external_verification": false
           }
         }
@@ -38153,6 +38720,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-LOCKHEED",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-LOCKHEED",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-LOCKHEED",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-LOCKHEED-1",
+          "AGR2-LOCKHEED-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-LOCKHEED",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-LOCKHEED",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-CHANDLER",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 153700000,
+        "bu_revenue_minor": 707880208,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -38481,7 +39088,10 @@
             "replacement_key": "btx-poc-v2:role-WOODWARD-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-WOODWARD-2",
@@ -38496,7 +39106,10 @@
             "replacement_key": "btx-poc-v2:role-WOODWARD-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-WOODWARD-3",
@@ -38511,7 +39124,10 @@
             "replacement_key": "btx-poc-v2:role-WOODWARD-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -39039,7 +39655,9 @@
             "replacement_key": "btx-poc-v2:QUO2-WOODWARD-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -43690,7 +44308,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -43715,7 +44338,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-02",
@@ -43737,7 +44363,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-03",
@@ -43759,7 +44388,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-04",
@@ -43782,7 +44414,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-05",
@@ -43804,7 +44439,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-06",
@@ -43826,7 +44464,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-07",
@@ -43849,7 +44490,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-08",
@@ -43871,7 +44515,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-09",
@@ -43893,7 +44540,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-10",
@@ -43916,7 +44566,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-11",
@@ -43938,7 +44591,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-WOODWARD-12",
@@ -43964,7 +44620,10 @@
             "replacement_key": "btx-poc-v2:INT2-WOODWARD-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -44485,6 +45144,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-WOODWARD",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-WOODWARD",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-WOODWARD",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-WOODWARD-1",
+          "AGR2-WOODWARD-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-WOODWARD",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-WOODWARD",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-APM",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 206660832,
+        "bu_revenue_minor": 424460832,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -44829,7 +45528,10 @@
             "replacement_key": "btx-poc-v2:role-NORTHROP-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-NORTHROP-2",
@@ -44844,7 +45546,10 @@
             "replacement_key": "btx-poc-v2:role-NORTHROP-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-NORTHROP-3",
@@ -44859,7 +45564,10 @@
             "replacement_key": "btx-poc-v2:role-NORTHROP-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -45438,7 +46146,9 @@
             "replacement_key": "btx-poc-v2:QUO2-NORTHROP-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -50169,7 +50879,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -50193,7 +50908,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-02",
@@ -50215,7 +50933,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-03",
@@ -50238,7 +50959,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-04",
@@ -50260,7 +50984,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-05",
@@ -50282,7 +51009,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-06",
@@ -50305,7 +51035,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-07",
@@ -50327,7 +51060,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-08",
@@ -50349,7 +51085,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-09",
@@ -50372,7 +51111,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-10",
@@ -50394,7 +51136,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-11",
@@ -50416,7 +51161,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-NORTHROP-12",
@@ -50440,7 +51188,10 @@
             "replacement_key": "btx-poc-v2:INT2-NORTHROP-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -50960,6 +51711,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-NORTHROP",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-NORTHROP",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-NORTHROP",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-NORTHROP-1",
+          "AGR2-NORTHROP-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-NORTHROP",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-NORTHROP",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-ERA",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 170775000,
+        "bu_revenue_minor": 656664550,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -51255,7 +52046,10 @@
             "replacement_key": "btx-poc-v2:role-HUXWRX-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-HUXWRX-2",
@@ -51270,7 +52064,10 @@
             "replacement_key": "btx-poc-v2:role-HUXWRX-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-HUXWRX-3",
@@ -51285,7 +52082,10 @@
             "replacement_key": "btx-poc-v2:role-HUXWRX-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -51813,7 +52613,9 @@
             "replacement_key": "btx-poc-v2:QUO2-HUXWRX-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -56433,7 +57235,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -56457,7 +57264,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-02",
@@ -56480,7 +57290,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-03",
@@ -56502,7 +57315,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-04",
@@ -56524,7 +57340,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-05",
@@ -56547,7 +57366,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-06",
@@ -56569,7 +57391,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-07",
@@ -56591,7 +57416,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-08",
@@ -56614,7 +57442,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-09",
@@ -56636,7 +57467,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-10",
@@ -56658,7 +57492,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-11",
@@ -56681,7 +57518,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-HUXWRX-12",
@@ -56704,7 +57544,10 @@
             "replacement_key": "btx-poc-v2:INT2-HUXWRX-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -56726,6 +57569,17 @@
             "assumption_id": "AS-COMMERCIAL-V2",
             "replacement_key": "btx-poc-v2:opp-HUXWRX",
             "authored_on": "2026-09-07",
+            "external_verification": false
+          },
+          "title": "Warehouse rack-bracket replenishment review",
+          "business_context": "Review the next quoted work package separately from fulfilled warehouse and packaging history. HUXWRX remains an existing customer.",
+          "material_uncertainties": [
+            "Confirm the next release quantities and whether demand is recurring before classifying it as a durable program."
+          ],
+          "briefing_provenance": {
+            "truth_class": "POC_ASSUMPTION",
+            "authored_on": "2026-09-19",
+            "replacement_key": "btx-poc-v2:opp-HUXWRX:brief",
             "external_verification": false
           }
         }
@@ -57207,6 +58061,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-HUXWRX",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-HUXWRX",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-HUXWRX",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-HUXWRX-1",
+          "AGR2-HUXWRX-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-HUXWRX",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-HUXWRX",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-CHANDLER",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 39625776,
+        "bu_revenue_minor": 707880208,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -57503,7 +58397,10 @@
             "replacement_key": "btx-poc-v2:role-EATON-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-EATON-2",
@@ -57518,7 +58415,10 @@
             "replacement_key": "btx-poc-v2:role-EATON-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-EATON-3",
@@ -57533,7 +58433,10 @@
             "replacement_key": "btx-poc-v2:role-EATON-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -58061,7 +58964,9 @@
             "replacement_key": "btx-poc-v2:QUO2-EATON-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -62649,7 +63554,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -62674,7 +63584,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-02",
@@ -62696,7 +63609,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-03",
@@ -62718,7 +63634,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-04",
@@ -62741,7 +63660,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-05",
@@ -62763,7 +63685,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-06",
@@ -62785,7 +63710,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-07",
@@ -62808,7 +63736,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-08",
@@ -62830,7 +63761,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-09",
@@ -62852,7 +63786,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-10",
@@ -62875,7 +63812,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-11",
@@ -62897,7 +63837,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EATON-12",
@@ -62920,7 +63863,10 @@
             "replacement_key": "btx-poc-v2:INT2-EATON-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -63511,6 +64457,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-EATON",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-EATON",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-EATON",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-EATON-1",
+          "AGR2-EATON-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-EATON",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-EATON",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-APM",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 217800000,
+        "bu_revenue_minor": 424460832,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     },
     {
@@ -63802,7 +64788,10 @@
             "replacement_key": "btx-poc-v2:role-EMERSON-0",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Procurement",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-EMERSON-2",
@@ -63817,7 +64806,10 @@
             "replacement_key": "btx-poc-v2:role-EMERSON-1",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Supplier quality",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         },
         {
           "role_target_id": "ROLE2-EMERSON-3",
@@ -63832,7 +64824,10 @@
             "replacement_key": "btx-poc-v2:role-EMERSON-2",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "contact_verified": true,
+          "verified_function": "Program planning",
+          "verification_scope": "SIMULATED_ROLE_CONTACT_ONLY"
         }
       ],
       "rfqs": [
@@ -64360,7 +65355,9 @@
             "replacement_key": "btx-poc-v2:QUO2-EMERSON-BID4",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "decision_due_date": "2026-09-25",
+          "decision_due_basis": "Authored scenario review deadline; not an actual completed buyer decision."
         }
       ],
       "quote_revisions": [
@@ -68067,7 +69064,12 @@
             "authored_on": "2026-09-07",
             "external_verification": false
           },
-          "updated_date": "2026-08-31"
+          "updated_date": "2026-08-31",
+          "material": true,
+          "critical": false,
+          "repeated": false,
+          "repeated_within_90_days": false,
+          "review_basis": "Authored noncritical open commercial case; no legal or safety shutdown is asserted."
         }
       ],
       "interactions": [
@@ -68091,7 +69093,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-01",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-02",
@@ -68113,7 +69118,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-02",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-03",
@@ -68136,7 +69144,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-03",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-04",
@@ -68158,7 +69169,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-04",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-05",
@@ -68180,7 +69194,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-05",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-06",
@@ -68201,7 +69218,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-06",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-07",
@@ -68222,7 +69242,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-07",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-08",
@@ -68243,7 +69266,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-08",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-09",
@@ -68266,7 +69292,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-09",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-10",
@@ -68288,7 +69317,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-10",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-11",
@@ -68310,7 +69342,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-11",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         },
         {
           "interaction_id": "INT2-EMERSON-12",
@@ -68334,7 +69369,10 @@
             "replacement_key": "btx-poc-v2:INT2-EMERSON-12",
             "authored_on": "2026-09-07",
             "external_verification": false
-          }
+          },
+          "two_way": true,
+          "meaningful_touch": true,
+          "engagement_scope": "SIMULATED_ROLE_INTERACTION_NO_REAL_PERSON"
         }
       ],
       "opportunities": [
@@ -68852,6 +69890,46 @@
         "requirement_basis": "POC_ASSUMPTION",
         "source_rule": "AS-FIT-EMERSON",
         "technical_specifications": "Not supplied; no production-ready part specification implied"
+      },
+      "relationship_profile": {
+        "record_id": "SCORING-REVIEW-ACC-EMERSON",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:scoring-review:ACC-EMERSON",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "relationship_started_on": "2025-08-02",
+        "relationship_start_basis": "Authored scenario start; not a claim about the real customer relationship.",
+        "expected_touch_days": 30,
+        "contact_review_complete": true,
+        "interaction_review_complete": true,
+        "risk_history_review_complete": true,
+        "quote_review_complete": true,
+        "service_review_complete": true,
+        "payment_review_complete": true,
+        "current_demand_evidence_ids": [
+          "AGR2-EMERSON-1",
+          "AGR2-EMERSON-2"
+        ]
+      },
+      "bu_revenue_exposure": {
+        "record_id": "BU-EXPOSURE-ACC-EMERSON",
+        "provenance": {
+          "truth_class": "POC_ASSUMPTION",
+          "assumption_id": "AS-SCORING-V2-REVIEW",
+          "replacement_key": "btx-poc-v2:bu-exposure:ACC-EMERSON",
+          "authored_on": "2026-09-19",
+          "external_verification": false
+        },
+        "business_unit_id": "BU-GENELMEC",
+        "period_start": "2025-09-01",
+        "period_end": "2026-08-31",
+        "account_revenue_minor": 45692100,
+        "bu_revenue_minor": 612062244,
+        "scope": "COMPLETE_CONTROLLED_11_ACCOUNT_PORTFOLIO",
+        "basis": "Highest customer share across its business units in this controlled portfolio; not BTX actual consolidated revenue."
       }
     }
   ]

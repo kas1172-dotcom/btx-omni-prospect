@@ -19,6 +19,17 @@ from btx_omni.modules.scoring.account_attractiveness import (
 )
 from btx_omni.providers.sample.environment import SampleEnvironment
 
+_ALERT_LABELS = {
+    'CUSTOMER_INACTIVITY': 'No recent customer activity',
+    'BOOKINGS_DECLINE': 'Bookings are declining',
+    'STALE_QUOTE': 'Quote needs a status check',
+    'QUOTE_FOLLOW_UP': 'Quote follow-up',
+    'CRM_INACTIVITY': 'Customer contact needs attention',
+    'CROSS_BU_COORDINATION': 'Business-unit coordination',
+    'INTELLIGENCE_COMMERCIAL_CONTEXT': 'Public development with commercial context',
+    'OVERDUE_ORDER': 'Delivery commitment needs review',
+}
+
 
 class AssistantProvenance(StrEnum):
     CANONICAL_FACT = "CANONICAL_FACT"
@@ -321,7 +332,7 @@ class OmniOrchestrator:
         missing: list[str] = []
         reference_only = account.public_research_state == "SANITIZED_REFERENCE"
         lines = [
-            f"Deterministic governed answer for {account.legal_name}. "
+            f"Account briefing for {account.legal_name}. "
             + (
                 "Identity and location come from a sanitized reference source."
                 if reference_only
@@ -355,7 +366,7 @@ class OmniOrchestrator:
             )
         if account_alerts:
             lines.append(
-                "Alerts: " + ", ".join(item.type.value for item in account_alerts) + "."
+                "Needs attention: " + ", ".join(_ALERT_LABELS.get(item.type.value, 'Commercial review') for item in account_alerts) + "."
             )
             citations.extend(
                 value for alert in account_alerts for value in alert.evidence_ids
@@ -367,21 +378,16 @@ class OmniOrchestrator:
         ]
         if not commercial_contexts:
             missing.append("PRISM commercial context unavailable.")
-        if (
-            "score" in question.casefold() or "attractive" in question.casefold()
-        ) and account.id in environment.scoring_inputs:
-            score = seller_attractiveness_projection(
-                environment.attractiveness_inputs(account.id),
-                calculated_at=observed_at,
-            )
-            lines.append(
-                f"Account Attractiveness: {score.score if score.score is not None else 'insufficient data'} with coverage {score.coverage}."
-            )
-            missing.extend(score.missingness)
-        elif "score" in question.casefold() or "attractive" in question.casefold():
-            missing.append(
-                "Account Attractiveness is unavailable: no simulated BTX scoring input is mapped to this public identity."
-            )
+        if "score" in question.casefold() or "attractive" in question.casefold():
+            ledger = environment.commercial_ledgers.get(account.id)
+            if ledger and account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}:
+                from btx_omni.modules.scoring.commercial_decisions import (
+                    customer_decisions,
+                )
+                health = customer_decisions(ledger, account_id=account.id, revision=environment.commercial_revision, current_customer=True)["customer_health"]
+                lines.append(f"Customer Health: {health['score'] if health['score'] is not None else 'more commercial evidence needed'}. This measures the existing relationship.")
+                citations.extend(eid for factor in health['factors'] for eid in factor['evidence_ids'])
+            lines.append("Attractiveness belongs to a specific expansion or prospecting opportunity, not this organization. Open an opportunity to review its inputs and qualification.")
         events = [
             item
             for item in environment.intelligence_events
@@ -435,7 +441,7 @@ class OmniOrchestrator:
         action = (
             account_alerts[0].recommended_action
             if account_alerts
-            else "Review governed commercial context before taking action."
+            else "Review the relevant commercial records before taking action."
         )
         if "compare" in query:
             peers = [
@@ -1016,7 +1022,7 @@ class OmniOrchestrator:
             return self._unscoped_answer(
                 environment,
                 observed_at=observed_at,
-                question="summarize the governed portfolio",
+                question="summarize the current portfolio",
             )
 
         candidates: tuple[object, ...]
@@ -1170,9 +1176,11 @@ class OmniOrchestrator:
                 None,
                 context_used=context_used,
             )
-        lines = [f"Canonical account follow-up for {account.legal_name}."]
+        lines = [f"{account.legal_name} briefing."]
         citations: list[str] = []
+        citation_links: list[OmniCitation] = []
         missing: list[str] = []
+        recommended_action: str | None = None
         intent = self._account_follow_up_intent(question)
         if intent == "ACTIONS":
             items = [
@@ -1182,7 +1190,7 @@ class OmniOrchestrator:
             ]
             if items:
                 lines.append(
-                    f"Current open governed work items: {len(items)}; highest existing priority is {min(items, key=self._work_sort_key).priority}."
+                    f"Current open Actions: {len(items)}; highest existing priority is {min(items, key=self._work_sort_key).priority}."
                 )
                 citations.extend(
                     value
@@ -1191,7 +1199,7 @@ class OmniOrchestrator:
                 )
             else:
                 lines.append(
-                    "No open governed work items are present for this account in the current session."
+                    "No open Actions are present for this account in the current session."
                 )
             lines.append(
                 "Workflow facts are current session-only SAMPLE state; Omni is read-only."
@@ -1204,17 +1212,31 @@ class OmniOrchestrator:
             ]
             if events:
                 latest = max(events, key=self._event_sort_key)
+                scenario = environment.rich_scenarios.get(account.id)
                 lines.append(
-                    f"Canonical source-backed Intelligence: {latest.get('title') or latest.get('id')}; evidence {latest.get('evidence_state') or 'MISSING'}."
+                    f"What changed: {latest.get('title') or 'A public development was recorded'}."
                 )
+                relevance = latest.get("relevance_explanation")
+                lines.append(
+                    f"Why it may matter to BTX: {relevance}"
+                    if relevance
+                    else "Why it may matter to BTX: the commercial implication still needs assessment."
+                )
+                recommended_action = (
+                    scenario.recommended_next_step
+                    if scenario
+                    else "Review the source and validate a supported commercial route before acting."
+                )
+                lines.append(f"What to validate next: {recommended_action}")
                 citations.extend(str(value) for value in latest.get("evidence_ids", ()))
+                source_url = latest.get("source_url")
+                if isinstance(source_url, str) and source_url.startswith(("http://", "https://")):
+                    citation_links.append(OmniCitation(str(latest.get("title") or account.legal_name), source_url))
             else:
                 lines.append(
-                    "No canonical Intelligence event is currently associated with this account."
+                    "No current public development is associated with this organization."
                 )
-            lines.append(
-                "No event geography or account association is inferred beyond the canonical Monitor read."
-            )
+                missing.append("A current organization-specific public development is not available.")
         elif intent == "QUOTES":
             quotes = [
                 quote for quote in environment.quotes if quote.account_id == account.id
@@ -1235,7 +1257,7 @@ class OmniOrchestrator:
                 if item.account_id == account.id
             )
             if account.prospect_rationale:
-                lines.append(f"Governed rationale: {account.prospect_rationale}")
+                lines.append(f"Why this account may matter: {account.prospect_rationale}")
             if alerts:
                 lines.append(
                     f"Current SAMPLE commercial attention: {alerts[0].trigger_reason}"
@@ -1243,10 +1265,10 @@ class OmniOrchestrator:
                 citations.extend(alerts[0].evidence_ids)
             if not account.prospect_rationale and not alerts:
                 lines.append(
-                    "No narrower governed significance rationale is available for this Customer."
+                    "No account-specific significance rationale is currently available for this customer."
                 )
                 missing.append(
-                    "Customer significance needs research or governed commercial context."
+                    "Customer significance needs additional research or relevant commercial context."
                 )
             lines.append(
                 "Public/reference identity and SAMPLE BTX commercial context remain separate truth categories."
@@ -1266,7 +1288,7 @@ class OmniOrchestrator:
                 alerts[0].recommended_action
                 if alerts
                 else account.prospect_rationale
-                or "Review governed Customer evidence before choosing an outreach step."
+                or "Review this customer's cited evidence before choosing an outreach step."
             )
             lines.append(f"Suggested next move: {suggestion}")
             citations.extend(
@@ -1280,7 +1302,7 @@ class OmniOrchestrator:
                 f"Canonical industries: {primary_market_label(account.industries)}."
             )
             lines.append(
-                "Ask about recent Intelligence, significance, quotes, or governed Actions for a narrower answer."
+                "Ask about recent intelligence, account significance, quotes, or open Actions for a narrower answer."
             )
         return OmniResponse(
             " ".join(lines),
@@ -1292,8 +1314,8 @@ class OmniOrchestrator:
             )
             + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()),
             tuple(missing),
-            None,
-            (),
+            recommended_action,
+            tuple(dict.fromkeys(citation_links)),
             account.legal_name,
             context_used=context_used,
         )
@@ -1391,10 +1413,10 @@ class OmniOrchestrator:
             for account in (first, second)
         }
         if counts[first.id] == counts[second.id]:
-            content = f"Both compared accounts have {counts[first.id]} open governed work item(s) in the current session."
+            content = f"Both compared accounts have {counts[first.id]} open Action(s) in the current session."
         else:
             winner = first if counts[first.id] > counts[second.id] else second
-            content = f"{winner.legal_name} has more open governed work items: {first.legal_name} {counts[first.id]}; {second.legal_name} {counts[second.id]}."
+            content = f"{winner.legal_name} has more open Actions: {first.legal_name} {counts[first.id]}; {second.legal_name} {counts[second.id]}."
         return OmniResponse(
             content
             + " This is a read-only count of session-only SAMPLE workflow state, not a priority score.",
@@ -1910,7 +1932,7 @@ class OmniOrchestrator:
             else "unavailable"
         )
         lines = [
-            f"Canonical governed work item: {getattr(item, 'summary', 'Untitled action')} ({getattr(item, 'id', action_id)}).",
+            f"Selected Action: {getattr(item, 'summary', 'Untitled action')}.",
             f"Current status: {status_value}; priority: {priority}; created: {created_text}.",
             "This durable Action is read-only to Omni; SAMPLE evidence remains explicitly labeled.",
         ]
@@ -1939,7 +1961,7 @@ class OmniOrchestrator:
                 and selected_account_id != account.id
             ):
                 lines.append(
-                    "The UI-selected account does not match this work item's canonical account; action facts use the governed work-item association."
+                    "The selected account does not match this Action's recorded account; the response uses the Action's recorded association."
                 )
                 missing.append(
                     "Selected account context conflicts with the work item's canonical account."
@@ -1980,7 +2002,7 @@ class OmniOrchestrator:
         is_validity_question = "still valid" in question
         if is_validity_question:
             lines.append(
-                f"The governed record is currently {status_value}; Omni can report this stored state and evidence, but cannot independently certify continued validity beyond the current session data."
+                f"This Action is currently {status_value}; Omni can report its stored state and evidence, but cannot independently certify continued validity beyond the current session data."
             )
         if is_execution_request:
             lines.append(
@@ -1988,7 +2010,7 @@ class OmniOrchestrator:
             )
         elif "what would happen if i act" in question:
             lines.append(
-                "Omni cannot simulate or execute a workflow transition. The current governed state is reported above; any external CRM execution remains separately gated by explicit human confirmation."
+                "Omni cannot simulate or execute a workflow transition. The current Action state is reported above; any external CRM execution still requires explicit human confirmation."
             )
         elif "review before acting" in question:
             lines.append(
@@ -1996,7 +2018,7 @@ class OmniOrchestrator:
             )
         elif "what should i do next" in question:
             lines.append(
-                f"The stored governed next step is the work-item summary: {getattr(item, 'summary', 'unavailable')}. No stronger recommendation is generated by Omni."
+                f"The stored next step is: {getattr(item, 'summary', 'unavailable')}. Omni does not generate a stronger recommendation without additional evidence."
             )
         lines.append(
             "Any commercial/workflow facts in this response are from the current SAMPLE commercial dataset. Public Intelligence evidence remains source-backed. Omni is read-only and cannot perform CRM writes."
@@ -2158,11 +2180,11 @@ class OmniOrchestrator:
             if account_alerts:
                 action = account_alerts[0].recommended_action
                 lines.append(
-                    f"In the current SAMPLE commercial dataset, the parent account has a governed alert recommending: {action}"
+                    f"The current commercial scenario flags this parent account and recommends: {action}"
                 )
             else:
                 lines.append(
-                    "No governed commercial alert currently connects this parent account to a seller recommendation."
+                    "No current commercial alert connects this parent account to a seller recommendation."
                 )
         lines.append(
             "This describes the canonical facility record only. Geographic proximity is not used to infer ownership, relationships, or commercial importance. Any commercial context above is from the current SAMPLE commercial dataset; Omni is read-only."
@@ -2615,19 +2637,19 @@ class OmniOrchestrator:
             if account_alerts:
                 action = account_alerts[0].recommended_action
                 lines.append(
-                    f"In the current SAMPLE commercial dataset, a governed commercial alert recommends: {action}"
+                    f"The current commercial scenario includes an alert recommending: {action}"
                 )
             else:
                 lines.append(
-                    "No governed commercial alert currently connects this resolved account to a seller recommendation."
+                    "No current commercial alert connects this account to a seller recommendation."
                 )
             if account_work_items:
                 lines.append(
-                    f"Current governed work items for this account: {len(account_work_items)} (session-only SAMPLE workflow state)."
+                    f"Current Actions for this account: {len(account_work_items)}."
                 )
             else:
                 lines.append(
-                    "No current governed work item was found for this account."
+                    "No current Action was found for this account."
                 )
         lines.append(
             "Public event facts remain source-backed. Any commercial, score, alert, or workflow context above is explicitly from the current SAMPLE commercial dataset. Omni is read-only and cannot create actions or CRM records."
@@ -2755,61 +2777,24 @@ class OmniOrchestrator:
         links: list[OmniCitation] = []
 
         if intent == "SCORE_RANKING":
-            scored = [
-                (account, result)
-                for account, result in self._canonical_scores(environment, observed_at)
-                if account.id in account_by_id
-            ]
-            scored.sort(
-                key=lambda item: (
-                    -item[1].score,
-                    item[0].legal_name.casefold(),
-                    item[0].id,
-                )
-            )
-            unavailable = [
-                account
-                for account in researched
-                if account.id not in {candidate.id for candidate, _ in scored}
-            ]
-            if unavailable:
-                missing.append(
-                    f"{len(unavailable)} matching account(s) have no available canonical attractiveness score."
-                )
+            from btx_omni.modules.commercial.opportunities import account_opportunities
+            opportunities = [row for account in researched for row in account_opportunities(environment, account.id)]
+            scored = [row for row in opportunities if row['attractiveness']['score'] is not None]
+            scored.sort(key=lambda row: (-row['attractiveness']['score'], row['account_name'].casefold(), row['opportunity_id']))
             if not scored:
                 return self._cross_empty_answer(
-                    "No matching accounts have an available canonical attractiveness score.",
-                    context_used,
-                    missing,
-                )
-            selected = scored[:5]
-            lines = [
-                f"Ranked by the existing canonical Account Attractiveness score{f' for {market}' if market else ''}:"
-            ]
-            for account, score in selected:
-                lines.append(
-                    f"{account.legal_name}: {score.score} (coverage {score.coverage})."
-                )
-                if account.provenance:
-                    citations.append(account.provenance.source_record_id)
-            lines.append(
-                "Scores use the established deterministic scoring service and current SAMPLE commercial inputs; Omni does not add a separate priority score."
-            )
-            return OmniResponse(
-                " ".join(lines),
-                "",
-                tuple(dict.fromkeys(citations)),
-                (
-                    AssistantProvenance.CANONICAL_FACT,
-                    AssistantProvenance.DETERMINISTIC_DERIVATION,
-                )
-                + ((AssistantProvenance.MISSING_UNAVAILABLE,) if missing else ()),
-                tuple(missing),
-                "Review the listed Account 360 records before acting.",
-                (),
-                None,
-                context_used=context_used,
-            )
+                    "No scoped opportunities in this selection have complete Attractiveness inputs. Organization-level scores are not a substitute.",
+                    context_used, ["Review opportunity-specific evidence before ranking potential business."])
+            lines = ["Opportunities ranked by Attractiveness; customer health is a separate assessment:"]
+            for row in scored[:5]:
+                lines.append(f"{row['account_name']} — {row['title']}: {row['attractiveness']['score']}/100.")
+                citations.append(row['source_record_id'])
+            if len(opportunities) != len(scored):
+                missing.append(f"{len(opportunities) - len(scored)} opportunities need additional scoring inputs and were not ranked.")
+            return OmniResponse(" ".join(lines), "", tuple(citations),
+                                (AssistantProvenance.CANONICAL_FACT, AssistantProvenance.DETERMINISTIC_DERIVATION),
+                                tuple(missing), "Review the selected opportunity and its qualification before acting.",
+                                context_used=context_used)
 
         open_items = self._open_work_items(work_items)
         actions_by_account: dict[str, list[object]] = {}
@@ -2859,7 +2844,7 @@ class OmniOrchestrator:
                     missing,
                 )
             lines = [
-                "Accounts appearing in both canonical Intelligence and open governed work sets:"
+                "Accounts appearing in both current Intelligence and open Actions:"
             ]
             citations = []
             links = []
@@ -2942,12 +2927,12 @@ class OmniOrchestrator:
         )[:5]
         if not selected:
             return self._cross_empty_answer(
-                "No matching accounts have open governed work items.",
+                "No matching accounts have open Actions.",
                 context_used,
                 missing,
             )
         citations: list[str] = []
-        lines = ["Accounts with current open governed work items:"]
+        lines = ["Accounts with current open Actions:"]
         for account, items in selected:
             lead = min(items, key=self._work_sort_key)
             status = getattr(
@@ -3102,7 +3087,7 @@ class OmniOrchestrator:
         accounts = self._comparison_accounts_named(question, environment)
         if len(accounts) != 2:
             return OmniResponse(
-                "I need exactly two canonical researched account names or governed aliases for a comparison. Omni does not resolve partial or fuzzy company references.",
+                "I need exactly two researched account names or recorded aliases for a comparison. Omni does not resolve partial or fuzzy company references.",
                 "",
                 (),
                 (AssistantProvenance.MISSING_UNAVAILABLE,),
@@ -3310,7 +3295,7 @@ class OmniOrchestrator:
     def _settings_screen_summary(self, context: Mapping[str, object]) -> OmniResponse:
         """Keep weak Settings context useful without inventing seller priorities."""
         return OmniResponse(
-            "Settings contains preferences and governed access controls, not a ranked seller work queue. Open Today to review the current governed priorities, or choose an organization or assessment so I can explain its supported decision, uncertainty, and next action.",
+            "Settings contains preferences and access controls, not a ranked seller work queue. Open Today to review current priorities, or choose an organization or assessment so I can explain its supported decision, uncertainty, and next action.",
             "Open Today or select an organization or assessment.",
             (),
             (AssistantProvenance.DETERMINISTIC_DERIVATION,),
@@ -3398,7 +3383,7 @@ class OmniOrchestrator:
             elif record_id in actions:
                 action = actions[record_id]
                 lines.append(
-                    f"Governed action: {getattr(action, 'summary', record_id)}; priority {getattr(action, 'priority', 'unavailable')}; status {getattr(getattr(action, 'status', None), 'value', getattr(action, 'status', 'unavailable'))}."
+                    f"Action: {getattr(action, 'summary', 'Untitled action')}; priority {getattr(action, 'priority', 'unavailable')}; status {getattr(getattr(action, 'status', None), 'value', getattr(action, 'status', 'unavailable'))}."
                 )
                 citations.extend(getattr(action, "evidence_ids", ()))
             else:
@@ -3416,7 +3401,7 @@ class OmniOrchestrator:
             else []
         )
         lines.append(
-            "Commercial alerts and governed actions are from the current SAMPLE commercial dataset; public Intelligence remains source-backed. Omni is read-only."
+            "Commercial alerts and Actions come from the current commercial scenario; public Intelligence remains source-backed. Omni is read-only."
         )
         return OmniResponse(
             " ".join(lines),
@@ -3558,7 +3543,7 @@ class OmniOrchestrator:
             lines.append("No canonical attractiveness input is mapped to this account.")
         if alerts:
             lines.append(
-                "Current governed commercial alerts: "
+                "Current commercial alerts: "
                 + ", ".join(alert.type.value for alert in alerts[:3])
                 + "."
             )
@@ -3730,7 +3715,7 @@ class OmniOrchestrator:
         accounts = {item.id: item for item in environment.accounts}
         selected = context.get("selected_action_id")
         lines = [
-            "Current Actions view, using only the supplied visible governed work items:"
+            "Current Actions view, using only the visible Actions supplied to this session:"
         ]
         citations: list[str] = []
         unresolved: list[str] = []
@@ -3767,7 +3752,7 @@ class OmniOrchestrator:
             else []
         )
         lines.append(
-            "Actions are durable governed work. Omni reports them read-only and does not execute or reprioritize work."
+            "Actions are durable assigned work. Omni reports them read-only and does not execute or reprioritize them."
         )
         selected_key = (
             "selected_action_id"

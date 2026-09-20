@@ -3,7 +3,25 @@ from btx_omni.modules.commercial.ledger import KEYS
 from btx_omni.providers.research.enriched_evidence import public_sources
 
 
+def evidence_supports_opportunity(ledger: dict, record_id: str, opportunity: dict) -> bool:
+    """A same-account record alone cannot establish a specific pursuit input."""
+    item = resolve_commercial_evidence(ledger, record_id)
+    if not item:
+        return False
+    record = item['record']
+    return (record_id == opportunity['opportunity_id']
+            or record.get('opportunity_id') == opportunity['opportunity_id']
+            or opportunity['opportunity_id'] in record.get('related_record_ids', [])
+            or (record.get('component_id') == opportunity.get('component_id')
+                and record.get('quote_revision_id') == opportunity.get('quote_revision_id')
+                and bool(opportunity.get('quote_revision_id'))))
+
+
 def resolve_commercial_evidence(ledger: dict, record_id: str) -> dict | None:
+    for key in ('relationship_profile', 'bu_revenue_exposure'):
+        record = ledger.get(key, {})
+        if record.get('record_id') == record_id and record.get('provenance'):
+            return {'kind': key, 'record_id': record_id, 'record': record, 'truth_class': record['provenance']['truth_class']}
     for collection, key in {**KEYS, "contacts": "contact_id", "supply_relationships": "relationship_id"}.items():
         for record in ledger.get(collection, []):
             if record[key] == record_id:

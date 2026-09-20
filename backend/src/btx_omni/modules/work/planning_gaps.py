@@ -25,7 +25,7 @@ def sales_planning_gap(account: dict, *, canonical_account_id: str, revision: st
         "evidence_ids": tuple(item["snapshot_id"] for item in account["monthly_commercial_history"]),
         "revision": revision,
         "interpretation": (
-            "No governed sales target is present, so a sales shortfall cannot be calculated. The recorded TTM bookings remain available for planning context."
+            "No approved sales target is recorded, so a sales shortfall cannot be calculated. Recorded TTM bookings remain available for planning context."
             if target is None
             else "Shortfall is target bookings less recorded TTM bookings, floored at zero; it is not a forecast."
         ),

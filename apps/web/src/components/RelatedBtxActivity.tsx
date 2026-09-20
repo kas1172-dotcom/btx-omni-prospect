@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { RelatedBtxRecord } from '../types/api'
 import { CanonicalRecord } from './CanonicalRecord'
-import { Button, Empty, StatusBadge } from './UI'
+import { Button, Empty, LoadingStatus, StatusBadge } from './UI'
 
 const label = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/^./, letter => letter.toUpperCase())
 const money = (record: RelatedBtxRecord) => {
@@ -45,7 +45,7 @@ export function RelatedBtxActivity({ accountId, records, initialRecordId, onReco
       <p><strong>Still unknown:</strong> {record.unknowns}</p>
       <p><strong>Validate:</strong> {record.validation_action}</p>
       <Button variant="ghost" aria-expanded={expanded} onClick={() => void inspect(record)}>{expanded ? 'Close source record' : 'Inspect source record'}</Button>
-      {expanded && <div className="related-activity-source" role="region" aria-label={`${record.display_name} source record`}>{detail.loading ? <p role="status">Loading source record…</p> : detail.error ? <p role="alert">{detail.error}</p> : detail.value ? <CanonicalRecord value={detail.value} /> : null}</div>}
+      {expanded && <div className="related-activity-source" role="region" aria-label={`${record.display_name} source record`}>{detail.loading ? <LoadingStatus>Opening the supporting record…</LoadingStatus> : detail.error ? <p role="alert">{detail.error}</p> : detail.value ? <CanonicalRecord value={detail.value} /> : null}</div>}
     </article>
   })}</div>
 }

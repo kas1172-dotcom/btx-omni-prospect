@@ -100,9 +100,9 @@ export function MapCanvas(props: Props) {
     }
     else { map.panTo({ lat: selected.latitude, lng: selected.longitude }); if ((map.getZoom() ?? 4) < 8) map.setZoom(8) }
   }, [markers, selectedMarkerId, selectionFrame, mapReady])
-  if (testUnconfigured) return <section className="map-unavailable" role="status"><h3>Map not configured</h3><p>Google Maps browser configuration is required to display verified geography.</p></section>
+  if (testUnconfigured) return <section className="map-unavailable" role="status"><h3>Interactive map unavailable in this build</h3><p>A permitted Google Maps browser configuration was not included when this frontend was built. The synchronized site list and verified details remain available.</p></section>
   if (testMode) return <TestCanvas {...props} />
-  if (!apiKey) return <section className="map-unavailable" role="status"><h3>Map not configured</h3><p>Google Maps browser configuration is required to display verified geography.</p></section>
+  if (!apiKey) return <section className="map-unavailable" role="status"><h3>Interactive map unavailable in this build</h3><p>A permitted Google Maps browser configuration was not included when this frontend was built. The synchronized site list and verified details remain available.</p></section>
   if (failure) return <section className="map-unavailable" role="status"><h3>Map unavailable</h3><p>{failure}</p></section>
   const members = markers.filter(marker => clusterMembers.includes(marker.id))
   return <><div ref={container} className="map-canvas" role="application" aria-label="Interactive Google Customer, facility, BTX facility, and intelligence map" />{members.length > 0 && <section className="map-cluster-members" aria-label="Sites in selected cluster"><header><strong>{members.length} sites</strong><button type="button" onClick={() => setClusterMembers([])} aria-label="Close cluster sites">Close</button></header><p>Choose a site, including sites sharing the same coordinates.</p><ul>{members.map(marker => <li key={marker.id}><button type="button" aria-pressed={marker.id === selectedMarkerId} onClick={() => { setClusterMembers([]); onSelect(marker) }}>{marker.label}<small>{marker.kind === 'customer' ? 'Customer' : 'Prospect'}</small></button></li>)}</ul></section>}</>
