@@ -1,3 +1,4 @@
+import { FilterBar } from '../../components/FilterBar';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account,
@@ -17,7 +18,6 @@ import {
   Disclosure,
   Empty,
   EvidenceSource,
-  FilterChip,
   Panel,
   SearchInput,
   SelectInput,
@@ -551,17 +551,23 @@ export function Intelligence({
           <Empty>No governed tracked targets are available.</Empty>
         )}
       </section>
-      <section
-        className="intelligence-controls"
-        aria-label="Intelligence search and filters"
-      >
-        <SearchInput
+      <FilterBar label="Intelligence search and filters" search={<SearchInput
           aria-label="Search Intelligence"
           placeholder="Search headline, Customer, market, source, program…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-        />
-        <div className="intelligence-filter-grid">
+        />} sort={<SelectInput
+            aria-label="Sort Intelligence"
+            value={sort}
+            onChange={(event) => setSort(event.target.value as Sort)}
+          >
+            <option value="PRIORITY">Sort: Priority</option>
+            <option value="MOST_RECENT">Sort: Most Recent</option>
+            <option value="UPCOMING_EVENT">Sort: Upcoming Event Date</option>
+            <option value="CUSTOMER">Sort: Customer</option>
+          </SelectInput>}
+        count={ordered.length} onClear={() => { setQuery(''); setFilters(empty); setSort('PRIORITY') }}
+        filters={active.map(([key, value]) => ({ key, label: `${label(key)}: ${value}`, remove: () => key === 'search' ? setQuery('') : setFilters(current => ({ ...current, [key as keyof Filters]: '' })) }))}>
           <SelectInput
             aria-label="Filter Intelligence by Customer"
             value={filters.customer}
@@ -624,46 +630,8 @@ export function Intelligence({
             <option value="OBSERVED">Observed</option>
             <option value="UPCOMING">Upcoming</option>
           </SelectInput>
-          <SelectInput
-            aria-label="Sort Intelligence"
-            value={sort}
-            onChange={(event) => setSort(event.target.value as Sort)}
-          >
-            <option value="PRIORITY">Sort: Priority</option>
-            <option value="MOST_RECENT">Sort: Most Recent</option>
-            <option value="UPCOMING_EVENT">Sort: Upcoming Event Date</option>
-            <option value="CUSTOMER">Sort: Customer</option>
-          </SelectInput>
-        </div>
-        {active.length > 0 && (
-          <div className="intelligence-active-filters">
-            {active.map(([key, value]) => (
-              <FilterChip
-                key={key}
-                selected
-                onClear={() =>
-                  key === "search"
-                    ? setQuery("")
-                    : setFilters((current) => ({
-                        ...current,
-                        [key as keyof Filters]: "",
-                      }))
-                }
-              >{`${label(key)}: ${value}`}</FilterChip>
-            ))}
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setQuery("");
-                setFilters(empty);
-                setSort("PRIORITY");
-              }}
-            >
-              Clear all
-            </Button>
-          </div>
-        )}
-      </section>
+          
+      </FilterBar>
       <Panel
         title="Intelligence Feed"
         action={
