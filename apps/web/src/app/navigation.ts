@@ -37,6 +37,8 @@ const allowedSubviews: Record<Surface, Set<string>> = {
 }
 const allowedFilterKeys = new Set(['profileTab', 'lane', 'kind', 'account', 'business_unit', 'market', 'metric', 'average', 'compare', 'customer', 'source', 'timing', 'status', 'priority', 'query', 'notice_type', 'fiscal_year', 'classification', 'industry', 'industries', 'relationships', 'layers', 'signal_timing', 'naics', 'business_units', 'capabilities', 'fulfillment', 'radius', 'scope', 'partnership', 'shortlist', 'top100', 'coverage', 'page', 'validation_page', 'sort_direction', 'suggestion_view'])
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,199}$/
+// Opportunities reuses the existing bounded f.* serializer and legacy record ID.
+for (const key of ['opportunity_view', 'opportunity_group', 'opportunity_stage', 'opportunity_collapsed', 'opportunity_fixture']) allowedFilterKeys.add(key)
 const safeValue = (value: string) => value.length <= 200 && [...value].every(character => character >= ' ' && character !== '\u007f')
 
 function safeId(value: string | null): string | undefined {
