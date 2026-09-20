@@ -12,6 +12,14 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 
 ## Decisions made without user input
 
+- Item 3.2 adds a read-only fallback for the medical G.17 series only when no persisted series exists. Persisted observations always win. The curated vintage remains explicitly selectable; unknown vintages do not fall back. No refresh, import or database write is performed. Public dates stay historical when the demo clock moves.
+
+### Item 3.2 Medical Device coverage
+
+Three fictional Southwest medical organizations provide one invoiced customer, two prospects (one designated partnership) and a fictional BTX site. The coverage register explicitly denies actual site qualification, predicted demand and M&A recommendation scores. It is separate from the public national series and visible in Medical Market Intelligence.
+
+`medical_market.py` stores 32 verified G.17 N3391 observations, January 2024 through August 2026; August is 91.1064 (seasonally adjusted, 2017=100). Source: Federal Reserve Board, https://www.federalreserve.gov/releases/g17/Current/ipdisk/ip_sa.txt, retrieved 2026-09-20. Publication date 2026-09-18 is independently listed at https://www.federalreserve.gov/recentpostings.htm. Every observation stores source/publisher/event/retrieval dates, with observation month separate from release date. The excerpt hash is explicitly not a complete-download hash. `test_sample_medical_market.py`: 2 passed.
+
 - Item 3.1 keeps reconciled transactions intact and records the missing APM monthly planning feed separately. Unknown feed coverage is not zero sales, a target shortfall, or a forecast. Three distinct fictional sites have resolved ERA invoice evidence. Partnership defaults require no database writes; persisted true/false designations override defaults. A null version explicitly means no persisted designation exists yet.
 
 ### Item 3.1 cross-BU planning

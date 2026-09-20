@@ -99,6 +99,9 @@ class PocRuntime:
         self.account_planning = AccountPlanningRepository(application_engine)
         self.markets = MarketService(MarketSeriesRepository(application_engine), worker_enabled=self.settings.market_refresh_enabled,
                                      scheduler_configured=self.settings.monitor_schedule_configured)
+        if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+            from btx_omni.providers.sample.medical_market import CuratedMarketReadRepository
+            self.markets.repository = CuratedMarketReadRepository(self.markets.repository)
         if self.settings.commercial_durable_state_enabled:
             self.commercial_repository = CommercialImportRepository(application_engine)
             self.refresh_commercial_catalog()
