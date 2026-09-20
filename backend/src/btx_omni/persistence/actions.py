@@ -13,8 +13,10 @@ from btx_omni.domain.work import (
     ActionPriority,
     ActionStatus,
     ApprovalStatus,
+    Subtask,
 )
 from btx_omni.persistence.models import (
+    action_subtasks,
     action_suggestion_decisions,
     work_audit_events,
     work_items,
@@ -49,13 +51,14 @@ class SqlActionRepository:
                     metadata=json.dumps(event.metadata, sort_keys=True)))
             return result
 
-    @staticmethod
-    def _action(row) -> Action:
+    def _action(self, row) -> Action:
         def aware(value):
             return (
                 value.replace(tzinfo=UTC) if value and value.tzinfo is None else value
             )
 
+        with self.engine.connect() as connection:
+            children = connection.execute(select(action_subtasks).where(action_subtasks.c.parent_id == row.id).order_by(action_subtasks.c.id)).all()
         return Action(
             id=row.id,
             account_id=row.account_id,
@@ -75,6 +78,12 @@ class SqlActionRepository:
             canceled_at=aware(row.canceled_at),
             version=row.version,
             context_referents=tuple(tuple(item) for item in json.loads(row.context_referents or "[]")),
+            previous_status=ActionStatus(row.previous_status) if row.previous_status else None,
+            approval_requested_by=row.approval_requested_by,
+            approval_comment=row.approval_comment,
+            subtasks=tuple(Subtask(child.id, child.parent_id, child.title, child.done,
+                                  date.fromisoformat(child.due_date) if child.due_date else None,
+                                  child.owner_id, child.removed) for child in children),
         )
 
     def get(self, action_id: str) -> Action | None:
@@ -117,6 +126,9 @@ class SqlActionRepository:
             "completed_at": action.completed_at,
             "canceled_at": action.canceled_at,
             "version": action.version,
+            "previous_status": action.previous_status.value if action.previous_status else None,
+            "approval_requested_by": action.approval_requested_by,
+            "approval_comment": action.approval_comment,
             "idempotency_key": action.id,
         }
         with self.engine.begin() as connection:
@@ -126,7 +138,16 @@ class SqlActionRepository:
                     statement = statement.where(work_items.c.version == expected_version)
                 result = connection.execute(statement.values(**values))
                 if result.rowcount != 1:
-                    raise ValueError("Action has changed; reload it before saving.")
+                    from btx_omni.modules.work.service import ActionConflictError
+                    raise ActionConflictError("Action has changed; reload it before saving.")
+                # Child updates, parent revision and audit event commit atomically.
+                for child in action.subtasks:
+                    child_values = {"parent_id": action.id, "title": child.title, "done": child.done,
+                                    "due_date": child.due_date.isoformat() if child.due_date else None,
+                                    "owner_id": child.owner_id, "removed": child.removed}
+                    exists = connection.execute(select(action_subtasks.c.id).where(action_subtasks.c.id == child.id)).first()
+                    connection.execute(update(action_subtasks).where(action_subtasks.c.id == child.id).values(**child_values)
+                                       if exists else insert(action_subtasks).values(id=child.id, **child_values))
                 connection.execute(
                     insert(work_audit_events).values(
                         work_item_id=event.action_id, event=event.event,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
 
@@ -25,6 +25,8 @@ class ApprovalStatus(StrEnum):
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    REQUESTED = "REQUESTED"
+    CHANGES_REQUESTED = "CHANGES_REQUESTED"
 
 
 class PrincipalRole(StrEnum):
@@ -40,9 +42,24 @@ class Principal:
 
 
 @dataclass(frozen=True)
+class Subtask:
+    id: str
+    parent_id: str
+    title: str
+    done: bool = False
+    due_date: date | None = None
+    owner_id: str | None = None
+    removed: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.title.strip():
+            raise ValueError("Subtask title is required.")
+
+
+@dataclass(frozen=True)
 class Action:
     id: str
-    account_id: str
+    account_id: str | None
     title: str
     description: str | None
     owner_id: str | None
@@ -59,8 +76,21 @@ class Action:
     canceled_at: datetime | None = None
     version: int = 1
     context_referents: tuple[tuple[str, str], ...] = ()
+    previous_status: ActionStatus | None = None
+    approval_requested_by: str | None = None
+    approval_comment: str | None = None
+    subtasks: tuple[Subtask, ...] = ()
+    allowed_transitions: tuple[ActionStatus, ...] = field(init=False)
 
     def __post_init__(self) -> None:
+        # This is the only work-state transition definition. Serialized to clients.
+        transitions = {
+            ActionStatus.OPEN: (ActionStatus.IN_PROGRESS, ActionStatus.COMPLETED, ActionStatus.CANCELED),
+            ActionStatus.IN_PROGRESS: (ActionStatus.COMPLETED, ActionStatus.CANCELED),
+            ActionStatus.COMPLETED: (ActionStatus.IN_PROGRESS,),
+            ActionStatus.CANCELED: (self.previous_status,) if self.previous_status else (),
+        }
+        object.__setattr__(self, "allowed_transitions", transitions[self.status])
         require_aware(self.created_at, "created_at")
         require_aware(self.updated_at, "updated_at")
         if self.completed_at:
@@ -71,6 +101,9 @@ class Action:
             raise ValueError("Action title is required.")
         if self.version < 1:
             raise ValueError("Action version must be positive.")
+
+    def is_overdue(self, today: date) -> bool:
+        return bool(self.due_date and self.due_date < today and self.status in {ActionStatus.OPEN, ActionStatus.IN_PROGRESS})
 
     @property
     def summary(self) -> str:

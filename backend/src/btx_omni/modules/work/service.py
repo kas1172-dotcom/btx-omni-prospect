@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import date, datetime
 from hashlib import sha256
 from typing import Protocol
@@ -16,6 +16,7 @@ from btx_omni.domain.work import (
     ApprovalStatus,
     Principal,
     PrincipalRole,
+    Subtask,
 )
 
 
@@ -114,14 +115,6 @@ class ActionPolicy:
             raise ActionForbiddenError("Manager authorization is required.")
 
 
-ALLOWED_TRANSITIONS = {
-    ActionStatus.OPEN: {ActionStatus.IN_PROGRESS, ActionStatus.CANCELED},
-    ActionStatus.IN_PROGRESS: {ActionStatus.COMPLETED, ActionStatus.CANCELED},
-    ActionStatus.COMPLETED: set(),
-    ActionStatus.CANCELED: set(),
-}
-
-
 class WorkService:
     def __init__(self, repository: ActionRepository | None = None) -> None:
         self.repository = repository or MemoryActionRepository()
@@ -129,7 +122,7 @@ class WorkService:
     def create(
         self,
         *,
-        account_id: str,
+        account_id: str | None,
         occurred_at: datetime,
         title: str | None = None,
         principal: Principal | None = None,
@@ -263,11 +256,10 @@ class WorkService:
                 if x.owner_id in {None, principal.user_id}
                 or x.created_by == principal.user_id
             )
-        rank = {ActionPriority.HIGH: 0, ActionPriority.MEDIUM: 1, ActionPriority.LOW: 2}
         return tuple(
             sorted(
                 items,
-                key=lambda x: (rank[x.priority], x.due_date or date.max, x.created_at),
+                key=lambda x: (x.due_date or date.max, x.created_at, x.id),
             )
         )
 
@@ -288,7 +280,7 @@ class WorkService:
         permitted = {
             k: v
             for k, v in changes.items()
-            if k in {"title", "description", "owner_id", "priority", "due_date"}
+            if k in {"title", "description", "owner_id", "priority", "due_date", "account_id"}
             and v != getattr(action, k)
         }
         if not permitted:
@@ -314,24 +306,33 @@ class WorkService:
         principal: Principal,
         occurred_at: datetime,
         expected_version: int | None = None,
+        complete_open_subtasks: bool = False,
     ) -> Action:
         action = self.get(action_id)
         ActionPolicy.require_manage(principal, action)
         self._require_version(action, expected_version)
-        if status not in ALLOWED_TRANSITIONS[action.status]:
+        if status not in action.allowed_transitions:
             raise ActionConflictError(
                 f"{action.status.value} cannot transition to {status.value}."
             )
+        if status is ActionStatus.COMPLETED:
+            if action.approval_status not in {ApprovalStatus.NOT_REQUIRED, ApprovalStatus.APPROVED}:
+                raise ActionConflictError("Approval is required before completion.")
+            if any(not child.done and not child.removed for child in action.subtasks) and not complete_open_subtasks:
+                raise ActionConflictError("Open subtasks remain. Explicitly complete all and finish.")
+        completed_children = [child.id for child in action.subtasks if not child.done and not child.removed] if status is ActionStatus.COMPLETED and complete_open_subtasks else []
         updated = replace(
             action,
             status=status,
+            previous_status=action.status if status is ActionStatus.CANCELED else action.previous_status,
+            subtasks=tuple(replace(child, done=True) if child.id in completed_children else child for child in action.subtasks),
             updated_at=occurred_at,
             completed_at=occurred_at
             if status is ActionStatus.COMPLETED
-            else action.completed_at,
+            else None,
             canceled_at=occurred_at
             if status is ActionStatus.CANCELED
-            else action.canceled_at,
+            else None,
             version=action.version + 1,
         )
         return self.repository.save(
@@ -341,7 +342,7 @@ class WorkService:
                 principal,
                 "STATUS_CHANGED",
                 occurred_at,
-                {"before": action.status.value, "after": status.value},
+                {"before": action.status.value, "after": status.value, "completed_subtasks": completed_children},
             ), expected_version=action.version,
         )
 
@@ -353,16 +354,24 @@ class WorkService:
         principal: Principal,
         occurred_at: datetime,
         expected_version: int | None = None,
+        comment: str | None = None,
     ) -> Action:
         ActionPolicy.require_manager(principal)
         action = self.get(action_id)
         self._require_version(action, expected_version)
-        if action.approval_status is not ApprovalStatus.PENDING or decision not in {
+        if principal.user_id == (action.approval_requested_by or action.created_by):
+            raise ActionForbiddenError("The requester cannot decide their own approval request.")
+        if action.approval_status not in {ApprovalStatus.PENDING, ApprovalStatus.REQUESTED} or decision not in {
             ApprovalStatus.APPROVED,
             ApprovalStatus.REJECTED,
+            ApprovalStatus.CHANGES_REQUESTED,
         }:
             raise ActionConflictError("This Action has no pending approval decision.")
-        updated = replace(action, approval_status=decision, updated_at=occurred_at, version=action.version + 1)
+        if decision in {ApprovalStatus.REJECTED, ApprovalStatus.CHANGES_REQUESTED} and not (comment or "").strip():
+            raise ActionConflictError("A comment is required for request changes or reject.")
+        updated = replace(action, approval_status=decision, approval_comment=(comment or "").strip() or None,
+                          status=ActionStatus.IN_PROGRESS if decision is ApprovalStatus.CHANGES_REQUESTED else action.status,
+                          updated_at=occurred_at, version=action.version + 1)
         return self.repository.save(
             updated,
             self._event(
@@ -370,9 +379,57 @@ class WorkService:
                 principal,
                 "APPROVAL_DECIDED",
                 occurred_at,
-                {"before": action.approval_status.value, "after": decision.value},
+                {"before": action.approval_status.value, "after": decision.value, "comment": updated.approval_comment,
+                 "work_status_before": action.status.value, "work_status_after": updated.status.value},
             ), expected_version=action.version,
         )
+
+    def request_approval(self, action_id: str, *, principal: Principal, occurred_at: datetime, expected_version: int) -> Action:
+        action = self.get(action_id)
+        if action.owner_id != principal.user_id:
+            raise ActionForbiddenError("Only the task owner can request approval.")
+        self._require_version(action, expected_version)
+        if action.status in {ActionStatus.COMPLETED, ActionStatus.CANCELED} or action.approval_status is ApprovalStatus.REQUESTED:
+            raise ActionConflictError("Approval can only be requested on active work without a pending request.")
+        updated = replace(action, approval_status=ApprovalStatus.REQUESTED, approval_requested_by=principal.user_id,
+                          approval_comment=None, updated_at=occurred_at, version=action.version + 1)
+        return self.repository.save(updated, self._event(action.id, principal, "APPROVAL_REQUESTED", occurred_at,
+                                    {"before": action.approval_status.value, "after": "REQUESTED"}), expected_version=action.version)
+
+    def change_subtask(self, action_id: str, *, subtask_id: str | None = None, principal: Principal,
+                       occurred_at: datetime, expected_version: int, idempotency_key: str, **changes) -> Action:
+        action = self.get(action_id)  # Only root Actions are addressable here; subtasks cannot be parents.
+        ActionPolicy.require_manage(principal, action)
+        if not idempotency_key.strip():
+            raise ValueError("Subtask mutations require an idempotency key.")
+        if set(changes) - {"title", "done", "due_date", "owner_id", "removed"}:
+            raise ValueError("Only one level of subtasks is supported.")
+        fingerprint = sha256(json.dumps([subtask_id, changes], default=self._json, sort_keys=True).encode()).hexdigest()
+        for event in self.repository.history(action_id):
+            if event.actor_id == principal.user_id and event.metadata.get("idempotency_key") == idempotency_key:
+                if event.metadata.get("fingerprint") != fingerprint:
+                    raise ActionConflictError("Retry does not match the original subtask mutation.")
+                return action
+        self._require_version(action, expected_version)
+        if action.status in {ActionStatus.COMPLETED, ActionStatus.CANCELED}:
+            raise ActionConflictError("Reopen the task before editing its subtasks.")
+        if changes.get("owner_id") not in {None, principal.user_id}:
+            ActionPolicy.require_manager(principal)
+        original = next((child for child in action.subtasks if child.id == subtask_id), None)
+        if subtask_id and original is None:
+            raise ActionNotFoundError(subtask_id)
+        if original and "owner_id" in changes and changes["owner_id"] != original.owner_id:
+            ActionPolicy.require_manager(principal)
+        if original:
+            child = replace(original, **changes)
+        else:
+            identifier = "subtask-" + sha256(f"{action_id}:{principal.user_id}:{idempotency_key}".encode()).hexdigest()[:20]
+            child = Subtask(identifier, action_id, **changes)
+        children = tuple(child if current.id == child.id else current for current in action.subtasks) if original else (*action.subtasks, child)
+        updated = replace(action, subtasks=children, updated_at=occurred_at, version=action.version + 1)
+        details = json.loads(json.dumps({"before": asdict(original) if original else None, "after": asdict(child)}, default=self._json))
+        return self.repository.save(updated, self._event(action_id, principal, "SUBTASK_CHANGED", occurred_at,
+                                    {**details, "idempotency_key": idempotency_key, "fingerprint": fingerprint}), expected_version=action.version)
 
     def audit(self, action_id: str) -> tuple[ActionAuditEvent, ...]:
         self.get(action_id)

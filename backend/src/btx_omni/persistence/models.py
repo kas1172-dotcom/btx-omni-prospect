@@ -117,7 +117,7 @@ work_items = Table(
     "work_items",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("account_id", String(64), nullable=False),
+    Column("account_id", String(64)),
     Column("opportunity_id", String(64)),
     Column("status", String(32), nullable=False),
     Column("summary", Text, nullable=False),
@@ -137,6 +137,19 @@ work_items = Table(
     Column("completed_at", DateTime(timezone=True)),
     Column("canceled_at", DateTime(timezone=True)),
     Column("version", Integer, nullable=False, server_default="1"),
+    Column("previous_status", String(32)),
+    Column("approval_requested_by", String(128)),
+    Column("approval_comment", Text),
+)
+action_subtasks = Table(
+    "action_subtasks", metadata,
+    Column("id", String(64), primary_key=True),
+    Column("parent_id", ForeignKey("work_items.id"), nullable=False, index=True),
+    Column("title", Text, nullable=False),
+    Column("done", Boolean, nullable=False, server_default="0"),
+    Column("due_date", String(16)),
+    Column("owner_id", String(128)),
+    Column("removed", Boolean, nullable=False, server_default="0"),
 )
 work_audit_events = Table(
     "work_audit_events",
