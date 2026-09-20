@@ -1,6 +1,12 @@
 # SAMPLE enhancement report
 
-Status: implementation in progress; no tier certified complete yet.
+Status: Tier 1 verified; Tiers 2 and 3 in progress.
+
+## Tier checkpoints
+
+Tier 1: **846 backend tests passed**, 8 dependency deprecation warnings, no deselection/xfail (373.08 seconds). Frontend typecheck, ESLint and production build passed; **84 frontend tests passed**. Compared with the first valid local PostgreSQL checkpoint (829 passed / 3 failed), all failures are resolved and new fixture assertions are included. Tag: `tier1-complete`.
+
+Full backend command (from this worktree's `backend`, using the existing Python 3.11 interpreter): set `PYTHONDONTWRITEBYTECODE=1`, `BTX_DATABASE_URL` to the task-owned loopback PostgreSQL database, `BTX_MONITOR_MODE=disabled`, and an empty `BTX_GEMINI_API_KEY`; prepend the absolute local `src` to `sys.path`; install a Python audit hook rejecting non-loopback `socket.connect`; run `pytest.main(['-q', '--tb=short', '-p', 'no:cacheprovider'])`. Frontend commands: `npm run typecheck`, `npm run lint`, `npm run build`, `node --test --test-reporter=dot tests/*.test.mjs`. Existing reference JSON may be loaded by existing code, but was not printed, copied, edited or used to author additions.
 
 ## Decisions made without user input
 
