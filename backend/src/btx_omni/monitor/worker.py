@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, replace
+from threading import Event, Thread
 from time import monotonic
 
 from btx_omni.ai.config import AiConfig
@@ -44,6 +46,28 @@ from btx_omni.monitor.business_briefings import (
 from btx_omni.monitor.documents import document_evidence
 from btx_omni.monitor.research import MonitorResearchCoordinator
 from btx_omni.providers.research.technical_programs import references_for_text
+
+
+@contextmanager
+def _hard_process_deadline(seconds: float):
+    """End the one-shot worker even if its main thread is blocked in a C call."""
+    deadline = monotonic() + seconds
+    finished = Event()
+
+    def watchdog() -> None:
+        if finished.wait(max(0.0, deadline - monotonic())):
+            return
+        try:
+            os.write(2, b"Monitor worker hard deadline exceeded; exiting with code 124.\n")
+        except OSError:
+            pass
+        os._exit(124)
+
+    Thread(target=watchdog, name="monitor-worker-watchdog", daemon=True).start()
+    try:
+        yield deadline
+    finally:
+        finished.set()
 
 
 def _select_technical_briefs(briefs, *, limit: int):
@@ -102,6 +126,7 @@ def run_worker(
     *,
     source_ids: tuple[str, ...] | None = None,
     limit: int | None = None,
+    deadline_monotonic: float | None = None,
 ) -> tuple[dict, int]:
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
         return {
@@ -150,7 +175,11 @@ def run_worker(
         skipped = tuple(
             source_id for source_id in requested if source_id not in configured
         )
-        deadline = monotonic() + settings.monitor_worker_max_seconds
+        deadline = (
+            deadline_monotonic
+            if deadline_monotonic is not None
+            else monotonic() + settings.monitor_worker_max_seconds
+        )
         # Public macro observations use their own canonical owner, not fabricated
         # Monitor customer events. Reuse this worker and its operational lock.
         market_refresh = (
@@ -613,7 +642,7 @@ def run_worker(
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,
             "minimum_start_budget_seconds": settings.monitor_source_min_start_seconds,
-            "deadline_scope": "Source collection is interruptible; optional AI stages require a full configured provider timeout before starting. In-flight provider timeout and transactional persistence may finish after the scheduling deadline.",
+            "deadline_scope": "Source collection is interruptible and optional AI stages require a full provider timeout before starting. The one-shot worker CLI exits with code 124 at the global deadline, including during in-flight provider or database work.",
         },
     }
     return report, 1 if failed or not runs or deadline_exhausted or market_refresh[
@@ -628,13 +657,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source", action="append", dest="sources")
     parser.add_argument("--limit", type=int)
     args = parser.parse_args(argv)
-    report, code = run_worker(
-        Settings(),
-        source_ids=tuple(args.sources) if args.sources else None,
-        limit=args.limit,
-    )
-    print(json.dumps(report, default=str, sort_keys=True))
-    return code
+    settings = Settings()
+    with _hard_process_deadline(settings.monitor_worker_max_seconds) as deadline:
+        report, code = run_worker(
+            settings,
+            source_ids=tuple(args.sources) if args.sources else None,
+            limit=args.limit,
+            deadline_monotonic=deadline,
+        )
+        print(json.dumps(report, default=str, sort_keys=True))
+        return code
 
 
 if __name__ == "__main__":
