@@ -116,7 +116,12 @@ def run_worker(
             "status": "NOT_CONFIGURED",
             "detail": "Live mode and durable Monitor state are required.",
         }, 2
-    runtime = PocRuntime(settings)
+    worker_settings = settings.model_copy()
+    # These PostgreSQL session defaults cover all SQL on this worker runtime's
+    # shared engine, including commercial, market, and Monitor repositories.
+    # Research and AI usage transactions retain their narrower SET LOCAL bounds.
+    worker_settings._worker_database_timeouts_ms = (15_000, 5_000)
+    runtime = PocRuntime(worker_settings)
     repository = getattr(runtime.monitor, "repository", None)
     lock = repository.operational_lock() if repository else nullcontext(True)
     with lock as acquired:
