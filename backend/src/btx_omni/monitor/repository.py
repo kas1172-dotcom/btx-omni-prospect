@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from contextlib import contextmanager
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
@@ -61,6 +62,8 @@ from btx_omni.persistence.models import (
     monitor_source_versions,
     monitor_technical_decompositions,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _json(value: object) -> str:
@@ -258,14 +261,21 @@ class MonitorRepository:
         self._federal_assessment_lock = RLock()
 
     @contextmanager
-    def operational_lock(self, *, heartbeat_interval_seconds: float = 30.0):
+    def operational_lock(
+        self, *, heartbeat_interval_seconds: float = 30.0,
+        release_timeout_seconds: float = 2.0,
+    ):
         """Hold and keep alive one cross-process lock for a collection cycle."""
+        if release_timeout_seconds <= 0:
+            raise ValueError("Operational lock release timeout must be positive.")
         if self.engine.dialect.name != "postgresql":
             yield True
             return
-        with self.engine.connect().execution_options(
+        connection = self.engine.connect().execution_options(
             isolation_level="AUTOCOMMIT"
-        ) as connection:
+        )
+        abandon_connection = False
+        try:
             acquired = bool(
                 connection.execute(
                     text("SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))")
@@ -298,17 +308,40 @@ class MonitorRepository:
             finally:
                 stop_heartbeat.set()
                 if heartbeat:
-                    heartbeat.join()
+                    heartbeat.join(timeout=release_timeout_seconds)
+                    if heartbeat.is_alive():
+                        # The heartbeat still owns this connection. Do not wait
+                        # on, unlock, or return it to the pool from this thread.
+                        abandon_connection = True
+                        logger.error(
+                            "Monitor lock heartbeat did not stop within %.1fs",
+                            release_timeout_seconds,
+                        )
+                        raise RuntimeError(
+                            "Monitor operational lock heartbeat release timed out."
+                        )
                 if acquired:
                     if heartbeat_failed.is_set():
                         raise RuntimeError(
                             "Monitor operational lock connection was lost during collection."
                         )
-                    connection.execute(
-                        text(
-                            "SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))"
+                    try:
+                        connection.execute(
+                            text(
+                                f"SET statement_timeout = '{max(1, int(release_timeout_seconds * 1000))}ms'"
+                            )
                         )
-                    )
+                        connection.execute(
+                            text("SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))")
+                        )
+                    except SQLAlchemyError as error:
+                        logger.exception(
+                            "Monitor operational lock unlock timed out or failed"
+                        )
+                        raise RuntimeError("Monitor operational lock unlock failed.") from error
+        finally:
+            if not abandon_connection:
+                connection.close()
 
     def procurement_checkpoints(
         self, source_id: str
