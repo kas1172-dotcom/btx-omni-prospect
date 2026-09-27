@@ -554,6 +554,9 @@ def test_postgresql_operational_lock_keeps_its_session_alive() -> None:
             assert options == {"isolation_level": "AUTOCOMMIT"}
             return self
 
+        def close(self):
+            return None
+
         def execute(self, statement):
             self.statements.append(str(statement))
             if str(statement) == "SELECT 1":

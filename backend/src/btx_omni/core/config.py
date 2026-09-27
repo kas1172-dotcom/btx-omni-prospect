@@ -2,13 +2,15 @@ from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field, PrivateAttr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
+    # Set only on the worker's copy; API runtimes keep their existing engine.
+    _worker_database_timeouts_ms: tuple[int, int] | None = PrivateAttr(default=None)
     app_name: str = "BTX Omni Prospect"
     environment: str = "development"
     api_prefix: str = "/api"
