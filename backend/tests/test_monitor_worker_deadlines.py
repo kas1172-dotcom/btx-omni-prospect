@@ -474,6 +474,69 @@ def test_direct_run_worker_report_does_not_claim_watchdog(monkeypatch) -> None:
     assert "do not have a watchdog" in report["bounded"]["deadline_scope"]
 
 
+def test_each_direct_run_worker_invocation_starts_at_startup(monkeypatch) -> None:
+    from btx_omni.monitor import worker
+
+    class Runtime:
+        def __init__(self, _settings):
+            self.monitor = SimpleNamespace(repository=None, registry={})
+
+    monkeypatch.setattr(worker, "PocRuntime", Runtime)
+    settings = Settings(_env_file=None, monitor_mode="live", monitor_durable_state_enabled=True)
+    worker._set_stage("stale-stage")
+
+    run_worker(settings, limit=0)
+
+    assert worker._CURRENT_STAGE == "startup"
+
+
+def test_operational_lock_release_failure_reports_lock_release(monkeypatch, capsys) -> None:
+    from btx_omni.monitor import worker
+
+    class FailingLock:
+        def __enter__(self):
+            return True
+
+        def __exit__(self, *_args):
+            raise RuntimeError("release failed")
+
+    class Runtime:
+        def __init__(self, _settings):
+            self.monitor = SimpleNamespace(
+                repository=SimpleNamespace(operational_lock=lambda: FailingLock()),
+                registry={},
+            )
+            self.markets = SimpleNamespace(
+                worker_refresh=lambda **_kwargs: {"status": "DISABLED"}
+            )
+
+    monkeypatch.setattr(worker, "PocRuntime", Runtime)
+    settings_type = Settings
+    monkeypatch.setattr(
+        worker,
+        "Settings",
+        lambda: settings_type(
+            _env_file=None,
+            monitor_mode="live",
+            monitor_durable_state_enabled=True,
+            monitor_worker_sources="",
+            market_refresh_enabled=False,
+        ),
+    )
+    original_run_worker = worker.run_worker
+    monkeypatch.setattr(
+        worker,
+        "run_worker",
+        lambda settings, **kwargs: original_run_worker(
+            settings, **{**kwargs, "source_ids": ()}
+        ),
+    )
+
+    assert worker.main([]) == 1
+    captured = capsys.readouterr()
+    assert '"stage": "lock_release"' in captured.out
+
+
 def test_run_worker_records_database_failure_in_report(monkeypatch) -> None:
     class Monitor:
         registry: ClassVar = {

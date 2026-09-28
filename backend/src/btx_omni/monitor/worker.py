@@ -150,6 +150,7 @@ def run_worker(
     deadline_monotonic: float | None = None,
     hard_deadline_enforced: bool = False,
 ) -> tuple[dict, int]:
+    _set_stage("startup")
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
         return {
             "status": "INVALID_LIMIT",
@@ -655,7 +656,7 @@ def run_worker(
                         "provider_status": outcome.provider_status.value,
                     }
                 )
-    _set_stage("lock_release")
+        _set_stage("lock_release")
     failed = tuple(run.source_id for run in runs if run.failures)
     report = {
         "status": "DEADLINE_EXHAUSTED"
