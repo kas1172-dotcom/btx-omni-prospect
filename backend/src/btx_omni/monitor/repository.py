@@ -11,7 +11,18 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from threading import Event, RLock, Thread
 
-from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, tuple_, update
+from sqlalchemy import (
+    Engine,
+    case,
+    delete,
+    insert,
+    or_,
+    select,
+    text,
+    true,
+    tuple_,
+    update,
+)
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.classification import Classification, SensitivityTag
@@ -565,22 +576,22 @@ class MonitorRepository:
                 monitor_observations,
                 ("id",),
                 [
-                    dict(
-                        id=observation.id,
-                        source_id=observation.source_identity.source_system,
-                        source_record_id=observation.source_identity.source_record_id,
-                        source_version=observation.source_version.version_id,
-                        content_hash=observation.source_version.content_hash,
-                        canonical_url=observation.raw_evidence.locator,
-                        published_at=observation.source_published_at,
-                        retrieved_at=observation.observed_at,
-                        source_tier=observation.source_tier,
-                        collection_run_id=run.id,
-                        payload_reference=observation.raw_payload_locator,
-                        title=observation.title,
-                        structured_payload=observation.structured_payload,
-                        created_at=observation.observed_at,
-                    )
+                    {
+                        "id": observation.id,
+                        "source_id": observation.source_identity.source_system,
+                        "source_record_id": observation.source_identity.source_record_id,
+                        "source_version": observation.source_version.version_id,
+                        "content_hash": observation.source_version.content_hash,
+                        "canonical_url": observation.raw_evidence.locator,
+                        "published_at": observation.source_published_at,
+                        "retrieved_at": observation.observed_at,
+                        "source_tier": observation.source_tier,
+                        "collection_run_id": run.id,
+                        "payload_reference": observation.raw_payload_locator,
+                        "title": observation.title,
+                        "structured_payload": observation.structured_payload,
+                        "created_at": observation.observed_at,
+                    }
                     for observation in observations
                 ],
             )
@@ -589,16 +600,16 @@ class MonitorRepository:
                 monitor_source_versions,
                 ("source_id", "source_record_id"),
                 [
-                    dict(
-                        source_id=observation.source_identity.source_system,
-                        source_record_id=observation.source_identity.source_record_id,
-                        version_id=observation.source_version.version_id,
-                        content_hash=observation.source_version.content_hash,
-                        first_seen_at=observation.source_version.first_seen_at,
-                        last_seen_at=observation.source_version.last_seen_at,
-                        changed_at=observation.source_version.changed_at,
-                        last_observation_id=observation.id,
-                    )
+                    {
+                        "source_id": observation.source_identity.source_system,
+                        "source_record_id": observation.source_identity.source_record_id,
+                        "version_id": observation.source_version.version_id,
+                        "content_hash": observation.source_version.content_hash,
+                        "first_seen_at": observation.source_version.first_seen_at,
+                        "last_seen_at": observation.source_version.last_seen_at,
+                        "changed_at": observation.source_version.changed_at,
+                        "last_observation_id": observation.id,
+                    }
                     for observation in observations
                 ],
             )
@@ -618,24 +629,24 @@ class MonitorRepository:
                     )
                 _, observation = min(matches, key=lambda match: match[0])
                 event_rows.append(
-                    dict(
-                        id=event.id,
-                        source_id=observation.source_identity.source_system,
-                        source_observation_id=observation.id,
-                        event_type=event.event_type.value,
-                        publication_date=observation.source_published_at,
-                        collected_at=observation.observed_at,
-                        updated_at=run.completed_at or observation.observed_at,
-                        resolution_state=event.resolution_state.value,
-                        seller_relevance_state=event.seller_relevance_state.value,
-                        data_mode="LIVE_PUBLIC",
-                        provenance_source_id=event.provenance.source_record_id,
-                        provenance_url=event.provenance.source_url,
-                        evidence_ids=_json(
+                    {
+                        "id": event.id,
+                        "source_id": observation.source_identity.source_system,
+                        "source_observation_id": observation.id,
+                        "event_type": event.event_type.value,
+                        "publication_date": observation.source_published_at,
+                        "collected_at": observation.observed_at,
+                        "updated_at": run.completed_at or observation.observed_at,
+                        "resolution_state": event.resolution_state.value,
+                        "seller_relevance_state": event.seller_relevance_state.value,
+                        "data_mode": "LIVE_PUBLIC",
+                        "provenance_source_id": event.provenance.source_record_id,
+                        "provenance_url": event.provenance.source_url,
+                        "evidence_ids": _json(
                             tuple(item.evidence_id for item in event.evidence)
                         ),
-                        event_payload=_json(event),
-                    )
+                        "event_payload": _json(event),
+                    }
                 )
             _replace_rows(connection, monitor_events, ("id",), event_rows)
             _replace_rows(
@@ -643,14 +654,14 @@ class MonitorRepository:
                 monitor_event_clusters,
                 ("id",),
                 [
-                    dict(
-                        id=cluster.id,
-                        event_id=cluster.event_id,
-                        observation_ids=_json(cluster.observation_ids),
-                        evidence_ids=_json(cluster.evidence_ids),
-                        related_event_ids=_json(cluster.related_event_ids),
-                        ambiguity_reason=cluster.ambiguity_reason,
-                    )
+                    {
+                        "id": cluster.id,
+                        "event_id": cluster.event_id,
+                        "observation_ids": _json(cluster.observation_ids),
+                        "evidence_ids": _json(cluster.evidence_ids),
+                        "related_event_ids": _json(cluster.related_event_ids),
+                        "ambiguity_reason": cluster.ambiguity_reason,
+                    }
                     for cluster in clusters
                 ],
             )
@@ -659,16 +670,16 @@ class MonitorRepository:
                 monitor_rejected_observations,
                 ("id",),
                 [
-                    dict(
-                        id=f"{run.id}:{item.observation_id}",
-                        collection_run_id=run.id,
-                        source_id=run.source_id,
-                        observation_id=item.observation_id,
-                        state=item.state.value,
-                        reason=item.reason,
-                        evidence_id=item.evidence_id,
-                        rejected_at=item.rejected_at,
-                    )
+                    {
+                        "id": f"{run.id}:{item.observation_id}",
+                        "collection_run_id": run.id,
+                        "source_id": run.source_id,
+                        "observation_id": item.observation_id,
+                        "state": item.state.value,
+                        "reason": item.reason,
+                        "evidence_id": item.evidence_id,
+                        "rejected_at": item.rejected_at,
+                    }
                     for item in rejected
                 ],
             )
@@ -677,25 +688,25 @@ class MonitorRepository:
                 monitor_organization_candidates,
                 ("id",),
                 [
-                    dict(
-                        id=item.id,
-                        identity_key=item.identity_key,
-                        source_name=item.source_name,
-                        normalized_name=item.normalized_name,
-                        source_identifiers=_json(item.source_identifiers),
-                        verified_domain=item.verified_domain,
-                        canonical_industry=item.canonical_industry,
-                        provenance=_json(item.provenance),
-                        event_ids=_json(item.event_ids),
-                        observation_ids=_json(item.observation_ids),
-                        resolution_state=item.resolution_state.value,
-                        review_state=item.review_state.value,
-                        resolution_reason=item.resolution_reason,
-                        candidate_account_ids=_json(item.candidate_account_ids),
-                        created_at=item.created_at,
-                        observed_at=item.observed_at,
-                        updated_at=run.completed_at or run.started_at,
-                    )
+                    {
+                        "id": item.id,
+                        "identity_key": item.identity_key,
+                        "source_name": item.source_name,
+                        "normalized_name": item.normalized_name,
+                        "source_identifiers": _json(item.source_identifiers),
+                        "verified_domain": item.verified_domain,
+                        "canonical_industry": item.canonical_industry,
+                        "provenance": _json(item.provenance),
+                        "event_ids": _json(item.event_ids),
+                        "observation_ids": _json(item.observation_ids),
+                        "resolution_state": item.resolution_state.value,
+                        "review_state": item.review_state.value,
+                        "resolution_reason": item.resolution_reason,
+                        "candidate_account_ids": _json(item.candidate_account_ids),
+                        "created_at": item.created_at,
+                        "observed_at": item.observed_at,
+                        "updated_at": run.completed_at or run.started_at,
+                    }
                     for item in organization_candidates
                 ],
             )
@@ -704,21 +715,21 @@ class MonitorRepository:
                 monitor_program_candidates,
                 ("id",),
                 [
-                    dict(
-                        id=item.id,
-                        identity_key=item.identity_key,
-                        source_name=item.source_name,
-                        organization_candidate_id=item.organization_candidate_id,
-                        canonical_account_id=item.canonical_account_id,
-                        event_type=item.event_type.value,
-                        provenance=_json(item.provenance),
-                        event_ids=_json(item.event_ids),
-                        resolution_state=item.resolution_state.value,
-                        review_state=item.review_state.value,
-                        created_at=item.created_at,
-                        observed_at=item.observed_at,
-                        updated_at=run.completed_at or run.started_at,
-                    )
+                    {
+                        "id": item.id,
+                        "identity_key": item.identity_key,
+                        "source_name": item.source_name,
+                        "organization_candidate_id": item.organization_candidate_id,
+                        "canonical_account_id": item.canonical_account_id,
+                        "event_type": item.event_type.value,
+                        "provenance": _json(item.provenance),
+                        "event_ids": _json(item.event_ids),
+                        "resolution_state": item.resolution_state.value,
+                        "review_state": item.review_state.value,
+                        "created_at": item.created_at,
+                        "observed_at": item.observed_at,
+                        "updated_at": run.completed_at or run.started_at,
+                    }
                     for item in program_candidates
                 ],
             )
@@ -791,12 +802,12 @@ class MonitorRepository:
 
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
-        return tuple(event for event, _observation in self.event_contexts())
+        return tuple(event for event, _observation in self.event_contexts(limit=100))
 
     def event_contexts(
         self,
         *,
-        limit: int = 500,
+        limit: int,
         offset: int = 0,
     ) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
         """One committed current-source snapshot for every public read consumer.
@@ -1295,7 +1306,7 @@ class MonitorRepository:
     def candidates(
         self,
         *,
-        limit: int = 500,
+        limit: int,
         offset: int = 0,
     ) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...]]:
         with self.engine.connect() as connection:
@@ -1578,7 +1589,7 @@ class MonitorRepository:
     def current_display_assessments(
         self,
         *,
-        limit: int = 1000,
+        limit: int,
         account_ids: frozenset[str] | None = None,
         priority_only: bool = False,
     ) -> tuple[dict, ...]:

@@ -90,7 +90,7 @@ def _source_report(service: MonitorService, source_id: str, *, limit: int) -> di
         for brief in signal_briefs_for_monitor(service)
         if brief.source_system == source_id
     )
-    organizations, programs = service.repository.candidates() if service.repository else ((), ())
+    organizations, programs = service.repository.candidates(limit=200) if service.repository else ((), ())
     after_versions = {
         record_id: observation.source_version.content_hash
         for (source_system, record_id), observation in service.source_versions.items()

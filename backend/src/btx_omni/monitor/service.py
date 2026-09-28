@@ -49,7 +49,7 @@ from btx_omni.providers.research.deadline import bounded_public_read
 def current_event_contexts(monitor):
     """Read one immutable canonical snapshot; never cache a worker's public writes."""
     if getattr(monitor, "repository", None):
-        return monitor.repository.event_contexts() + tuple(getattr(monitor, 'curated_contexts', ()))
+        return monitor.repository.event_contexts(limit=100) + tuple(getattr(monitor, 'curated_contexts', ()))
     observations = {
         item.raw_evidence.id: item
         for item in getattr(monitor, "observations", {}).values()

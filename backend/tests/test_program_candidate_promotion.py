@@ -54,7 +54,7 @@ def _client(runtime: PocRuntime) -> TestClient:
 def _candidates(runtime: PocRuntime):
     runtime.monitor.registry["usaspending"] = _adapter()
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert len(organizations) == len(programs) == 1
     return organizations[0], programs[0]
 
@@ -91,7 +91,7 @@ def test_confirmed_program_candidate_promotion_is_atomic_idempotent_and_runtime_
     runtime.monitor.collect("usaspending")
     event = next(iter(runtime.monitor.events.values()))
     assert event.program.canonical_program_id == program_id
-    organizations, programs = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert organizations[0].id == organization.id
     assert programs[0].review_state is CandidateReviewState.PROMOTED
     assert programs[0].promoted_program_id == program_id
@@ -104,7 +104,7 @@ def test_confirmed_program_candidate_promotion_is_atomic_idempotent_and_runtime_
     restarted = PocRuntime(runtime.settings)
     restored = next(item for item in restarted.environment().programs if item.id == program_id)
     assert restored == program
-    restored_candidate = restarted.monitor.repository.candidates()[1][0]  # type: ignore[union-attr]
+    restored_candidate = restarted.monitor.repository.candidates(limit=200)[1][0]  # type: ignore[union-attr]
     assert restored_candidate.review_state is CandidateReviewState.PROMOTED
     assert restored_candidate.promoted_program_id == program_id
     assert restarted.monitor.catalog.resolve_program("Aurora Fabrication Vehicle").canonical_program_id == program_id

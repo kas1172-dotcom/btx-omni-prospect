@@ -74,7 +74,7 @@ def monitor_candidates(
         raise HTTPException(
             503, "Organization candidates require durable Monitor state."
         )
-    organizations, programs = runtime.monitor.repository.candidates()
+    organizations, programs = runtime.monitor.repository.candidates(limit=200)
     return {
         "organization_candidates": jsonable_encoder(organizations),
         "program_candidates": jsonable_encoder(programs),
