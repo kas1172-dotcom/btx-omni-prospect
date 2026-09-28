@@ -28,10 +28,13 @@ def _runtime(tmp_path) -> PocRuntime:
     return PocRuntime(settings)
 
 
-def _award_adapter(*, recipient: str, program_name: str | None = None) -> UsaSpendingAdapter:
+def _award_adapter(
+    *, recipient: str, program_name: str | None = None, award_id: str = "CANDIDATE-1"
+) -> UsaSpendingAdapter:
+    source_record_id = "CANDIDATE" if award_id == "CANDIDATE-1" else award_id
     award = {
-        "generated_internal_id": "CONT_AWD_CANDIDATE_9700_-NONE-_-NONE-",
-        "Award ID": "CANDIDATE-1",
+        "generated_internal_id": f"CONT_AWD_{source_record_id}_9700_-NONE-_-NONE-",
+        "Award ID": award_id,
         "Recipient Name": recipient,
         "Award Amount": "250000",
         "Award Type": "D",
@@ -61,9 +64,10 @@ def test_net_new_organization_and_explicit_program_are_durable_review_candidates
         program_name="Aurora Fabrication Vehicle",
     )
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, programs, more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
 
     assert len(organizations) == len(programs) == 1
+    assert more_available is False
     organization, program = organizations[0], programs[0]
     assert organization.source_name == "Nexus Quantum Systems, Inc."
     assert organization.review_state is CandidateReviewState.PENDING_REVIEW
@@ -79,7 +83,7 @@ def test_net_new_organization_and_explicit_program_are_durable_review_candidates
 
     runtime.monitor.collect("usaspending")
     restarted = PocRuntime(runtime.settings)
-    organizations_after, programs_after = restarted.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations_after, programs_after, _more_available = restarted.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert [item.id for item in organizations_after] == [organization.id]
     assert [item.event_ids for item in organizations_after] == [organization.event_ids]
     assert [item.id for item in programs_after] == [program.id]
@@ -92,6 +96,27 @@ def test_net_new_organization_and_explicit_program_are_durable_review_candidates
     assert response.status_code == 200
     assert response.json()["organization_candidates"][0]["id"] == organization.id
     assert response.json()["program_candidates"][0]["organization_candidate_id"] == organization.id
+    assert response.json()["more_available"] is False
+
+
+def test_candidate_pages_report_more_rows_without_silently_truncating(tmp_path) -> None:
+    runtime = _runtime(tmp_path)
+    for recipient, award_id in (
+        ("Nexus Quantum Systems, Inc.", "CANDIDATE-1"),
+        ("Orion Fabrication, Inc.", "CANDIDATE-2"),
+    ):
+        runtime.monitor.registry["usaspending"] = _award_adapter(
+            recipient=recipient, award_id=award_id
+        )
+        runtime.monitor.collect("usaspending")
+
+    first, programs, more_available = runtime.monitor.repository.candidates(limit=1)  # type: ignore[union-attr]
+    second, _, last_page = runtime.monitor.repository.candidates(limit=1, offset=1)  # type: ignore[union-attr]
+    assert len(first) == len(second) == 1
+    assert first[0].id != second[0].id
+    assert programs == ()
+    assert more_available is True
+    assert last_page is False
 
 
 def test_existing_account_and_exact_canonical_program_do_not_create_candidates(tmp_path) -> None:
@@ -99,7 +124,7 @@ def test_existing_account_and_exact_canonical_program_do_not_create_candidates(t
     program_name = runtime.sample.programs[0].name
     runtime.monitor.registry["usaspending"] = _award_adapter(recipient="Medtronic", program_name=program_name)
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
 
     assert organizations == programs == ()
     event = next(iter(runtime.monitor.events.values()))
@@ -111,7 +136,7 @@ def test_generic_company_event_does_not_create_a_program_candidate(tmp_path) -> 
     runtime = _runtime(tmp_path)
     runtime.monitor.registry["usaspending"] = _award_adapter(recipient="Nexus Quantum Systems, Inc.")
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
 
     assert len(organizations) == 1
     assert programs == ()
@@ -127,7 +152,7 @@ def test_ambiguous_exact_alias_and_conflicting_identifiers_never_become_promotio
     runtime.monitor.watch_profiles = profiles
     runtime.monitor.catalog = MonitorCatalog(profiles, runtime.sample.programs, runtime.sample.facilities)
     runtime.monitor.collect("usaspending")
-    organizations, _programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, _programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert len(organizations) == 1
     assert organizations[0].review_state is CandidateReviewState.AMBIGUOUS
     assert organizations[0].candidate_account_ids == ("one", "two")
@@ -147,6 +172,6 @@ def test_insufficient_identity_and_fuzzy_name_do_not_create_or_promote_candidate
         lambda _url, _headers: (200, json.dumps({"results": [{"k_number": "K-UNKNOWN", "device_name": "Unknown device approval", "decision_date": "2026-08-15"}]}).encode(), {})
     )
     runtime.monitor.collect("fda_openfda")
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert organizations == programs == ()
     assert resolve_entity("Nexus Quantum", runtime.sample.watch_profiles).state is ResolutionState.UNRESOLVED

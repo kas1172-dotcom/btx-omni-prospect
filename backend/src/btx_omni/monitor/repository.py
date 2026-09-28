@@ -802,16 +802,18 @@ class MonitorRepository:
 
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
-        return tuple(event for event, _observation in self.event_contexts(limit=100))
+        return tuple(event for event, _observation in self.event_contexts(limit=None))
 
     def event_contexts(
         self,
         *,
-        limit: int,
+        limit: int | None = None,
         offset: int = 0,
     ) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
         """One committed current-source snapshot for every public read consumer.
 
+        Internal consumers pass limit=None to read all rows; page-serving
+        consumers pass an integer limit and use an extra row for availability.
         Reconstitute only stored source fields, without rerunning identity or
         claiming missing original native identifiers/headers were retained.
         """
@@ -1306,22 +1308,29 @@ class MonitorRepository:
     def candidates(
         self,
         *,
-        limit: int,
+        limit: int = 200,
         offset: int = 0,
-    ) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...]]:
+    ) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...], bool]:
+        """Return candidate pages and whether either type has more rows.
+
+        Cursor pagination is the correct long-term answer; offset is provisional.
+        """
         with self.engine.connect() as connection:
             organization_rows = connection.execute(
                 select(monitor_organization_candidates)
                 .order_by(monitor_organization_candidates.c.created_at)
-                .limit(limit)
+                .limit(limit + 1)
                 .offset(offset)
             ).mappings().all()
             program_rows = connection.execute(
                 select(monitor_program_candidates)
                 .order_by(monitor_program_candidates.c.created_at)
-                .limit(limit)
+                .limit(limit + 1)
                 .offset(offset)
             ).mappings().all()
+            more_available = len(organization_rows) > limit or len(program_rows) > limit
+            organization_rows = organization_rows[:limit]
+            program_rows = program_rows[:limit]
             organization_ids = tuple(row["id"] for row in organization_rows)
             program_ids = tuple(row["id"] for row in program_rows)
             promotions = {
@@ -1350,7 +1359,7 @@ class MonitorRepository:
                 )
                 for row in program_rows
             )
-        return organizations, programs
+        return organizations, programs, more_available
 
     def source_content_hash(self, source_id: str, source_record_id: str) -> str | None:
         with self.engine.connect() as connection:

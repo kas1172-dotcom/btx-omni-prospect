@@ -74,10 +74,13 @@ def monitor_candidates(
         raise HTTPException(
             503, "Organization candidates require durable Monitor state."
         )
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)
+    organizations, programs, more_available = runtime.monitor.repository.candidates(
+        limit=200
+    )
     return {
         "organization_candidates": jsonable_encoder(organizations),
         "program_candidates": jsonable_encoder(programs),
+        "more_available": more_available,
         "promotion_note": "Candidates are review-only. This endpoint does not create canonical Accounts or Programs.",
     }
 

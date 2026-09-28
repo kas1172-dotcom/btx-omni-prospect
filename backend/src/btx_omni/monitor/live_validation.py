@@ -90,7 +90,11 @@ def _source_report(service: MonitorService, source_id: str, *, limit: int) -> di
         for brief in signal_briefs_for_monitor(service)
         if brief.source_system == source_id
     )
-    organizations, programs = service.repository.candidates(limit=200) if service.repository else ((), ())
+    organizations, programs, candidates_more_available = (
+        service.repository.candidates(limit=200)
+        if service.repository
+        else ((), (), False)
+    )
     after_versions = {
         record_id: observation.source_version.content_hash
         for (source_system, record_id), observation in service.source_versions.items()
@@ -116,6 +120,7 @@ def _source_report(service: MonitorService, source_id: str, *, limit: int) -> di
         "program_candidates": sum(
             item.provenance.source_system == source_id for item in programs
         ),
+        "candidates_more_available": candidates_more_available,
         "seller_eligible_briefs": sum(
             brief.seller_promotion_state == "RESOLVED_ELIGIBLE" for brief in briefs
         ),

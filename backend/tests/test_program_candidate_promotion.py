@@ -54,7 +54,7 @@ def _client(runtime: PocRuntime) -> TestClient:
 def _candidates(runtime: PocRuntime):
     runtime.monitor.registry["usaspending"] = _adapter()
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert len(organizations) == len(programs) == 1
     return organizations[0], programs[0]
 
@@ -91,7 +91,7 @@ def test_confirmed_program_candidate_promotion_is_atomic_idempotent_and_runtime_
     runtime.monitor.collect("usaspending")
     event = next(iter(runtime.monitor.events.values()))
     assert event.program.canonical_program_id == program_id
-    organizations, programs = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert organizations[0].id == organization.id
     assert programs[0].review_state is CandidateReviewState.PROMOTED
     assert programs[0].promoted_program_id == program_id
