@@ -1067,13 +1067,15 @@ class MonitorRepository:
                 .mappings()
                 .all()
             )
+        projected_rows = [
+            self._document_projection(row, row["event_id"]) for row in rows
+        ]
+        statuses = self.research.latest_statuses_for_sources(
+            (item["event_id"], item["content_hash"]) for item in projected_rows
+        )
         candidates = []
-        for row in rows:
-            projected = self._document_projection(row, row["event_id"])
-            prior = self.research.latest_for_source(
-                projected["event_id"], projected["content_hash"]
-            )
-            if prior and prior.get("status") == "COMPLETED":
+        for projected in projected_rows:
+            if statuses.get((projected["event_id"], projected["content_hash"])) == "COMPLETED":
                 continue
             document = projected.get("document") or {}
             passage_count = len(document.get("passages", ()))
