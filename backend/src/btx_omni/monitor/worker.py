@@ -726,7 +726,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(_compact_summary(report, code, monotonic() - started))
         print(json.dumps(report, default=str, sort_keys=True))
         return code
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001 - top-level worker boundary sanitizes all failures
         original = getattr(error, "orig", None)
         sqlstate = getattr(error, "sqlstate", None) or getattr(original, "sqlstate", None)
         report = {
