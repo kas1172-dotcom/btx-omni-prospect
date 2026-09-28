@@ -266,15 +266,18 @@ def monitor_health(runtime: PocRuntime = Depends(get_runtime)) -> dict:
         if runtime.monitor.repository
         else ()
     )
+    visible_window = window[:SELLER_BRIEF_WINDOW_LIMIT]
+    brief_keys = tuple(
+        (brief_cache_id(item), governed_content_hash(item)) for item in visible_window
+    )
+    cached_briefs = (
+        runtime.monitor.repository.brief_syntheses(brief_keys)
+        if runtime.monitor.repository
+        else {}
+    )
     briefs = []
-    for deterministic in window[:SELLER_BRIEF_WINDOW_LIMIT]:
-        cached = (
-            runtime.monitor.repository.brief_synthesis(
-                brief_cache_id(deterministic), governed_content_hash(deterministic)
-            )
-            if runtime.monitor.repository
-            else None
-        )
+    for deterministic, key in zip(visible_window, brief_keys):
+        cached = cached_briefs.get(key)
         brief = apply_cached_synthesis(deterministic, cached)
         briefs.append(brief)
         if cached and cached.get("status") in ProviderStatus._value2member_map_:

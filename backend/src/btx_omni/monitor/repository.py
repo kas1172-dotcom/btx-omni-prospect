@@ -1359,6 +1359,33 @@ class MonitorRepository:
         value["synthesized_at"] = _database_timestamp(value["synthesized_at"])
         return value
 
+    def brief_syntheses(
+        self, keys: tuple[tuple[str, str], ...]
+    ) -> dict[tuple[str, str], dict]:
+        """Return briefs for (brief_id, governed_content_hash) pairs in one query."""
+        pairs = tuple(dict.fromkeys(keys))
+        if not pairs:
+            return {}
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(monitor_brief_syntheses).where(
+                    tuple_(
+                        monitor_brief_syntheses.c.brief_id,
+                        monitor_brief_syntheses.c.governed_content_hash,
+                    ).in_(pairs)
+                )
+            ).mappings().all()
+        result = {}
+        for row in rows:
+            value = dict(row)
+            if value.get("projection"):
+                value["projection"] = json.loads(value["projection"])
+            if value.get("next_retry_at"):
+                value["next_retry_at"] = _database_timestamp(value["next_retry_at"])
+            value["synthesized_at"] = _database_timestamp(value["synthesized_at"])
+            result[(value["brief_id"], value["governed_content_hash"])] = value
+        return result
+
     @staticmethod
     def _assessment_context_key(
         event_id: str, account_id: str | None, business_unit_id: str | None
