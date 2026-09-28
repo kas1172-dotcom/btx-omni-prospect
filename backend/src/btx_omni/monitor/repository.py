@@ -1297,37 +1297,50 @@ class MonitorRepository:
 
     def candidates(
         self,
+        *,
+        limit: int = 500,
+        offset: int = 0,
     ) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...]]:
         with self.engine.connect() as connection:
+            organization_rows = connection.execute(
+                select(monitor_organization_candidates)
+                .order_by(monitor_organization_candidates.c.created_at)
+                .limit(limit)
+                .offset(offset)
+            ).mappings().all()
+            program_rows = connection.execute(
+                select(monitor_program_candidates)
+                .order_by(monitor_program_candidates.c.created_at)
+                .limit(limit)
+                .offset(offset)
+            ).mappings().all()
+            organization_ids = tuple(row["id"] for row in organization_rows)
+            program_ids = tuple(row["id"] for row in program_rows)
             promotions = {
                 row["candidate_id"]: dict(row)
                 for row in connection.execute(
-                    select(monitor_candidate_promotion_audits)
+                    select(monitor_candidate_promotion_audits).where(
+                        monitor_candidate_promotion_audits.c.candidate_id.in_(organization_ids)
+                    )
                 ).mappings()
-            }
+            } if organization_ids else {}
             program_promotions = {
                 row["candidate_id"]: dict(row)
                 for row in connection.execute(
-                    select(monitor_program_candidate_promotion_audits)
-                ).mappings()
-            }
-            organizations = tuple(
-                _organization_candidate_from_row(dict(row), promotions.get(row["id"]))
-                for row in connection.execute(
-                    select(monitor_organization_candidates).order_by(
-                        monitor_organization_candidates.c.created_at
+                    select(monitor_program_candidate_promotion_audits).where(
+                        monitor_program_candidate_promotion_audits.c.candidate_id.in_(program_ids)
                     )
                 ).mappings()
+            } if program_ids else {}
+            organizations = tuple(
+                _organization_candidate_from_row(dict(row), promotions.get(row["id"]))
+                for row in organization_rows
             )
             programs = tuple(
                 _program_candidate_from_row(
                     dict(row), program_promotions.get(row["id"])
                 )
-                for row in connection.execute(
-                    select(monitor_program_candidates).order_by(
-                        monitor_program_candidates.c.created_at
-                    )
-                ).mappings()
+                for row in program_rows
             )
         return organizations, programs
 
