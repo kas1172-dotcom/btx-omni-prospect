@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from threading import Event, RLock, Thread
 
-from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, update
+from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, tuple_, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.classification import Classification, SensitivityTag
@@ -64,6 +64,26 @@ from btx_omni.persistence.models import (
 )
 
 logger = logging.getLogger(__name__)
+_REPLACE_CHUNK = 500
+
+
+def _replace_rows(connection, table, key_columns, rows) -> None:
+    if not rows:
+        return
+    unique_rows = {
+        tuple(row[column] for column in key_columns): row for row in rows
+    }
+    columns = [table.c[column] for column in key_columns]
+    keys = list(unique_rows)
+    for start in range(0, len(keys), _REPLACE_CHUNK):
+        chunk = keys[start : start + _REPLACE_CHUNK]
+        predicate = (
+            columns[0].in_([key[0] for key in chunk])
+            if len(columns) == 1
+            else tuple_(*columns).in_(chunk)
+        )
+        connection.execute(delete(table).where(predicate))
+    connection.execute(insert(table), list(unique_rows.values()))
 
 
 def _json(value: object) -> str:
@@ -543,14 +563,12 @@ class MonitorRepository:
                     updated_at=run.completed_at or run.started_at,
                 )
             )
-            for observation in observations:
-                connection.execute(
-                    delete(monitor_observations).where(
-                        monitor_observations.c.id == observation.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_observations).values(
+            _replace_rows(
+                connection,
+                monitor_observations,
+                ("id",),
+                [
+                    dict(
                         id=observation.id,
                         source_id=observation.source_identity.source_system,
                         source_record_id=observation.source_identity.source_record_id,
@@ -566,39 +584,44 @@ class MonitorRepository:
                         structured_payload=observation.structured_payload,
                         created_at=observation.observed_at,
                     )
-                )
-                version = observation.source_version
-                connection.execute(
-                    delete(monitor_source_versions).where(
-                        monitor_source_versions.c.source_id
-                        == observation.source_identity.source_system,
-                        monitor_source_versions.c.source_record_id
-                        == observation.source_identity.source_record_id,
-                    )
-                )
-                connection.execute(
-                    insert(monitor_source_versions).values(
+                    for observation in observations
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_source_versions,
+                ("source_id", "source_record_id"),
+                [
+                    dict(
                         source_id=observation.source_identity.source_system,
                         source_record_id=observation.source_identity.source_record_id,
-                        version_id=version.version_id,
-                        content_hash=version.content_hash,
-                        first_seen_at=version.first_seen_at,
-                        last_seen_at=version.last_seen_at,
-                        changed_at=version.changed_at,
+                        version_id=observation.source_version.version_id,
+                        content_hash=observation.source_version.content_hash,
+                        first_seen_at=observation.source_version.first_seen_at,
+                        last_seen_at=observation.source_version.last_seen_at,
+                        changed_at=observation.source_version.changed_at,
                         last_observation_id=observation.id,
                     )
-                )
+                    for observation in observations
+                ],
+            )
+            observation_by_evidence: dict[str, tuple[int, SourceObservation]] = {}
+            for position, item in enumerate(observations):
+                observation_by_evidence.setdefault(item.raw_evidence.id, (position, item))
+            event_rows = []
             for event in events:
-                connection.execute(
-                    delete(monitor_events).where(monitor_events.c.id == event.id)
-                )
-                observation = next(
-                    item
-                    for item in observations
-                    if item.raw_evidence.id in {e.evidence_id for e in event.evidence}
-                )
-                connection.execute(
-                    insert(monitor_events).values(
+                matches = [
+                    observation_by_evidence[e.evidence_id]
+                    for e in event.evidence
+                    if e.evidence_id in observation_by_evidence
+                ]
+                if not matches:
+                    raise ValueError(
+                        f"Event {event.id} has no matching observation in this snapshot"
+                    )
+                _, observation = min(matches, key=lambda match: match[0])
+                event_rows.append(
+                    dict(
                         id=event.id,
                         source_id=observation.source_identity.source_system,
                         source_observation_id=observation.id,
@@ -617,14 +640,13 @@ class MonitorRepository:
                         event_payload=_json(event),
                     )
                 )
-            for cluster in clusters:
-                connection.execute(
-                    delete(monitor_event_clusters).where(
-                        monitor_event_clusters.c.id == cluster.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_event_clusters).values(
+            _replace_rows(connection, monitor_events, ("id",), event_rows)
+            _replace_rows(
+                connection,
+                monitor_event_clusters,
+                ("id",),
+                [
+                    dict(
                         id=cluster.id,
                         event_id=cluster.event_id,
                         observation_ids=_json(cluster.observation_ids),
@@ -632,17 +654,16 @@ class MonitorRepository:
                         related_event_ids=_json(cluster.related_event_ids),
                         ambiguity_reason=cluster.ambiguity_reason,
                     )
-                )
-            for item in rejected:
-                identifier = f"{run.id}:{item.observation_id}"
-                connection.execute(
-                    delete(monitor_rejected_observations).where(
-                        monitor_rejected_observations.c.id == identifier
-                    )
-                )
-                connection.execute(
-                    insert(monitor_rejected_observations).values(
-                        id=identifier,
+                    for cluster in clusters
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_rejected_observations,
+                ("id",),
+                [
+                    dict(
+                        id=f"{run.id}:{item.observation_id}",
                         collection_run_id=run.id,
                         source_id=run.source_id,
                         observation_id=item.observation_id,
@@ -651,15 +672,15 @@ class MonitorRepository:
                         evidence_id=item.evidence_id,
                         rejected_at=item.rejected_at,
                     )
-                )
-            for item in organization_candidates:
-                connection.execute(
-                    delete(monitor_organization_candidates).where(
-                        monitor_organization_candidates.c.id == item.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_organization_candidates).values(
+                    for item in rejected
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_organization_candidates,
+                ("id",),
+                [
+                    dict(
                         id=item.id,
                         identity_key=item.identity_key,
                         source_name=item.source_name,
@@ -678,15 +699,15 @@ class MonitorRepository:
                         observed_at=item.observed_at,
                         updated_at=run.completed_at or run.started_at,
                     )
-                )
-            for item in program_candidates:
-                connection.execute(
-                    delete(monitor_program_candidates).where(
-                        monitor_program_candidates.c.id == item.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_program_candidates).values(
+                    for item in organization_candidates
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_program_candidates,
+                ("id",),
+                [
+                    dict(
                         id=item.id,
                         identity_key=item.identity_key,
                         source_name=item.source_name,
@@ -701,7 +722,9 @@ class MonitorRepository:
                         observed_at=item.observed_at,
                         updated_at=run.completed_at or run.started_at,
                     )
-                )
+                    for item in program_candidates
+                ],
+            )
 
     def snapshot(self) -> dict[str, tuple[dict, ...]]:
         with self.engine.connect() as connection:
