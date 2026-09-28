@@ -2,15 +2,13 @@ from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field, PrivateAttr, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
-    # Set only on the worker's copy; API runtimes keep their existing engine.
-    _worker_database_timeouts_ms: tuple[int, int] | None = PrivateAttr(default=None)
     app_name: str = "BTX Omni Prospect"
     environment: str = "development"
     api_prefix: str = "/api"
@@ -48,6 +46,9 @@ class Settings(BaseSettings):
     monitor_source_target_limit: int = 25
     monitor_worker_max_seconds: float = Field(default=240, gt=0, le=900)
     monitor_worker_hard_grace_seconds: float = Field(default=45, ge=10, le=120)
+    monitor_worker_statement_timeout_ms: int = Field(default=15_000, ge=100, le=120_000)
+    monitor_worker_lock_timeout_ms: int = Field(default=5_000, ge=50, le=60_000)
+    monitor_worker_timeouts_enabled: bool = False
     monitor_source_min_start_seconds: float = Field(default=2.0, gt=0, le=60)
     # SAM NAICS filtering remains opt-in until the governed BTX market taxonomy
     # has been reviewed for this environment. An empty list deliberately means

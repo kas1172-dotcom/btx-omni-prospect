@@ -8,8 +8,12 @@ import os
 import sys
 from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, replace
+from datetime import UTC, datetime
 from threading import Event, Thread
 from time import monotonic
+from uuid import uuid4
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import PublicEvidenceRecord, TechnicalDecompositionRequest
@@ -43,6 +47,7 @@ from btx_omni.monitor.business_briefings import (
     persist_assessment,
     requires_technical_investigation,
 )
+from btx_omni.monitor.contracts import CollectionRun
 from btx_omni.monitor.documents import document_evidence
 from btx_omni.monitor.research import MonitorResearchCoordinator
 from btx_omni.providers.research.technical_programs import references_for_text
@@ -64,11 +69,15 @@ def _hard_process_deadline(seconds: float, grace_seconds: float):
             pass
         os._exit(124)
 
-    Thread(target=watchdog, name="monitor-worker-watchdog", daemon=True).start()
+    watchdog_thread = Thread(
+        target=watchdog, name="monitor-worker-watchdog", daemon=True
+    )
+    watchdog_thread.start()
     try:
         yield deadline
     finally:
         finished.set()
+        watchdog_thread.join(timeout=1)
 
 
 def _select_technical_briefs(briefs, *, limit: int):
@@ -128,6 +137,7 @@ def run_worker(
     source_ids: tuple[str, ...] | None = None,
     limit: int | None = None,
     deadline_monotonic: float | None = None,
+    hard_deadline_enforced: bool = False,
 ) -> tuple[dict, int]:
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
         return {
@@ -142,11 +152,7 @@ def run_worker(
             "status": "NOT_CONFIGURED",
             "detail": "Live mode and durable Monitor state are required.",
         }, 2
-    worker_settings = settings.model_copy()
-    # These PostgreSQL session defaults cover all SQL on this worker runtime's
-    # shared engine, including commercial, market, and Monitor repositories.
-    # Research and AI usage transactions retain their narrower SET LOCAL bounds.
-    worker_settings._worker_database_timeouts_ms = (15_000, 5_000)
+    worker_settings = settings.model_copy(update={"monitor_worker_timeouts_enabled": True})
     runtime = PocRuntime(worker_settings)
     repository = getattr(runtime.monitor, "repository", None)
     lock = repository.operational_lock() if repository else nullcontext(True)
@@ -207,11 +213,21 @@ def run_worker(
                     remaining / remaining_sources,
                 ),
             )
-            run = runtime.monitor.collect(
-                source_id,
-                limit=limit or settings.monitor_source_record_limit,
-                deadline_monotonic=source_deadline,
-            )
+            try:
+                run = runtime.monitor.collect(
+                    source_id,
+                    limit=limit or settings.monitor_source_record_limit,
+                    deadline_monotonic=source_deadline,
+                )
+            except SQLAlchemyError as error:
+                run = CollectionRun(
+                    id=f"worker-failure-{uuid4()}",
+                    source_id=source_id,
+                    started_at=datetime.now(UTC),
+                    completed_at=datetime.now(UTC),
+                    cursor=None,
+                    failures=(f"DATABASE_FAILURE:{type(error).__name__}",),
+                )
             runs.append(run)
             if monotonic() >= deadline:
                 deadline_exhausted = True
@@ -643,7 +659,13 @@ def run_worker(
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,
             "minimum_start_budget_seconds": settings.monitor_source_min_start_seconds,
-            "deadline_scope": "Source collection is interruptible and optional AI stages require a full provider timeout before starting. The one-shot worker CLI exits with code 124 at the soft deadline plus the configured hard-deadline grace margin, including during in-flight provider or database work.",
+            "hard_deadline_enforced": hard_deadline_enforced,
+            "deadline_scope": (
+                "Source collection is interruptible and optional AI stages require a full provider timeout before starting. "
+                "The one-shot worker CLI exits with code 124 at the soft deadline plus the configured hard-deadline grace margin, including during in-flight provider or database work."
+                if hard_deadline_enforced
+                else "Source collection is interruptible and optional AI stages require a full provider timeout before starting. Direct run_worker callers do not have a watchdog; deadline exhaustion is reported normally."
+            ),
         },
     }
     return report, 1 if failed or not runs or deadline_exhausted or market_refresh[
@@ -667,6 +689,7 @@ def main(argv: list[str] | None = None) -> int:
             source_ids=tuple(args.sources) if args.sources else None,
             limit=args.limit,
             deadline_monotonic=deadline,
+            hard_deadline_enforced=True,
         )
         print(json.dumps(report, default=str, sort_keys=True))
         return code

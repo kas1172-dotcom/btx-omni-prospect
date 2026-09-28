@@ -20,12 +20,12 @@ def create_database_engine(settings: Settings) -> Engine:
         # unavailable PostgreSQL handshake so the existing degraded health path
         # can report it instead of blocking the application indefinitely.
         connect_args: dict[str, object] = {"connect_timeout": 3}
-        worker_timeouts = settings._worker_database_timeouts_ms
-        if worker_timeouts is not None:
-            statement_ms, lock_ms = worker_timeouts
-            connect_args["options"] = (
-                f"-c statement_timeout={statement_ms} -c lock_timeout={lock_ms}"
-            )
+        connect_args["options"] = (
+            f"-c statement_timeout={settings.monitor_worker_statement_timeout_ms} "
+            f"-c lock_timeout={settings.monitor_worker_lock_timeout_ms}"
+        ) if settings.monitor_worker_timeouts_enabled else None
+        if connect_args["options"] is None:
+            del connect_args["options"]
         options["connect_args"] = connect_args
     return create_engine(settings.database_url, **options)
 
