@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     monitor_research_cap: int = Field(default=2, ge=0, le=3)
     monitor_source_target_limit: int = 25
     monitor_worker_max_seconds: float = Field(default=240, gt=0, le=900)
+    monitor_worker_hard_grace_seconds: float = Field(default=45, ge=10, le=120)
     monitor_source_min_start_seconds: float = Field(default=2.0, gt=0, le=60)
     # SAM NAICS filtering remains opt-in until the governed BTX market taxonomy
     # has been reviewed for this environment. An empty list deliberately means
