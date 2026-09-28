@@ -212,6 +212,22 @@ class MonitorService:
                     retain_document_after_failed_refresh(observation, previous_payload)
                 )
             observations = retained_observations
+            missing_hash_keys = tuple(
+                (
+                    item.source_identity.source_system,
+                    item.source_identity.source_record_id,
+                )
+                for item in observations
+                if (
+                    item.source_identity.source_system,
+                    item.source_identity.source_record_id,
+                ) not in self.source_versions
+            )
+            persisted_hashes = (
+                self.repository.source_content_hashes(missing_hash_keys)
+                if self.repository and missing_hash_keys
+                else {}
+            )
             created = changed = new = rejected_count = 0
             procurement_counts: dict[str, dict[str, int]] = {}
             persisted_events: list[IntelligenceEvent] = []
@@ -303,11 +319,7 @@ class MonitorService:
                             ),
                         ),
                     )
-                persisted_hash = (
-                    self.repository.source_content_hash(*version_key)
-                    if previous is None and self.repository
-                    else None
-                )
+                persisted_hash = persisted_hashes.get(version_key) if previous is None else None
                 record_changed = observation_changed(previous, observation)
                 is_changed = (
                     record_changed

@@ -1350,6 +1350,28 @@ class MonitorRepository:
                 )
             ).scalar_one_or_none()
 
+    def source_content_hashes(
+        self, keys: tuple[tuple[str, str], ...]
+    ) -> dict[tuple[str, str], str]:
+        """Return content_hash for (source_id, source_record_id) pairs in one query."""
+        pairs = tuple(dict.fromkeys(keys))
+        if not pairs:
+            return {}
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(
+                    monitor_source_versions.c.source_id,
+                    monitor_source_versions.c.source_record_id,
+                    monitor_source_versions.c.content_hash,
+                ).where(
+                    tuple_(
+                        monitor_source_versions.c.source_id,
+                        monitor_source_versions.c.source_record_id,
+                    ).in_(pairs)
+                )
+            ).all()
+        return {(row[0], row[1]): row[2] for row in rows}
+
     def brief_synthesis(self, brief_id: str, governed_content_hash: str) -> dict | None:
         """Return only an exact governed-content match; stale prose never leaks."""
         with self.engine.connect() as connection:
