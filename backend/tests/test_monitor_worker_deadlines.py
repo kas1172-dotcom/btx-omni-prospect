@@ -146,11 +146,33 @@ def test_operational_unlock_has_its_own_statement_timeout() -> None:
     assert connection.closed
 
 
+def test_soft_deadline_report_completes_inside_hard_grace(tmp_path) -> None:
+    report_path = tmp_path / "report.json"
+    script = (
+        "import json, time\n"
+        "from pathlib import Path\n"
+        "from btx_omni.monitor.worker import _hard_process_deadline\n"
+        f"report_path = Path({str(report_path)!r})\n"
+        "with _hard_process_deadline(0.1, 0.3):\n"
+        "    time.sleep(0.15)\n"
+        "    report_path.write_text(json.dumps({'status': 'DEADLINE_EXHAUSTED'}))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=5,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert report_path.read_text() == '{"status": "DEADLINE_EXHAUSTED"}'
+
+
 def test_hard_deadline_ends_blocked_process() -> None:
     script = (
         "import time\n"
         "from btx_omni.monitor.worker import _hard_process_deadline\n"
-        "with _hard_process_deadline(0.1):\n"
+        "with _hard_process_deadline(0.1, 0.1):\n"
         "    time.sleep(10)\n"
         "print('continued')\n"
     )
@@ -178,7 +200,7 @@ def test_hard_exit_releases_postgres_session_advisory_lock() -> None:
         "engine = create_database_engine(Settings(_env_file=None))\n"
         "with engine.connect() as connection:\n"
         f"    connection.execute(text('SELECT pg_advisory_lock({key})'))\n"
-        "    with _hard_process_deadline(0.1):\n"
+        "    with _hard_process_deadline(0.1, 0.1):\n"
         "        time.sleep(10)\n"
     )
     result = subprocess.run(

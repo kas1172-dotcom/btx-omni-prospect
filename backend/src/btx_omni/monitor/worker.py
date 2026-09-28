@@ -49,13 +49,14 @@ from btx_omni.providers.research.technical_programs import references_for_text
 
 
 @contextmanager
-def _hard_process_deadline(seconds: float):
-    """End the one-shot worker even if its main thread is blocked in a C call."""
+def _hard_process_deadline(seconds: float, grace_seconds: float):
+    """End the one-shot worker after its soft deadline and grace margin."""
     deadline = monotonic() + seconds
+    hard_deadline = deadline + grace_seconds
     finished = Event()
 
     def watchdog() -> None:
-        if finished.wait(max(0.0, deadline - monotonic())):
+        if finished.wait(max(0.0, hard_deadline - monotonic())):
             return
         try:
             os.write(2, b"Monitor worker hard deadline exceeded; exiting with code 124.\n")
@@ -642,7 +643,7 @@ def run_worker(
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,
             "minimum_start_budget_seconds": settings.monitor_source_min_start_seconds,
-            "deadline_scope": "Source collection is interruptible and optional AI stages require a full provider timeout before starting. The one-shot worker CLI exits with code 124 at the global deadline, including during in-flight provider or database work.",
+            "deadline_scope": "Source collection is interruptible and optional AI stages require a full provider timeout before starting. The one-shot worker CLI exits with code 124 at the soft deadline plus the configured hard-deadline grace margin, including during in-flight provider or database work.",
         },
     }
     return report, 1 if failed or not runs or deadline_exhausted or market_refresh[
@@ -658,7 +659,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int)
     args = parser.parse_args(argv)
     settings = Settings()
-    with _hard_process_deadline(settings.monitor_worker_max_seconds) as deadline:
+    with _hard_process_deadline(
+        settings.monitor_worker_max_seconds, settings.monitor_worker_hard_grace_seconds
+    ) as deadline:
         report, code = run_worker(
             settings,
             source_ids=tuple(args.sources) if args.sources else None,
