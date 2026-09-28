@@ -96,7 +96,7 @@ def test_worker_persist_snapshot_reports_row_lock_timeout_and_releases_advisory_
     )
     worker_engine = create_database_engine(settings)
     holder_engine = create_database_engine(_database_settings())
-        now = datetime.now(UTC)
+    now = datetime.now(UTC)
     try:
         with worker_engine.begin() as connection:
             connection.execute(
@@ -279,6 +279,7 @@ def test_worker_module_watchdog_kills_pg_sleep_and_releases_advisory_lock(
     sitecustomize.write_text(
         "from sqlalchemy import create_engine, text\n"
         "from btx_omni.core.config import Settings\n"
+        "Settings.model_config['env_file'] = None\n"
         "import btx_omni.api.runtime as runtime\n"
         "class Runtime:\n"
         "    def __init__(self, _settings):\n"
@@ -289,32 +290,35 @@ def test_worker_module_watchdog_kills_pg_sleep_and_releases_advisory_lock(
         "        self.monitor = type('Monitor', (), {'repository': None, 'registry': {}})()\n"
         "runtime.PocRuntime = Runtime\n"
     )
-    environment = os.environ.copy()
-    environment.update(
-        {
-            "BTX_DATABASE_URL": database_url,
-            "BTX_MONITOR_WORKER_MAX_SECONDS": "2",
-            "BTX_MONITOR_MODE": "live",
-            "BTX_MONITOR_DURABLE_STATE_ENABLED": "true",
-            "PYTHONPATH": os.pathsep.join(
-                (str(tmp_path), os.environ.get("PYTHONPATH", ""))
-            ),
-        }
-    )
+    subprocess_cwd = tmp_path / "cwd"
+    subprocess_cwd.mkdir()
+    environment = {
+        "HOME": os.environ.get("HOME", str(tmp_path)),
+        "PATH": os.environ.get("PATH", ""),
+        "PYTHONPATH": os.pathsep.join(
+            (str(tmp_path), str(Path(__file__).parents[1] / "src"))
+        ),
+        "BTX_DATABASE_URL": database_url,
+        "BTX_MONITOR_WORKER_MAX_SECONDS": "2",
+        "BTX_MONITOR_WORKER_HARD_GRACE_SECONDS": "10",
+        "BTX_MONITOR_MODE": "live",
+        "BTX_MONITOR_DURABLE_STATE_ENABLED": "true",
+        "BTX_MONITOR_WORKER_SOURCES": "",
+    }
     started = time.monotonic()
     result = subprocess.run(
         [sys.executable, "-m", "btx_omni.monitor.worker"],
-        cwd=Path(__file__).parents[1],
+        cwd=subprocess_cwd,
         env=environment,
         capture_output=True,
         text=True,
-        timeout=8,
+        timeout=20,
         check=False,
     )
     elapsed = time.monotonic() - started
     assert result.returncode == 124
     assert "hard deadline exceeded" in result.stderr
-    assert 1.5 <= elapsed <= 5.0
+    assert 10.0 <= elapsed <= 16.0
     engine = create_database_engine(_database_settings())
     try:
         until = time.monotonic() + 4
@@ -344,7 +348,7 @@ def test_worker_module_watchdog_kills_pg_sleep_and_releases_advisory_lock(
 def test_watchdog_thread_stops_on_normal_exit() -> None:
     from threading import enumerate as enumerate_threads
 
-    with _hard_process_deadline(0.05):
+    with _hard_process_deadline(0.05, 10):
         time.sleep(0.01)
     assert not any(
         thread.name == "monitor-worker-watchdog" and thread.is_alive()
