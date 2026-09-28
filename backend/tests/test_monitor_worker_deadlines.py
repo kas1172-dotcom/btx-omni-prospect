@@ -4,18 +4,24 @@ import os
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
+from pathlib import Path
 from threading import Event
 from types import SimpleNamespace
+from typing import ClassVar
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import insert, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.config import Settings
 from btx_omni.modules.markets.service import MarketService
+from btx_omni.monitor.contracts import CollectionRun, SourceHealth
+from btx_omni.monitor.ontology import SourceHealthState
 from btx_omni.monitor.repository import MonitorRepository
-from btx_omni.monitor.worker import run_worker
+from btx_omni.monitor.worker import _hard_process_deadline, run_worker
 from btx_omni.persistence.database import create_database_engine
+from btx_omni.persistence.models import monitor_source_health
 
 
 def _database_settings() -> Settings:
@@ -28,7 +34,13 @@ def _database_settings() -> Settings:
 def test_worker_database_statement_timeout_cancels_a_blocked_query() -> None:
     settings = _database_settings()
     bounded = settings.model_copy()
-    bounded._worker_database_timeouts_ms = (100, 50)
+    bounded = bounded.model_copy(
+        update={
+            "monitor_worker_statement_timeout_ms": 100,
+            "monitor_worker_lock_timeout_ms": 50,
+            "monitor_worker_timeouts_enabled": True,
+        }
+    )
     engine = create_database_engine(bounded)
     api_engine = create_database_engine(settings)
     try:
@@ -50,7 +62,13 @@ def test_worker_database_statement_timeout_cancels_a_blocked_query() -> None:
 def test_worker_database_lock_timeout_cancels_a_blocked_lock() -> None:
     settings = _database_settings()
     bounded = settings.model_copy()
-    bounded._worker_database_timeouts_ms = (500, 50)
+    bounded = bounded.model_copy(
+        update={
+            "monitor_worker_statement_timeout_ms": 500,
+            "monitor_worker_lock_timeout_ms": 50,
+            "monitor_worker_timeouts_enabled": True,
+        }
+    )
     holder_engine = create_database_engine(settings)
     waiter_engine = create_database_engine(bounded)
     key = int.from_bytes(os.urandom(8), "big") & ((1 << 63) - 1)
@@ -64,6 +82,69 @@ def test_worker_database_lock_timeout_cancels_a_blocked_lock() -> None:
     finally:
         holder_engine.dispose()
         waiter_engine.dispose()
+
+
+def test_worker_persist_snapshot_reports_row_lock_timeout_and_releases_advisory_lock() -> None:
+    settings = _database_settings().model_copy(
+        update={
+            "monitor_mode": "live",
+            "monitor_durable_state_enabled": True,
+            "monitor_worker_timeouts_enabled": True,
+            "monitor_worker_statement_timeout_ms": 15_000,
+            "monitor_worker_lock_timeout_ms": 100,
+        }
+    )
+    worker_engine = create_database_engine(settings)
+    holder_engine = create_database_engine(_database_settings())
+        now = datetime.now(UTC)
+    try:
+        with worker_engine.begin() as connection:
+            connection.execute(
+                text("DELETE FROM monitor_source_health WHERE source_id = 'lock-source'")
+            )
+            connection.execute(
+                insert(monitor_source_health).values(
+                    source_id="lock-source",
+                    state="HEALTHY",
+                    last_attempt_at=now,
+                    last_success_at=now,
+                    warning_code=None,
+                    detail=None,
+                    updated_at=now,
+                )
+            )
+        repository = MonitorRepository(worker_engine)
+        with holder_engine.begin() as holder:
+            holder.execute(
+                text(
+                    "SELECT 1 FROM monitor_source_health "
+                    "WHERE source_id = 'lock-source' FOR UPDATE"
+                )
+            )
+            run = CollectionRun("lock-run", "lock-source", now, now, None)
+            with repository.operational_lock(), pytest.raises(
+                SQLAlchemyError, match="lock timeout"
+            ):
+                repository.persist_snapshot(
+                    run=run,
+                    health=SourceHealth(
+                        "lock-source", SourceHealthState.HEALTHY, now, now
+                    ),
+                    observations=(),
+                    events=(),
+                    clusters=(),
+                    rejected=(),
+                )
+        with worker_engine.connect() as connection:
+            assert connection.execute(
+                text("SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))")
+            ).scalar_one()
+            connection.execute(
+                text("SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))")
+            )
+    finally:
+        worker_engine.dispose()
+        holder_engine.dispose()
 
 
 def test_operational_lock_release_does_not_wait_for_stuck_heartbeat() -> None:
@@ -188,6 +269,89 @@ def test_hard_deadline_ends_blocked_process() -> None:
     assert "continued" not in result.stdout
 
 
+def test_worker_module_watchdog_kills_pg_sleep_and_releases_advisory_lock(
+    tmp_path,
+) -> None:
+    database_url = os.environ.get("BTX_DATABASE_URL")
+    if not database_url:
+        pytest.skip("PostgreSQL integration URL is not configured")
+    sitecustomize = tmp_path / "sitecustomize.py"
+    sitecustomize.write_text(
+        "from sqlalchemy import create_engine, text\n"
+        "from btx_omni.core.config import Settings\n"
+        "import btx_omni.api.runtime as runtime\n"
+        "class Runtime:\n"
+        "    def __init__(self, _settings):\n"
+        "        engine = create_engine(Settings(_env_file=None).database_url)\n"
+        "        self._lock_connection = engine.connect()\n"
+        "        self._lock_connection.execute(text(\"SELECT pg_advisory_lock(hashtext('btx-monitor-worker'))\"))\n"
+        "        engine.connect().execute(text(\"SELECT pg_sleep(30)\"))\n"
+        "        self.monitor = type('Monitor', (), {'repository': None, 'registry': {}})()\n"
+        "runtime.PocRuntime = Runtime\n"
+    )
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "BTX_DATABASE_URL": database_url,
+            "BTX_MONITOR_WORKER_MAX_SECONDS": "2",
+            "BTX_MONITOR_MODE": "live",
+            "BTX_MONITOR_DURABLE_STATE_ENABLED": "true",
+            "PYTHONPATH": os.pathsep.join(
+                (str(tmp_path), os.environ.get("PYTHONPATH", ""))
+            ),
+        }
+    )
+    started = time.monotonic()
+    result = subprocess.run(
+        [sys.executable, "-m", "btx_omni.monitor.worker"],
+        cwd=Path(__file__).parents[1],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=8,
+        check=False,
+    )
+    elapsed = time.monotonic() - started
+    assert result.returncode == 124
+    assert "hard deadline exceeded" in result.stderr
+    assert 1.5 <= elapsed <= 5.0
+    engine = create_database_engine(_database_settings())
+    try:
+        until = time.monotonic() + 4
+        acquired = False
+        while time.monotonic() < until and not acquired:
+            with engine.connect() as connection:
+                acquired = bool(
+                    connection.execute(
+                        text(
+                            "SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))"
+                        )
+                    ).scalar_one()
+                )
+                if acquired:
+                    connection.execute(
+                        text(
+                            "SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))"
+                        )
+                    )
+            if not acquired:
+                time.sleep(0.1)
+        assert acquired
+    finally:
+        engine.dispose()
+
+
+def test_watchdog_thread_stops_on_normal_exit() -> None:
+    from threading import enumerate as enumerate_threads
+
+    with _hard_process_deadline(0.05):
+        time.sleep(0.01)
+    assert not any(
+        thread.name == "monitor-worker-watchdog" and thread.is_alive()
+        for thread in enumerate_threads()
+    )
+
+
 def test_hard_exit_releases_postgres_session_advisory_lock() -> None:
     settings = _database_settings()
     key = int.from_bytes(os.urandom(8), "big") & ((1 << 63) - 1)
@@ -248,13 +412,67 @@ def test_worker_sql_limits_are_not_added_to_caller_settings(monkeypatch) -> None
 
     class Runtime:
         def __init__(self, settings):
-            captured.append(settings._worker_database_timeouts_ms)
+            captured.append(
+                (
+                    settings.monitor_worker_statement_timeout_ms,
+                    settings.monitor_worker_lock_timeout_ms,
+                    settings.monitor_worker_timeouts_enabled,
+                )
+            )
             self.monitor = SimpleNamespace(repository=None, registry={})
 
     monkeypatch.setattr("btx_omni.monitor.worker.PocRuntime", Runtime)
     settings = Settings(
-        _env_file=None, monitor_mode="live", monitor_durable_state_enabled=True
+        _env_file=None,
+        monitor_mode="live",
+        monitor_durable_state_enabled=True,
+        monitor_worker_sources="",
     )
     run_worker(settings)
-    assert captured == [(15_000, 5_000)]
-    assert settings._worker_database_timeouts_ms is None
+    assert captured == [(15_000, 5_000, True)]
+    assert settings.monitor_worker_timeouts_enabled is False
+
+
+def test_direct_run_worker_report_does_not_claim_watchdog(monkeypatch) -> None:
+    class Runtime:
+        def __init__(self, _settings):
+            self.monitor = SimpleNamespace(repository=None, registry={})
+
+    monkeypatch.setattr("btx_omni.monitor.worker.PocRuntime", Runtime)
+    settings = Settings(
+        _env_file=None,
+        monitor_mode="live",
+        monitor_durable_state_enabled=True,
+        monitor_worker_sources="",
+    )
+    report, code = run_worker(settings)
+    assert code == 1
+    assert report["bounded"]["hard_deadline_enforced"] is False
+    assert "do not have a watchdog" in report["bounded"]["deadline_scope"]
+
+
+def test_run_worker_records_database_failure_in_report(monkeypatch) -> None:
+    class Monitor:
+        registry: ClassVar = {
+            "source": SimpleNamespace(available=lambda _settings: (True, None))
+        }
+        repository = None
+
+        def collect(self, *_args, **_kwargs):
+            raise SQLAlchemyError("statement timeout")
+
+    class Runtime:
+        def __init__(self, _settings):
+            self.monitor = Monitor()
+
+    monkeypatch.setattr("btx_omni.monitor.worker.PocRuntime", Runtime)
+    settings = Settings(
+        _env_file=None,
+        monitor_mode="live",
+        monitor_durable_state_enabled=True,
+        monitor_worker_sources="source",
+    )
+    report, code = run_worker(settings)
+    assert code == 1
+    assert report["status"] == "FAILED"
+    assert report["runs"][0]["failures"] == ("DATABASE_FAILURE:SQLAlchemyError",)
