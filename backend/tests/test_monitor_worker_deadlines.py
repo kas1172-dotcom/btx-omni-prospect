@@ -269,6 +269,25 @@ def test_hard_deadline_ends_blocked_process() -> None:
     assert "continued" not in result.stdout
 
 
+def test_watchdog_message_names_active_stage() -> None:
+    script = (
+        "import time\n"
+        "from btx_omni.monitor.worker import _hard_process_deadline, _set_stage\n"
+        "_set_stage('collect:test-source')\n"
+        "with _hard_process_deadline(0.1, 0.1):\n"
+        "    time.sleep(10)\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=5,
+        check=False,
+    )
+    assert result.returncode == 124
+    assert "stage=collect:test-source" in result.stderr
+
+
 def test_worker_module_watchdog_kills_pg_sleep_and_releases_advisory_lock(
     tmp_path,
 ) -> None:
@@ -480,3 +499,27 @@ def test_run_worker_records_database_failure_in_report(monkeypatch) -> None:
     assert code == 1
     assert report["status"] == "FAILED"
     assert report["runs"][0]["failures"] == ("DATABASE_FAILURE:SQLAlchemyError",)
+
+
+def test_main_reports_uncaught_post_collection_exception_without_message(
+    monkeypatch, capsys
+) -> None:
+    from sqlalchemy.exc import SQLAlchemyError
+
+    def fail_after_collection(*_args, **_kwargs):
+        from btx_omni.monitor.worker import _set_stage
+
+        _set_stage("collect:synthetic")
+        raise SQLAlchemyError("connection string must not escape")
+
+    monkeypatch.setattr("btx_omni.monitor.worker.run_worker", fail_after_collection)
+    from btx_omni.monitor.worker import main
+
+    assert main([]) == 1
+    captured = capsys.readouterr()
+    assert '"status": "WORKER_ERROR"' in captured.out
+    assert '"error_class": "SQLAlchemyError"' in captured.out
+    assert '"stage": "collect:synthetic"' in captured.out
+    assert "connection string must not escape" not in captured.out
+    assert "status=WORKER_ERROR" in captured.err
+    assert "stage=collect:synthetic" in captured.err

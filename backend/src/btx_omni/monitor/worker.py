@@ -52,6 +52,13 @@ from btx_omni.monitor.documents import document_evidence
 from btx_omni.monitor.research import MonitorResearchCoordinator
 from btx_omni.providers.research.technical_programs import references_for_text
 
+_CURRENT_STAGE = "startup"
+
+
+def _set_stage(stage: str) -> None:
+    global _CURRENT_STAGE
+    _CURRENT_STAGE = stage
+
 
 @contextmanager
 def _hard_process_deadline(seconds: float, grace_seconds: float):
@@ -64,7 +71,11 @@ def _hard_process_deadline(seconds: float, grace_seconds: float):
         if finished.wait(max(0.0, hard_deadline - monotonic())):
             return
         try:
-            os.write(2, b"Monitor worker hard deadline exceeded; exiting with code 124.\n")
+            message = (
+                "Monitor worker hard deadline exceeded; "
+                f"stage={_CURRENT_STAGE}; exiting with code 124.\n"
+            )
+            os.write(2, message.encode())
         except OSError:
             pass
         os._exit(124)
@@ -189,6 +200,7 @@ def run_worker(
         )
         # Public macro observations use their own canonical owner, not fabricated
         # Monitor customer events. Reuse this worker and its operational lock.
+        _set_stage("market_refresh")
         market_refresh = (
             runtime.markets.worker_refresh(deadline_monotonic=deadline)
             if settings.market_refresh_enabled
@@ -197,6 +209,7 @@ def run_worker(
         runs = []
         deadline_exhausted = False
         for index, source_id in enumerate(configured):
+            _set_stage(f"collect:{source_id}")
             remaining = deadline - monotonic()
             if remaining < settings.monitor_source_min_start_seconds:
                 deadline_exhausted = True
@@ -263,6 +276,7 @@ def run_worker(
                     )
                 return signal_briefs_for_monitor(runtime.monitor)
 
+            _set_stage("research")
             research_provider = get_ai_provider(
                 AiConfig.from_settings(settings, purpose="monitor_public_research")
             )
@@ -295,6 +309,7 @@ def run_worker(
                 investigation.setdefault("event_id", document["event_id"])
                 investigations.append(investigation)
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
+            _set_stage("technical")
             provider = get_ai_provider(AiConfig.from_settings(settings))
             technical_briefs = _select_technical_briefs(
                 projected_briefs(),
@@ -420,6 +435,7 @@ def run_worker(
             # Brief synthesis runs after technical investigation so the governed
             # content hash and seller prose include the current persisted research
             # projection. A stale pre-investigation summary cannot remain current.
+            _set_stage("brief_synthesis")
             prepared_briefs = projected_briefs()
             for prepared in prepared_briefs:
                 persist_assessment(
@@ -439,6 +455,7 @@ def run_worker(
                 deadline_monotonic=deadline,
                 minimum_attempt_seconds=settings.ai_timeout_seconds,
             )
+            _set_stage("publication")
             # Publication remains a deterministic server decision. Gemini may
             # select public reads and improve prose, but cannot pass these gates.
             final_briefs = []
@@ -462,6 +479,7 @@ def run_worker(
                         assessment_version=persisted["version"],
                     )
                 briefs_by_id.setdefault(rendered.id, []).append(rendered)
+            _set_stage("explanations")
             for investigation in investigations:
                 research_run_id = investigation.get("run_id")
                 state = (
@@ -637,6 +655,7 @@ def run_worker(
                         "provider_status": outcome.provider_status.value,
                     }
                 )
+    _set_stage("lock_release")
     failed = tuple(run.source_id for run in runs if run.failures)
     report = {
         "status": "DEADLINE_EXHAUSTED"
@@ -673,6 +692,16 @@ def run_worker(
     ] == "FAILED" else 0
 
 
+def _compact_summary(report: dict, code: int, elapsed: float) -> str:
+    failed = ",".join(report.get("failed_sources", ())) or "-"
+    stage = report.get("stage", _CURRENT_STAGE)
+    return (
+        f"Monitor worker status={report.get('status', 'WORKER_ERROR')} "
+        f"exit_code={code} elapsed_seconds={elapsed:.3f} "
+        f"failed_sources={failed} stage={stage}\n"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Run bounded durable BTX Monitor collection."
@@ -680,19 +709,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source", action="append", dest="sources")
     parser.add_argument("--limit", type=int)
     args = parser.parse_args(argv)
-    settings = Settings()
-    with _hard_process_deadline(
-        settings.monitor_worker_max_seconds, settings.monitor_worker_hard_grace_seconds
-    ) as deadline:
-        report, code = run_worker(
-            settings,
-            source_ids=tuple(args.sources) if args.sources else None,
-            limit=args.limit,
-            deadline_monotonic=deadline,
-            hard_deadline_enforced=True,
-        )
+    started = monotonic()
+    try:
+        settings = Settings()
+        with _hard_process_deadline(
+            settings.monitor_worker_max_seconds,
+            settings.monitor_worker_hard_grace_seconds,
+        ) as deadline:
+            report, code = run_worker(
+                settings,
+                source_ids=tuple(args.sources) if args.sources else None,
+                limit=args.limit,
+                deadline_monotonic=deadline,
+                hard_deadline_enforced=True,
+            )
+        sys.stderr.write(_compact_summary(report, code, monotonic() - started))
         print(json.dumps(report, default=str, sort_keys=True))
         return code
+    except Exception as error:
+        original = getattr(error, "orig", None)
+        sqlstate = getattr(error, "sqlstate", None) or getattr(original, "sqlstate", None)
+        report = {
+            "status": "WORKER_ERROR",
+            "error_class": type(error).__name__,
+            "sqlstate": sqlstate,
+            "stage": _CURRENT_STAGE,
+        }
+        sys.stderr.write(_compact_summary(report, 1, monotonic() - started))
+        print(json.dumps(report, sort_keys=True))
+        return 1
 
 
 if __name__ == "__main__":
