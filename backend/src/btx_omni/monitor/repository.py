@@ -408,22 +408,19 @@ class MonitorRepository:
         self, checkpoints: tuple[ProcurementCheckpoint, ...]
     ) -> None:
         with self.engine.begin() as connection:
-            for item in checkpoints:
-                connection.execute(
-                    delete(federal_collection_checkpoints).where(
-                        federal_collection_checkpoints.c.source_id == item.source_id,
-                        federal_collection_checkpoints.c.query_key == item.query_key,
-                    )
-                )
-                connection.execute(
-                    insert(federal_collection_checkpoints).values(
-                        **{
-                            **asdict(item),
-                            "coverage_state": item.coverage_state.value,
-                            "updated_at": item.last_attempt_at or item.window_end,
-                        }
-                    )
-                )
+            _replace_rows(
+                connection,
+                federal_collection_checkpoints,
+                ("source_id", "query_key"),
+                [
+                    {
+                        **asdict(item),
+                        "coverage_state": item.coverage_state.value,
+                        "updated_at": item.last_attempt_at or item.window_end,
+                    }
+                    for item in checkpoints
+                ],
+            )
 
     def procurement_coverage(self, source_id: str | None = "sam_gov") -> tuple[dict, ...]:
         checkpoints = (
