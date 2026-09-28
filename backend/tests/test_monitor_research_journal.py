@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, insert, text
 from sqlalchemy.engine import make_url
 
 from btx_omni.monitor.research_state import (
@@ -169,3 +169,35 @@ def test_failed_investigation_cooldown_survives_restart(journal):
     with pytest.raises(ResearchLeaseUnavailable, match='cooldown'):
         acquire(MonitorResearchJournal(journal.engine), NOW + timedelta(seconds=59))
     assert acquire(journal, NOW + timedelta(seconds=60))[0] == identifier
+
+
+def test_batched_latest_status_matches_single_source_tie_breaking(journal):
+    pairs = [('event-a', 'a' * 64), ('event-b', 'b' * 64), ('event-c', 'c' * 64)]
+    records = [
+        ('a-tie', *pairs[0], 'COMPLETED', NOW),
+        ('z-tie', *pairs[0], 'PAUSED', NOW),
+        ('b-old', *pairs[1], 'COMPLETED', NOW - timedelta(seconds=1)),
+        ('b-new', *pairs[1], 'PAUSED', NOW),
+        ('c-only', *pairs[2], 'COMPLETED', NOW),
+        ('c-running', *pairs[2], 'RUNNING', NOW + timedelta(seconds=1)),
+    ]
+    with journal.engine.begin() as connection:
+        connection.execute(insert(runs), [
+            dict(id=identifier, event_reference=reference, source_revision=revision,
+                 status=status, created_at=NOW, updated_at=updated_at,
+                 completed_steps=0, attempt_count=0)
+            for identifier, reference, revision, status, updated_at in records
+        ])
+    statements = []
+
+    def count_query(_connection, _cursor, statement, _parameters, _context, _executemany):
+        statements.append(statement)
+
+    event.listen(journal.engine, 'before_cursor_execute', count_query)
+    try:
+        batched = journal.latest_statuses_for_sources([*pairs, pairs[0], ('missing', 'd' * 64)])
+    finally:
+        event.remove(journal.engine, 'before_cursor_execute', count_query)
+    assert len(statements) == 1
+    assert batched == {pair: journal.latest_for_source(*pair)['status'] for pair in pairs}
+    assert journal.latest_statuses_for_sources([]) == {}
