@@ -798,6 +798,9 @@ class MonitorRepository:
 
     def event_contexts(
         self,
+        *,
+        limit: int = 500,
+        offset: int = 0,
     ) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
         """One committed current-source snapshot for every public read consumer.
 
@@ -834,6 +837,8 @@ class MonitorRepository:
                     )
                 )
                 .order_by(monitor_events.c.updated_at.desc())
+                .limit(limit)
+                .offset(offset)
             ).mappings()
             contexts = []
             for row in rows:
