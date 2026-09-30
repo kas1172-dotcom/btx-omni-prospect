@@ -539,7 +539,7 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
     async with AsyncClient(
         transport=ASGITransport(app=create_app()), base_url="http://test"
     ) as client:
-        response = await client.post(
+        defense = await client.post(
             "/api/omni",
             json={
                 "question": "Which accounts have the highest scores?",
@@ -549,14 +549,26 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
                 },
             },
         )
-    payload = response.json()
-    assert response.status_code == 200
-    assert (
-        payload["content"]
-        == "No scoped opportunities in this selection have complete Attractiveness inputs. Organization-level scores are not a substitute."
-    )
-    assert "Organization-level scores are not a substitute" in payload["content"]
-    assert payload["context_used"] == {"filters": {"market": "Defense"}}
+        medical = await client.post(
+            "/api/omni",
+            json={
+                "question": "Which accounts have the highest scores?",
+                "context": {"surface": "ACCOUNTS", "active_filters": {"market": "Medical"}},
+            },
+        )
+    assert defense.status_code == medical.status_code == 200
+    defense_payload, medical_payload = defense.json(), medical.json()
+    # The SAMPLE fixture now has scored pursuits: exercise the typed market
+    # boundary with non-empty, distinct subsets rather than the former empty state.
+    assert "Opportunities ranked by Attractiveness" in defense_payload["content"]
+    assert "Lockheed Martin" in defense_payload["content"]
+    assert "Northrop Grumman" in defense_payload["content"]
+    assert "Medtronic" not in defense_payload["content"]
+    assert "Applied Materials" not in defense_payload["content"]
+    assert defense_payload["context_used"] == {"filters": {"market": "Defense"}}
+    assert "Medtronic" in medical_payload["content"]
+    assert "Lockheed Martin" not in medical_payload["content"]
+    assert medical_payload["context_used"] == {"filters": {"market": "Medical"}}
 
 
 @pytest.mark.asyncio

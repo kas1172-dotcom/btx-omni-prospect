@@ -260,14 +260,20 @@ def test_customer_api_exposes_rich_and_sparse_priority_truthfully() -> None:
         "public": "SANITIZED_REFERENCE_SOURCE",
         "btx": "SIMULATED_BTX_CONTEXT",
     }
+    # The current pre-Phase-1 SAMPLE projection has two Honeywell commercial contexts;
+    # this assertion tracks the loaded fixture state without changing it.
     assert len(honeywell["prism_commercial_context"]) == 2
     assert honeywell["alerts"]
     assert honeywell["intelligence"] == []
+    # This release-base SAMPLE projection has no public contact candidates;
+    # absence is preserved rather than inferred from the public identity.
     assert honeywell["public_contacts"] == []
     assert huxwrx["truth_categories"] == {
         "public": "SANITIZED_REFERENCE_SOURCE",
         "btx": "SIMULATED_BTX_CONTEXT",
     }
+    # The release-base SAMPLE projection has no HUXWRX commercial contexts;
+    # the later enhanced cohort is outside this pre-Phase-1 gate.
     assert huxwrx["prism_commercial_context"] == []
     assert huxwrx["alerts"] == []
     assert huxwrx["account_attractiveness"]["status"] == "UNAVAILABLE"

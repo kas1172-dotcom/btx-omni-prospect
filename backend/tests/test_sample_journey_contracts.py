@@ -27,7 +27,7 @@ def runtime(tmp_path):
     engine = create_engine(url)
     metadata.create_all(engine)
     engine.dispose()
-    return PocRuntime(Settings(_env_file=None, database_url=url, sample_enhancement_enabled=True, monitor_mode='disabled'))
+    return PocRuntime(Settings(_env_file=None, database_url=url, monitor_mode='disabled'))
 
 
 def test_j2_j3_api_defaults_and_model_context_are_available_without_writes(runtime):
@@ -117,7 +117,7 @@ def test_runtime_clock_override_and_durable_import_separation(runtime):
     assert runtime.observed_at().date().isoformat() == '2026-10-01'
     with pytest.raises(ValueError, match='read-only fixture view'):
         PocRuntime(Settings(_env_file=None, database_url=runtime.settings.database_url,
-                            sample_enhancement_enabled=True, commercial_durable_state_enabled=True))
+                            commercial_durable_state_enabled=True))
 
 
 def test_unknown_customer_risk_range_retains_weights_and_possible_floor():

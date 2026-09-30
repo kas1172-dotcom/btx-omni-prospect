@@ -16,8 +16,10 @@ from btx_omni.monitor.research_state import (
 
 NOW = datetime(2026, 9, 8, 18, tzinfo=UTC)
 
+JOURNAL_BACKENDS = ['sqlite'] + (['postgresql'] if os.environ.get('BTX_DATABASE_URL') else [])
 
-@pytest.fixture(params=['sqlite', 'postgresql'])
+
+@pytest.fixture(params=JOURNAL_BACKENDS)
 def journal(tmp_path, request):
     schema = None
     if request.param == 'postgresql':

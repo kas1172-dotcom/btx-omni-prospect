@@ -19,7 +19,7 @@ def test_j1_regional_cohort_has_exact_pins_and_directory_parity(tmp_path):
     engine = create_engine(url)
     metadata.create_all(engine)
     engine.dispose()
-    runtime = PocRuntime(Settings(_env_file=None, database_url=url, sample_enhancement_enabled=True, monitor_mode='disabled'))
+    runtime = PocRuntime(Settings(_env_file=None, database_url=url, monitor_mode='disabled'))
     result = map_data(runtime=runtime)
     markers = [r for r in result['accounts'] if r['account_id'] in IDS]
     directory = [r for r in accounts(runtime)['accounts'] if r['id'] in IDS]

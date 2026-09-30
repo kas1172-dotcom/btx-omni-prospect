@@ -6,7 +6,7 @@
 
 ## Why this replacement matters
 
-The original proposal described a general public-market universe. That historical count is not the current canonical catalog. See [generated current counts](../product/SAMPLE_ENHANCEMENT_REPORT.md#generated-catalog-counts). Public identity is not proof of a BTX customer relationship; the opt-in enhancement adds explicitly fictional identities and synthetic transactions separately.
+The original proposal described a general public-market universe. That historical count is not the current canonical catalog. See [generated current counts](../product/SAMPLE_ENHANCEMENT_REPORT.md#generated-catalog-counts). Public identity is not proof of a BTX customer relationship; the permanent SAMPLE enhancement adds explicitly fictional identities and synthetic transactions separately.
 
 The POC has no target account count. It uses a BTX-weighted set of researched real companies built from BTX Precision business-unit websites, industry pages, case studies, press releases, and third-party award profiles, with public contact channels sourced from official supplier portals. Coverage expands only when additional real entities are sufficiently researched.
 

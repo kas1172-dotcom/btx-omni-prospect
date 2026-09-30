@@ -36,7 +36,10 @@ def opportunity_workspace(response: Response, actor: Principal = Depends(princip
     from btx_omni.modules.commercial.opportunities import account_opportunities
 
     sample = runtime.environment()
-    rows = [row for account_id in sorted(sample.commercial_ledgers)
+    account_ids = set(sample.commercial_ledgers)
+    if str(getattr(getattr(runtime, "settings", None), "data_mode", "")).upper() == "SAMPLE":
+        account_ids.update(row["account_id"] for row in getattr(sample, "pursuits", ()))
+    rows = [row for account_id in sorted(account_ids)
             for row in account_opportunities(sample, account_id)]
     response.headers["Cache-Control"] = "private, no-store"
     return {"opportunities": rows, "revision": sample.commercial_revision}

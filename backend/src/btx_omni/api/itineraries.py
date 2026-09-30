@@ -81,7 +81,7 @@ class SaveItinerary(BaseModel):
 def current_itinerary(runtime: PocRuntime = Depends(get_runtime), current: Principal = Depends(principal)):
     result = runtime.itineraries.get(current.user_id)
     settings = getattr(runtime, 'settings', None)
-    if result is None and getattr(settings, 'sample_enhancement_enabled', False) and settings.data_mode.upper() == 'SAMPLE':
+    if result is None and settings.data_mode.upper() == 'SAMPLE':
         from btx_omni.providers.sample.regional import itinerary
         result = itinerary(runtime.environment(), anchor=settings.demo_as_of_date)
     return {"itinerary": result}

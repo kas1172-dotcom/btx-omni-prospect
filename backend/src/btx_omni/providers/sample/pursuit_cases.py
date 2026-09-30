@@ -4,6 +4,7 @@ import json
 from btx_omni.core.clock import relative_date
 from btx_omni.modules.scoring.account_attractiveness import FACTORS
 from btx_omni.providers.sample.enhancement import synthetic_record
+from btx_omni.providers.sample.classifications import refresh_authored_bins
 
 
 def add_pursuit_cases(account):
@@ -92,4 +93,5 @@ def add_pursuit_cases(account):
         raw['reviewed_as_of'] = relative_date(-3, anchor=account['as_of']) if variant == 'stale' else account['as_of']
         raw['evidence_state'] = variant.upper()
         account['opportunities'].append(other)
+    refresh_authored_bins(account)
     return account

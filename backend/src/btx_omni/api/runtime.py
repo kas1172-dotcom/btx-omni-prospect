@@ -77,9 +77,9 @@ class PocRuntime:
     network_imports: NetworkImportRepository = field(init=False)
 
     def __post_init__(self) -> None:
-        if self.settings.sample_enhancement_enabled and self.settings.commercial_durable_state_enabled:
+        if self.settings.data_mode.upper() == 'SAMPLE' and self.settings.commercial_durable_state_enabled:
             raise ValueError('SAMPLE enhancement is a read-only fixture view; disable durable commercial imports for this local demonstration.')
-        if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+        if self.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.enhancement import enhance_environment
             self.sample = enhance_environment(self.sample, anchor=self.settings.demo_as_of_date)
         self._curated_sample = self.sample
@@ -101,7 +101,7 @@ class PocRuntime:
         self.account_planning = AccountPlanningRepository(application_engine)
         self.markets = MarketService(MarketSeriesRepository(application_engine), worker_enabled=self.settings.market_refresh_enabled,
                                      scheduler_configured=self.settings.monitor_schedule_configured)
-        if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+        if self.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.medical_market import (
                 CuratedMarketReadRepository,
             )
@@ -175,7 +175,7 @@ class PocRuntime:
             "usaspending": usa_targets,
             "sec_edgar": sec_targets,
         }
-        if self.settings.sample_enhancement_enabled and self.settings.data_mode.upper() == 'SAMPLE':
+        if self.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.expansion import expansion_context
             from btx_omni.providers.sample.kratos import context
             from btx_omni.providers.sample.risk_cases import risk_context

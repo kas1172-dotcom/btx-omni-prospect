@@ -247,7 +247,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         },
         "commercial_source_states": commercial.source_states,
         "commercial_ledger": commercial.ledger_summary,
-        "sample_context": sample.commercial_ledgers.get(account_id, {}).get('commercial_case') if runtime.settings.sample_enhancement_enabled else None,
+        "sample_context": sample.commercial_ledgers.get(account_id, {}).get('commercial_case') if runtime.settings.data_mode.upper() == 'SAMPLE' else None,
         "public_contacts": account.public_contacts,
         "public_facilities": public_facilities,
         "prism_commercial_context": contexts,

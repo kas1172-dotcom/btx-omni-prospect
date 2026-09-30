@@ -1,6 +1,6 @@
 # Test Baseline Policy for Demo SAMPLE
 
-The isolated SAMPLE gate is the merge contract for demo-only sample convergence. Its frozen result is **92 passed / 0 failed / 0 errors**. The full backend suite is informational release-health reporting: categorize its failures, but they do not block SAMPLE convergence unless they affect this gate. **The gate is the exact pytest invocation below**, not a marker or a fixed count of test files; the number 92 describes one run of that invocation.
+The isolated SAMPLE gate is the merge contract for demo-only sample convergence. The original Phase 1 frozen result was **92 passed / 0 failed / 0 errors**; later SAMPLE fixture and test additions expanded the gate to **131 passed / 0 failed / 0 errors** immediately before the pursuit-differentiation pass. With `test_pursuit_differentiation.py` explicitly included below, the current run is **132 passed / 0 failed / 0 errors**. The full backend suite is informational release-health reporting: categorize its failures, but they do not block SAMPLE convergence unless they affect this gate. **The gate is the exact pytest invocation below**, not a marker or a fixed count of test files; counts describe runs of that invocation at different revisions.
 
 ## Gate membership and reproducible command
 
@@ -19,16 +19,17 @@ export PYTHONPATH='/Users/kapilsharma/Desktop/btx-sample-convergence/backend/src
   tests/test_priority_customer_completeness.py \
   tests/test_sanitized_reference_data.py \
   tests/test_app.py \
-  tests/test_map_workspace.py
+  tests/test_map_workspace.py \
+  tests/test_pursuit_differentiation.py
 ```
 
 The shell expands `tests/test_sample_*.py` to the matching files at run time. A newly added matching file enters the gate automatically; a new file outside that pattern must be added explicitly. At this snapshot, the glob expands to:
 
-- `test_sample_award_confidence.py`, `test_sample_data_contract.py`, `test_sample_enhancement_api.py`, `test_sample_enhancement_ledger.py`, `test_sample_enhancement_preflight.py`, `test_sample_environment.py`, `test_sample_expansion.py`, `test_sample_external_risk.py`, `test_sample_golden_tier1.py`, `test_sample_golden_tier2.py`, `test_sample_journey_contracts.py`, `test_sample_kratos.py`, `test_sample_medical_market.py`, `test_sample_model_budgets.py`, `test_sample_planning.py`, `test_sample_provider_foundation.py`, `test_sample_public_research.py`, `test_sample_regional.py`, and `test_sample_relationships.py`.
+- `test_sample_award_confidence.py`, `test_sample_company_coverage.py`, `test_sample_company_fixtures.py`, `test_sample_data_contract.py`, `test_sample_enhancement_api.py`, `test_sample_enhancement_ledger.py`, `test_sample_enhancement_preflight.py`, `test_sample_environment.py`, `test_sample_expansion.py`, `test_sample_external_risk.py`, `test_sample_golden_tier1.py`, `test_sample_golden_tier2.py`, `test_sample_journey_contracts.py`, `test_sample_kratos.py`, `test_sample_medical_market.py`, `test_sample_model_budgets.py`, `test_sample_planning.py`, `test_sample_provider_foundation.py`, `test_sample_public_research.py`, `test_sample_regional.py`, and `test_sample_relationships.py`.
 
-The six explicitly named files cover the release SAMPLE journey, POC contracts, and the four carried Phase 0.5 tests. Broad canonical API, durable commercial, monitor-worker, and migration-contract tests remain in the full suite. Their exclusion does not imply they pass.
+The six previously named files cover the release SAMPLE journey, POC contracts, and the four carried Phase 0.5 tests. `test_pursuit_differentiation.py` is explicitly included because its name is outside the sample glob. Broad canonical API, durable commercial, monitor-worker, and migration-contract tests remain in the full suite. Their exclusion does not imply they pass.
 
-## Current full-suite snapshot (informational, not gating, not canonical)
+## Historical full-suite snapshot (informational, not gating, not canonical)
 
 Configuration A uses the same exports and migration revision above, with `BTX_COMMERCIAL_DURABLE_STATE_ENABLED=false`. From the same `backend` directory, run:
 
@@ -36,7 +37,7 @@ Configuration A uses the same exports and migration revision above, with `BTX_CO
 /Users/kapilsharma/Desktop/btx-omni-prospect/backend/.venv/bin/pytest -q --tb=no
 ```
 
-Result: **1,070 passed / 19 failed / 10 errors / 2 skipped** (14 warnings). This is a snapshot of the command and configuration above, not a regression or improvement claim.
+Earlier result: **1,070 passed / 19 failed / 10 errors / 2 skipped** (14 warnings). This predates later SAMPLE fixture and test additions, including the named-company pursuits. It is not a current full-suite result or a regression/improvement claim.
 
 The 19 failures group by test module and concern: 11 durable commercial catalog, import, or promotion acceptance cases (`test_account_planning`, `test_api_acceptance`, `test_candidate_promotion`, `test_commercial_persistence`, `test_crm_mapping_preservation`, `test_durable_canonical_programs`, `test_durable_public_accounts`, `test_program_candidate_promotion`); three monitor-worker cases (`test_monitor_discovery_acceptance`, `test_monitor_live`, `test_monitor_operations`); and five network route authorization cases (`test_network_route_inventory`). These groups remain release-health issues outside the SAMPLE gate.
 
