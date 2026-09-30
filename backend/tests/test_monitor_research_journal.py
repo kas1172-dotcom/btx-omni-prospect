@@ -183,9 +183,16 @@ def test_batched_latest_status_matches_single_source_tie_breaking(journal):
     ]
     with journal.engine.begin() as connection:
         connection.execute(insert(runs), [
-            dict(id=identifier, event_reference=reference, source_revision=revision,
-                 status=status, created_at=NOW, updated_at=updated_at,
-                 completed_steps=0, attempt_count=0)
+            {
+                "id": identifier,
+                "event_reference": reference,
+                "source_revision": revision,
+                "status": status,
+                "created_at": NOW,
+                "updated_at": updated_at,
+                "completed_steps": 0,
+                "attempt_count": 0,
+            }
             for identifier, reference, revision, status, updated_at in records
         ])
     statements = []

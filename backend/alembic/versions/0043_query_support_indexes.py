@@ -5,6 +5,7 @@ relying on these indexes for performance. Use CREATE INDEX CONCURRENTLY at scale
 """
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0043_query_support_indexes"
