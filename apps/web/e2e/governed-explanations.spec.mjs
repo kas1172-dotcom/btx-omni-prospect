@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 import { openCustomerSection, openRelationshipWorkspace } from './helpers.mjs'
 
 const governedExplanation = {
@@ -97,8 +98,8 @@ async function openLockheedMobile(page) {
 
 test('Signal Brief Technical Fit retains deterministic context while disclosing its governed explanation', async ({ page }, testInfo) => {
   await addTodayTechnicalExplanationFixture(page)
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
+  await waitForToday(page)
+  await page.getByRole('tab', { name: 'Market Hubs', exact: true }).click()
   const brief = page.locator('.seller-signal-brief').filter({ hasText: 'Fixture public contract award' })
   await expect(brief).toBeVisible()
   await brief.getByRole('button', { name: 'View supporting evidence (1)' }).click()
@@ -122,8 +123,8 @@ test('Technical Fit disclosure remains contained at 390px and 320px', async ({ p
   await addTodayTechnicalExplanationFixture(page)
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }]) {
     await page.setViewportSize(viewport)
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
+    await waitForToday(page)
+    await page.getByRole('tab', { name: 'Market Hubs', exact: true }).click()
     const brief = page.locator('.seller-signal-brief').filter({ hasText: 'Fixture public contract award' })
     await brief.getByRole('button', { name: 'View supporting evidence (1)' }).click()
     await brief.getByRole('button', { name: 'Program, components and possible BTX fit' }).click()
@@ -136,7 +137,7 @@ test('Technical Fit disclosure remains contained at 390px and 320px', async ({ p
 
 test('Relationship reference retains its governed path and evidence beside the canonical graph', async ({ page }) => {
   await addRelationshipExplanationFixture(page)
-  await page.goto('/')
+  await waitForToday(page)
   await openLockheed(page)
   const relationshipPanel = page.locator('.account-workspace-relationship')
   await openCustomerSection(page, /People and relationship paths/)
@@ -155,7 +156,7 @@ test('Relationship explanation remains contained at 390px and 320px', async ({ p
   await addRelationshipExplanationFixture(page)
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }]) {
     await page.setViewportSize(viewport)
-    await page.goto('/')
+    await waitForToday(page)
     await openLockheedMobile(page)
     const relationshipPanel = page.locator('.account-workspace-relationship')
     await openCustomerSection(page, /People and relationship paths/)

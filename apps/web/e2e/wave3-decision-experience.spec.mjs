@@ -14,6 +14,7 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 900 }, { name: '
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/#/accounts/lockheed-martin')
+    await expect(page.locator('.account-workspace')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
     const overview = page.locator('.profile-overview')
     await expect(overview).toContainText('Data Coverage')

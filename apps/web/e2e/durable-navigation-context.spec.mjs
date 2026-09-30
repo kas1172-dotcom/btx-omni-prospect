@@ -51,9 +51,8 @@ async function installAssessmentFixture(page) {
 async function openSelectedAssessmentFromToday(page) {
   await installAssessmentFixture(page)
   await page.goto('/#/today')
-  await page.getByLabel('Today filters').waitFor()
-  if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
-    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
+  await expect(page.getByRole('group', { name: 'Priority source', exact: true })).toBeVisible()
+  await page.getByRole('group', { name: 'Priority source', exact: true }).getByRole('button', { name: /Public/ }).click()
   const priority = page.locator('[data-priority-id="priority-navigation"]')
   await priority.getByText('Evidence and next action').click()
   await priority.getByRole('button', { name: 'Use in Omni' }).click()
@@ -73,7 +72,7 @@ test('Today assessment and related record retain the filtered return location th
   expect(page.url()).toContain('view=record')
   await page.goBack(); await expect(page.getByRole('heading', { name: 'Lockheed Martin', level: 1 })).toBeVisible()
   await page.goBack(); await expect(page.getByRole('tab', { name: 'Overview', exact: true })).toHaveAttribute('aria-selected', 'true')
-  await page.goBack(); await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await page.goBack(); await expect(page.locator('.today-surface')).toBeVisible()
   expect(page.url()).toContain('f.kind=PUBLIC_SIGNAL')
   expect(page.url()).toContain(`assessment=${assessmentId}`)
   await expect(page.locator('[data-priority-id="priority-navigation"]')).toBeVisible()

@@ -79,7 +79,6 @@ for (const viewport of viewports) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
       expect(errors).toEqual([])
       await testInfo.attach('canonical-scene-manifest', { body: JSON.stringify({ scene, account, component, as_of: data.scope.as_of, graph_revision: data.eligible_graph_revision, commercial_as_of: data.commercial_as_of, route, measured_browser_scope: 'Local persisted API and actual SVG; not hosted, Maps, Gemini, performance or CSO usability validation' }, null, 2), contentType: 'application/json' })
-      await section.screenshot({ path: testInfo.outputPath(`${scene}-${viewport.width}.png`) })
     })
   }
 }

@@ -52,6 +52,7 @@ export function Communications({
   onAccount,
 }: Props) {
   const [query, setQuery] = useState("");
+  const [editorAccounts, setEditorAccounts] = useState(accounts);
   const [chosenView, setChosenView] = useState<QueueView>();
   const view = chosenView ?? defaultView(principal);
   const counts = viewCounts(items, principal);
@@ -64,6 +65,14 @@ export function Communications({
   const [expandedHistoryId, setExpandedHistoryId] = useState<string>();
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const [loadedHistory, setLoadedHistory] = useState<{ id: string; version: number; events: CommunicationHistoryEvent[]; error: boolean }>();
+  useEffect(() => {
+    if (!editorOpen || editorAccounts.length) return;
+    const controller = new AbortController();
+    void api.accounts(controller.signal).then(result => {
+      if (!controller.signal.aborted) setEditorAccounts(result.accounts);
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [editorAccounts.length, editorOpen]);
   const accountById = useMemo(
     () => new Map(accounts.map((item) => [item.id, item])),
     [accounts],
@@ -102,7 +111,16 @@ export function Communications({
   const history = [...(currentHistory?.events ?? [])].sort((a, b) => Date.parse(b.occurred_at) - Date.parse(a.occurred_at) || b.id - a.id);
   const showAllHistory = expandedHistoryId === selected?.id;
   const detailAccount = cachedAccount?.account.id === selected?.account_id ? cachedAccount : accountDetail?.account.id === selected?.account_id ? accountDetail : undefined;
-  const startDraft = () => { setEditing(undefined); setEditorOpen(true); };
+  const openEditor = (draft?: CommunicationDraft) => {
+    setEditing(draft);
+    setEditorOpen(true);
+    if (!editorAccounts.length) {
+      void api.accounts().then(result => setEditorAccounts(result.accounts)).catch(() => {
+        // The editor's existing account validation remains authoritative.
+      });
+    }
+  };
+  const startDraft = () => { void openEditor(); };
   const closeEditor = () => {
     setEditorOpen(false);
     // A saved edit can leave the current queue; give focus a stable fallback.
@@ -286,10 +304,7 @@ export function Communications({
                   }}>Refresh saved communication</Button>
                   <Button
                     disabled={selected.status === "SENT" || selected.status === "CANCELED"}
-                    onClick={() => {
-                      setEditing(selected);
-                      setEditorOpen(true);
-                    }}
+                    onClick={() => void openEditor(selected)}
                   >
                     Edit draft
                   </Button>
@@ -359,7 +374,7 @@ export function Communications({
         key={`${editorOpen}-${editing?.id ?? "new"}`}
         open={editorOpen}
         draft={editing}
-        accounts={accounts}
+        accounts={editorAccounts}
         onClose={closeEditor}
         onAccountLoaded={setCachedAccount}
         onDelivery={onDelivery}
@@ -545,7 +560,7 @@ function CommunicationEditor({
         <SelectInput
           label="Customer"
           value={accountId}
-          disabled={Boolean(draft) || working}
+          disabled={working}
           onChange={(event) => {
             setAccountId(event.target.value);
             setRecipients([]);

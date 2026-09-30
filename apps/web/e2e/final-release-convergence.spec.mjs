@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 
 const primary = ['Today', 'Profiles', 'Intelligence', 'Map', 'Actions']
 
@@ -9,23 +10,23 @@ test('release surfaces remain free of React/runtime errors and restore drawer fo
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
   page.on('pageerror', error => errors.push(error.message))
 
-  await page.goto('/')
+  await waitForToday(page)
   const navigation = page.getByRole('navigation', { name: 'Primary navigation' })
   for (const label of [...primary, 'Communications']) {
     await navigation.getByRole('button', { name: label, exact: true }).click()
-    await expect(page.locator('.page-title h1')).toBeVisible()
+    await expect(page.locator('.surface').first()).toBeVisible()
     expect(await documentFitsViewport(page)).toBe(true)
   }
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible()
 
   await navigation.getByRole('button', { name: 'Map', exact: true }).click()
-  const filters = page.getByRole('button', { name: 'Layers & filters' })
+  const filters = page.getByRole('button', { name: 'Filters' })
   await filters.click()
-  await expect(page.getByRole('dialog', { name: 'Layers & filters' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible()
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden')
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog', { name: 'Layers & filters' })).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Filters' })).toHaveCount(0)
   await expect(filters).toBeFocused()
 
   await navigation.getByRole('button', { name: 'Today', exact: true }).click()
@@ -42,7 +43,7 @@ test('release surfaces remain free of React/runtime errors and restore drawer fo
 for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }, { width: 430, height: 932 }]) {
   test(`mobile release matrix fits every major surface at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport)
-    await page.goto('/')
+    await waitForToday(page)
     const navigation = page.getByRole('navigation', { name: 'Mobile primary navigation' })
     for (const label of primary) {
       await navigation.getByRole('button', { name: label, exact: true }).click()

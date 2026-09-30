@@ -14,7 +14,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     expect(decisions.customer_health.score).toBe('72.50')
     expect(decisions.internal_commercial_risk.score).toBe('23.75')
     expect(Number(decisions.customer_health.data_coverage.ratio)).toBe(1)
-    expect(decisions.customer_health.configuration_version).toBe('BTX_SCORING_RUBRIC_V2')
+    expect(decisions.customer_health.configuration_version).toBe('BTX_SCORING_RUBRIC_V2.0')
     expect(decisions.opportunities.every(item => item.pwin.score === null && item.delivery_feasibility.score === null)).toBeTruthy()
     await openCustomerSection(page, /Commercial decisions & follow-ups/)
     const health = page.getByRole('article', { name: 'Customer health score summary' })

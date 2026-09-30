@@ -68,7 +68,7 @@ test('Omni explains the selected Applied Materials evidence in human language', 
 test('Project Beacon mobile command surfaces remain concise, reachable, and overflow-free', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#/today')
-  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await expect(page.locator('.today-surface')).toBeVisible()
   await expect(page.locator('.today-priority-summary')).toBeVisible()
   await expectNoPageOverflow(page)
   await capture(page, 'today-mobile')
@@ -84,8 +84,7 @@ test('Project Beacon mobile command surfaces remain concise, reachable, and over
 
   await mobileNav.getByRole('button', { name: 'Map' }).click()
   await expect(page.getByRole('heading', { name: 'Tactical Map' })).toBeVisible()
-  await page.getByRole('button', { name: 'List', exact: true }).click()
-  const result = page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /customer site · inspect details/i }).first()
+  const result = page.getByRole('region', { name: 'Map site table', exact: true }).getByRole('button').filter({ hasText: /^KLA Corporation/ }).first()
   await result.click()
   await expect(page.getByRole('complementary', { name: 'Selected map location' })).toBeVisible()
   await expectNoPageOverflow(page)
