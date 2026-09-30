@@ -1,15 +1,20 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 
 const primaryDestinations = ['Today', 'Opportunities', 'Profiles', 'Intelligence', 'Map', 'Actions']
 
 async function expectSurface(page, name) {
+  if (name === 'Today') {
+    await expect(page.locator('.today-surface')).toBeVisible()
+    return
+  }
   const heading = name === 'Opportunities' ? page.getByRole('heading', { level: 1, name, exact: true }) : page.locator('.page-title h1')
   await expect(heading).toHaveText(name === 'Map' ? 'Tactical Map' : name === 'Profiles' ? 'Accounts' : name)
 }
 
 test('desktop target shell preserves primary seller navigation and Omni access', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 })
-  await page.goto('/')
+  await waitForToday(page)
 
   const shell = page.locator('.app-shell:not(.app-shell-loading)')
   const navigation = page.getByRole('navigation', { name: 'Primary navigation' })
@@ -38,7 +43,7 @@ test('desktop target shell preserves primary seller navigation and Omni access',
 
 test('390 × 844 target shell keeps primary destinations and More safe without overflow or Omni collision', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await waitForToday(page)
 
   const shell = page.locator('.app-shell:not(.app-shell-loading)')
   const navigation = page.getByRole('navigation', { name: 'Mobile primary navigation' })

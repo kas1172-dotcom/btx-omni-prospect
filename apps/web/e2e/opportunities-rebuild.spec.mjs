@@ -160,10 +160,10 @@ test('table header sort cycles, metrics remain lane-wide and groups keep Unassig
   await expect(page.locator('.opp-table-wrap .opp-group-toggle').last()).toContainText('Unassigned')
 })
 
-test('unseeded real backend stays empty instead of silently enabling development examples', async ({ page }) => {
+test('seeded real backend does not silently enable development examples', async ({ page }) => {
   const response = page.waitForResponse(r => r.url().endsWith('/api/accounts/workspace/opportunities') && r.status() === 200)
   await enter(page, '')
-  expect((await (await response).json()).opportunities).toEqual([])
-  await expect(page.getByRole('heading', { name: 'No opportunities in this lane' })).toBeVisible()
+  expect((await (await response).json()).opportunities.length).toBeGreaterThan(0)
+  await expect(page.getByRole('heading', { name: 'No opportunities in this lane' })).toHaveCount(0)
   await expect(page.locator('.opp-fixture-notice')).toHaveCount(0)
 })

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 
 const sorted = values => [...values].sort((left, right) => left.localeCompare(right))
 
@@ -21,7 +22,7 @@ test('seller navigation is consistent and permission-safe on direct Source Healt
   let sourceHealthRequests = 0
   await page.route('**/api/monitor/health', async route => { sourceHealthRequests += 1; await route.continue() })
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/')
+  await waitForToday(page)
   await expect(page.getByLabel('Signed-in user')).toContainText('Development Salesperson')
   const desktop = await desktopDestinations(page)
   expect(desktop).toEqual(sorted(['Today', 'Opportunities', 'Profiles', 'Intelligence', 'Map', 'Actions', 'Communications', 'Settings']))
@@ -32,7 +33,7 @@ test('seller navigation is consistent and permission-safe on direct Source Healt
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
 
   await page.goto('/#/monitor')
-  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
+  await expect(page.locator('.today-surface')).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('unavailable for your current access')
   await expect(page.getByRole('heading', { name: 'Source Health', exact: true })).toHaveCount(0)
   expect(sourceHealthRequests).toBe(0)
@@ -58,7 +59,7 @@ test('administrator has desktop/mobile Source Health parity, durable navigation,
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   await context.addInitScript(() => sessionStorage.setItem('btx-principal-token', 'development-manager'))
   const page = await context.newPage()
-  await page.goto('/')
+  await waitForToday(page)
   await expect(page.getByLabel('Signed-in user')).toContainText('Development Manager')
   const desktop = await desktopDestinations(page)
   expect(desktop).toContain('Source Health')

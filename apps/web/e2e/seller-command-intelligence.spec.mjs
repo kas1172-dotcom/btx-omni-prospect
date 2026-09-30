@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 
 async function navigate(page, name) {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name }).click()
 }
 
 test('desktop Today presents truthful priority, meaning, action, and evidence', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await waitForToday(page)
+  await expect(page.locator('.today-surface')).toBeVisible()
   const priorities = page.getByRole('region', { name: 'Top priorities' })
   await expect(priorities.locator('[data-summary-id]')).toHaveCount(3)
   await expect(page.getByLabel('Demonstration environment')).toHaveText('Simulated data environment')
@@ -15,12 +16,13 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
   await expect(attention).toContainText('Next:')
   await attention.getByRole('button', { name: 'Evidence and next action' }).first().click()
   await expect(attention).toContainText('BTX commercial record')
-  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
+  await page.getByRole('tab', { name: 'Market Hubs', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Public intelligence', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'View Intelligence' }).first().click()
   await expect(page.getByRole('heading', { name: 'Intelligence', level: 1 })).toBeVisible()
 
   await navigate(page, 'Today')
+  await page.getByRole('tab', { name: 'Priorities', exact: true }).click()
   const customer = page.locator('.today-attention-item .today-customer-link').first()
   await expect(customer).not.toHaveText('Unresolved Customer')
   const customerName = await customer.textContent()
@@ -30,7 +32,7 @@ test('desktop Today presents truthful priority, meaning, action, and evidence', 
 })
 
 test('Today consumes projected priority, market hubs, and curated IDs without substitution', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   const payload = await page.evaluate(async () => (await fetch('/api/today')).json())
   const projectedPriority = payload.command_center.priority_briefing.map(item => item.id)
   const displayedPriority = projectedPriority.slice(0, 10)
@@ -49,20 +51,12 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
   }
   for (const item of publicSignals.filter(item => displayedPriority.includes(item.id))) await expect(page.locator(`[data-priority-id="${item.id}"]`).getByRole('button', { name: 'Create action' })).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Market watch and source coverage' }).click()
-  const defense = payload.command_center.market_hubs.find(hub => hub.market === 'Defense')
-  await page.getByLabel('Watch market').selectOption('Defense')
-  await expect(page.getByRole('heading', { name: 'Defense coverage and gaps' })).toBeVisible()
-  const watchPanel = page.getByRole('heading', { name: 'Recommended Customer watchlist' }).locator('..').locator('..')
-  const programPanel = page.getByRole('heading', { name: 'Watched programs' }).locator('..').locator('..')
-  await expect(watchPanel.locator('.today-watch-list > button')).toHaveCount(Math.min(12, defense.watched_account_ids.length))
-  await expect(programPanel.locator('.today-watch-list > button')).toHaveCount(defense.watched_program_ids.length)
-  const coverage = page.getByRole('heading', { name: 'Defense coverage and gaps' }).locator('..').locator('..')
-  for (const gap of defense.gaps) await expect(coverage).toContainText(gap)
-
-  await page.getByLabel('Watch market').selectOption('')
-  await expect(page.getByRole('heading', { name: 'Coverage and source freshness' })).toBeVisible()
-  await expect(watchPanel.locator('.today-watch-list > button')).toHaveCount(Math.min(12, payload.command_center.watched_accounts.length))
+  await page.getByRole('tab', { name: 'Market Hubs', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Market Hubs', exact: true })).toBeVisible()
+  const hubs = payload.command_center.market_hubs
+  expect(hubs.every(hub => hub.current_signal_ids.length === 0 && hub.upcoming_signal_ids.length === 0)).toBe(true)
+  await expect(page.getByText('No current or upcoming public signals are available across Market Hubs.')).toHaveCount(1)
+  await expect(page.getByRole('navigation', { name: 'Market hubs' })).toHaveCount(0)
 
   const intelligence = await page.evaluate(async () => (await fetch('/api/intelligence')).json())
   const projected = new Set(payload.command_center.curated_reference_signal_ids)
@@ -72,7 +66,7 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
 })
 
 test('desktop Intelligence composes search and canonical filters with evidence and Omni selection', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   await navigate(page, 'Intelligence')
   const search = page.getByRole('searchbox', { name: 'Search Intelligence' })
   await search.fill('Lockheed')
@@ -81,7 +75,7 @@ test('desktop Intelligence composes search and canonical filters with evidence a
 
   await page.getByLabel('Filter Intelligence by market').selectOption({ label: 'Defense' })
   await expect(page.locator('.intelligence-card')).toHaveCount(1)
-  const active = page.getByLabel('Applied filters')
+  const active = page.locator('.intelligence-active-filters')
   await expect(active.getByRole('button', { name: 'Remove Market: Defense filter' })).toHaveAttribute('aria-pressed', 'true')
   await search.fill('no governed signal matches this')
   await expect(page.getByText(/No saved Intelligence matches/)).toBeVisible()
@@ -102,7 +96,7 @@ test('desktop Intelligence composes search and canonical filters with evidence a
 })
 
 test('public briefing joins the selected signal to canonical account context without cross-contaminating actions', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   await navigate(page, 'Intelligence')
   await page.getByLabel('Filter Intelligence by Customer').selectOption('applied-materials')
   const technicalSignal = page.locator('.intelligence-card').filter({ hasText: 'Applied Materials receives $100 million advanced-packaging award' })
@@ -135,7 +129,7 @@ test('public briefing exposes recoverable account-context failure and remains us
     } else await route.continue()
   })
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await waitForToday(page)
   await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
   await page.locator('.intelligence-card').first().getByRole('button', { name: 'Open briefing' }).click()
   await expect(page.getByText('Customer context could not be loaded')).toBeVisible()
@@ -148,13 +142,12 @@ test('public briefing exposes recoverable account-context failure and remains us
 
 test('mobile Today and Intelligence remain touch-usable at 390px and 320px without overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await waitForToday(page)
   await expect(page.locator('.today-priority-summary')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Action priorities' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
   await page.getByRole('navigation', { name: 'Mobile primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
   await expect(page.getByRole('searchbox', { name: 'Search Intelligence' })).toBeVisible()
-  await page.locator('.filter-mobile-trigger').click()
   await expect(page.getByLabel('Filter Intelligence by market')).toBeVisible()
   await expect(page.locator('.intelligence-card').first()).toBeVisible()
   await page.locator('.intelligence-card').first().getByRole('button', { name: /Evidence/ }).click()

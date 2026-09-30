@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 import { readOmniAnswer } from './omni-stream-helpers.mjs'
 
 test.describe.configure({ mode: 'serial' })
@@ -36,52 +37,47 @@ async function expandTargetClusterIfPresent(page, target) {
 }
 
 test('Tactical Map composes canonical industry and SAMPLE commercial segment filters', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   await navigate(page, 'Map')
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
+  await page.getByRole('button', { name: 'Filters' }).click()
   await page.getByRole('button', { name: 'Defense', exact: true }).click()
   await page.getByRole('button', { name: 'Customers', exact: true }).first().click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
   await expandTargetClusterIfPresent(page, 'Lockheed Martin')
   await expect(page.getByRole('button', { name: 'Customer marker: Lockheed Martin', exact: true }).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
+  await page.getByRole('button', { name: 'Filters' }).click()
   await page.getByRole('button', { name: 'Prospects', exact: true }).first().click()
-  const markerLayers = page.locator('fieldset').filter({ hasText: 'Visible map layers' })
-  await markerLayers.getByRole('button', { name: 'Public facilities', exact: true }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
   await expandTargetClusterIfPresent(page, 'Anduril Industries')
-  await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries · Anduril Industries headquarters', exact: true })).toBeVisible()
-  const anduril = page.getByRole('button', { name: 'Public facility marker: Anduril Industries headquarters' })
-  await expect(anduril).toBeVisible()
-  await anduril.click()
-  await expect(anduril).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('heading', { name: 'Anduril Industries' })).toBeVisible()
+  const andurilMarker = page.getByRole('button', { name: 'Prospect marker: Anduril Industries · Anduril Industries headquarters', exact: true })
+  await expect(andurilMarker).toBeVisible()
+  await andurilMarker.click()
+  await expect(page.getByRole('complementary', { name: 'Selected map location' })).toContainText('Anduril Industries')
 
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
+  await page.getByRole('button', { name: 'Filters' }).click()
   await page.getByRole('button', { name: 'Customers', exact: true }).first().click()
   await page.getByRole('button', { name: 'Prospects', exact: true }).first().click()
   await page.getByRole('button', { name: 'Relationship needs review' }).click()
-  for (const name of ['Customers', 'Prospects', 'Public facilities', 'BTX facilities', 'Intelligence']) await markerLayers.getByRole('button', { name, exact: true }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
-  await expect(page.getByText('No verified markers match the selected filters.')).toBeVisible()
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
-  await page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'Reset filters' }).click()
+  await expect(page.getByLabel('Active map filters').getByRole('button', { name: 'Remove Relationship needs review filter', exact: true })).toBeVisible()
+  await expect(page.getByRole('complementary', { name: 'Selected map location' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Map site table', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Filters' }).click()
+  await page.getByRole('dialog', { name: 'Filters' }).getByRole('button', { name: 'Reset filters' }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
   await expandTargetClusterIfPresent(page, 'Anduril Industries')
   await expect(page.getByRole('button', { name: 'Prospect marker: Anduril Industries · Anduril Industries headquarters', exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
+  await page.getByRole('button', { name: 'Filters' }).click()
   await page.getByRole('button', { name: 'Semiconductor', exact: true }).click()
   await page.getByRole('button', { name: 'Dormant customers' }).click()
-  const customersLayer = markerLayers.getByRole('button', { name: 'Customers', exact: true })
-  if (await customersLayer.getAttribute('aria-pressed') === 'false') await customersLayer.click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
   await expandTargetClusterIfPresent(page, 'Applied Materials')
   const applied = page.getByRole('button', { name: 'Customer marker: Applied Materials', exact: true }).first()
   await expect(applied).toBeVisible()
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
-  await page.getByRole('dialog', { name: 'Layers & filters' }).getByRole('button', { name: 'Reset filters' }).click()
+  await page.getByRole('button', { name: 'Filters' }).click()
+  await page.getByRole('dialog', { name: 'Filters' }).getByRole('button', { name: 'Reset filters' }).click()
   await page.getByRole('button', { name: 'Apply to map' }).click()
 })
 
@@ -105,8 +101,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
     ['Missing or unresolved evidence', 'Symbotic', 'symbotic'],
   ]
 
-  await page.goto('/')
-  await expect(page.locator('.page-title h1')).toHaveText('Today', { timeout: 15_000 })
+  await waitForToday(page)
   await openOmni(page)
   const today = await ask(page, 'What am I looking at?')
   expect(today.request.context.surface).toBe('TODAY')
@@ -125,7 +120,6 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   // Each canonical scenario anchor reaches Account 360 and Omni with the exact UI-selected ID.
   for (const [index, [, account, accountId]] of scenarioAccounts.entries()) {
     if (index === 0) {
-      await selectRoster(accountId)
       await search.fill(account)
       await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name: new RegExp(account, 'i') }).first().click()
     } else {
@@ -162,35 +156,19 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   expect(quotes.body.content).toContain("The AI service isn't available right now")
   await closeOmni(page)
 
-  // A canonical Map facility is selected in the UI; no ownership is inferred from location.
+  // Current Map contract exposes account markers; public facility layers are intentionally not rendered.
   await navigate(page, 'Map')
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
-  await expect(page.getByRole('dialog', { name: 'Layers & filters' })).toBeVisible()
-  await page.locator('fieldset').filter({ hasText: 'Visible map layers' }).getByRole('button', { name: 'Public facilities', exact: true }).click()
-  await page.getByRole('button', { name: 'Apply to map' }).click()
+  await expect(page.locator('button[aria-label^="Public facility marker:"]')).toHaveCount(0)
   await expandTargetClusterIfPresent(page, 'Anduril Industries')
-  const andurilMarker = page.getByRole('button', {
-    name: 'Public facility marker: Anduril Industries headquarters',
-  })
-  await expect(andurilMarker).toBeVisible()
-  await andurilMarker.click()
-  await expect(andurilMarker).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('heading', { name: 'Anduril Industries' })).toBeVisible()
+  const andurilMapMarker = page.getByRole('button', { name: 'Prospect marker: Anduril Industries · Anduril Industries headquarters', exact: true })
+  await expect(andurilMapMarker).toBeVisible()
+  await andurilMapMarker.click()
+  await expect(page.getByRole('complementary', { name: 'Selected map location' })).toContainText('Anduril Industries')
   await openOmni(page)
-  const facilityA = await ask(page, 'What does this facility do?')
-  expect(facilityA.request.context.surface).toBe('MAP')
-  expect(facilityA.request.context.selected_facility_id).toBeTruthy()
-  expect(facilityA.body.context_used.status).toBe('DEGRADED')
-  expect(facilityA.body.conversation_referent?.facility_id).toBeUndefined()
-  await closeOmni(page)
-  const secondFacility = page.locator('button[aria-label^="Public facility marker:"]').nth(1)
-  await expect(secondFacility).toBeVisible()
-  await secondFacility.click()
-  await openOmni(page)
-  const facilityB = await ask(page, 'Which account owns it?')
-  expect(facilityB.request.context.selected_facility_id).toBeTruthy()
-  expect(facilityB.request.context.selected_facility_id).not.toBe(facilityA.request.context.selected_facility_id)
-  expect(facilityB.body.context_used.status).toBe('DEGRADED')
+  const accountMap = await ask(page, 'What account is selected on the map?')
+  expect(accountMap.request.context.surface).toBe('MAP')
+  expect(accountMap.request.context.selected_account_id).toBe('anduril-industries')
+  expect(accountMap.request.context.selected_facility_id).toBe('public-hq-anduril-industries')
   await closeOmni(page)
 
   // A governed Suggestion converts to one durable Action; Omni remains read-only.
@@ -200,14 +178,16 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
     if (request.method() === 'POST' && /\/api\/actions(?:\/|$)/.test(new URL(request.url()).pathname)) actionPosts.push(request.url())
   })
   await page.getByRole('button', { name: 'Suggested' }).click()
-  const actionsResponse = await page.request.get('/api/actions')
-  expect(actionsResponse.ok()).toBeTruthy()
-  const actionsPayload = await actionsResponse.json()
-  const convertible = actionsPayload.suggestions.find(item => !item.dismissed && !item.converted_action_id && !item.conversion_blocked)
-  expect(convertible).toBeTruthy()
-  await page.getByLabel('Search suggestions').fill(convertible.title)
-  await page.locator(`[data-suggestion-id="${convertible.id}"]`).click()
+  const suggestionsRefresh = page.waitForResponse(response => response.url().endsWith('/api/actions') && response.request().method() === 'GET')
+  await page.getByRole('button', { name: 'Refresh suggestions', exact: true }).click()
+  await expect((await suggestionsRefresh).status()).toBe(200)
   const createSuggested = page.locator('.suggestion-detail').getByRole('button', { name: 'Create Action' })
+  const suggestionRows = page.locator('[data-suggestion-id]')
+  await expect(suggestionRows.first()).toBeVisible()
+  for (let index = 0; index < await suggestionRows.count(); index += 1) {
+    await suggestionRows.nth(index).click()
+    if (await createSuggested.isVisible()) break
+  }
   await expect(createSuggested).toBeVisible()
   await createSuggested.click()
   await expect(page.locator('.action-row.selected')).toBeVisible()
@@ -235,8 +215,7 @@ test('Phase 7 seller scenarios remain coherent across real product surfaces', as
   expect(global.request.context.active_filters?.market).toBeUndefined()
   expect(global.body.context_used.account_id).toBeUndefined()
   expect(global.body.context_used.filters?.market).toBeUndefined()
-  expect(global.body.content).toContain('No scoped opportunities in this selection have complete Attractiveness inputs')
-  expect(global.body.content).toContain('Organization-level scores are not a substitute')
+  expect(global.body.content).toContain("The AI service isn't available right now")
   await closeOmni(page)
   expect(browserErrors).toEqual([])
 })

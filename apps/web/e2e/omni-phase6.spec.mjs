@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 import { readOmniAnswer, streamAnswer } from './omni-stream-helpers.mjs'
 
 test.describe.configure({ mode: 'serial' })
@@ -35,9 +36,9 @@ async function navigate(page, name) {
 }
 
 test('Phase 6 Omni browser acceptance preserves typed context, continuity, and isolation', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   await waitForApp(page)
-  await expect(page.locator('.page-title h1')).toHaveText('Today')
+  await expect(page.locator('.today-surface')).toBeVisible()
 
   // Screen summary comes from the actual current UI context.
   await openOmni(page)
@@ -105,7 +106,7 @@ test('Phase 6 Omni browser acceptance preserves typed context, continuity, and i
 })
 
 test('Quick Omni opens the Full Omni workspace without losing the conversation', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   await waitForApp(page)
   await openOmni(page)
   await ask(page, 'What should I review today?')
@@ -143,11 +144,10 @@ test('an immediately launched selected assessment reaches Omni before submission
     if (!request.question.includes('selected assessment')) return route.continue()
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamAnswer({ content: 'Signal Confidence: 84.71/100. Next step: Review the cited notice before changing any customer commitment.', account_id: 'lockheed-martin', account_name: 'Lockheed Martin', citations: ['PUBLIC-EVIDENCE'], citation_links: [{ label: 'Official source', url: 'https://example.com/source' }], provenance: ['STORED_INTELLIGENCE'], missingness: [], recommended_action: assessment.recommended_action, context_used: { assessment_id: assessment.assessment_id, assessment_version: assessment.assessment_version }, provider_status: 'AVAILABLE', language_provider: 'deterministic' }) })
   })
-  await page.goto('/')
+  await waitForToday(page)
   await waitForApp(page)
-  await page.getByLabel('Today filters').waitFor()
-  if (await page.getByLabel('Today filters').locator('.filter-mobile-trigger').isVisible()) { if (!await page.getByLabel('Priority source', { exact: true }).isVisible()) await page.getByLabel('Today filters').locator('.filter-mobile-trigger').click() }
-    await page.getByLabel('Priority source', { exact: true }).selectOption('PUBLIC_SIGNAL')
+  await expect(page.getByRole('group', { name: 'Priority source', exact: true })).toBeVisible()
+    await page.getByRole('group', { name: 'Priority source', exact: true }).getByRole('button', { name: /Public/ }).click()
   const priority = page.locator('.today-attention-item').filter({ hasText: assessment.headline })
   await priority.getByRole('button', { name: 'Evidence and next action' }).click()
   await priority.getByRole('button', { name: /View supporting evidence/ }).click()
@@ -172,7 +172,7 @@ test('an immediately launched selected assessment reaches Omni before submission
 
 test('mobile Quick and Full Omni use touch-safe sheet and mode navigation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await waitForToday(page)
   await waitForApp(page)
   await openOmni(page)
   const quick = page.locator('.quick-omni')
@@ -190,7 +190,7 @@ test('mobile Quick and Full Omni use touch-safe sheet and mode navigation', asyn
 })
 
 test('Omni replaces prompt starters with a readable current exchange', async ({ page }) => {
-  await page.goto('/')
+  await waitForToday(page)
   await waitForApp(page)
   await openOmni(page)
   await expect(page.getByLabel('Prompt starters')).toBeVisible()

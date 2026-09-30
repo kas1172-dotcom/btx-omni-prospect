@@ -49,6 +49,7 @@ for (const width of [390, 1440]) {
     const actions = await (await page.request.get('/api/actions')).json()
     const recommendation = actions.suggestions.find(suggestion => suggestion.source_alert_id === expected[0].id)
     expect(recommendation).toBeTruthy()
+    if (width < 760) await page.locator('.filter-mobile-trigger').click()
     await page.getByLabel('Visibility').selectOption('ALL')
     const row = page.locator(`[data-suggestion-id="${recommendation.id}"]`)
     await expect(row).toHaveCount(1)

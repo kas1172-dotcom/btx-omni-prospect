@@ -1,6 +1,23 @@
 import { expect } from '@playwright/test'
 
+export async function waitForToday(page, path = '/') {
+  await page.goto(path)
+  await expect(page.locator('.today-surface')).toBeVisible()
+  return page.locator('.today-surface')
+}
+
+export async function waitForMap(page, path = '/#/map') {
+  await page.goto(path)
+  await expect(page.getByRole('region', { name: 'Tactical Map V2 workspace', exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Map site table', exact: true })).toBeVisible()
+}
+
 export async function openCustomerSection(page, name) {
+  // Account routes load the shell before the profile payload. Wait for the
+  // destination workspace before looking for its section tabs so mobile
+  // navigation cannot race the deferred account render.
+  const workspace = page.locator('.account-workspace')
+  if (await workspace.count()) await expect(workspace).toBeVisible()
   const tabs = page.getByRole('tablist', { name: 'Profile sections' })
   const label = String(name)
   if (/Growth & research planning/i.test(label)) {

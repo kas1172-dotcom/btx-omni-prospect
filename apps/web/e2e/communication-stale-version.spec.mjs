@@ -2,16 +2,26 @@ import { expect, test } from '@playwright/test'
 
 test('stale communication edit preserves local text and requires explicit saved-version comparison', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  const subject = `Version review ${testInfo.testId}`
+  const subject = `Version review ${testInfo.testId}-${crypto.randomUUID()}`
+  const accountsResponse = await page.request.get('/api/accounts')
+  expect(accountsResponse.ok()).toBe(true)
+  const accountId = (await accountsResponse.json()).accounts[0].id
+  expect(accountId).toBeTruthy()
   const created = await page.request.post('/api/communications', { data: {
-    account_id: 'boeing', subject, body: 'Original saved message', recipients: [], idempotency_key: `versions-${testInfo.testId}`,
+    account_id: accountId, subject, body: 'Original saved message', recipients: [], idempotency_key: `versions-${testInfo.testId}-${crypto.randomUUID()}`,
   } })
-  expect(created.ok()).toBe(true)
-  const draft = await created.json()
+  const createdBody = await created.text()
+  expect(created.ok(), createdBody).toBe(true)
+  const draft = JSON.parse(createdBody)
+  const accountsLoaded = page.waitForResponse(response => response.url().endsWith('/api/accounts') && response.request().method() === 'GET')
   await page.goto('/#/communications')
+  await accountsLoaded
+  await expect(page.getByRole('listbox', { name: 'Customer communications' })).toBeVisible()
   await page.getByLabel('Search communications').fill(subject)
+  await expect(page.getByRole('option', { name: new RegExp(subject) }).first()).toBeVisible()
   await page.getByRole('button', { name: 'Edit draft', exact: true }).click()
   const editor = page.getByRole('dialog', { name: 'Edit communication' })
+  await expect(editor.locator('select').first()).toHaveValue(accountId)
   await editor.getByRole('textbox', { name: 'Message', exact: true }).fill('My retained local changes')
   const changed = await page.request.patch(`/api/communications/${draft.id}`, { data: { body: 'Another saved revision', expected_version: draft.version } })
   expect(changed.ok()).toBe(true)
