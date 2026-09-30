@@ -24,7 +24,11 @@ for (const width of [1440, 390]) {
     page.on('pageerror', error => errors.push(error.message))
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
     page.on('response', response => { if (response.status() >= 400) failures.push(response.status() + ' ' + response.url()) })
-    page.on('requestfailed', request => { if (!request.failure()?.errorText.includes('ABORTED')) failures.push(request.url()) })
+    page.on('requestfailed', request => {
+      const errorText = request.failure()?.errorText ?? ''
+      const expectedCancellation = /ABORTED|CANCEL(?:LED|ED)|NS_ERROR_ABORT/i.test(errorText)
+      if (!expectedCancellation) failures.push(request.url())
+    })
     await enter(page)
     const row = width > 700 ? page.getByRole('row', { name: 'Honeywell, Structural brackets', exact: true }) : page.locator('.opp-mobile-card').filter({ hasText: 'Structural brackets' })
     await expect(row).toBeVisible()
