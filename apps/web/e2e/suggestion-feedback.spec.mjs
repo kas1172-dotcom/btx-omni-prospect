@@ -24,7 +24,13 @@ test('stale recommendation feedback is rejected without losing the draft; refres
   await page.getByRole('button', { name: /^Suggested \(\d+\)$/ }).click()
   await setVisibility(page, 'ALL')
   await page.getByRole('searchbox', { name: 'Search suggestions' }).fill(suggestion.title)
-  const card = await selectSuggestion(page, suggestion.id)
+  const renderedRow = page.locator('[data-suggestion-id]').filter({ hasText: suggestion.title }).first()
+  await expect(renderedRow).toBeVisible()
+  const renderedId = await renderedRow.getAttribute('data-suggestion-id')
+  const renderedSuggestion = before.suggestions.find(item => item.id === renderedId)
+  expect(renderedSuggestion).toBeTruthy()
+  const target = renderedSuggestion
+  const card = await selectSuggestion(page, renderedId)
   await card.getByRole('button', { name: /Give feedback|Edit my feedback/ }).click()
   await card.getByRole('combobox', { name: 'Feedback reason', exact: true }).selectOption('NOT_RELEVANT')
   const draft = `Retained stale review ${crypto.randomUUID()}`
@@ -34,13 +40,13 @@ test('stale recommendation feedback is rejected without losing the draft; refres
   await expect(card.getByLabel('Correction or completion source / optional note')).toHaveValue(draft)
   const after = await (await page.request.get('/api/actions')).json()
   expect(after.items).toEqual(before.items)
-  expect(after.suggestions.find(item => item.id === suggestion.id).feedback).toEqual(suggestion.feedback)
+  expect(after.suggestions.find(item => item.id === target.id).feedback).toEqual(target.feedback)
   stale = false
   await page.getByRole('button', { name: 'Refresh suggestions', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Suggestions refreshed' })).toBeVisible()
   await expect(card.getByLabel('Correction or completion source / optional note')).toHaveValue(draft)
   // Refresh does not automatically submit the retained draft.
-  expect((await (await page.request.get('/api/actions')).json()).suggestions.find(item => item.id === suggestion.id).feedback).toEqual(suggestion.feedback)
+  expect((await (await page.request.get('/api/actions')).json()).suggestions.find(item => item.id === target.id).feedback).toEqual(target.feedback)
 })
 
 for (const width of [390, 1440]) {

@@ -6,7 +6,10 @@ for (const width of [1440, 390]) {
     await page.goto('/#/accounts')
     const login = page.getByLabel('Access code', { exact: true })
     const heading = page.getByRole('heading', { name: 'Accounts', exact: true, level: 1 })
-    await expect(login.or(heading)).toBeVisible()
+    // The Accounts shell can mount after the route has completed while the
+    // backend/web server is under CI resource pressure. Wait for the actual
+    // entry state before interacting with either authentication or the page.
+    await expect(login.or(heading)).toBeVisible({ timeout: 15_000 })
     if (await login.isVisible()) {
       await login.fill('development-salesperson')
       await page.getByRole('button', { name: /Enter Project Beacon/ }).click()

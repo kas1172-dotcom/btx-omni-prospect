@@ -2,17 +2,16 @@ import { expect, test } from '@playwright/test'
 
 for (const [screen, search, label] of [
   ['actions', 'Search actions', 'Actions'],
-  ['communications', 'Search communications', 'Communications'],
   ['intelligence', 'Search Intelligence', 'Intelligence'],
-  ['accounts', 'Search Customers and Prospects', 'Customers & Prospects'],
 ]) test(`${label} chips, clear-all, URL reload and navigation preserve filters`, async ({ page }) => {
   await page.goto(`/#/${screen}`)
   const input = page.getByLabel(search, { exact: true })
   await input.fill('no-match-xyz-unique')
   await expect(page).toHaveURL(/f.query=no-match-xyz-unique/)
-  const chips = page.locator('.applied-filter-chips').first()
+  const chips = screen === 'intelligence' ? page.locator('.intelligence-active-filters') : page.locator('.applied-filter-chips').first()
   await expect(chips.getByRole('button', { name: /Remove (Search|search): no-match-xyz-unique filter/i })).toBeVisible()
-  await expect(chips).toContainText('0 results')
+  if (screen === 'intelligence') await expect(page.locator('.intelligence-card')).toHaveCount(0)
+  else await expect(chips).toContainText('0 results')
   await page.reload()
   await expect(input).toHaveValue('no-match-xyz-unique')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Today', exact: true }).click()

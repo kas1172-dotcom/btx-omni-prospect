@@ -1,4 +1,4 @@
-"""Synthetic manufacturing routes only. No people or warm introductions."""
+"""Synthetic manufacturing routes and a Boeing pursuit; no real people or warm introductions."""
 from copy import deepcopy
 
 from btx_omni.providers.sample.enhancement import reconcile_months, synthetic_record
@@ -14,6 +14,8 @@ def prepare_relationships(records):
         components = {r['component_id']: r for r in account['components']}
         for line in account['order_lines']:
             line.setdefault('btx_facility_id', components[line['component_id']]['btx_facility_id'])
+    from btx_omni.providers.sample.boeing_pursuit import add_boeing_pursuit
+    add_boeing_pursuit(records['boeing'])
     account = records['demo-regional-defense']
     cid = account['components'][0]['component_id']
     second = deepcopy(account['components'][0])

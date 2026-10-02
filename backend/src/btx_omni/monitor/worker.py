@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, replace
+from datetime import UTC, datetime
+from threading import Event, Thread
 from time import monotonic
+from uuid import uuid4
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.ai.config import AiConfig
 from btx_omni.ai.contracts import PublicEvidenceRecord, TechnicalDecompositionRequest
@@ -41,9 +47,48 @@ from btx_omni.monitor.business_briefings import (
     persist_assessment,
     requires_technical_investigation,
 )
+from btx_omni.monitor.contracts import CollectionRun
 from btx_omni.monitor.documents import document_evidence
 from btx_omni.monitor.research import MonitorResearchCoordinator
 from btx_omni.providers.research.technical_programs import references_for_text
+
+_CURRENT_STAGE = "startup"
+
+
+def _set_stage(stage: str) -> None:
+    global _CURRENT_STAGE
+    _CURRENT_STAGE = stage
+
+
+@contextmanager
+def _hard_process_deadline(seconds: float, grace_seconds: float):
+    """End the one-shot worker after its soft deadline and grace margin."""
+    deadline = monotonic() + seconds
+    hard_deadline = deadline + grace_seconds
+    finished = Event()
+
+    def watchdog() -> None:
+        if finished.wait(max(0.0, hard_deadline - monotonic())):
+            return
+        try:
+            message = (
+                "Monitor worker hard deadline exceeded; "
+                f"stage={_CURRENT_STAGE}; exiting with code 124.\n"
+            )
+            os.write(2, message.encode())
+        except OSError:
+            pass
+        os._exit(124)
+
+    watchdog_thread = Thread(
+        target=watchdog, name="monitor-worker-watchdog", daemon=True
+    )
+    watchdog_thread.start()
+    try:
+        yield deadline
+    finally:
+        finished.set()
+        watchdog_thread.join(timeout=1)
 
 
 def _select_technical_briefs(briefs, *, limit: int):
@@ -102,7 +147,10 @@ def run_worker(
     *,
     source_ids: tuple[str, ...] | None = None,
     limit: int | None = None,
+    deadline_monotonic: float | None = None,
+    hard_deadline_enforced: bool = False,
 ) -> tuple[dict, int]:
+    _set_stage("startup")
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
         return {
             "status": "INVALID_LIMIT",
@@ -116,7 +164,8 @@ def run_worker(
             "status": "NOT_CONFIGURED",
             "detail": "Live mode and durable Monitor state are required.",
         }, 2
-    runtime = PocRuntime(settings)
+    worker_settings = settings.model_copy(update={"monitor_worker_timeouts_enabled": True})
+    runtime = PocRuntime(worker_settings)
     repository = getattr(runtime.monitor, "repository", None)
     lock = repository.operational_lock() if repository else nullcontext(True)
     with lock as acquired:
@@ -145,9 +194,14 @@ def run_worker(
         skipped = tuple(
             source_id for source_id in requested if source_id not in configured
         )
-        deadline = monotonic() + settings.monitor_worker_max_seconds
+        deadline = (
+            deadline_monotonic
+            if deadline_monotonic is not None
+            else monotonic() + settings.monitor_worker_max_seconds
+        )
         # Public macro observations use their own canonical owner, not fabricated
         # Monitor customer events. Reuse this worker and its operational lock.
+        _set_stage("market_refresh")
         market_refresh = (
             runtime.markets.worker_refresh(deadline_monotonic=deadline)
             if settings.market_refresh_enabled
@@ -156,6 +210,7 @@ def run_worker(
         runs = []
         deadline_exhausted = False
         for index, source_id in enumerate(configured):
+            _set_stage(f"collect:{source_id}")
             remaining = deadline - monotonic()
             if remaining < settings.monitor_source_min_start_seconds:
                 deadline_exhausted = True
@@ -172,11 +227,21 @@ def run_worker(
                     remaining / remaining_sources,
                 ),
             )
-            run = runtime.monitor.collect(
-                source_id,
-                limit=limit or settings.monitor_source_record_limit,
-                deadline_monotonic=source_deadline,
-            )
+            try:
+                run = runtime.monitor.collect(
+                    source_id,
+                    limit=limit or settings.monitor_source_record_limit,
+                    deadline_monotonic=source_deadline,
+                )
+            except SQLAlchemyError as error:
+                run = CollectionRun(
+                    id=f"worker-failure-{uuid4()}",
+                    source_id=source_id,
+                    started_at=datetime.now(UTC),
+                    completed_at=datetime.now(UTC),
+                    cursor=None,
+                    failures=(f"DATABASE_FAILURE:{type(error).__name__}",),
+                )
             runs.append(run)
             if monotonic() >= deadline:
                 deadline_exhausted = True
@@ -212,6 +277,7 @@ def run_worker(
                     )
                 return signal_briefs_for_monitor(runtime.monitor)
 
+            _set_stage("research")
             research_provider = get_ai_provider(
                 AiConfig.from_settings(settings, purpose="monitor_public_research")
             )
@@ -244,6 +310,7 @@ def run_worker(
                 investigation.setdefault("event_id", document["event_id"])
                 investigations.append(investigation)
             # Technical calls are bounded worker work. Seller reads only consume cached/projection data.
+            _set_stage("technical")
             provider = get_ai_provider(AiConfig.from_settings(settings))
             technical_briefs = _select_technical_briefs(
                 projected_briefs(),
@@ -369,6 +436,7 @@ def run_worker(
             # Brief synthesis runs after technical investigation so the governed
             # content hash and seller prose include the current persisted research
             # projection. A stale pre-investigation summary cannot remain current.
+            _set_stage("brief_synthesis")
             prepared_briefs = projected_briefs()
             for prepared in prepared_briefs:
                 persist_assessment(
@@ -388,6 +456,7 @@ def run_worker(
                 deadline_monotonic=deadline,
                 minimum_attempt_seconds=settings.ai_timeout_seconds,
             )
+            _set_stage("publication")
             # Publication remains a deterministic server decision. Gemini may
             # select public reads and improve prose, but cannot pass these gates.
             final_briefs = []
@@ -411,6 +480,7 @@ def run_worker(
                         assessment_version=persisted["version"],
                     )
                 briefs_by_id.setdefault(rendered.id, []).append(rendered)
+            _set_stage("explanations")
             for investigation in investigations:
                 research_run_id = investigation.get("run_id")
                 state = (
@@ -586,6 +656,7 @@ def run_worker(
                         "provider_status": outcome.provider_status.value,
                     }
                 )
+        _set_stage("lock_release")
     failed = tuple(run.source_id for run in runs if run.failures)
     report = {
         "status": "DEADLINE_EXHAUSTED"
@@ -608,12 +679,28 @@ def run_worker(
             "record_limit_per_source": limit or settings.monitor_source_record_limit,
             "collection_deadline_seconds": settings.monitor_worker_max_seconds,
             "minimum_start_budget_seconds": settings.monitor_source_min_start_seconds,
-            "deadline_scope": "Source collection is interruptible; optional AI stages require a full configured provider timeout before starting. In-flight provider timeout and transactional persistence may finish after the scheduling deadline.",
+            "hard_deadline_enforced": hard_deadline_enforced,
+            "deadline_scope": (
+                "Source collection is interruptible and optional AI stages require a full provider timeout before starting. "
+                "The one-shot worker CLI exits with code 124 at the soft deadline plus the configured hard-deadline grace margin, including during in-flight provider or database work."
+                if hard_deadline_enforced
+                else "Source collection is interruptible and optional AI stages require a full provider timeout before starting. Direct run_worker callers do not have a watchdog; deadline exhaustion is reported normally."
+            ),
         },
     }
     return report, 1 if failed or not runs or deadline_exhausted or market_refresh[
         "status"
     ] == "FAILED" else 0
+
+
+def _compact_summary(report: dict, code: int, elapsed: float) -> str:
+    failed = ",".join(report.get("failed_sources", ())) or "-"
+    stage = report.get("stage", _CURRENT_STAGE)
+    return (
+        f"Monitor worker status={report.get('status', 'WORKER_ERROR')} "
+        f"exit_code={code} elapsed_seconds={elapsed:.3f} "
+        f"failed_sources={failed} stage={stage}\n"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -623,13 +710,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source", action="append", dest="sources")
     parser.add_argument("--limit", type=int)
     args = parser.parse_args(argv)
-    report, code = run_worker(
-        Settings(),
-        source_ids=tuple(args.sources) if args.sources else None,
-        limit=args.limit,
-    )
-    print(json.dumps(report, default=str, sort_keys=True))
-    return code
+    started = monotonic()
+    try:
+        settings = Settings()
+        with _hard_process_deadline(
+            settings.monitor_worker_max_seconds,
+            settings.monitor_worker_hard_grace_seconds,
+        ) as deadline:
+            report, code = run_worker(
+                settings,
+                source_ids=tuple(args.sources) if args.sources else None,
+                limit=args.limit,
+                deadline_monotonic=deadline,
+                hard_deadline_enforced=True,
+            )
+        sys.stderr.write(_compact_summary(report, code, monotonic() - started))
+        print(json.dumps(report, default=str, sort_keys=True))
+        return code
+    except Exception as error:  # noqa: BLE001 - top-level worker boundary sanitizes all failures
+        original = getattr(error, "orig", None)
+        sqlstate = getattr(error, "sqlstate", None) or getattr(original, "sqlstate", None)
+        report = {
+            "status": "WORKER_ERROR",
+            "error_class": type(error).__name__,
+            "sqlstate": sqlstate,
+            "stage": _CURRENT_STAGE,
+        }
+        sys.stderr.write(_compact_summary(report, 1, monotonic() - started))
+        print(json.dumps(report, sort_keys=True))
+        return 1
 
 
 if __name__ == "__main__":

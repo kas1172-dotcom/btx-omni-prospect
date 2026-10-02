@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { waitForMap } from './helpers.mjs'
 
 test('selected site shares canonical briefing and exposes evidence without a second account', async ({ page }) => {
   const response = await page.request.get('/api/map')
@@ -6,8 +7,8 @@ test('selected site shares canonical briefing and exposes evidence without a sec
   const data = await response.json()
   const record = data.accounts.find(item => item.account_id === 'kla')
   expect(record.commercial_briefing.summary).toBeTruthy()
-  await page.goto('/#/map')
-  await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
+  await waitForMap(page)
+  await page.getByRole('region', { name: 'Map site table', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
   await panel.getByRole('tab', { name: 'Commercial', exact: true }).click()
   await expect(panel).toContainText(record.commercial_briefing.summary)
@@ -20,8 +21,8 @@ test('selected site shares canonical briefing and exposes evidence without a sec
 test('itinerary persists ordered canonical sites and retains explicit meeting state', async ({ page }) => {
   let mapReads = 0
   page.on('request', request => { if (new URL(request.url()).pathname === '/api/map') mapReads += 1 })
-  await page.goto('/#/map')
-  const results = page.getByRole('region', { name: 'Map results', exact: true })
+  await waitForMap(page)
+  const results = page.getByRole('region', { name: 'Map site table', exact: true })
   await expect(results).toBeVisible()
   const initialMapReads = mapReads
   await results.getByRole('button').filter({ hasText: /^KLA/ }).first().click()
@@ -46,7 +47,7 @@ test('itinerary persists ordered canonical sites and retains explicit meeting st
 })
 
 test('multi-stop itinerary supports non-drag reorder, removal and refresh persistence', async ({ page }) => {
-  await page.goto('/#/map')
+  await waitForMap(page)
   await page.getByRole('button', { name: 'Itinerary', exact: true }).click()
   let itinerary = page.getByRole('dialog', { name: 'Itinerary', exact: true })
   const removeButtons = itinerary.getByRole('button', { name: /^Remove / })
@@ -54,7 +55,7 @@ test('multi-stop itinerary supports non-drag reorder, removal and refresh persis
   if (await itinerary.getByRole('button', { name: 'Save itinerary', exact: true }).isEnabled()) await itinerary.getByRole('button', { name: 'Save itinerary', exact: true }).click()
   await itinerary.getByRole('button', { name: 'Close', exact: true }).click()
 
-  const results = page.getByRole('region', { name: 'Map results', exact: true })
+  const results = page.getByRole('region', { name: 'Map site table', exact: true })
   for (const organization of ['KLA Corporation', 'Boeing']) {
     await results.getByRole('button').filter({ hasText: new RegExp(`^${organization}`) }).first().click()
     await page.getByRole('complementary', { name: 'Selected map location', exact: true }).getByRole('button', { name: 'Add to itinerary', exact: true }).click()
@@ -84,9 +85,8 @@ test('multi-stop itinerary supports non-drag reorder, removal and refresh persis
 
 test('mobile list switch keeps the selected site when returning to the map', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/#/map')
-  await page.getByRole('button', { name: 'List', exact: true }).click()
-  const results = page.getByRole('region', { name: 'Map results', exact: true })
+  await waitForMap(page)
+  const results = page.getByRole('region', { name: 'Map site table', exact: true })
   await expect(results).toBeVisible()
   await results.getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   await expect(page.getByRole('region', { name: 'Tactical Map V2 workspace', exact: true })).toBeVisible()
@@ -110,8 +110,8 @@ test('zero score and zero distance are readable values (projection edge-case fix
     data.customer_health.score = '0'
     await route.fulfill({ response, json: data })
   })
-  await page.goto('/#/map')
-  await page.getByRole('region', { name: 'Map results', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
+  await waitForMap(page)
+  await page.getByRole('region', { name: 'Map site table', exact: true }).getByRole('button').filter({ hasText: /^KLA/ }).first().click()
   const panel = page.getByRole('complementary', { name: 'Selected map location', exact: true })
   await expect(panel.getByLabel('Customer health score summary')).toContainText('0')
   await expect(panel).toContainText('Coincident test facility · 0 miles straight-line')

@@ -45,8 +45,10 @@ class CommercialReadService:
         company_ids = {item.id for item in companies}
         crm = {"companies": companies, "contacts": tuple(item for item in self.sample.crm_contacts if item.company_id in company_ids), "deals": tuple(item for item in self.sample.crm_deals if item.company_id in company_ids), "activities": tuple(item for item in self.sample.crm_activities if item.company_id in company_ids)}
         ledger = self.sample.commercial_ledgers.get(canonical_account_id)
+        # UI relationship-label fix: retain the ledger's mode, distinct from the public identity's provenance.
         summary = {} if ledger is None else {
             "as_of": ledger["as_of"], "currency": ledger["currency"],
+            "data_mode": ledger.get("data_mode"), "synthetic": ledger.get("synthetic"),
             "ttm": ledger["ttm_summary"], "revision": self.sample.commercial_revision,
             "monthly_history": ledger["monthly_commercial_history"],
             "record_counts": {key: len(value) for key, value in ledger.items() if isinstance(value, list)},
@@ -57,6 +59,19 @@ class CommercialReadService:
             "crm": self._state("crm", bool(companies)),
             "orders": self._state("orders", bool(orders)),
         }, summary)
+
+    def sample_pursuit_evidence_scope(self, canonical_account_id: str) -> dict | None:
+        """UI evidence fix: expose only this account's in-memory SAMPLE pursuit records."""
+        pursuits = [row for row in self.sample.pursuits if row["account_id"] == canonical_account_id]
+        if not pursuits:
+            return None
+        return {
+            "as_of": pursuits[0]["as_of"],
+            "opportunities": [row["opportunity"] for row in pursuits],
+            "components": [row["component"] for row in pursuits],
+            **{key: [item for row in pursuits for item in row[key]]
+               for key in ("rfqs", "quotes", "quote_revisions", "quote_lines", "role_targets", "interactions")},
+        }
 
     def quote_comparison(self, account_id: str, quote_id: str) -> dict:
         ledger = self.sample.commercial_ledgers.get(account_id)

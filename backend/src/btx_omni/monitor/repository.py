@@ -4,13 +4,25 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from contextlib import contextmanager
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from threading import Event, RLock, Thread
 
-from sqlalchemy import Engine, case, delete, insert, or_, select, text, true, update
+from sqlalchemy import (
+    Engine,
+    case,
+    delete,
+    insert,
+    or_,
+    select,
+    text,
+    true,
+    tuple_,
+    update,
+)
 from sqlalchemy.exc import SQLAlchemyError
 
 from btx_omni.core.classification import Classification, SensitivityTag
@@ -61,6 +73,28 @@ from btx_omni.persistence.models import (
     monitor_source_versions,
     monitor_technical_decompositions,
 )
+
+logger = logging.getLogger(__name__)
+_REPLACE_CHUNK = 500
+
+
+def _replace_rows(connection, table, key_columns, rows) -> None:
+    if not rows:
+        return
+    unique_rows = {
+        tuple(row[column] for column in key_columns): row for row in rows
+    }
+    columns = [table.c[column] for column in key_columns]
+    keys = list(unique_rows)
+    for start in range(0, len(keys), _REPLACE_CHUNK):
+        chunk = keys[start : start + _REPLACE_CHUNK]
+        predicate = (
+            columns[0].in_([key[0] for key in chunk])
+            if len(columns) == 1
+            else tuple_(*columns).in_(chunk)
+        )
+        connection.execute(delete(table).where(predicate))
+    connection.execute(insert(table), list(unique_rows.values()))
 
 
 def _json(value: object) -> str:
@@ -258,14 +292,21 @@ class MonitorRepository:
         self._federal_assessment_lock = RLock()
 
     @contextmanager
-    def operational_lock(self, *, heartbeat_interval_seconds: float = 30.0):
+    def operational_lock(
+        self, *, heartbeat_interval_seconds: float = 30.0,
+        release_timeout_seconds: float = 2.0,
+    ):
         """Hold and keep alive one cross-process lock for a collection cycle."""
+        if release_timeout_seconds <= 0:
+            raise ValueError("Operational lock release timeout must be positive.")
         if self.engine.dialect.name != "postgresql":
             yield True
             return
-        with self.engine.connect().execution_options(
+        connection = self.engine.connect().execution_options(
             isolation_level="AUTOCOMMIT"
-        ) as connection:
+        )
+        abandon_connection = False
+        try:
             acquired = bool(
                 connection.execute(
                     text("SELECT pg_try_advisory_lock(hashtext('btx-monitor-worker'))")
@@ -298,17 +339,40 @@ class MonitorRepository:
             finally:
                 stop_heartbeat.set()
                 if heartbeat:
-                    heartbeat.join()
+                    heartbeat.join(timeout=release_timeout_seconds)
+                    if heartbeat.is_alive():
+                        # The heartbeat still owns this connection. Do not wait
+                        # on, unlock, or return it to the pool from this thread.
+                        abandon_connection = True
+                        logger.error(
+                            "Monitor lock heartbeat did not stop within %.1fs",
+                            release_timeout_seconds,
+                        )
+                        raise RuntimeError(
+                            "Monitor operational lock heartbeat release timed out."
+                        )
                 if acquired:
                     if heartbeat_failed.is_set():
                         raise RuntimeError(
                             "Monitor operational lock connection was lost during collection."
                         )
-                    connection.execute(
-                        text(
-                            "SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))"
+                    try:
+                        connection.execute(
+                            text(
+                                f"SET statement_timeout = '{max(1, int(release_timeout_seconds * 1000))}ms'"
+                            )
                         )
-                    )
+                        connection.execute(
+                            text("SELECT pg_advisory_unlock(hashtext('btx-monitor-worker'))")
+                        )
+                    except SQLAlchemyError as error:
+                        logger.exception(
+                            "Monitor operational lock unlock timed out or failed"
+                        )
+                        raise RuntimeError("Monitor operational lock unlock failed.") from error
+        finally:
+            if not abandon_connection:
+                connection.close()
 
     def procurement_checkpoints(
         self, source_id: str
@@ -355,22 +419,19 @@ class MonitorRepository:
         self, checkpoints: tuple[ProcurementCheckpoint, ...]
     ) -> None:
         with self.engine.begin() as connection:
-            for item in checkpoints:
-                connection.execute(
-                    delete(federal_collection_checkpoints).where(
-                        federal_collection_checkpoints.c.source_id == item.source_id,
-                        federal_collection_checkpoints.c.query_key == item.query_key,
-                    )
-                )
-                connection.execute(
-                    insert(federal_collection_checkpoints).values(
-                        **{
-                            **asdict(item),
-                            "coverage_state": item.coverage_state.value,
-                            "updated_at": item.last_attempt_at or item.window_end,
-                        }
-                    )
-                )
+            _replace_rows(
+                connection,
+                federal_collection_checkpoints,
+                ("source_id", "query_key"),
+                [
+                    {
+                        **asdict(item),
+                        "coverage_state": item.coverage_state.value,
+                        "updated_at": item.last_attempt_at or item.window_end,
+                    }
+                    for item in checkpoints
+                ],
+            )
 
     def procurement_coverage(self, source_id: str | None = "sam_gov") -> tuple[dict, ...]:
         checkpoints = (
@@ -510,165 +571,168 @@ class MonitorRepository:
                     updated_at=run.completed_at or run.started_at,
                 )
             )
-            for observation in observations:
-                connection.execute(
-                    delete(monitor_observations).where(
-                        monitor_observations.c.id == observation.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_observations).values(
-                        id=observation.id,
-                        source_id=observation.source_identity.source_system,
-                        source_record_id=observation.source_identity.source_record_id,
-                        source_version=observation.source_version.version_id,
-                        content_hash=observation.source_version.content_hash,
-                        canonical_url=observation.raw_evidence.locator,
-                        published_at=observation.source_published_at,
-                        retrieved_at=observation.observed_at,
-                        source_tier=observation.source_tier,
-                        collection_run_id=run.id,
-                        payload_reference=observation.raw_payload_locator,
-                        title=observation.title,
-                        structured_payload=observation.structured_payload,
-                        created_at=observation.observed_at,
-                    )
-                )
-                version = observation.source_version
-                connection.execute(
-                    delete(monitor_source_versions).where(
-                        monitor_source_versions.c.source_id
-                        == observation.source_identity.source_system,
-                        monitor_source_versions.c.source_record_id
-                        == observation.source_identity.source_record_id,
-                    )
-                )
-                connection.execute(
-                    insert(monitor_source_versions).values(
-                        source_id=observation.source_identity.source_system,
-                        source_record_id=observation.source_identity.source_record_id,
-                        version_id=version.version_id,
-                        content_hash=version.content_hash,
-                        first_seen_at=version.first_seen_at,
-                        last_seen_at=version.last_seen_at,
-                        changed_at=version.changed_at,
-                        last_observation_id=observation.id,
-                    )
-                )
+            _replace_rows(
+                connection,
+                monitor_observations,
+                ("id",),
+                [
+                    {
+                        "id": observation.id,
+                        "source_id": observation.source_identity.source_system,
+                        "source_record_id": observation.source_identity.source_record_id,
+                        "source_version": observation.source_version.version_id,
+                        "content_hash": observation.source_version.content_hash,
+                        "canonical_url": observation.raw_evidence.locator,
+                        "published_at": observation.source_published_at,
+                        "retrieved_at": observation.observed_at,
+                        "source_tier": observation.source_tier,
+                        "collection_run_id": run.id,
+                        "payload_reference": observation.raw_payload_locator,
+                        "title": observation.title,
+                        "structured_payload": observation.structured_payload,
+                        "created_at": observation.observed_at,
+                    }
+                    for observation in observations
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_source_versions,
+                ("source_id", "source_record_id"),
+                [
+                    {
+                        "source_id": observation.source_identity.source_system,
+                        "source_record_id": observation.source_identity.source_record_id,
+                        "version_id": observation.source_version.version_id,
+                        "content_hash": observation.source_version.content_hash,
+                        "first_seen_at": observation.source_version.first_seen_at,
+                        "last_seen_at": observation.source_version.last_seen_at,
+                        "changed_at": observation.source_version.changed_at,
+                        "last_observation_id": observation.id,
+                    }
+                    for observation in observations
+                ],
+            )
+            observation_by_evidence: dict[str, tuple[int, SourceObservation]] = {}
+            for position, item in enumerate(observations):
+                observation_by_evidence.setdefault(item.raw_evidence.id, (position, item))
+            event_rows = []
             for event in events:
-                connection.execute(
-                    delete(monitor_events).where(monitor_events.c.id == event.id)
-                )
-                observation = next(
-                    item
-                    for item in observations
-                    if item.raw_evidence.id in {e.evidence_id for e in event.evidence}
-                )
-                connection.execute(
-                    insert(monitor_events).values(
-                        id=event.id,
-                        source_id=observation.source_identity.source_system,
-                        source_observation_id=observation.id,
-                        event_type=event.event_type.value,
-                        publication_date=observation.source_published_at,
-                        collected_at=observation.observed_at,
-                        updated_at=run.completed_at or observation.observed_at,
-                        resolution_state=event.resolution_state.value,
-                        seller_relevance_state=event.seller_relevance_state.value,
-                        data_mode="LIVE_PUBLIC",
-                        provenance_source_id=event.provenance.source_record_id,
-                        provenance_url=event.provenance.source_url,
-                        evidence_ids=_json(
+                matches = [
+                    observation_by_evidence[e.evidence_id]
+                    for e in event.evidence
+                    if e.evidence_id in observation_by_evidence
+                ]
+                if not matches:
+                    raise ValueError(
+                        f"Event {event.id} has no matching observation in this snapshot"
+                    )
+                _, observation = min(matches, key=lambda match: match[0])
+                event_rows.append(
+                    {
+                        "id": event.id,
+                        "source_id": observation.source_identity.source_system,
+                        "source_observation_id": observation.id,
+                        "event_type": event.event_type.value,
+                        "publication_date": observation.source_published_at,
+                        "collected_at": observation.observed_at,
+                        "updated_at": run.completed_at or observation.observed_at,
+                        "resolution_state": event.resolution_state.value,
+                        "seller_relevance_state": event.seller_relevance_state.value,
+                        "data_mode": "LIVE_PUBLIC",
+                        "provenance_source_id": event.provenance.source_record_id,
+                        "provenance_url": event.provenance.source_url,
+                        "evidence_ids": _json(
                             tuple(item.evidence_id for item in event.evidence)
                         ),
-                        event_payload=_json(event),
-                    )
+                        "event_payload": _json(event),
+                    }
                 )
-            for cluster in clusters:
-                connection.execute(
-                    delete(monitor_event_clusters).where(
-                        monitor_event_clusters.c.id == cluster.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_event_clusters).values(
-                        id=cluster.id,
-                        event_id=cluster.event_id,
-                        observation_ids=_json(cluster.observation_ids),
-                        evidence_ids=_json(cluster.evidence_ids),
-                        related_event_ids=_json(cluster.related_event_ids),
-                        ambiguity_reason=cluster.ambiguity_reason,
-                    )
-                )
-            for item in rejected:
-                identifier = f"{run.id}:{item.observation_id}"
-                connection.execute(
-                    delete(monitor_rejected_observations).where(
-                        monitor_rejected_observations.c.id == identifier
-                    )
-                )
-                connection.execute(
-                    insert(monitor_rejected_observations).values(
-                        id=identifier,
-                        collection_run_id=run.id,
-                        source_id=run.source_id,
-                        observation_id=item.observation_id,
-                        state=item.state.value,
-                        reason=item.reason,
-                        evidence_id=item.evidence_id,
-                        rejected_at=item.rejected_at,
-                    )
-                )
-            for item in organization_candidates:
-                connection.execute(
-                    delete(monitor_organization_candidates).where(
-                        monitor_organization_candidates.c.id == item.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_organization_candidates).values(
-                        id=item.id,
-                        identity_key=item.identity_key,
-                        source_name=item.source_name,
-                        normalized_name=item.normalized_name,
-                        source_identifiers=_json(item.source_identifiers),
-                        verified_domain=item.verified_domain,
-                        canonical_industry=item.canonical_industry,
-                        provenance=_json(item.provenance),
-                        event_ids=_json(item.event_ids),
-                        observation_ids=_json(item.observation_ids),
-                        resolution_state=item.resolution_state.value,
-                        review_state=item.review_state.value,
-                        resolution_reason=item.resolution_reason,
-                        candidate_account_ids=_json(item.candidate_account_ids),
-                        created_at=item.created_at,
-                        observed_at=item.observed_at,
-                        updated_at=run.completed_at or run.started_at,
-                    )
-                )
-            for item in program_candidates:
-                connection.execute(
-                    delete(monitor_program_candidates).where(
-                        monitor_program_candidates.c.id == item.id
-                    )
-                )
-                connection.execute(
-                    insert(monitor_program_candidates).values(
-                        id=item.id,
-                        identity_key=item.identity_key,
-                        source_name=item.source_name,
-                        organization_candidate_id=item.organization_candidate_id,
-                        canonical_account_id=item.canonical_account_id,
-                        event_type=item.event_type.value,
-                        provenance=_json(item.provenance),
-                        event_ids=_json(item.event_ids),
-                        resolution_state=item.resolution_state.value,
-                        review_state=item.review_state.value,
-                        created_at=item.created_at,
-                        observed_at=item.observed_at,
-                        updated_at=run.completed_at or run.started_at,
-                    )
-                )
+            _replace_rows(connection, monitor_events, ("id",), event_rows)
+            _replace_rows(
+                connection,
+                monitor_event_clusters,
+                ("id",),
+                [
+                    {
+                        "id": cluster.id,
+                        "event_id": cluster.event_id,
+                        "observation_ids": _json(cluster.observation_ids),
+                        "evidence_ids": _json(cluster.evidence_ids),
+                        "related_event_ids": _json(cluster.related_event_ids),
+                        "ambiguity_reason": cluster.ambiguity_reason,
+                    }
+                    for cluster in clusters
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_rejected_observations,
+                ("id",),
+                [
+                    {
+                        "id": f"{run.id}:{item.observation_id}",
+                        "collection_run_id": run.id,
+                        "source_id": run.source_id,
+                        "observation_id": item.observation_id,
+                        "state": item.state.value,
+                        "reason": item.reason,
+                        "evidence_id": item.evidence_id,
+                        "rejected_at": item.rejected_at,
+                    }
+                    for item in rejected
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_organization_candidates,
+                ("id",),
+                [
+                    {
+                        "id": item.id,
+                        "identity_key": item.identity_key,
+                        "source_name": item.source_name,
+                        "normalized_name": item.normalized_name,
+                        "source_identifiers": _json(item.source_identifiers),
+                        "verified_domain": item.verified_domain,
+                        "canonical_industry": item.canonical_industry,
+                        "provenance": _json(item.provenance),
+                        "event_ids": _json(item.event_ids),
+                        "observation_ids": _json(item.observation_ids),
+                        "resolution_state": item.resolution_state.value,
+                        "review_state": item.review_state.value,
+                        "resolution_reason": item.resolution_reason,
+                        "candidate_account_ids": _json(item.candidate_account_ids),
+                        "created_at": item.created_at,
+                        "observed_at": item.observed_at,
+                        "updated_at": run.completed_at or run.started_at,
+                    }
+                    for item in organization_candidates
+                ],
+            )
+            _replace_rows(
+                connection,
+                monitor_program_candidates,
+                ("id",),
+                [
+                    {
+                        "id": item.id,
+                        "identity_key": item.identity_key,
+                        "source_name": item.source_name,
+                        "organization_candidate_id": item.organization_candidate_id,
+                        "canonical_account_id": item.canonical_account_id,
+                        "event_type": item.event_type.value,
+                        "provenance": _json(item.provenance),
+                        "event_ids": _json(item.event_ids),
+                        "resolution_state": item.resolution_state.value,
+                        "review_state": item.review_state.value,
+                        "created_at": item.created_at,
+                        "observed_at": item.observed_at,
+                        "updated_at": run.completed_at or run.started_at,
+                    }
+                    for item in program_candidates
+                ],
+            )
 
     def snapshot(self) -> dict[str, tuple[dict, ...]]:
         with self.engine.connect() as connection:
@@ -738,13 +802,18 @@ class MonitorRepository:
 
     def events(self) -> tuple[IntelligenceEvent, ...]:
         """Return durable canonical Monitor events as typed domain records."""
-        return tuple(event for event, _observation in self.event_contexts())
+        return tuple(event for event, _observation in self.event_contexts(limit=None))
 
     def event_contexts(
         self,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> tuple[tuple[IntelligenceEvent, SourceObservation | None], ...]:
         """One committed current-source snapshot for every public read consumer.
 
+        Internal consumers pass limit=None to read all rows; page-serving
+        consumers pass an integer limit and use an extra row for availability.
         Reconstitute only stored source fields, without rerunning identity or
         claiming missing original native identifiers/headers were retained.
         """
@@ -778,6 +847,8 @@ class MonitorRepository:
                     )
                 )
                 .order_by(monitor_events.c.updated_at.desc())
+                .limit(limit)
+                .offset(offset)
             ).mappings()
             contexts = []
             for row in rows:
@@ -1011,13 +1082,15 @@ class MonitorRepository:
                 .mappings()
                 .all()
             )
+        projected_rows = [
+            self._document_projection(row, row["event_id"]) for row in rows
+        ]
+        statuses = self.research.latest_statuses_for_sources(
+            (item["event_id"], item["content_hash"]) for item in projected_rows
+        )
         candidates = []
-        for row in rows:
-            projected = self._document_projection(row, row["event_id"])
-            prior = self.research.latest_for_source(
-                projected["event_id"], projected["content_hash"]
-            )
-            if prior and prior.get("status") == "COMPLETED":
+        for projected in projected_rows:
+            if statuses.get((projected["event_id"], projected["content_hash"])) == "COMPLETED":
                 continue
             document = projected.get("document") or {}
             passage_count = len(document.get("passages", ()))
@@ -1234,39 +1307,59 @@ class MonitorRepository:
 
     def candidates(
         self,
-    ) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...]]:
+        *,
+        limit: int = 200,
+        offset: int = 0,
+    ) -> tuple[tuple[OrganizationCandidate, ...], tuple[ProgramCandidate, ...], bool]:
+        """Return candidate pages and whether either type has more rows.
+
+        Cursor pagination is the correct long-term answer; offset is provisional.
+        """
         with self.engine.connect() as connection:
+            organization_rows = connection.execute(
+                select(monitor_organization_candidates)
+                .order_by(monitor_organization_candidates.c.created_at)
+                .limit(limit + 1)
+                .offset(offset)
+            ).mappings().all()
+            program_rows = connection.execute(
+                select(monitor_program_candidates)
+                .order_by(monitor_program_candidates.c.created_at)
+                .limit(limit + 1)
+                .offset(offset)
+            ).mappings().all()
+            more_available = len(organization_rows) > limit or len(program_rows) > limit
+            organization_rows = organization_rows[:limit]
+            program_rows = program_rows[:limit]
+            organization_ids = tuple(row["id"] for row in organization_rows)
+            program_ids = tuple(row["id"] for row in program_rows)
             promotions = {
                 row["candidate_id"]: dict(row)
                 for row in connection.execute(
-                    select(monitor_candidate_promotion_audits)
+                    select(monitor_candidate_promotion_audits).where(
+                        monitor_candidate_promotion_audits.c.candidate_id.in_(organization_ids)
+                    )
                 ).mappings()
-            }
+            } if organization_ids else {}
             program_promotions = {
                 row["candidate_id"]: dict(row)
                 for row in connection.execute(
-                    select(monitor_program_candidate_promotion_audits)
-                ).mappings()
-            }
-            organizations = tuple(
-                _organization_candidate_from_row(dict(row), promotions.get(row["id"]))
-                for row in connection.execute(
-                    select(monitor_organization_candidates).order_by(
-                        monitor_organization_candidates.c.created_at
+                    select(monitor_program_candidate_promotion_audits).where(
+                        monitor_program_candidate_promotion_audits.c.candidate_id.in_(program_ids)
                     )
                 ).mappings()
+            } if program_ids else {}
+            organizations = tuple(
+                _organization_candidate_from_row(dict(row), promotions.get(row["id"]))
+                for row in organization_rows
             )
             programs = tuple(
                 _program_candidate_from_row(
                     dict(row), program_promotions.get(row["id"])
                 )
-                for row in connection.execute(
-                    select(monitor_program_candidates).order_by(
-                        monitor_program_candidates.c.created_at
-                    )
-                ).mappings()
+                for row in program_rows
             )
-        return organizations, programs
+        return organizations, programs, more_available
 
     def source_content_hash(self, source_id: str, source_record_id: str) -> str | None:
         with self.engine.connect() as connection:
@@ -1276,6 +1369,28 @@ class MonitorRepository:
                     monitor_source_versions.c.source_record_id == source_record_id,
                 )
             ).scalar_one_or_none()
+
+    def source_content_hashes(
+        self, keys: tuple[tuple[str, str], ...]
+    ) -> dict[tuple[str, str], str]:
+        """Return content_hash for (source_id, source_record_id) pairs in one query."""
+        pairs = tuple(dict.fromkeys(keys))
+        if not pairs:
+            return {}
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(
+                    monitor_source_versions.c.source_id,
+                    monitor_source_versions.c.source_record_id,
+                    monitor_source_versions.c.content_hash,
+                ).where(
+                    tuple_(
+                        monitor_source_versions.c.source_id,
+                        monitor_source_versions.c.source_record_id,
+                    ).in_(pairs)
+                )
+            ).all()
+        return {(row[0], row[1]): row[2] for row in rows}
 
     def brief_synthesis(self, brief_id: str, governed_content_hash: str) -> dict | None:
         """Return only an exact governed-content match; stale prose never leaks."""
@@ -1300,6 +1415,33 @@ class MonitorRepository:
             value["next_retry_at"] = _database_timestamp(value["next_retry_at"])
         value["synthesized_at"] = _database_timestamp(value["synthesized_at"])
         return value
+
+    def brief_syntheses(
+        self, keys: tuple[tuple[str, str], ...]
+    ) -> dict[tuple[str, str], dict]:
+        """Return briefs for (brief_id, governed_content_hash) pairs in one query."""
+        pairs = tuple(dict.fromkeys(keys))
+        if not pairs:
+            return {}
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(monitor_brief_syntheses).where(
+                    tuple_(
+                        monitor_brief_syntheses.c.brief_id,
+                        monitor_brief_syntheses.c.governed_content_hash,
+                    ).in_(pairs)
+                )
+            ).mappings().all()
+        result = {}
+        for row in rows:
+            value = dict(row)
+            if value.get("projection"):
+                value["projection"] = json.loads(value["projection"])
+            if value.get("next_retry_at"):
+                value["next_retry_at"] = _database_timestamp(value["next_retry_at"])
+            value["synthesized_at"] = _database_timestamp(value["synthesized_at"])
+            result[(value["brief_id"], value["governed_content_hash"])] = value
+        return result
 
     @staticmethod
     def _assessment_context_key(
@@ -1456,7 +1598,7 @@ class MonitorRepository:
     def current_display_assessments(
         self,
         *,
-        limit: int = 1000,
+        limit: int,
         account_ids: frozenset[str] | None = None,
         priority_only: bool = False,
     ) -> tuple[dict, ...]:

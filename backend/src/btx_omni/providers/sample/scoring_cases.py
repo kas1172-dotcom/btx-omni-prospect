@@ -3,6 +3,10 @@ from datetime import date
 
 from btx_omni.core.clock import as_of_date, relative_date
 from btx_omni.modules.commercial.ledger import validate_commercial_account
+from btx_omni.providers.sample.classifications import (
+    authored_bin_row,
+    refresh_authored_bins,
+)
 from btx_omni.providers.sample.enhancement import (
     empty_ledger,
     reconcile_months,
@@ -116,8 +120,9 @@ def customer(case='risk', *, anchor=None):
 def add_expansion(account, *, facility_id):
     oid = account['account_id'] + ':expansion'
     line = account['quote_lines'][-1]
-    facts = [synthetic_record(opportunity_id=oid, path=key, bin=value, reviewed_as_of=account['as_of'],
-                             evidence_ids=[oid], narrative='Fictional scoped rubric input; not public research.') for key, value in EXPANSION_BINS.items()]
+    facts = [authored_bin_row(opportunity_id=oid, path=key, bin_value=value, as_of=account['as_of'],
+                             evidence_ids=(oid,), note='Fictional scoped rubric assumption; not public research.')
+             for key, value in EXPANSION_BINS.items()]
     account['opportunities'].append(synthetic_record(opportunity_id=oid, component_id=line['component_id'],
         program_id=account['programs'][0]['program_id'], quote_revision_id=line['quote_revision_id'],
         value_minor=25000000, stage='QUALIFIED', delivery_facility_id=facility_id, score_observations=facts,
@@ -166,4 +171,5 @@ def add_queue_examples(account, *, facility_id):
             status='OPEN', owner_id=owner, due_date=relative_date(1, anchor=account['as_of']), created_at=account['as_of'],
             evidence_record_ids=[evidence], underlying_event_id=event_id,
             completion_criteria='Record the review outcome and next accountable owner; this is synthetic seller work.'))
+    refresh_authored_bins(account)
     return account

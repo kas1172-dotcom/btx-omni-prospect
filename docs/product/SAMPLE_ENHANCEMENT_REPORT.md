@@ -2,15 +2,14 @@
 
 Status: Tiers 1, 2 and 3 implemented and verified locally. Checkpoints: `tier1-complete`, `tier2-complete`, `tier3-complete`.
 
-The enhancement is an opt-in, deterministic demonstration dataset, not evidence of real BTX commercial activity. It supplies reconciled synthetic transactions, fictional regional accounts, all requested scoring vectors and context for J1–J9. Verified Kratos, Federal Reserve and FDA public context stays separate from invented commercial facts. The mechanics are tested; unresolved identity, location, sourcing and adverse-event research remains visibly unresolved rather than fabricated. Live Gemini generation and browser/map-provider rendering were not exercised.
+The enhancement is the permanent deterministic SAMPLE demonstration dataset, not evidence of real BTX commercial activity. It supplies reconciled synthetic transactions, fictional regional accounts, all requested scoring vectors and context for J1–J9. Verified Kratos, Federal Reserve and FDA public context stays separate from invented commercial facts. The mechanics are tested; unresolved identity, location, sourcing and adverse-event research remains visibly unresolved rather than fabricated. Live Gemini generation and browser/map-provider rendering were not exercised.
 
 ## Local activation and scope
 
-Use the isolated `sample-data-enhancement` branch/worktree. Configure only a local database with the existing migration chain, then run the existing application startup workflow with these settings:
+Configure only a local database with the existing migration chain, then run the existing application startup workflow with these settings:
 
 ```text
 BTX_DATA_MODE=SAMPLE
-BTX_SAMPLE_ENHANCEMENT_ENABLED=true
 DEMO_AS_OF_DATE=2026-09-20
 BTX_COMMERCIAL_DURABLE_STATE_ENABLED=false
 BTX_MONITOR_MODE=disabled
@@ -86,7 +85,7 @@ Full backend command (from this worktree's `backend`, using the existing Python 
 - Final R1/R2 review found that expired Signal Confidence still retained a numeric total in a legacy test. Section 4's freshness contribution remains its explicit zero band, while the other expired observations become Unknown with history retained: the current assessment has no point score and range 0–90. Updated `test_public_signal_assessment.py:test_source_change_invalidates_decision_and_old_publication_loses_freshness` to assert Unknown/range rather than its old 49.11 total. This is a rubric correction, not a weakened test; the 30.1-day service-level vector asserts the same result. Fresh 3/9-day vectors are unchanged. The legacy account-context compatibility projection now also carries the v2.0 rule version; its old configuration identifier is preserved.
 
 - Final verification (3.5) found business-date API paths still using the operational clock. Planning targets, itinerary persistence, snoozes and SAMPLE CRM deadlines now use the as-of provider. Minimal test/adaptor runtimes without settings use that same provider, not wall time. Authentication, receipt ordering, retention and deadline timers remain operational clocks.
-- The runtime's instance date now overrides the global default. Enhancement plus durable commercial import is rejected explicitly: a durable revision must not silently replace the selected demonstration view. This is an opt-in, local read-only scenario selector, not a production import path.
+- The runtime's instance date now overrides the global default. Enhancement plus durable commercial import is rejected explicitly: a durable revision must not silently replace the selected demonstration view. This is a local read-only SAMPLE view, not a production import path.
 - J1 receives a nine-stop, prefilled, read-only itinerary with origin and purpose. It has no contact names, meetings, driving times or route-provider claims. A saved user itinerary wins; null version means the draft has never been persisted. Existing optimistic concurrency remains intact.
 - Stale/Conflicting pursuit and Prospect Fit factors retain their linked history while contributing Unknown. Added missing rule-version/trace metadata on Prospect Fit, Data Coverage and queue receipts. No weights changed in this final pass.
 - Combined customer risk now exposes a fixed-weight range when an input is unknown. Its upper bound also evaluates possible rubric floors; e.g. internal 52.5/public unknown is 31.5–75, not an unjustified point score. Confirmed current legal/safety service evidence explicitly reaches the wrapper; absent or expired confirmation does not trigger a floor.
@@ -137,7 +136,7 @@ Three fictional Southwest medical organizations provide one invoiced customer, t
 2. Imported the complete supplied Downloads rubric DOCX to Markdown, preserving the original text and tables. The DOCX lacks the promised R1–R10 preamble; explicit user amendments are recorded separately and override its erroneous examples. R9–R10 text is NOT FOUND and has not been invented.
 3. Kept the earlier preflight checkpoint as historical evidence, with a superseding status section. The nine-day Signal Confidence target is now 86.25, not 85.75.
 4. Baseline backend execution uses the existing Python interpreter with this worktree's `src` first on the import path, an ephemeral SQLite URL, disabled monitor/AI configuration and an audit hook prohibiting socket connections. Existing app/test code can load protected reference files; their contents are not logged or used as new fixture source material.
-5. Added opt-in `BTX_SAMPLE_ENHANCEMENT_ENABLED=true` for the new scenario view. This preserves the old release fixture/hash and keeps fixture selection out of CONNECTED mode. No seed/import command or database write is required to select this view. Existing IDs and shared graph catalog remain present; original commercial scenarios remain available with the flag off.
+5. Made the enhanced scenario view permanent in SAMPLE mode. No seed/import command or database write is required; CONNECTED mode remains unchanged.
 6. Created a separate Docker Desktop PostgreSQL 16 container `btx-sample-enhancement-pg`, bound only to `127.0.0.1:57379`, database `btx_omni_e2e_sample_enhancement`. Applied the existing migration chain through 0040 locally. No new migration was created and no existing database was contacted. This resolves tests that require PostgreSQL rather than SQLite.
 
 ## Specification precedence

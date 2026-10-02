@@ -111,7 +111,7 @@ def test_net_new_monitor_discovery_requires_governed_promotions_and_rehydrates(t
     scoring_before = dict(runtime.sample.scoring_inputs)
     runtime.monitor.registry["usaspending"] = _nexus("9C10-NEXUS-1")
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert len(organizations) == len(programs) == 1
     organization, candidate = organizations[0], programs[0]
     assert organization.review_state is CandidateReviewState.PENDING_REVIEW
@@ -141,7 +141,7 @@ def test_net_new_monitor_discovery_requires_governed_promotions_and_rehydrates(t
     subsequent = next(item for item in runtime.monitor.events.values() if item.provenance.source_record_id == "CONT_AWD_9C10-NEXUS-2_-NONE-_-NONE-")
     assert subsequent.subject_entities[0].canonical_account_id == nexus_id
     assert subsequent.program.canonical_program_id == program_id
-    organizations_after, programs_after = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    organizations_after, programs_after, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert len(organizations_after) == len(programs_after) == 1
     assert organizations_after[0].review_state is CandidateReviewState.PROMOTED
     assert programs_after[0].review_state is CandidateReviewState.PROMOTED
@@ -150,7 +150,7 @@ def test_net_new_monitor_discovery_requires_governed_promotions_and_rehydrates(t
     restarted = PocRuntime(runtime.settings)
     assert next(item for item in restarted.environment().accounts if item.id == nexus_id).relationship == "PROSPECT"
     assert restarted.monitor.catalog.resolve_program("Aurora Fabrication Vehicle").canonical_program_id == program_id
-    restored_org, restored_program = restarted.monitor.repository.candidates()  # type: ignore[union-attr]
+    restored_org, restored_program, _more_available = restarted.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert restored_org[0].promoted_account_id == nexus_id
     assert restored_program[0].promoted_program_id == program_id
     assert [item["id"] for item in _live_signals(restarted)] == [subsequent.id]

@@ -64,7 +64,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        include:
+          - browser: chromium
+            test_script: test:e2e
+          - browser: webkit
+            test_script: test:e2e:webkit
     services:
       postgres:
         image: postgres:16
@@ -103,7 +107,7 @@ jobs:
         working-directory: apps/web
       - run: npx playwright install --with-deps ${{ matrix.browser }}
         working-directory: apps/web
-      - run: npm run test:e2e
+      - run: npm run ${{ matrix.test_script }}
         working-directory: apps/web
       - name: Preserve browser evidence even on failure
         if: always()

@@ -55,7 +55,7 @@ def test_durable_canonical_program_composes_catalog_and_survives_restart(tmp_pat
     settings = _settings(tmp_path)
     runtime = PocRuntime(settings)
     curated_program_ids = tuple(item.id for item in runtime.sample.programs)
-    candidate_state = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    candidate_state = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     nexus = _nexus_account(runtime)
     created = _create(runtime, nexus.id)
     replay = _create(runtime, nexus.id)
@@ -69,7 +69,7 @@ def test_durable_canonical_program_composes_catalog_and_survives_restart(tmp_pat
     assert program.provenance == _provenance()
     assert runtime.monitor.catalog.resolve_program("Nexus Quantum Manufacturing Platform production award").canonical_program_id == program.id
     assert runtime.monitor.catalog.resolve_program("Nexus Quantum Manufacturing").state is ResolutionState.UNRESOLVED
-    assert runtime.monitor.repository.candidates() == candidate_state  # type: ignore[union-attr]
+    assert runtime.monitor.repository.candidates(limit=200) == candidate_state  # type: ignore[union-attr]
     assert program.id not in runtime.sample.scoring_inputs
     assert not [item for item in runtime.sample.commercial_contexts if item.account_id == nexus.id]
     assert not [item for item in runtime.sample.public_facilities if item.account_id == nexus.id]

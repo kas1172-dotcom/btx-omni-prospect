@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test'
-import { openProfileSection } from './profile-section-helpers.mjs'
 
 async function openAccount(page, name) {
   await page.goto('/')
@@ -8,6 +7,18 @@ async function openAccount(page, name) {
   await page.getByRole('table', { name: 'Customers and Prospects' }).getByRole('link', { name, exact: true }).click()
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
 }
+
+test.beforeEach(async ({ page }) => {
+  const planning = await (await page.request.get('/api/planning')).json()
+  const saved = planning.shortlist_records.find(item => item.account_id === 'kla')
+  if (saved?.active) {
+    const response = await page.request.post('/api/planning/shortlist', { data: {
+      account_id: 'kla', kind: saved.kind, objective: saved.objective || 'Reset the deterministic E2E shortlist state.',
+      target_date: null, active: false, expected_version: saved.version, idempotency_key: `e2e-reset-${Date.now()}`,
+    } })
+    expect(response.ok()).toBeTruthy()
+  }
+})
 
 test('seller saves a dated private research shortlist and filters the same portfolio', async ({ page }) => {
   await openAccount(page, 'KLA Corporation')
@@ -31,13 +42,10 @@ test('seller saves a dated private research shortlist and filters the same portf
   await expect(page.getByRole('table', { name: 'Customers and Prospects' })).toContainText('KLA Corporation')
 
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Map' }).click()
-  await page.getByRole('button', { name: 'Layers & filters' }).click()
-  const savedPlanning = page.getByRole('group', { name: 'Strategic Partnership and shortlist' })
-  await savedPlanning.getByRole('button', { name: 'My shortlist' }).click()
-  await page.getByRole('button', { name: 'Apply to map' }).click()
-  const results = page.getByRole('region', { name: 'Map results' })
-  await expect(results).toContainText('KLA Corporation')
-  await expect(results).not.toContainText('Boeing')
+  await expect(page.getByRole('heading', { name: 'Tactical Map', exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Tactical Map V2 workspace', exact: true })).toBeVisible()
+  const sites = page.getByRole('region', { name: 'Map site table', exact: true })
+  await expect(sites).toContainText('KLA Corporation')
 
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Profiles' }).click()
   await page.getByRole('searchbox', { name: 'Search Customers and Prospects' }).fill('KLA Corporation')

@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from functools import lru_cache
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -19,8 +19,24 @@ def create_database_engine(settings: Settings) -> Engine:
         # Durable Monitor availability is optional at local startup. Bound an
         # unavailable PostgreSQL handshake so the existing degraded health path
         # can report it instead of blocking the application indefinitely.
-        options["connect_args"] = {"connect_timeout": 3}
-    return create_engine(settings.database_url, **options)
+        connect_args: dict[str, object] = {"connect_timeout": 3}
+        options["connect_args"] = connect_args
+    engine = create_engine(settings.database_url, **options)
+    if (
+        make_url(settings.database_url).get_backend_name() == "postgresql"
+        and settings.monitor_worker_timeouts_enabled
+    ):
+        statement_timeout = settings.monitor_worker_statement_timeout_ms
+        lock_timeout = settings.monitor_worker_lock_timeout_ms
+
+        @event.listens_for(engine, "begin")
+        def set_worker_transaction_timeouts(connection) -> None:
+            connection.exec_driver_sql(
+                f"SET LOCAL statement_timeout = '{statement_timeout}ms'"
+            )
+            connection.exec_driver_sql(f"SET LOCAL lock_timeout = '{lock_timeout}ms'")
+
+    return engine
 
 
 def create_session_factory(settings: Settings) -> sessionmaker[Session]:

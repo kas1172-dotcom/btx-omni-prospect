@@ -56,7 +56,7 @@ def _client(runtime: PocRuntime) -> TestClient:
 def _nexus_candidate(runtime: PocRuntime):
     runtime.monitor.registry["usaspending"] = _adapter()
     runtime.monitor.collect("usaspending")
-    organizations, programs = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert len(organizations) == len(programs) == 1
     return organizations[0], programs[0]
 
@@ -100,14 +100,14 @@ def test_confirmed_candidate_promotion_is_atomic_idempotent_and_runtime_visible(
     assert repeat.status_code == 200
     assert repeat.json()["created"] is False
     assert repeat.json()["account"]["id"] == account_id
-    organizations, programs = runtime.monitor.repository.candidates()  # type: ignore[union-attr]
+    organizations, programs, _more_available = runtime.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert organizations[0].review_state is CandidateReviewState.PROMOTED
     assert organizations[0].promoted_account_id == account_id
     assert programs[0].id == program.id
     assert programs[0].organization_candidate_id == candidate.id
 
     restarted = PocRuntime(runtime.settings)
-    promoted, restarted_programs = restarted.monitor.repository.candidates()  # type: ignore[union-attr]
+    promoted, restarted_programs, _more_available = restarted.monitor.repository.candidates(limit=200)  # type: ignore[union-attr]
     assert promoted[0].review_state is CandidateReviewState.PROMOTED
     assert promoted[0].promoted_account_id == account_id
     assert restarted_programs[0].id == program.id

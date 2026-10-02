@@ -71,7 +71,8 @@
       "primary_geography": "Chicago area, Illinois",
       "specialty": "5-axis and horizontal milling with multi-pallet lights-out machining; brazing; EDM",
       "processes": ["5-axis milling", "horizontal milling", "turning", "brazing", "EDM", "assembly", "grinding", "cleanroom"],
-      "certifications": ["AS9100D:2016", "ISO 9001:2015", "NADCAP", "ITAR"],
+      "certifications": ["AS9100D:2016", "ISO 9001:2015", "NADCAP", "ITAR", "NADCAP Brazing"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
       "industries_served": ["aerospace", "defense", "medical", "military", "space", "transportation", "semiconductor"],
       "tuck_in_acquisitions": [
         {"name": "Gen-El-Mec Associates", "acquired_at": "2023-08-09"},
@@ -118,8 +119,9 @@
       "joined_platform_at": "2024-12-10",
       "primary_geography": "Rochester, New York",
       "specialty": "Ultra-tight tolerances on parts .050″ up to 50″+; Swiss turning; micro-debur",
-      "processes": ["multi-axis milling", "milling", "turning", "Swiss turning", "CNC grinding", "EDM", "micro-debur"],
-      "certifications": ["AS9100D:2016", "ISO 9001:2015", "NADCAP", "ITAR"],
+      "processes": ["multi-axis milling", "milling", "turning", "Swiss turning", "CNC grinding", "EDM", "micro-debur", "inspection (CMM)"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
+      "certifications": ["AS9100D:2016", "ISO 9001:2015", "NADCAP", "ITAR", "NADCAP Nonconventional Machining"],
       "industries_served": ["aerospace", "aircraft", "medical", "precision manufacturing"],
       "capacity_signals": {"tolerance_signature": "±.0001-.0002 inch typical"},
       "source_ids": ["APM_HOME"]
@@ -200,11 +202,105 @@
     }
   ],
   "btx_facilities": [
-    {"id": "era-elk-grove", "business_unit_id": "era-industries", "name": "ERA Elk Grove", "city": "Elk Grove Village", "region": "IL", "country": "US", "latitude": 42.004130428338, "longitude": -87.957417790824, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"]},
-    {"id": "era-wheeling", "business_unit_id": "era-industries", "name": "ERA Wheeling", "city": "Wheeling", "region": "IL", "country": "US", "latitude": 42.125346964817, "longitude": -87.915308630795, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"]},
-    {"id": "era-arizona", "business_unit_id": "era-industries", "name": "ERA Arizona", "city": "Phoenix", "region": "AZ", "country": "US", "latitude": 33.398297311653, "longitude": -112.012758041019, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"]},
-    {"id": "apm-rochester", "business_unit_id": "addison-precision", "name": "Addison Precision Manufacturing", "city": "Rochester", "region": "NY", "country": "US", "latitude": 43.17941172008, "longitude": -77.711678618957, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://addisonprec.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["APM_CONTACT", "US_CENSUS_GEOCODER"]},
-    {"id": "a1j-san-jose", "business_unit_id": "a1j-technologies", "name": "A1J Technologies", "city": "San Jose", "region": "CA", "country": "US", "latitude": 37.399940162215, "longitude": -121.902657337961, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://a1jt.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["A1J_CONTACT", "US_CENSUS_GEOCODER"]}
+    {"id": "era-elk-grove", "business_unit_id": "era-industries", "name": "ERA Elk Grove", "city": "Elk Grove Village", "region": "IL", "country": "US", "latitude": 42.004130428338, "longitude": -87.957417790824, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
+      "certifications": [
+        {"name": "AS9100D:2016", "scope": "SAMPLE 5-axis machining", "certifying_body": null, "certificate_id": null, "issued_on": "2025-06-01", "expires_on": "2027-06-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ISO 9001:2015", "scope": "SAMPLE general machining quality", "certifying_body": null, "certificate_id": null, "issued_on": "2025-05-01", "expires_on": "2028-05-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "NADCAP Brazing", "scope": "SAMPLE brazing special process", "certifying_body": null, "certificate_id": null, "issued_on": "2025-07-01", "expires_on": "2027-07-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ITAR", "scope": "SAMPLE defense program handling", "certifying_body": null, "certificate_id": null, "issued_on": "2025-08-01", "expires_on": "2028-08-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "certified_processes": [
+        {"process": "5-axis milling", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.001 in", "materials_supported": ["6061-T6", "7075-T6", "Ti-6Al-4V", "Inconel 718"], "max_part_envelope": "SAMPLE medium (6-24 in)", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "horizontal milling", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.002 in", "materials_supported": ["6061-T6", "7075-T6", "17-4PH", "4340"], "max_part_envelope": "SAMPLE large (>24 in)", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "turning", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.001 in", "materials_supported": ["316", "17-4PH", "Ti-6Al-4V", "Inconel 718"], "max_part_envelope": "SAMPLE small-to-medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "brazing", "certification_required": "NADCAP Brazing", "tolerance_capability": "SAMPLE joint-specific", "materials_supported": ["6061-T6", "316", "Inconel 625"], "max_part_envelope": "SAMPLE medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "EDM", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.0005 in", "materials_supported": ["4340", "17-4PH", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE small-to-medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "assembly", "certification_required": "ITAR", "tolerance_capability": "SAMPLE drawing-controlled", "materials_supported": ["6061-T6", "316", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "grinding", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.0005 in", "materials_supported": ["4340", "17-4PH", "Inconel 718"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "capacity": {"as_of": "2026-09-20", "work_centers": [
+        {"work_center_id": "era-elk-grove:5-axis", "process": "5-axis milling", "machine_count": 6, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 480, "committed_hours_next_90d": 4992, "available_hours_next_90d": 1248, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "era-elk-grove:horizontal", "process": "horizontal milling", "machine_count": 5, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 400, "committed_hours_next_90d": 4160, "available_hours_next_90d": 1040, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "era-elk-grove:turning", "process": "turning", "machine_count": 4, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 320, "committed_hours_next_90d": 3328, "available_hours_next_90d": 832, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "era-elk-grove:edm", "process": "EDM", "machine_count": 3, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 240, "committed_hours_next_90d": 2496, "available_hours_next_90d": 624, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ]}
+    },
+    {"id": "era-wheeling", "business_unit_id": "era-industries", "name": "ERA Wheeling", "city": "Wheeling", "region": "IL", "country": "US", "latitude": 42.125346964817, "longitude": -87.915308630795, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
+      "certifications": [
+        {"name": "ISO 9001:2015", "scope": "SAMPLE horizontal milling", "certifying_body": null, "certificate_id": null, "issued_on": "2025-04-01", "expires_on": "2027-02-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "AS9100D:2016", "scope": "SAMPLE aerospace machining", "certifying_body": null, "certificate_id": null, "issued_on": "2025-05-01", "expires_on": "2028-05-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ITAR", "scope": "SAMPLE defense program handling", "certifying_body": null, "certificate_id": null, "issued_on": "2025-08-01", "expires_on": "2028-08-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "certified_processes": [
+        {"process": "horizontal milling", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.002 in", "materials_supported": ["6061-T6", "7075-T6", "17-4PH", "4340"], "max_part_envelope": "SAMPLE medium (6-24 in)", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "turning", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.002 in", "materials_supported": ["316", "17-4PH", "4340"], "max_part_envelope": "SAMPLE small-to-medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "EDM", "certification_required": "ISO 9001:2015", "tolerance_capability": "SAMPLE ±0.001 in", "materials_supported": ["4340", "17-4PH", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "grinding", "certification_required": "ISO 9001:2015", "tolerance_capability": "SAMPLE ±0.0005 in", "materials_supported": ["4340", "17-4PH", "Inconel 718"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "assembly", "certification_required": "ITAR", "tolerance_capability": "SAMPLE drawing-controlled", "materials_supported": ["6061-T6", "316", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "capacity": {"as_of": "2026-09-20", "work_centers": [
+        {"work_center_id": "era-wheeling:horizontal", "process": "horizontal milling", "machine_count": 4, "shifts_per_day": 1, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 160, "committed_hours_next_90d": 1560, "available_hours_next_90d": 520, "utilisation_pct": 0.75, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "era-wheeling:turning", "process": "turning", "machine_count": 3, "shifts_per_day": 1, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 120, "committed_hours_next_90d": 1170, "available_hours_next_90d": 390, "utilisation_pct": 0.75, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "era-wheeling:edm", "process": "EDM", "machine_count": 2, "shifts_per_day": 1, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 80, "committed_hours_next_90d": 780, "available_hours_next_90d": 260, "utilisation_pct": 0.75, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ]}
+    },
+    {"id": "era-arizona", "business_unit_id": "era-industries", "name": "ERA Arizona", "city": "Phoenix", "region": "AZ", "country": "US", "latitude": 33.398297311653, "longitude": -112.012758041019, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://www.eraind.com/contact-us.html", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["ERA_CONTACT", "US_CENSUS_GEOCODER"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
+      "certifications": [
+        {"name": "AS9100D:2016", "scope": "SAMPLE turning", "certifying_body": null, "certificate_id": null, "issued_on": "2025-08-01", "expires_on": "2028-08-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ITAR", "scope": "SAMPLE defense program handling", "certifying_body": null, "certificate_id": null, "issued_on": "2025-08-01", "expires_on": "2028-08-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "certified_processes": [
+        {"process": "turning", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.002 in", "materials_supported": ["316", "6061-T6", "17-4PH"], "max_part_envelope": "SAMPLE small (1-6 in)", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "5-axis milling", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.002 in", "materials_supported": ["6061-T6", "7075-T6", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "assembly", "certification_required": "ITAR", "tolerance_capability": "SAMPLE drawing-controlled", "materials_supported": ["6061-T6", "316", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "capacity": {"as_of": "2026-09-20", "work_centers": [
+        {"work_center_id": "era-arizona:turning", "process": "turning", "machine_count": 3, "shifts_per_day": 1, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 120, "committed_hours_next_90d": 858, "available_hours_next_90d": 702, "utilisation_pct": 0.55, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "era-arizona:5-axis", "process": "5-axis milling", "machine_count": 3, "shifts_per_day": 1, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 120, "committed_hours_next_90d": 858, "available_hours_next_90d": 702, "utilisation_pct": 0.55, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ]}
+    },
+    {"id": "apm-rochester", "business_unit_id": "addison-precision", "name": "Addison Precision Manufacturing", "city": "Rochester", "region": "NY", "country": "US", "latitude": 43.17941172008, "longitude": -77.711678618957, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://addisonprec.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["APM_CONTACT", "US_CENSUS_GEOCODER"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
+      "certifications": [
+        {"name": "AS9100D:2016", "scope": "SAMPLE Swiss turning", "certifying_body": null, "certificate_id": null, "issued_on": "2025-03-01", "expires_on": "2028-03-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ISO 9001:2015", "scope": "SAMPLE precision machining quality", "certifying_body": null, "certificate_id": null, "issued_on": "2025-04-01", "expires_on": "2028-04-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "NADCAP Nonconventional Machining", "scope": "SAMPLE EDM nonconventional machining", "certifying_body": null, "certificate_id": null, "issued_on": "2025-06-01", "expires_on": "2027-06-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "certified_processes": [
+        {"process": "Swiss turning", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.0002 in", "materials_supported": ["316", "Ti-6Al-4V", "17-4PH", "Inconel 718"], "max_part_envelope": "SAMPLE micro-to-small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "multi-axis milling", "certification_required": "AS9100D:2016", "tolerance_capability": "SAMPLE ±0.0002 in", "materials_supported": ["6061-T6", "7075-T6", "Ti-6Al-4V", "Inconel 718"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "CNC grinding", "certification_required": "ISO 9001:2015", "tolerance_capability": "SAMPLE ±0.0001 in", "materials_supported": ["4340", "17-4PH", "Inconel 718"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "EDM", "certification_required": "NADCAP Nonconventional Machining", "tolerance_capability": "SAMPLE ±0.0002 in", "materials_supported": ["4340", "Ti-6Al-4V", "17-4PH"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "inspection (CMM)", "certification_required": "ISO 9001:2015", "tolerance_capability": "SAMPLE ±0.0001 in measurement", "materials_supported": ["6061-T6", "316", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE small-to-medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "capacity": {"as_of": "2026-09-20", "work_centers": [
+        {"work_center_id": "apm-rochester:swiss", "process": "Swiss turning", "machine_count": 6, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 480, "committed_hours_next_90d": 4992, "available_hours_next_90d": 1248, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "apm-rochester:multi-axis", "process": "multi-axis milling", "machine_count": 3, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 240, "committed_hours_next_90d": 2496, "available_hours_next_90d": 624, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "apm-rochester:edm", "process": "EDM", "machine_count": 2, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 160, "committed_hours_next_90d": 1664, "available_hours_next_90d": 416, "utilisation_pct": 0.80, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ]}
+    },
+    {"id": "a1j-san-jose", "business_unit_id": "a1j-technologies", "name": "A1J Technologies", "city": "San Jose", "region": "CA", "country": "US", "latitude": 37.399940162215, "longitude": -121.902657337961, "verification_state": "VERIFIED_PUBLIC_FACILITY", "source_url": "https://a1jt.com/contact/", "source_type": "BTX_BUSINESS_UNIT_OFFICIAL", "source_ids": ["A1J_CONTACT", "US_CENSUS_GEOCODER"],
+      "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record",
+      "certifications": [
+        {"name": "ISO Class 5 Cleanroom", "scope": "SAMPLE cleanroom", "certifying_body": null, "certificate_id": null, "issued_on": "2025-09-01", "expires_on": "2027-09-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ISO 13485:2015", "scope": "SAMPLE medical assembly", "certifying_body": null, "certificate_id": null, "issued_on": "2025-07-01", "expires_on": "2028-07-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"name": "ISO 9001:2015", "scope": "SAMPLE precision manufacturing quality", "certifying_body": null, "certificate_id": null, "issued_on": "2025-06-01", "expires_on": "2028-06-01", "renewal_lead_days": 180, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "certified_processes": [
+        {"process": "cleanroom", "certification_required": "ISO Class 5 Cleanroom", "tolerance_capability": null, "materials_supported": ["316", "PEEK", "Ti-6Al-4V ELI"], "max_part_envelope": "SAMPLE small (1-6 in)", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "milling", "certification_required": "ISO 9001:2015", "tolerance_capability": "SAMPLE ±0.001 in", "materials_supported": ["6061-T6", "316", "Ti-6Al-4V"], "max_part_envelope": "SAMPLE small-to-medium", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "micro laser", "certification_required": "ISO 9001:2015", "tolerance_capability": "SAMPLE micro-feature", "materials_supported": ["316", "Ti-6Al-4V", "Inconel 625"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"process": "assembly", "certification_required": "ISO 13485:2015", "tolerance_capability": "SAMPLE drawing-controlled", "materials_supported": ["316", "PEEK", "Ti-6Al-4V ELI"], "max_part_envelope": "SAMPLE small", "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ],
+      "capacity": {"as_of": "2026-09-20", "work_centers": [
+        {"work_center_id": "a1j-san-jose:cleanroom", "process": "cleanroom", "machine_count": 4, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 320, "committed_hours_next_90d": 2704, "available_hours_next_90d": 1456, "utilisation_pct": 0.65, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "a1j-san-jose:milling", "process": "milling", "machine_count": 2, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 160, "committed_hours_next_90d": 1352, "available_hours_next_90d": 728, "utilisation_pct": 0.65, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"},
+        {"work_center_id": "a1j-san-jose:laser", "process": "micro laser", "machine_count": 1, "shifts_per_day": 2, "hours_per_shift": 8, "operational_days_per_week": 5, "nominal_hours_per_week": 80, "committed_hours_next_90d": 676, "available_hours_next_90d": 364, "utilisation_pct": 0.65, "data_mode": "SAMPLE", "synthetic": true, "source": "Authored SAMPLE operational record"}
+      ]}
+    }
   ],
   "acquisitions_timeline": [
     {"date": "2023-06-16", "action": "ERA Industries acquired by L Squared (founding BU)"},

@@ -28,7 +28,11 @@ class MarketService:
     def worker_refresh(self, *, deadline_monotonic, now=None, fetch=public_request):
         if not self.worker_enabled:
             return {'status': 'DISABLED'}
+        if deadline_monotonic - monotonic() < 20:
+            return {'status': 'SKIPPED_DEADLINE', 'required_start_budget_seconds': 20}
         clock = now or (lambda: datetime.now(UTC))
+        # This read shares the worker's bounded PostgreSQL engine. Recheck the
+        # budget afterward because a slow health query can consume the window.
         last_run = self.repository.health()['last_run']
         if last_run:
             last_time = datetime.fromisoformat(last_run.get('retrieved_at') or last_run['completed_at'])
@@ -55,6 +59,8 @@ class MarketService:
             parsed = parse_g17(response.body, as_of=retrieved_at.date())
         except ValueError:
             return self.repository.failed(completed_at=retrieved_at, reason='SOURCE_CONTRACT_CHANGED')
+        if deadline_monotonic is not None and monotonic() >= deadline_monotonic:
+            return {'status': 'SKIPPED_DEADLINE', 'reason': 'REFRESH_DEADLINE'}
         return self.repository.store(parsed, retrieved_at=retrieved_at, source_url=response.final_url,
                                      http_last_modified=response.headers.get('last-modified'), retrieval_kind='LIVE_PUBLIC_DOWNLOAD')
 

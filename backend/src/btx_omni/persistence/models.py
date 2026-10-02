@@ -832,3 +832,14 @@ network_unresolved_companies = Table(
     Column("occurrence_count", Integer, nullable=False),
     UniqueConstraint("tenant_id", "batch_id", "company_fingerprint", name="uq_network_unresolved_company"),
 )
+
+Index("ix_monitor_observations_collection_run_id", monitor_observations.c.collection_run_id)
+Index("ix_monitor_events_source_observation_id", monitor_events.c.source_observation_id)
+Index(
+    "ix_monitor_events_resolved_publication_date",
+    monitor_events.c.publication_date,
+    postgresql_where=(monitor_events.c.resolution_state == "RESOLVED"),
+)
+Index("ix_monitor_event_clusters_event_id", monitor_event_clusters.c.event_id)
+Index("ix_work_audit_events_work_item_id", work_audit_events.c.work_item_id)
+Index("ix_communication_audit_events_communication_id", communication_audit_events.c.communication_id)

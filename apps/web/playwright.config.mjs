@@ -10,7 +10,7 @@ export default defineConfig({
   testIgnore: ['hosted-demo-access.spec.mjs', 'monitor-public-evidence.spec.mjs'],
   timeout: 45_000,
   workers: 1,
-  reporter: [['list'], ['json', { outputFile: 'test-results/results.json' }]],
+  reporter: [['list'], ['./e2e/timing-reporter.mjs'], ['json', { outputFile: 'test-results/results.json' }]],
   webServer: [
     {
       command: `uv run --frozen uvicorn btx_omni.app:app --host 127.0.0.1 --port ${apiPort}`,

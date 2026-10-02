@@ -96,6 +96,8 @@ class SampleEnvironment:
     rich_scenarios: dict[str, RichScenario]
     priority_scenarios: dict[str, PriorityCustomerScenario]
     commercial_ledgers: dict[str, dict] = field(default_factory=dict)
+    # Prospect pursuits are not commercial ledgers: they have no transactions.
+    pursuits: tuple[dict, ...] = ()
     commercial_revision: str | None = None
     scoring_evidence: dict[str, dict[str, tuple[str, ...]]] = field(default_factory=dict)
 

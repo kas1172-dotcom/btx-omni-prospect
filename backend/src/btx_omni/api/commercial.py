@@ -9,6 +9,7 @@ from btx_omni.api.session import principal
 from btx_omni.domain.work import Principal
 from btx_omni.modules.commercial.evidence import resolve_commercial_evidence
 from btx_omni.modules.commercial.lifecycle import fulfillment_state
+from btx_omni.modules.commercial.read import CommercialReadService
 from btx_omni.modules.scoring.commercial_decisions import (
     critical_risk_evidence,
     customer_decisions,
@@ -36,7 +37,10 @@ def opportunity_workspace(response: Response, actor: Principal = Depends(princip
     from btx_omni.modules.commercial.opportunities import account_opportunities
 
     sample = runtime.environment()
-    rows = [row for account_id in sorted(sample.commercial_ledgers)
+    account_ids = set(sample.commercial_ledgers)
+    if str(getattr(getattr(runtime, "settings", None), "data_mode", "")).upper() == "SAMPLE":
+        account_ids.update(row["account_id"] for row in getattr(sample, "pursuits", ()))
+    rows = [row for account_id in sorted(account_ids)
             for row in account_opportunities(sample, account_id)]
     response.headers["Cache-Control"] = "private, no-store"
     return {"opportunities": rows, "revision": sample.commercial_revision}
@@ -88,6 +92,9 @@ def commercial_evidence(
     sample = runtime.environment()
     response.headers["Cache-Control"] = "private, no-store"
     ledger = sample.commercial_ledgers.get(account_id)
+    # UI pursuit-evidence fix: SAMPLE prospects use the account-scoped parallel read path, never a fabricated ledger.
+    if ledger is None and collection == "evidence" and runtime.settings.data_mode.upper() == "SAMPLE":
+        ledger = CommercialReadService(sample).sample_pursuit_evidence_scope(account_id)
     if ledger is None:
         raise HTTPException(404, "No persisted commercial record for this canonical account.")
     if collection == "evidence":

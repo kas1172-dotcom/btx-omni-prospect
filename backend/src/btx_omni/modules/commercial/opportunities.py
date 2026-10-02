@@ -5,10 +5,27 @@ from btx_omni.modules.scoring.commercial_decisions import opportunity_decisions
 def account_opportunities(sample, account_id: str) -> list[dict]:
     account = next((a for a in sample.accounts if a.id == account_id), None)
     ledger = sample.commercial_ledgers.get(account_id)
-    if account is None or ledger is None:
+    pursuits = tuple(row for row in getattr(sample, 'pursuits', ()) if row['account_id'] == account_id)
+    if account is None or (ledger is None and not pursuits):
         return []
+    if ledger is None:
+        # Transient scorer view, not a persisted or validated empty commercial
+        # ledger. Only opportunity-scoped evidence is supplied by pursuits.
+        ledger = {
+            'as_of': pursuits[0]['as_of'], 'currency': 'USD',
+            'opportunities': [row['opportunity'] for row in pursuits],
+            'components': [row['component'] for row in pursuits],
+            'quote_lines': [line for row in pursuits for line in row['quote_lines']],
+            'quote_revisions': [revision for row in pursuits for revision in row['quote_revisions']],
+            'quotes': [quote for row in pursuits for quote in row['quotes']],
+            'rfqs': [rfq for row in pursuits for rfq in row['rfqs']],
+            'role_targets': [role for row in pursuits for role in row['role_targets']],
+            'interactions': [interaction for row in pursuits for interaction in row['interactions']],
+            'order_lines': [], 'orders': [], 'revenue_events': [], 'shipments': [],
+            'cancellations': [], 'monthly_commercial_history': [], 'actions': [],
+        }
     lane = ("CUSTOMER_EXPANSION" if account.relationship.value in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}
-            else "PROSPECT" if account.relationship.value in {"TARGET", "PROSPECT"} else "REVIEW_REQUIRED")
+            else "PROSPECT" if pursuits or account.relationship.value in {"TARGET", "PROSPECT"} else "REVIEW_REQUIRED")
     records = {r['opportunity_id']: r for r in ledger['opportunities']}
     components = {r['component_id']: r for r in ledger.get('components', [])}
     # One account market, never inferred from its name or the pursuit title.

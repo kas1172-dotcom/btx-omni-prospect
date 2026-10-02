@@ -13,7 +13,7 @@ from btx_omni.core.config import get_settings
 BACKEND_ROOT = Path(__file__).parents[1]
 REVISION_0009 = "0009_btx_facility_location_metadata"
 REVISION_0008 = "0008_commercial_and_edges"
-HEAD_REVISION = "0042_merge_actions_network_chat"
+HEAD_REVISION = "0043_query_support_indexes"
 
 
 def _config(database_url: str) -> Config:
@@ -75,7 +75,7 @@ def test_revision_ids_fit_0009_postgresql_version_capacity_and_keep_topology() -
     )
 
     assert script.get_heads() == [HEAD_REVISION]
-    assert script.get_revision(HEAD_REVISION).down_revision == ("0039_actions_pm_workspace", "0041_omni_conversations")
+    assert script.get_revision(HEAD_REVISION).down_revision == "0042_merge_actions_network_chat"
     assert script.get_revision("0039_actions_pm_workspace").down_revision == "0038_federal_opportunity_pipeline"
     assert script.get_revision("0041_omni_conversations").down_revision == "0040_network_visibility"
     assert script.get_revision("0039_network_connections").down_revision == "0038_federal_opportunity_pipeline"

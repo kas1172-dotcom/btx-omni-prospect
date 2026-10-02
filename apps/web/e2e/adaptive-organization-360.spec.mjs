@@ -9,7 +9,7 @@ async function openOrganization(page, id, name) {
 test('organization mode adapts without treating research or CRM presence as a customer relationship', async ({ page }) => {
   await openOrganization(page, 'lockheed-martin', 'Lockheed Martin')
   await expect(page.locator('.account-workspace').getByText(/Customer 360/i).first()).toBeVisible()
-  await expect(page.getByText('Confirmed BTX customer').first()).toBeVisible()
+  await expect(page.getByText('SAMPLE customer (unverified relationship)').first()).toBeVisible()
   await expect(page.getByText('Expansion pursuit', { exact: true })).toHaveCount(0)
 
   await openOrganization(page, 'intel', 'Intel')

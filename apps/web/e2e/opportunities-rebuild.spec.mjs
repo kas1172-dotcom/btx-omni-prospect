@@ -24,7 +24,11 @@ for (const width of [1440, 390]) {
     page.on('pageerror', error => errors.push(error.message))
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
     page.on('response', response => { if (response.status() >= 400) failures.push(response.status() + ' ' + response.url()) })
-    page.on('requestfailed', request => { if (!request.failure()?.errorText.includes('ABORTED')) failures.push(request.url()) })
+    page.on('requestfailed', request => {
+      const errorText = request.failure()?.errorText ?? ''
+      const expectedCancellation = /ABORTED|CANCEL(?:LED|ED)|NS_ERROR_ABORT/i.test(errorText)
+      if (!expectedCancellation) failures.push(request.url())
+    })
     await enter(page)
     const row = width > 700 ? page.getByRole('row', { name: 'Honeywell, Structural brackets', exact: true }) : page.locator('.opp-mobile-card').filter({ hasText: 'Structural brackets' })
     await expect(row).toBeVisible()
@@ -160,10 +164,10 @@ test('table header sort cycles, metrics remain lane-wide and groups keep Unassig
   await expect(page.locator('.opp-table-wrap .opp-group-toggle').last()).toContainText('Unassigned')
 })
 
-test('unseeded real backend stays empty instead of silently enabling development examples', async ({ page }) => {
+test('seeded real backend does not silently enable development examples', async ({ page }) => {
   const response = page.waitForResponse(r => r.url().endsWith('/api/accounts/workspace/opportunities') && r.status() === 200)
   await enter(page, '')
-  expect((await (await response).json()).opportunities).toEqual([])
-  await expect(page.getByRole('heading', { name: 'No opportunities in this lane' })).toBeVisible()
+  expect((await (await response).json()).opportunities.length).toBeGreaterThan(0)
+  await expect(page.getByRole('heading', { name: 'No opportunities in this lane' })).toHaveCount(0)
   await expect(page.locator('.opp-fixture-notice')).toHaveCount(0)
 })

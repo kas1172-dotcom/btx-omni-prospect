@@ -2,7 +2,7 @@ import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import create_engine, select, update
+from sqlalchemy import create_engine, insert, select, update
 
 from btx_omni.monitor.documents import enrich_feed_documents
 from btx_omni.monitor.sources import FdaAdapter, NasaAdapter
@@ -526,4 +526,43 @@ def test_changed_article_has_one_current_projection_and_retains_historical_evide
         len(versions) == 2
         and sum(row["is_current_source_version"] for row in versions) == 1
     )
+    engine.dispose()
+
+
+def test_internal_event_reads_are_not_truncated_at_one_hundred(tmp_path):
+    from btx_omni.core.config import Settings
+    from btx_omni.monitor.repository import MonitorRepository
+    from btx_omni.monitor.service import MonitorService, current_event_contexts
+    from btx_omni.persistence.models import metadata
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'event-read-limit.sqlite'}")
+    metadata.create_all(engine)
+    repository = MonitorRepository(engine)
+    feed = (
+        b"<rss><channel><item><guid>one</guid><title>NASA research</title>"
+        b"<link>https://www.nasa.gov/article</link></item></channel></rss>"
+    )
+
+    def fetch(url, _headers):
+        if url.endswith("breaking_news.rss"):
+            return 200, feed, {"content-type": "application/rss+xml"}
+        return 200, b"<main>NASA research article.</main>", {"content-type": "text/html"}
+
+    service = MonitorService(
+        Settings(_env_file=None, monitor_mode="live"),
+        {"nasa": NasaAdapter(fetch)},
+        repository=repository,
+    )
+    service.collect("nasa", limit=1)
+    with engine.begin() as connection:
+        original = dict(connection.execute(select(monitor_events)).mappings().one())
+        connection.execute(
+            insert(monitor_events),
+            [{**original, "id": f"event-copy-{position}"} for position in range(100)],
+        )
+
+    assert len(repository.event_contexts(limit=None)) == 101
+    assert len(repository.events()) == 101
+    assert len(current_event_contexts(service)) == 101
+    assert len(repository.event_contexts(limit=10, offset=1)) == 10
     engine.dispose()

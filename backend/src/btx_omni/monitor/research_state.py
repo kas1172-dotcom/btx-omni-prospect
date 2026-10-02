@@ -18,9 +18,11 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    func,
     insert,
     select,
     text,
+    tuple_,
     update,
 )
 
@@ -219,3 +221,31 @@ class MonitorResearchJournal:
                 runs.c.status.in_(('COMPLETED', 'PAUSED')),
             ).order_by(runs.c.updated_at.desc(), runs.c.id).limit(1)).scalar_one_or_none()
         return self.get(identifier) if identifier else None
+
+    def latest_statuses_for_sources(self, sources):
+        """Return the latest completed or paused status for each requested source."""
+        pairs = list(dict.fromkeys(tuple(pair) for pair in sources))
+        if not pairs:
+            return {}
+        ranked = (
+            select(
+                runs.c.event_reference,
+                runs.c.source_revision,
+                runs.c.status,
+                func.row_number().over(
+                    partition_by=(runs.c.event_reference, runs.c.source_revision),
+                    order_by=(runs.c.updated_at.desc(), runs.c.id),
+                ).label("position"),
+            )
+            .where(
+                tuple_(runs.c.event_reference, runs.c.source_revision).in_(pairs),
+                runs.c.status.in_(("COMPLETED", "PAUSED")),
+            )
+            .subquery()
+        )
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(ranked.c.event_reference, ranked.c.source_revision, ranked.c.status)
+                .where(ranked.c.position == 1)
+            ).all()
+        return {(row[0], row[1]): row[2] for row in rows}

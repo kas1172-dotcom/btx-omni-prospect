@@ -2,7 +2,7 @@
 
 This imports only the reviewed eleven-account scenario into existing canonical identities. It does not collect public Monitor events, create external CRM records, send messages, delete unrelated records, or run automatically at application startup.
 
-Runtime source: `docs/research/enriched_commercial_sample.json`, byte-identical to the v3.3-R1 enriched input. SHA-256: `7745ab0d8d8b73d27452cb4302979440453587eaeb1c9e1512a4750b8570c493`. Account-only crosswalk and domain checks are in `btx_omni.persistence.import_commercial_sample`; facilities, components and programs retain distinct identities. Historical baseline data is not imported a second time.
+Import-only source: `docs/research/enriched_commercial_sample.json`, byte-identical to the v3.3-R1 enriched input. SAMPLE runtime does not read this file; application startup composes only `btx_omni.providers.sample` fixtures. SHA-256: `7745ab0d8d8b73d27452cb4302979440453587eaeb1c9e1512a4750b8570c493`. Account-only crosswalk and domain checks are in `btx_omni.persistence.import_commercial_sample`; facilities, components and programs retain distinct identities. Historical baseline data is not imported a second time.
 
 Prerequisites: correct repository/release identity, Python 3.11 with the frozen lock, SAMPLE mode, verified PostgreSQL host/database, qualified migration `0027_memory_create_receipts`, and a recoverable backup for a deployed destination. Database credentials come from existing protected configuration; never put them in a report or client bundle.
 

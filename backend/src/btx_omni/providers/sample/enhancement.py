@@ -1,4 +1,6 @@
 """Additive authored demo inputs. No workbook import, random values or live IO."""
+from datetime import date, timedelta
+
 from btx_omni.core.clock import as_of_date, relative_date
 from btx_omni.modules.commercial.ledger import KEYS, validate_commercial_account
 
@@ -39,8 +41,11 @@ def enhance_environment(base, *, anchor=None):
     from btx_omni.providers.sample.regional import regional_environment
     base, regional = regional_environment(base, anchor=anchor)
     records = {**base.commercial_ledgers, 'boeing': boeing_recovery(anchor=anchor), **{a['account_id']: a for a in additions}, **regional}
+    add_boeing_financials(records['boeing'])
     from btx_omni.providers.sample.expansion import add_boeing_expansion
     add_boeing_expansion(records['boeing'])
+    from btx_omni.providers.sample.named_company_cases import add_named_company_cases
+    base = add_named_company_cases(base, records, anchor=anchor)
     from btx_omni.providers.sample.relationship_cases import prepare_relationships
     prepare_relationships(records)
     from btx_omni.providers.sample.planning_cases import add_planning_context
@@ -119,6 +124,135 @@ def reconcile_months(account):
     account['ttm_summary'] = synthetic_record(**totals)
 
 
+def add_boeing_financials(account):
+    """Simulated historical releases; keep J7's unaccepted recovery line separate."""
+    as_of = date.fromisoformat(account['as_of'])
+    first_index = as_of.year * 12 + as_of.month - 12
+    # One booked release per month through August; the existing J7 order is
+    # September's booked release. Four older releases ship in three monthly lots.
+    order_quantities = (180, 185, 190, 195, 200, 210, 220, 225, 230, 220, 230)
+    unit_price, unit_cost = 100000, 70000
+
+    def month_day(index, day):
+        year, month = divmod(first_index + index, 12)
+        return date(year, month + 1, day)
+
+    def add(collection, **row):
+        account[collection].append(synthetic_record(
+            **row, source='Authored SAMPLE commercial record'))
+
+    for index, quantity in enumerate(order_quantities):
+        prefix = f'sample:boeing:release:{index + 1:02d}'
+        received, issued, ordered = (month_day(index, day).isoformat() for day in (3, 4, 5))
+        quote_id, revision_id, quote_line_id = (f'{prefix}:{part}' for part in ('quote', 'revision', 'quote-line'))
+        order_id, order_line_id = f'{prefix}:order', f'{prefix}:order-line'
+        value = quantity * unit_price
+        add('rfqs', rfq_id=f'{prefix}:rfq', received_date=received,
+            notes='Synthetic recurring housing release; no actual Boeing request.')
+        add('quotes', quote_id=quote_id, rfq_id=f'{prefix}:rfq', current_revision_id=revision_id,
+            status='WON', decision_due_date=ordered)
+        add('quote_lines', quote_line_id=quote_line_id, quote_revision_id=revision_id,
+            component_id='demo:j7:boeing:component', quantity=quantity,
+            unit_price_minor=unit_price, line_total_minor=value,
+            technical_requirements='Synthetic recurring housing lot; not a buyer drawing.')
+        add('quote_revisions', quote_revision_id=revision_id, quote_id=quote_id,
+            revision_number=1, issued_date=issued, supersedes_revision_id=None,
+            line_ids=[quote_line_id], total_minor=value)
+        fulfilled = index in (0, 3, 6, 9)
+        superseded = index in (1, 2, 4)
+        add('orders', order_id=order_id, quote_id=quote_id,
+            accepted_quote_revision_id=revision_id, agreement_id=None,
+            ordered_date=ordered, line_ids=[order_line_id], total_minor=value,
+            status='FULFILLED' if fulfilled else 'CANCELLED' if superseded else 'OPEN')
+        add('order_lines', order_line_id=order_line_id, order_id=order_id,
+            component_id='demo:j7:boeing:component', program_id='demo:j7:boeing:program',
+            business_unit_id='BU-ERA', quantity=quantity, unit_price_minor=unit_price,
+            unit_cost_minor=unit_cost, line_total_minor=value,
+            committed_date=(month_day(index + 2, 20) if fulfilled else as_of + timedelta(days=180)).isoformat())
+        if superseded:
+            add('cancellations', cancellation_id=f'{prefix}:cancellation', order_line_id=order_line_id,
+                quantity=quantity, value_minor=value, date=month_day(index, 20).isoformat(),
+                narrative='Superseded SAMPLE release; gross booking and reversal remain separately visible.')
+
+    for index in range(12):
+        source_index = index // 3 * 3
+        ordered = order_quantities[source_index]
+        lot = ordered // 3 if index % 3 < 2 else ordered - 2 * (ordered // 3)
+        prefix = f'sample:boeing:release:{source_index + 1:02d}'
+        line_id = f'{prefix}:order-line'
+        shipment_id = f'sample:boeing:dispatch:{index + 1:02d}'
+        shipped = month_day(index, 10)
+        invoice_date = shipped
+        due = invoice_date + timedelta(days=30)
+        paid = due + timedelta(days=6) if index == 0 else due if index == 1 else min(due - timedelta(days=10), as_of)
+        amount = lot * unit_price
+        add('shipments', shipment_id=shipment_id, order_line_id=line_id,
+            quantity=lot, value_minor=amount, shipped_date=shipped.isoformat())
+        acceptance_id = f'{shipment_id}:acceptance'
+        revenue_id = f'{shipment_id}:revenue'
+        invoice_id = f'{shipment_id}:invoice'
+        add('acceptances', acceptance_id=acceptance_id, shipment_id=shipment_id,
+            accepted_date=shipped.isoformat(), quantity=lot)
+        add('revenue_events', revenue_event_id=revenue_id, acceptance_id=acceptance_id,
+            order_line_id=line_id, recognized_date=shipped.isoformat(), quantity=lot,
+            revenue_minor=amount, cost_minor=lot * unit_cost)
+        add('invoices', invoice_id=invoice_id, revenue_event_id=revenue_id,
+            invoice_date=invoice_date.isoformat(), due_date=due.isoformat(), amount_minor=amount)
+        add('payments', payment_id=f'{shipment_id}:payment', invoice_id=invoice_id,
+            paid_date=paid.isoformat(), amount_minor=amount)
+
+    # Current fictional agreement is documented demand continuity, not a
+    # representation of a real Boeing contract or a public-program award.
+    agreement_id = 'sample:boeing:release:01:agreement'
+    add('agreements', agreement_id=agreement_id,
+        accepted_revision_id='sample:boeing:release:01:revision',
+        effective_date=month_day(0, 5).isoformat(),
+        end_date=(as_of + timedelta(days=365)).isoformat())
+    next(order for order in account['orders']
+         if order['order_id'] == 'sample:boeing:release:01:order')['agreement_id'] = agreement_id
+
+    for months_ago, material in ((4, True), (8, False)):
+        event_date = month_day(11 - months_ago, 12).isoformat()
+        add('service_events', service_event_id=f'boeing:sample-service:{months_ago}m',
+            opened_date=event_date, updated_date=event_date, status='RESOLVED',
+            material=material, critical=False, repeated=False, repeated_within_90_days=False,
+            narrative='Resolved noncritical SAMPLE documentation issue; not an actual Boeing service event.')
+
+    role_ids = ('boeing:sample-role:procurement', 'boeing:sample-role:engineering')
+    for role_id, function in zip(role_ids, ('procurement', 'engineering'), strict=True):
+        add('role_targets', role_target_id=role_id, verified_function=function,
+            contact_verified=True, name=None, email=None,
+            narrative='Synthetic function-level role; no real person or contact is asserted.')
+    add('interactions', interaction_id='boeing:sample-touch:review',
+        date=(as_of - timedelta(days=15)).isoformat(), participant_role_ids=list(role_ids),
+        real_person_ids=[], meaningful_touch=True, two_way=True, related_record_ids=[],
+        notes='Simulated two-function account review, not an actual Boeing conversation.')
+    account['relationship_profile'] = synthetic_record(
+        record_id='boeing:relationship-profile:sample', relationship_started_on='2019-04-15',
+        expected_touch_days=30, contact_review_complete=True,
+        interaction_review_complete=True, risk_history_review_complete=True,
+        quote_review_complete=True, service_review_complete=True,
+        payment_review_complete=True, current_demand_evidence_ids=[agreement_id],
+        source='Authored SAMPLE relationship profile')
+
+    account['monthly_commercial_history'] = []
+    reconcile_months(account)
+    for month in account['monthly_commercial_history']:
+        month['source'] = 'Authored SAMPLE commercial record; reconciled from simulated transactions'
+        for allocation in month['business_unit_allocations']:
+            allocation['source'] = month['source']
+    account['ttm_summary']['source'] = 'Authored SAMPLE commercial record; reconciled from simulated transactions'
+    revenue = account['ttm_summary']['revenue_minor']
+    account['bu_revenue_exposure'] = synthetic_record(
+        record_id='boeing:bu-revenue-exposure:sample', business_unit_id='BU-ERA',
+        period_start=account['monthly_commercial_history'][0]['period'] + '-01',
+        period_end=account['as_of'], account_revenue_minor=revenue,
+        bu_revenue_minor=revenue * 8,
+        source='Authored SAMPLE commercial record; BU denominator is simulated, not BTX financials')
+    validate_commercial_account(account)
+    return account
+
+
 def boeing_recovery(*, anchor=None):
     """J7 user-supplied synthetic scenario; no claim about actual Boeing orders."""
     account = empty_ledger('boeing', 'Boeing — synthetic recovery scenario', anchor=anchor)
@@ -126,6 +260,7 @@ def boeing_recovery(*, anchor=None):
     rid = lambda suffix: f'demo:j7:boeing:{suffix}'
     add = lambda collection, **row: account[collection].append(synthetic_record(**row))
     add('programs', program_id=rid('program'), name='Fictional recovery demonstration — not JDAM-LR',
+        expected_production_horizon_years=3, source='Authored SAMPLE program-horizon assumption',
         description='Synthetic accepted machining work with partial dispatch. No connection to a public Boeing program is asserted.')
     add('components', component_id=rid('component'), program_id=rid('program'), business_unit_id='BU-ERA',
         name='Fictional machined housing', technical_requirements={'material': 'demo aluminium', 'process': 'CNC machining'},

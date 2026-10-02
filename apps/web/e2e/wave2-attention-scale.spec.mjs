@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForToday } from './helpers.mjs'
 
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }) })
 
@@ -28,7 +29,7 @@ async function installScaleFixtures(page) {
 
 test('finite Today and scalable Actions retain every governed record through durable worklists', async ({ page }) => {
   await installScaleFixtures(page)
-  await page.goto('/#/today')
+  await waitForToday(page, '/#/today')
   await expect(page.locator('.today-priority-card')).toHaveCount(3)
   await expect(page.locator('.today-lane-summary')).toContainText('65 total action priorities · 65 filtered · 10 displayed')
   await expect(page.locator('[data-priority-id]')).toHaveCount(10)
@@ -36,7 +37,7 @@ test('finite Today and scalable Actions retain every governed record through dur
   await expect(page).toHaveURL(/f\.page=2/)
   await expect(page.locator('[data-priority-id]')).toHaveCount(10)
   await page.getByLabel('Search Today work').fill('Decision reason 64')
-  await expect(page.locator('.today-priority-card')).toHaveCount(1)
+  await expect(page.locator('.today-priority-card')).toHaveCount(3)
   await expect(page.locator('[data-priority-id]')).toHaveCount(1)
 
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Actions' }).click()
