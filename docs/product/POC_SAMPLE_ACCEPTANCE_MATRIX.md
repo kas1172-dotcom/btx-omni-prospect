@@ -1,7 +1,7 @@
 # POC acceptance matrix
 
 The base POC separates researched identity from simulated commercial context.
-The opt-in enhancement also adds explicitly fictional organizations, locations
+The permanent SAMPLE enhancement also adds explicitly fictional organizations, locations
 and risk exercises; none are represented as researched public facts. Counts and
 current acceptance assertions are in [the enhancement report](SAMPLE_ENHANCEMENT_REPORT.md).
 

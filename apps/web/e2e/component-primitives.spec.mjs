@@ -35,18 +35,19 @@ test('mobile secondary navigation and controls expose keyboard and selected-stat
 test('shared evidence treatment renders truthful sourced and unavailable states', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Intelligence' }).click()
-  const disclosure = page.locator('.intelligence-card').first().getByRole('button', { name: /Evidence/ })
+  const unavailableCard = page.locator('.intelligence-card').first()
+  await unavailableCard.getByRole('button', { name: /Evidence/ }).click()
+  await expect(unavailableCard.locator('.ui-evidence')).toContainText('Source link unavailable')
+  const disclosure = page.locator('.intelligence-card').filter({ hasText: 'FAA production oversight update' }).getByRole('button', { name: /Evidence/ })
   await expect(disclosure).toHaveAttribute('aria-expanded', 'false')
   await disclosure.click()
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true')
-  const evidence = page.locator('.ui-evidence')
+  const evidence = page.locator('.intelligence-card').filter({ hasText: 'FAA production oversight update' }).locator('.ui-evidence')
   await expect(evidence.first()).toBeVisible()
   await expect(evidence.first()).toContainText('Source:')
   await expect(evidence.first()).toContainText('Date:')
   const linked = evidence.filter({ has: page.getByRole('link', { name: 'Inspect source →' }) })
   await expect(linked.first()).toBeVisible()
-  const unavailable = evidence.filter({ hasText: 'Source link unavailable' })
-  if (await unavailable.count()) await expect(unavailable.first()).toContainText(/Unavailable|needs research|Source link unavailable/i)
 })
 
 test('shared drawer closes by controls and backdrop and becomes a safe mobile sheet', async ({ page }) => {

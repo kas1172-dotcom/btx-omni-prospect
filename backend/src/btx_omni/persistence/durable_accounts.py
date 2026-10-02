@@ -199,7 +199,7 @@ class DurablePublicAccountRepository:
             "DURABLE_PUBLIC_PROSPECT", identity, None, None, None, None, (), (),
         )
         result = DurablePublicProspect(account, identity_key, tuple(sorted(source_identifiers)), originating_candidate_id, now, promoted_at, promotion_provenance)
-        profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, source_native_identifiers=tuple(field.source_native_identifier for field in item.public_identity.source_native_identifiers if field.source_native_identifier)) for item in curated_accounts)
+        profiles = tuple(AccountWatchProfile(item.id, item.legal_name, aliases=tuple(field.value for field in item.public_identity.aliases) if item.public_identity else (), domain=item.domain, source_native_identifiers=tuple(field.source_native_identifier for field in item.public_identity.source_native_identifiers if field.source_native_identifier) if item.public_identity else ()) for item in curated_accounts)
         if connection is None:
             existing = self.accounts()
         else:

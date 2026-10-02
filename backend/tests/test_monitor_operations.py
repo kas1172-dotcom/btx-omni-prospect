@@ -800,8 +800,8 @@ def test_monitor_health_multiple_eligible_briefs_never_constructs_provider(
         raise AssertionError("Monitor health must not construct an AI provider")
 
     monkeypatch.setattr("btx_omni.ai.registry.get_ai_provider", forbidden_provider)
-    assert len(monitor_health(runtime)["signal_briefs"]) == 8
-    assert len(monitor_health(runtime)["signal_briefs"]) == 8
+    assert len([brief for brief in monitor_health(runtime)["signal_briefs"] if brief.data_mode == "CONNECTED"]) == 8
+    assert len([brief for brief in monitor_health(runtime)["signal_briefs"] if brief.data_mode == "CONNECTED"]) == 8
     assert provider_constructions == 0
 
     monkeypatch.setattr("btx_omni.api.monitor.SELLER_BRIEF_WINDOW_LIMIT", 3)
@@ -813,7 +813,7 @@ def test_monitor_health_multiple_eligible_briefs_never_constructs_provider(
         "more_available": True,
         "ordering": "seller relevance, resolution, publication date, stable identity",
     }
-    assert len(signal_briefs_for_monitor(runtime.monitor, now=NOW)) == 8
+    assert len([brief for brief in signal_briefs_for_monitor(runtime.monitor, now=NOW) if brief.data_mode == "CONNECTED"]) == 8
 
 
 def test_synthesis_cache_hash_invalidation_eligibility_and_cap(tmp_path) -> None:

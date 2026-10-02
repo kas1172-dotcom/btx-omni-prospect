@@ -17,7 +17,7 @@ def markets(kind: Literal['LEVEL', 'MOM_PERCENT', 'YOY_PERCENT'] = 'LEVEL', movi
             runtime: PocRuntime = Depends(get_runtime)) -> dict:
     try:
         result = runtime.markets.overview(kind=kind, moving_average=moving_average)
-        if runtime.settings.sample_enhancement_enabled and runtime.settings.data_mode.upper() == 'SAMPLE':
+        if runtime.settings.data_mode.upper() == 'SAMPLE':
             from btx_omni.providers.sample.medical_market import coverage_context
             result['sample_coverage'] = coverage_context(runtime.environment())
             from btx_omni.providers.sample.public_research import (

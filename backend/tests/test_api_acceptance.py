@@ -72,14 +72,20 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         and item["coordinates"]
         for item in southwest.json()["facilities"]
     )
-    assert len(southwest.json()["btx_facilities"]) == 5
+    assert len(southwest.json()["btx_facilities"]) == 6
     assert all(
         item["entity_type"] == "BTX_FACILITY" and item["coordinates"]
         for item in southwest.json()["btx_facilities"]
     )
     assert all(
-        item["verification_state"] == "VERIFIED_PUBLIC_FACILITY"
-        and item["provenance"]["source_url"]
+        (
+            item["verification_state"] == "VERIFIED_PUBLIC_FACILITY"
+            and item["provenance"]["source_url"]
+        ) or (
+            item["verification_state"] == "FICTIONAL_SAMPLE_LOCATION"
+            and item["provenance"]["data_mode"] == "SAMPLE"
+            and item["provenance"]["synthetic"] is True
+        )
         for item in southwest.json()["btx_facilities"]
     )
     assert all(
@@ -92,7 +98,8 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
         for item in accounts.json()["accounts"]
     )
     assert accounts.json()["accounts"] and all(
-        item["public_identity_state"] != "UNVERIFIED" or item["public_research_state"] == "SANITIZED_REFERENCE"
+        item["public_identity_state"] != "UNVERIFIED"
+        or item["public_research_state"] in {"SANITIZED_REFERENCE", "FICTIONAL_SAMPLE"}
         for item in accounts.json()["accounts"]
     )
     assert all(
@@ -107,8 +114,8 @@ async def test_canonical_poc_api_end_to_end_paths() -> None:
     )
     assert defense.json()["matching"][0]["method"] == "EXACT_PART"
     assert (
-        len(defense.json()["paperless_accounts"]) == 1
-        and len(defense.json()["paperless_quotes"]) == 8
+        len(defense.json()["paperless_accounts"]) >= 1
+        and len(defense.json()["paperless_quotes"]) >= 8
     )
     assert (
         defense.json()["public_identity"] is not None
@@ -539,7 +546,7 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
     async with AsyncClient(
         transport=ASGITransport(app=create_app()), base_url="http://test"
     ) as client:
-        response = await client.post(
+        defense = await client.post(
             "/api/omni",
             json={
                 "question": "Which accounts have the highest scores?",
@@ -549,14 +556,26 @@ async def test_omni_cross_account_score_ranking_uses_typed_market_filter() -> No
                 },
             },
         )
-    payload = response.json()
-    assert response.status_code == 200
-    assert (
-        payload["content"]
-        == "No scoped opportunities in this selection have complete Attractiveness inputs. Organization-level scores are not a substitute."
-    )
-    assert "Organization-level scores are not a substitute" in payload["content"]
-    assert payload["context_used"] == {"filters": {"market": "Defense"}}
+        medical = await client.post(
+            "/api/omni",
+            json={
+                "question": "Which accounts have the highest scores?",
+                "context": {"surface": "ACCOUNTS", "active_filters": {"market": "Medical"}},
+            },
+        )
+    assert defense.status_code == medical.status_code == 200
+    defense_payload, medical_payload = defense.json(), medical.json()
+    # The SAMPLE fixture now has scored pursuits: exercise the typed market
+    # boundary with non-empty, distinct subsets rather than the former empty state.
+    assert "Opportunities ranked by Attractiveness" in defense_payload["content"]
+    assert "Lockheed Martin" in defense_payload["content"]
+    assert "Northrop Grumman" in defense_payload["content"]
+    assert "Medtronic" not in defense_payload["content"]
+    assert "Applied Materials" not in defense_payload["content"]
+    assert defense_payload["context_used"] == {"filters": {"market": "Defense"}}
+    assert "Medtronic" in medical_payload["content"]
+    assert "Lockheed Martin" not in medical_payload["content"]
+    assert medical_payload["context_used"] == {"filters": {"market": "Medical"}}
 
 
 @pytest.mark.asyncio

@@ -845,7 +845,10 @@ def test_separate_worker_commit_reaches_running_api_with_identical_confidence(tm
         ":medtronic"
     )
     assert "governed public update" not in visible[0]["relevance_explanation"].casefold()
-    actual = signal_briefs_for_monitor(reader.monitor, now=now)[0]
+    actual = next(
+        brief for brief in signal_briefs_for_monitor(reader.monitor, now=now)
+        if brief.data_mode == "CONNECTED"
+    )
     assert actual.signal_confidence == expected.signal_confidence
     assert actual.publication_timestamp == expected.publication_timestamp
     assert actual.signal_confidence["factors"][0]["points"] is not None
@@ -863,7 +866,10 @@ def test_separate_worker_commit_reaches_running_api_with_identical_confidence(tm
         for item in intelligence_signals(reader)
         if item.get("data_mode") == "CONNECTED"
     ]
-    assert len(signal_briefs_for_monitor(reader.monitor, now=now)) == 1
+    assert len([
+        brief for brief in signal_briefs_for_monitor(reader.monitor, now=now)
+        if brief.data_mode == "CONNECTED"
+    ]) == 1
 
 
 def test_seller_window_prioritizes_persisted_relevance_before_recency(monkeypatch):

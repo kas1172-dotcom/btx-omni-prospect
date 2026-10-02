@@ -114,6 +114,8 @@ async def test_map_selection_projection_is_governed_and_uses_miles() -> None:
 
 @pytest.mark.asyncio
 async def test_map_lists_accounts_without_verified_sites_without_fake_coordinates() -> None:
+    # The former strict xfail was retired: permanent SAMPLE enhancement now
+    # satisfies this map projection contract, so an expected failure is stale.
     async with AsyncClient(
         transport=ASGITransport(app=create_app()), base_url="http://test"
     ) as client:

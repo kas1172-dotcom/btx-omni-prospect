@@ -54,9 +54,18 @@ test('Today consumes projected priority, market hubs, and curated IDs without su
   await page.getByRole('tab', { name: 'Market Hubs', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Market Hubs', exact: true })).toBeVisible()
   const hubs = payload.command_center.market_hubs
-  expect(hubs.every(hub => hub.current_signal_ids.length === 0 && hub.upcoming_signal_ids.length === 0)).toBe(true)
-  await expect(page.getByText('No current or upcoming public signals are available across Market Hubs.')).toHaveCount(1)
-  await expect(page.getByRole('navigation', { name: 'Market hubs' })).toHaveCount(0)
+  const allHubsEmpty = hubs.every(hub => hub.current_signal_ids.length === 0 && hub.upcoming_signal_ids.length === 0)
+  if (allHubsEmpty) {
+    await expect(page.getByText('No current or upcoming public signals are available across Market Hubs.')).toHaveCount(1)
+    await expect(page.getByRole('navigation', { name: 'Market hubs' })).toHaveCount(0)
+  } else {
+    const navigation = page.getByRole('navigation', { name: 'Market hubs' })
+    await expect(navigation.getByRole('button')).toHaveCount(hubs.length + 1)
+    for (const hub of hubs) {
+      const button = navigation.getByRole('button', { name: new RegExp(hub.market) })
+      await expect(button).toContainText(String(hub.current_signal_ids.length + hub.upcoming_signal_ids.length))
+    }
+  }
 
   const intelligence = await page.evaluate(async () => (await fetch('/api/intelligence')).json())
   const projected = new Set(payload.command_center.curated_reference_signal_ids)

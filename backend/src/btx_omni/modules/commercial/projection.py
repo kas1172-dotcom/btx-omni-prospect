@@ -37,6 +37,10 @@ def project_commercial_records(
     base: SampleEnvironment, records: dict[str, dict], *, revision: str, crm_mappings: dict | None = None,
 ) -> SampleEnvironment:
     targeted = set(records)
+    # These real named accounts already have researched/HubsSpot-shaped read
+    # models. Their SAMPLE commercial exercise overlays those records; it must
+    # not erase the existing public identity, CRM contacts, or journey context.
+    overlay_accounts = targeted & {"lockheed-martin", "northrop-grumman"}
     scoring = {aid: commercial_attractiveness_inputs(account) for aid, account in records.items()}
     source_catalog = public_sources()
     contact_projections: dict[str, tuple] = {}
@@ -77,14 +81,22 @@ def project_commercial_records(
         revisions = {r["quote_revision_id"]: r for r in account["quote_revisions"]}
         bu_ids = sorted({r["business_unit_id"] for r in components.values()})
         crm_id, paperless_id = f"crm:{aid}", f"paperless:{aid}"
+        if aid in overlay_accounts:
+            # Link synthetic activity/deal rows to the existing CRM identity;
+            # a second company mapping would make canonical CRM resolution
+            # ambiguous while adding no new identity evidence.
+            crm_id = next(c.id for c in base.crm_companies if c.account_id == aid)
         if crm_mappings is not None:
             mapping = crm_mappings.get(aid)
-            if mapping is None or mapping['id'] != crm_id:
+            if mapping is None or mapping['id'] != f"crm:{aid}":
                 raise ValueError('Persisted CRM mapping is missing from its canonical account scope.')
+            if aid in overlay_accounts and mapping['properties'].get('source_company_id') != crm_id:
+                raise ValueError('Persisted CRM mapping does not match the existing company identity.')
             crm_owner, crm_properties = mapping['owner_id'], mapping['properties']
         else:
             crm_owner, crm_properties = retained_crm_mapping(base.crm_companies, aid)
-        output["crm_companies"].append(CrmCompany(crm_id, aid, crm_owner, provenance(crm_id), properties=crm_properties))
+        if aid not in overlay_accounts:
+            output["crm_companies"].append(CrmCompany(crm_id, aid, crm_owner, provenance(crm_id), properties=crm_properties))
         output["paperless_accounts"].append(PaperlessAccount(paperless_id, aid, account["identity"]["display_name"], provenance(paperless_id)))
         for bu in bu_ids:
             monthly = []
@@ -108,7 +120,13 @@ def project_commercial_records(
                 last_crm_activity_date=max((date.fromisoformat(r["date"]) for r in account["interactions"]), default=None),
             ))
         for program in account["programs"]:
-            output["programs"].append(Program(program["program_id"], aid, program["name"], None, EvidenceState.INFERRED, provenance(program["program_id"], program, inferred=True)))
+            if aid in overlay_accounts and any(p.id == program["program_id"] for p in base.programs):
+                # Keep the researched canonical program identity; only the
+                # opportunity's relationship to it is a SAMPLE assumption.
+                continue
+            output["programs"].append(Program(program["program_id"], aid, program["name"], None, EvidenceState.INFERRED,
+                provenance(program["program_id"], program, inferred=True),
+                expected_production_horizon_years=program.get("expected_production_horizon_years")))
         for component in components.values():
             output["component_classes"].append(ComponentClass(component["component_id"], component["program_id"], component["name"], EvidenceState.INFERRED, provenance(component["component_id"], component, inferred=True), business_unit_ids=(BU_CROSSWALK[component["business_unit_id"]],)))
         for quote in account["quotes"]:
@@ -146,8 +164,8 @@ def project_commercial_records(
         for opportunity in account["opportunities"]:
             output["crm_deals"].append(CrmDeal(opportunity["opportunity_id"], crm_id, BU_CROSSWALK[components[opportunity["component_id"]]["business_unit_id"]], provenance(opportunity["opportunity_id"], opportunity), aid, opportunity["program_id"], opportunity))
 
-    old_programs = {p.id for p in base.programs if p.account_id in targeted}
-    old_companies = {c.id for c in base.crm_companies if c.account_id in targeted}
+    old_programs = {p.id for p in base.programs if p.account_id in targeted - overlay_accounts}
+    old_companies = {c.id for c in base.crm_companies if c.account_id in targeted - overlay_accounts}
     old_components = {c.id for c in base.component_classes if c.program_id in old_programs}
     # Other customers may legitimately reference a shared public program or
     # component. Replacing one account's scenario cannot remove their catalog.
@@ -158,25 +176,199 @@ def project_commercial_records(
     retained_program_ids.update(c.program_id for c in base.component_classes if c.id in retained_component_ids and c.program_id)
     old_programs -= retained_program_ids
     old_components -= retained_component_ids
+    overlay_context_keys = {(item.account_id, item.business_unit)
+                            for item in output["commercial_contexts"] if item.account_id in overlay_accounts}
     for field, additions in output.items():
         def retained(item, field=field):
+            if field == "commercial_contexts" and (item.account_id, item.business_unit) in overlay_context_keys:
+                return False
             if field == "component_classes":
                 return item.id not in old_components
             if field == "programs":
                 return item.id not in old_programs
             if field == "paperless_accounts":
-                return item.canonical_account_id not in targeted
-            return getattr(item, "account_id", None) not in targeted
+                return item.canonical_account_id not in targeted - overlay_accounts
+            return getattr(item, "account_id", None) not in targeted - overlay_accounts
         output[field] = tuple(item for item in getattr(base, field) if retained(item)) + tuple(additions)
-    return replace(
+    projected = replace(
         base, **output,
-        accounts=tuple(replace(a, relationship=AccountRelationship.CURRENT_CUSTOMER if records[a.id]["ttm_summary"]["revenue_minor"] > 0 else a.relationship, business_units=tuple(sorted({BU_CROSSWALK[c["business_unit_id"]] for c in records[a.id]["components"]})), public_contacts=contact_projections[a.id]) if a.id in targeted else a for a in base.accounts),
+        accounts=tuple(replace(a, relationship=AccountRelationship.CURRENT_CUSTOMER if records[a.id]["ttm_summary"]["revenue_minor"] > 0 else a.relationship, business_units=tuple(sorted(({BU_CROSSWALK[c["business_unit_id"]] for c in records[a.id]["components"]}) | (set(a.business_units) if a.id in overlay_accounts else set()))), public_contacts=a.public_contacts if a.id in overlay_accounts else contact_projections[a.id]) if a.id in targeted else a for a in base.accounts),
         crm_contacts=tuple(c for c in base.crm_contacts if c.company_id not in old_companies),
-        rich_scenarios={k: v for k, v in base.rich_scenarios.items() if k not in targeted},
-        priority_scenarios={k: v for k, v in base.priority_scenarios.items() if k not in targeted},
-        matching_components=tuple(c for c in base.matching_components if c.id not in old_components and c.account_id not in targeted),
-        matching_quotes=tuple(q for q in base.matching_quotes if q.account_id not in targeted),
+        rich_scenarios={k: v for k, v in base.rich_scenarios.items() if k not in targeted or k in overlay_accounts},
+        priority_scenarios={k: v for k, v in base.priority_scenarios.items() if k not in targeted or k in overlay_accounts},
+        matching_components=tuple(c for c in base.matching_components if c.id not in old_components and c.account_id not in targeted - overlay_accounts),
+        matching_quotes=tuple(q for q in base.matching_quotes if q.account_id not in targeted - overlay_accounts),
         scoring_inputs={**base.scoring_inputs, **{aid: dict(value.selections) for aid, value in scoring.items()}},
         scoring_evidence={**base.scoring_evidence, **{aid: dict(value.evidence_by_factor) for aid, value in scoring.items()}},
         commercial_ledgers=records, commercial_revision=revision,
     )
+    # Classification is upstream of the unchanged scorer-facing observations.
+    from btx_omni.providers.sample.classifications import refresh_authored_bins
+    for account in records.values():
+        refresh_authored_bins(account)
+    boeing = records.get("boeing")
+    if boeing and boeing.get("data_mode") == "SAMPLE":
+        from btx_omni.modules.classification.commercial_adjacency import (
+            classify_commercial_adjacency,
+        )
+        from btx_omni.modules.classification.component_content import (
+            classify_component_content,
+        )
+        from btx_omni.modules.classification.contract import classification_payload
+        from btx_omni.modules.classification.cross_bu import classify_cross_bu
+        from btx_omni.modules.classification.facility_fit import (
+            classify_certification_compliance_fit,
+            classify_delivery_capability_match,
+            classify_delivery_quality_certification,
+            classify_delivery_schedule_feasibility,
+            classify_material_match,
+            classify_process_tolerance_match,
+            classify_volume_compatibility,
+        )
+        from btx_omni.modules.classification.program_horizon import (
+            classify_program_horizon,
+        )
+        for opportunity in boeing["opportunities"]:
+            if opportunity["opportunity_id"] != "demo:j7:boeing:recovery-expansion":
+                continue
+            classifications = (
+                classify_commercial_adjacency(boeing, opportunity, as_of=boeing["as_of"]),
+                classify_cross_bu(opportunity, projected.component_classes, as_of=boeing["as_of"]),
+                classify_component_content(boeing, opportunity, projected.component_classes, as_of=boeing["as_of"]),
+            )
+            for classification in classifications:
+                row = next(item for item in opportunity["score_observations"] if item["path"] == classification.factor_path)
+                if classification.state != "CURRENT":
+                    # Missing raw input must reach the scorer as missing, not the old authored bin.
+                    opportunity["score_observations"].remove(row)
+                    opportunity.setdefault("missing_classifications", []).append(classification_payload(classification))
+                    continue
+                if classification.bin_value != row["bin"]:
+                    raise ValueError(f"Boeing derived bin differs from authored SAMPLE input: {classification.factor_path}")
+                row["classification"] = classification_payload(classification)
+            program = next((item for item in projected.programs
+                            if item.id == opportunity.get("program_id")), None)
+            horizon = classify_program_horizon(opportunity, program, as_of=boeing["as_of"])
+            horizon_row = next(item for item in opportunity["score_observations"]
+                               if item["path"] == horizon.factor_path)
+            if horizon.state != "CURRENT":
+                opportunity["score_observations"].remove(horizon_row)
+                opportunity.setdefault("missing_classifications", []).append(classification_payload(horizon))
+            else:
+                horizon_row["bin"] = horizon.bin_value
+                horizon_row["classification"] = classification_payload(horizon)
+            facility = next((item for item in projected.btx_facilities
+                             if item.id == opportunity.get("delivery_facility_id")), None)
+            for classify in (classify_material_match, classify_process_tolerance_match,
+                             classify_certification_compliance_fit, classify_volume_compatibility):
+                classification = classify(opportunity, facility, as_of=boeing["as_of"])
+                row = next(item for item in opportunity["score_observations"]
+                           if item["path"] == classification.factor_path)
+                if classification.state != "CURRENT":
+                    opportunity["score_observations"].remove(row)
+                    opportunity.setdefault("missing_classifications", []).append(classification_payload(classification))
+                    continue
+                row["bin"] = classification.bin_value
+                row["classification"] = classification_payload(classification)
+            for classify in (classify_delivery_capability_match, classify_delivery_schedule_feasibility,
+                             classify_delivery_quality_certification):
+                classification = classify(opportunity, facility, as_of=boeing["as_of"])
+                row = opportunity["scoring_inputs"]["delivery_feasibility"]
+                if classification.state != "CURRENT":
+                    row.pop(classification.factor_path, None)
+                    opportunity.setdefault("missing_classifications", []).append(classification_payload(classification))
+                    continue
+                input_row = row[classification.factor_path]
+                for key in ("state", "net_available_hours", "required_hours"):
+                    input_row.pop(key, None)
+                input_row.update(classification.raw_input)
+                input_row["classification"] = classification_payload(classification)
+                input_row["narrative"] = "Derived from authored SAMPLE scope and facility overlay; not a BTX delivery promise."
+    # Additional named-company ledgers and prospect pursuits share the same
+    # classifier seam. Boeing's established fixture and golden values above
+    # remain unchanged.
+    for aid, account in records.items():
+        if aid not in overlay_accounts:
+            continue
+        for opportunity in account.get("opportunities", ()):
+            if "score_observations" in opportunity and "scope_requirements" in opportunity:
+                _classify_named_pursuit(projected, account, opportunity)
+    for pursuit in projected.pursuits:
+        context = {**pursuit, "opportunities": [pursuit["opportunity"]],
+                   "monthly_commercial_history": [], "order_lines": [], "revenue_events": [],
+                   "relationship_state": next(a.relationship.value for a in projected.accounts
+                                              if a.id == pursuit["account_id"])}
+        _classify_named_pursuit(projected, context, pursuit["opportunity"])
+    return projected
+
+
+def _classify_named_pursuit(sample: SampleEnvironment, account: dict, opportunity: dict) -> None:
+    """Inject reviewed SAMPLE classifications before the unchanged scorers read them."""
+    from btx_omni.modules.classification.commercial_adjacency import (
+        classify_commercial_adjacency,
+    )
+    from btx_omni.modules.classification.component_content import (
+        classify_component_content,
+    )
+    from btx_omni.modules.classification.contract import classification_payload
+    from btx_omni.modules.classification.cross_bu import classify_cross_bu
+    from btx_omni.modules.classification.facility_fit import (
+        classify_certification_compliance_fit,
+        classify_delivery_capability_match,
+        classify_delivery_quality_certification,
+        classify_delivery_schedule_feasibility,
+        classify_material_match,
+        classify_process_tolerance_match,
+        classify_volume_compatibility,
+    )
+    from btx_omni.modules.classification.program_horizon import classify_program_horizon
+    from btx_omni.providers.sample.classifications import refresh_authored_bins
+
+    refresh_authored_bins({"opportunities": [opportunity]})
+    as_of = account["as_of"]
+    program = next((row for row in sample.programs if row.id == opportunity.get("program_id")), None)
+    facility = next((row for row in sample.btx_facilities if row.id == opportunity.get("delivery_facility_id")), None)
+    bins = (
+        classify_commercial_adjacency(account, opportunity, as_of=as_of),
+        classify_cross_bu(opportunity, sample.component_classes, as_of=as_of),
+        classify_component_content(account, opportunity, sample.component_classes, as_of=as_of),
+        classify_program_horizon(opportunity, program, as_of=as_of),
+        *(classify(opportunity, facility, as_of=as_of) for classify in (
+            classify_material_match, classify_process_tolerance_match,
+            classify_certification_compliance_fit, classify_volume_compatibility)),
+    )
+    for classification in bins:
+        row = next((item for item in opportunity["score_observations"]
+                    if item["path"] == classification.factor_path), None)
+        if classification.state != "CURRENT":
+            if row is not None:
+                opportunity["score_observations"].remove(row)
+            opportunity.setdefault("missing_classifications", []).append(classification_payload(classification))
+            continue
+        if row is None:
+            row = {"opportunity_id": opportunity["opportunity_id"], "path": classification.factor_path,
+                   "reviewed_as_of": as_of, "evidence_ids": [opportunity["opportunity_id"]],
+                   "data_mode": "SAMPLE", "synthetic": True, "source": "Derived SAMPLE classification"}
+            opportunity["score_observations"].append(row)
+        row["bin"] = classification.bin_value
+        row["classification"] = classification_payload(classification)
+    delivery = opportunity["scoring_inputs"]["delivery_feasibility"]
+    for classify in (classify_delivery_capability_match, classify_delivery_schedule_feasibility,
+                     classify_delivery_quality_certification):
+        classification = classify(opportunity, facility, as_of=as_of)
+        if classification.state != "CURRENT":
+            delivery.pop(classification.factor_path, None)
+            opportunity.setdefault("missing_classifications", []).append(classification_payload(classification))
+            continue
+        row = delivery.setdefault(classification.factor_path, {
+            "opportunity_id": opportunity["opportunity_id"],
+            "facility_id": opportunity["delivery_facility_id"],
+            "reviewed_as_of": as_of, "evidence_ids": [opportunity["opportunity_id"]],
+            "data_mode": "SAMPLE", "synthetic": True,
+            "source": "Derived SAMPLE classification from authored scope and facility overlay",
+        })
+        for key in ("state", "net_available_hours", "required_hours"):
+            row.pop(key, None)
+        row.update(classification.raw_input)
+        row["classification"] = classification_payload(classification)
+        row["narrative"] = "Derived from authored SAMPLE scope and facility overlay; not a BTX delivery promise."

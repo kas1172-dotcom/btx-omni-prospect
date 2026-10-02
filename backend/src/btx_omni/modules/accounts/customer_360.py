@@ -21,6 +21,9 @@ def organization_360_projection(*, account, commercial: CommercialAccountSnapsho
         or commercial.orders
     )
     confirmed_customer = relationship in {"CURRENT_CUSTOMER", "FORMER_CUSTOMER"}
+    # UI safety fix: a simulated commercial ledger cannot verify a real BTX relationship.
+    sample_customer = confirmed_customer and commercial.source_states.get("commercial", {}).get("data_mode") == "SAMPLE"
+    sample_ledger = sample_customer and commercial.ledger_summary.get("data_mode") == "SAMPLE"
     contradictory = has_commercial_history and not confirmed_customer
     if contradictory:
         mode = "RELATIONSHIP_REVIEW"
@@ -29,7 +32,9 @@ def organization_360_projection(*, account, commercial: CommercialAccountSnapsho
     elif confirmed_customer:
         mode = "CUSTOMER"
         title = "Customer 360"
-        rationale = "The canonical account classification confirms a current or former BTX customer relationship."
+        rationale = ("The SAMPLE customer relationship comes from an authored, synthetic ledger; it is not a verified BTX fact."
+                     if sample_ledger else "The SAMPLE customer classification does not verify a real BTX relationship."
+                     if sample_customer else "The canonical account classification confirms a current or former BTX customer relationship.")
     elif relationship in {"PROSPECT", "TARGET", "PUBLIC_MARKET"}:
         mode = "PROSPECT"
         title = "Prospect 360"
@@ -67,7 +72,8 @@ def organization_360_projection(*, account, commercial: CommercialAccountSnapsho
         "mode": mode,
         "title": title,
         "relationship_label": (
-            "Confirmed BTX customer"
+            "SAMPLE customer (authored ledger)" if sample_ledger else "SAMPLE customer (unverified relationship)"
+            if sample_customer else "Confirmed BTX customer"
             if confirmed_customer
             else "Relationship needs review"
             if mode == "RELATIONSHIP_REVIEW"

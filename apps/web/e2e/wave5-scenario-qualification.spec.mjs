@@ -25,15 +25,13 @@ test('journeys 1–5 remain explicitly incomplete without manufactured evidence'
   expect(planning.strategic_partnerships).toEqual([])
 
   const intelligence = await (await page.request.get('/api/intelligence')).json()
-  const curated = Object.fromEntries(
-    intelligence.signals
-      .filter(signal => ['boeing', 'lockheed-martin', 'intel'].includes(signal.account_id))
-      .map(signal => [signal.account_id, signal]),
-  )
-  expect(curated.boeing.source_url).toMatch(/^https:\/\/www\.faa\.gov\//)
-  expect(curated['lockheed-martin'].source_url).toMatch(/^https:\/\/www\.nasa\.gov\//)
-  expect(curated.intel.source_validation_state).toBe('AUTOMATION_BLOCKED')
-  for (const signal of Object.values(curated)) {
+  const curated = [
+    intelligence.signals.find(signal => signal.account_id === 'boeing' && /^https:\/\/www\.faa\.gov\//.test(signal.source_url)),
+    intelligence.signals.find(signal => signal.account_id === 'lockheed-martin' && /^https:\/\/www\.nasa\.gov\//.test(signal.source_url)),
+    intelligence.signals.find(signal => signal.account_id === 'intel' && signal.source_validation_state === 'AUTOMATION_BLOCKED'),
+  ]
+  expect(curated.every(Boolean)).toBe(true)
+  for (const signal of curated) {
     expect(signal.data_mode).toBe('CURATED_PUBLIC')
     expect(signal.business_briefing).toBeUndefined()
   }

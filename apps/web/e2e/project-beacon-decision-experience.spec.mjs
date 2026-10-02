@@ -77,7 +77,7 @@ test('Project Beacon mobile command surfaces remain concise, reachable, and over
   await mobileNav.getByRole('button', { name: 'Intelligence' }).click()
   await expect(page.locator('.topbar-context').getByText('Intelligence', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: "Today's Priority Signals" })).toHaveCount(0)
-  await expect(page.getByText(/saved intelligence remains available/)).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Source and context status' })).toBeVisible()
   await expect(page.locator('.intelligence-card').first()).toBeVisible()
   await expectNoPageOverflow(page)
   await capture(page, 'intelligence-mobile')

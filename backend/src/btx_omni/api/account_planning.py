@@ -46,7 +46,7 @@ def planning(runtime: PocRuntime = Depends(get_runtime), current: Principal = De
     sample = runtime.environment()
     view = runtime.account_planning.view(current.user_id)
     settings = getattr(runtime, 'settings', None)
-    if getattr(settings, 'sample_enhancement_enabled', False) and settings.data_mode.upper() == 'SAMPLE':
+    if settings is not None and settings.data_mode.upper() == 'SAMPLE':
         from btx_omni.providers.sample.planning_cases import planning_view
         view = planning_view(view, sample)
     return {

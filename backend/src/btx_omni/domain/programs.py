@@ -14,6 +14,9 @@ class Program:
     system: str | None
     evidence_state: EvidenceState
     provenance: Provenance
+    expected_production_horizon_years: int | None = None
+    commitment_strength: str | None = None
+    maturity_evidence: str | None = None
 
 
 @dataclass(frozen=True)
@@ -25,3 +28,7 @@ class ComponentClass:
     provenance: Provenance
     industry: str | None = None
     business_unit_ids: tuple[str, ...] = ()
+    typical_materials: tuple[str, ...] = ()
+    typical_processes: tuple[str, ...] = ()
+    typical_tolerance: str | None = None
+    typical_size_bracket: str | None = None
