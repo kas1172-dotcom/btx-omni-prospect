@@ -22,6 +22,9 @@ def profile_projection(sample, account, *, alerts, signal_briefs, monitoring_com
     state = fulfillment_state(ledger, canonical_account_id=account.id,
                               revision=sample.commercial_revision) if ledger else None
     health = health_inputs(ledger, state) if ledger else {}
+    # UI health-band fix: expose the existing reader's band instead of a null display placeholder.
+    health_decision = assess("customer_health", subject_id=account.id, as_of=ledger['as_of'],
+                             revision=sample.commercial_revision, inputs=health, eligible=True) if ledger and customer else None
     risk = risk_inputs(ledger, state) if ledger else {}
     internal = assess("internal_commercial_risk", subject_id=account.id,
                       as_of=ledger['as_of'] if ledger else '', revision=sample.commercial_revision,
@@ -40,10 +43,8 @@ def profile_projection(sample, account, *, alerts, signal_briefs, monitoring_com
         'owner_id': canonical['crm']['owner_id'],
         'business_unit_ids': [row['id'] for row in canonical['business_units']],
         'naics': (ledger or {}).get('naics_assignments', []),
-        # The existing health rubric defines points, not bands. Never substitute
-        # confidence/risk thresholds or a frontend-invented health threshold.
-        'health_band': None,
-        'health_band_state': 'NOT_CONFIGURED' if customer else 'NOT_APPLICABLE',
+        'health_band': health_decision['band'] if health_decision else None,
+        'health_band_state': 'AVAILABLE' if health_decision and health_decision['score'] is not None else 'INSUFFICIENT_EVIDENCE' if customer else 'NOT_APPLICABLE',
         'open_items': {'public': len(active), 'internal': len(internal_items)},
         'bookings_monthly': [{'period': row['period'], 'bookings_minor': row['bookings_minor'],
                               'currency': row.get('currency', ledger['currency']), 'snapshot_id': row['snapshot_id'],

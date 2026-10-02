@@ -31,7 +31,7 @@ from btx_omni.modules.scoring.account_attractiveness import (
     seller_attractiveness_projection,
 )
 from btx_omni.modules.scoring.customer_health import health_inputs
-from btx_omni.modules.scoring.families import assess
+from btx_omni.modules.scoring.families import assess, score_band
 from btx_omni.modules.scoring.monitoring_coverage import monitoring_complete
 from btx_omni.modules.scoring.prospect_fit import (
     prospect_fit_payload,
@@ -47,6 +47,32 @@ def _profile_health(sample, account) -> dict | None:
     state = fulfillment_state(ledger, canonical_account_id=account.id, revision=sample.commercial_revision)
     return assess("customer_health", subject_id=account.id, as_of=ledger["as_of"],
                   revision=sample.commercial_revision, inputs=health_inputs(ledger, state), eligible=True)
+
+
+# UI Prospect Fit fix: reuse the scorer's existing band thresholds without changing any score.
+def _prospect_fit(account, *, as_of) -> dict:
+    payload = prospect_fit_payload(prospect_fit_projection(
+        account, applicable=account.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"}, as_of=as_of))
+    return {**payload, "band": score_band("prospect_fit", payload["score"]) if payload["score"] is not None else None}
+
+
+# UI relationship-enum fix: retain the machine state while publishing a plain-language display label.
+PUBLIC_RELATIONSHIP_LABELS = {
+    "BTX_CONFIRMED": "Confirmed BTX relationship",
+    "PUBLICLY_EVIDENCED_RELATIONSHIP": "Publicly evidenced relationship",
+    "PUBLIC_INTERACTION_INFERENCE": "Public interaction (inferred)",
+    "NO_RELATIONSHIP_EVIDENCE": "No relationship on file",
+}
+
+
+def _public_relationship(account) -> dict | None:
+    if account.public_relationship is None:
+        return None
+    relationship = account.public_relationship
+    return {"state": relationship.state, "label": PUBLIC_RELATIONSHIP_LABELS[relationship.state.value],
+            "confidence": relationship.confidence, "basis": relationship.basis,
+            "replaceable_by_internal": relationship.replaceable_by_internal,
+            "provenance": relationship.provenance}
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -149,13 +175,16 @@ def accounts(runtime: PocRuntime = Depends(get_runtime)) -> dict:
                 "attractiveness": projection.score,
                 "account_attractiveness": _seller_attractiveness(projection),
                 "customer_health": _profile_health(sample, item),
-                "prospect_fit": prospect_fit_payload(prospect_fit_projection(item, applicable=item.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"}, as_of=runtime.observed_at().date())),
+                "prospect_fit": _prospect_fit(item, as_of=runtime.observed_at().date()),
                 "business_unit": contexts[item.id].business_unit
                 if item.id in contexts
                 else None,
                 "commercial_context_state": "SAMPLE"
                 if item.id in contexts
                 else "UNAVAILABLE",
+                # UI provenance-tooltip fix: a pursuit/ledger is commercial data; a Fit assessment alone is not.
+                "commercial_record_state": "SAMPLE" if item.id in contexts or item.id in sample.commercial_ledgers or any(
+                    row["account_id"] == item.id for row in sample.pursuits) else "NONE",
                 "provenance": item.provenance.source_record_id
                 if item.provenance
                 else None,
@@ -225,7 +254,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "public_identity_state": account.public_identity.verification_state
         if account.public_identity
         else "UNVERIFIED",
-        "public_relationship": account.public_relationship,
+        "public_relationship": _public_relationship(account),
         "prospect_research_priority": account.prospect_research_priority,
         "prospect_rationale": account.prospect_rationale,
         "commercial_briefing": brief,
@@ -256,7 +285,7 @@ def account_360(account_id: str, runtime: PocRuntime = Depends(get_runtime)) -> 
         "orders": commercial.orders,
         "crm": crm,
         "account_attractiveness": _seller_attractiveness(projection),
-        "prospect_fit": prospect_fit_payload(prospect_fit_projection(account, applicable=account.relationship.value in {"TARGET", "PROSPECT", "PUBLIC_MARKET"}, as_of=observed.date())),
+        "prospect_fit": _prospect_fit(account, as_of=observed.date()),
         "governed_explanation": persisted_seller_explanation(
             runtime.monitor.repository,
             subject_key=customer_attractiveness_subject_key(account_id),

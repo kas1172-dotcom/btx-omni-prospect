@@ -31,7 +31,8 @@ def test_every_sample_account_list_equals_detail_projection(monkeypatch):
         for key in LIST_PROFILE_FIELDS:
             assert jsonable_encoder(row[key]) == jsonable_encoder(detail['profile'][key]), (row['id'], key)
         assert row['customer_health'] == detail['customer_health']
-        assert row['health_band'] is None  # no health-band rubric exists
+        # UI health-band fix: the profile mirrors the existing customer-health reader band.
+        assert row['health_band'] == (detail['customer_health']['band'] if detail['customer_health'] else None)
 
 
 def test_projected_metrics_reuse_scoring_factors_and_canonical_fulfillment(monkeypatch):
