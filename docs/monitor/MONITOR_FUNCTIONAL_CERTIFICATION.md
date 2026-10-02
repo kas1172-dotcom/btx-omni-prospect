@@ -185,3 +185,113 @@ this safe local certification phase. No production or Fly change was made.
 
 Overall: **PARTIALLY CERTIFIED — exact blocking stages are the credentialed
 live/Gemini end-to-end path and production-only source/scheduler verification.**
+
+## Live / production-like acceptance
+
+### Environment classification
+
+Read-only Fly inspection on 2026-10-02 found:
+
+- `btx-omni-prospect`: **PRODUCTION**, suspended.
+- Web application machine `784ed414c46168`: **PRODUCTION**, stopped.
+- Worker machine `d891e327c11098` (`omni-monitor-daily-v47`): **PRODUCTION**, stopped.
+- Production `fly.toml` declares `BTX_MONITOR_MODE=disabled`, durable Monitor state
+  disabled, and schedule configuration false for the web app.
+- The worker machine command is `python -m btx_omni.monitor.worker`, but its
+  machine policy is stopped/no restart.
+- Secret names indicate SAM and Gemini configuration exists in Fly, but values
+  were not read or exposed.
+
+The stopped production machines were not started. No production write path was
+invoked during this acceptance phase. Therefore no new supervised production
+worker execution or seller UI session could safely be initiated from this
+environment without explicit authorization to start production resources.
+
+### Provider readiness
+
+| Provider | Production-like readiness | Result |
+|---|---|---|
+| Federal Register, NASA, FDA, DoD | Keyless and previously live-probed | **LIVE VERIFIED** for collection/provenance boundaries |
+| USAspending | Keyless and present in the worker configuration | **PRODUCTION-LIKE OBSERVED** in prior worker logs; no new run started |
+| SAM | Secret name present; web app mode disabled and worker stopped | **BLOCKED BY ENVIRONMENT ACCESS** for a new supervised run |
+| Gemini | Secret/model configuration names present; no secret value read | **BLOCKED BY ENVIRONMENT ACCESS** for a new controlled run |
+| Commerce, SEC, governed company/state feeds | Configuration/credentials or governed feed registry required | **BLOCKED BY CREDENTIALS/CONFIGURATION** |
+
+### GOLDEN SIGNAL A — observed real public award
+
+The most recent available worker log contains a real USAspending signal, not a
+manually inserted event:
+
+- Source: USAspending award API, public award detail endpoint for award ID
+  `CONT_AWD_70Z03826FR0000061_7008_70Z03822DJ0000003_7008`.
+- Published/action date: 2026-03-17; modification date in the retained award
+  detail: 2026-07-21.
+- Recipient: General Electric Company; the retained canonical context was
+  `ge-aerospace`.
+- Explicit amount: `$690,464.98` total obligation.
+- Work: overhaul/modify components used on USCG MH-60T helicopters; the award
+  detail identified aircraft manufacturing NAICS 336411 and gas-turbine/jet
+  engine component classification.
+- Source evidence and content hashes were retained in the worker’s durable
+  collection/event/research lineage.
+
+This is a useful defense/aerospace manufacturing golden signal because the
+source explicitly supports the recipient, award, amount, aircraft platform,
+component work and manufacturing classification. It does not by itself prove
+that BTX can supply a particular component.
+
+### Observed live pipeline result
+
+The prior worker log shows the real collection path produced 25 USAspending
+events, including the GE-related event, with durable observation lineage and
+content hashes. The persisted publication context resolved the event to
+`ge-aerospace`, retained an assessment ID/version, and reported:
+
+- canonical identity: resolved;
+- seller relevance: eligible;
+- commercial relevance: decided but incomplete;
+- research: not completed for this event;
+- technical decomposition: unavailable;
+- Gemini brief: unavailable;
+- publication: `WITHHELD_BY_CANONICAL_GATES`.
+
+The worker correctly did not publish a persuasive but unsupported seller brief.
+The log also shows research public-tool failures/unsupported extraction on some
+retrieved documents, which is preserved as failure state rather than treated as
+fact.
+
+### Worker outcome and scheduler readiness
+
+The observed worker execution began 2026-10-01 and exited normally with code
+`1` after its bounded deadline. It reported `DEADLINE_EXHAUSTED`; USAspending
+reported continuation work, optional technical/explanation stages were stopped
+by the budget, and no watchdog kill occurred. This is **not** a successful
+supervised acceptance run.
+
+The scheduler is **BLOCKED BY ENVIRONMENT ACCESS / NEEDS CONFIGURATION**:
+
+- the repository exposes a one-shot bounded worker CLI and operational lock;
+- no scheduler declaration or recurring schedule is present in the repository;
+- Fly shows a stopped worker machine with no restart policy;
+- the web app explicitly reports schedule configuration false;
+- exit code handling exists in the CLI (0 success, 1 failed/deadline, 124 hard
+  watchdog), but no active scheduler is configured to consume it.
+
+### Live acceptance decision
+
+| Stage | Status |
+|---|---|
+| Real provider collection and source evidence | **PRODUCTION-LIKE VERIFIED** for observed USAspending run |
+| Real GE Aerospace canonical match | **PRODUCTION-LIKE VERIFIED** |
+| Real research completion for GOLDEN SIGNAL A | **NOT YET VERIFIED** |
+| Real technical/component decomposition | **NOT YET VERIFIED** |
+| Live Gemini synthesis | **BLOCKED BY ENVIRONMENT ACCESS** |
+| Deterministic score/publication gate behavior | **PRODUCTION-LIKE VERIFIED as safe withholding** |
+| Published real item in seller UI | **NOT YET VERIFIED** |
+| New supervised worker execution | **BLOCKED BY ENVIRONMENT ACCESS** |
+| Active scheduler | **BLOCKED BY ENVIRONMENT ACCESS / NEEDS CONFIGURATION** |
+
+No code defect was fixed in this phase. The remaining blocker is operational:
+the only production-like worker and web machines are stopped, the application
+is configured with Monitor disabled, and starting or changing them would be a
+production state change outside the authorization in this task.
