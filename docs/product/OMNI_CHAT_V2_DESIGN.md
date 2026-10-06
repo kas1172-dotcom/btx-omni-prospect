@@ -8,7 +8,7 @@ Implementation lives in the separate `btx-omni-chat-v2` worktree on `codex/omni-
 Chat is available to authenticated BTX users. Business data remains read-only.
 Only private conversation, feedback and audit records may be written. Action proposals
 open the existing reviewed creation form. No scoring, CRM or Action mutation service changes.
-The scoring working draft in `docs/scoring/BTX_Account_Scoring_Working_Draft (1).docx`
+The superseded scoring working draft (available in Git history)
 was inspected. Its prospective probability language and historical weighting descriptions
 do not override the mission: PWIN is an index and current deterministic services own scores.
 No Project Scope document was found under docs.

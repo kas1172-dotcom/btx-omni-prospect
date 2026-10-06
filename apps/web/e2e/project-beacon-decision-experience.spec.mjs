@@ -34,6 +34,13 @@ test('Project Beacon keeps Fit distinct from an unconfirmed customer classificat
 })
 
 test('Intelligence presents the research library without duplicating Today priorities', async ({ page }) => {
+  // This scenario exercises saved research without fresh collection. Other
+  // tests can persist fresh signals in the shared E2E database.
+  const response = await page.request.get('/api/today')
+  expect(response.ok()).toBeTruthy()
+  const body = await response.json()
+  body.command_center.current_signal_briefs = []
+  await page.route(/\/api\/today(?:\?.*)?$/, route => route.fulfill({ response, json: body }))
   await page.goto('/#/intelligence?sort=PRIORITY')
   await expect(page.getByRole('button', { name: 'Public Intelligence', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: "Today's Priority Signals" })).toHaveCount(0)
